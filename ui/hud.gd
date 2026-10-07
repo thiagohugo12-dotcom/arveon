@@ -58,6 +58,7 @@ func _layout() -> void:
 		return
 	var margin := Vector2(12, 12)
 	var bottom_inset: float = 12.0
+	var right_inset: float = 12.0
 	if OS.has_feature("android") or OS.has_feature("ios"):
 		var safe := DisplayServer.get_display_safe_area()
 		var screen := DisplayServer.screen_get_size()
@@ -65,14 +66,15 @@ func _layout() -> void:
 			margin.x += float(safe.position.x) / screen.x * size.x
 			margin.y += float(safe.position.y) / screen.y * size.y
 			bottom_inset += float(screen.y - safe.end.y) / screen.y * size.y
+			right_inset += float(screen.x - safe.end.x) / screen.x * size.x
 	heading.position = margin
-	heading.size = Vector2(size.x - margin.x * 2, 44)
+	heading.size = Vector2(size.x - margin.x - right_inset, 44)
 	hp_label.position = Vector2(margin.x, margin.y + 46)
 	hp_bar.position = Vector2(margin.x, margin.y + 68)
-	hp_bar.size = Vector2(minf(220, size.x - margin.x * 2), 12)
+	hp_bar.size = Vector2(minf(220, size.x - margin.x - right_inset), 12)
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for i in range(actions.size()):
-		actions[i].position = Vector2(size.x - margin.x - 184 + (i % 3) * 64, size.y - bottom_inset - 120 + (i / 3) * 64)
+		actions[i].position = Vector2(size.x - right_inset - 184 + (i % 3) * 64, size.y - bottom_inset - 120 + (i / 3) * 64)
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
 	restart.size = Vector2(240, 48)
 
