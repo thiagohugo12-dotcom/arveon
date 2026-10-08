@@ -7,6 +7,7 @@ signal movement_changed(value: Vector2)
 signal interact_pressed
 signal station_action(action: String, item: String)
 signal panel_closed
+signal inventory_toggled
 var joystick: VirtualJoystick
 var dash_button: TouchActionButton
 var actions: Array[TouchActionButton] = []
@@ -16,6 +17,10 @@ var hp_bar: ProgressBar
 var progress_label: Label
 var mission_label: Label
 var loot_label: Label
+var inventory_button: Button
+var inventory_panel: PanelContainer
+var inventory_text: Label
+var inventory_open := false
 var restart: Button
 var cooldown: float = 0.0
 var interact_button: TouchActionButton
@@ -58,6 +63,32 @@ func _ready() -> void:
 	loot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	loot_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(loot_label)
+	inventory_button = Button.new()
+	inventory_button.text = "Mochila"
+	inventory_button.custom_minimum_size = Vector2(90, 40)
+	inventory_button.pressed.connect(func(): inventory_toggled.emit())
+	add_child(inventory_button)
+	inventory_panel = PanelContainer.new()
+	inventory_panel.visible = false
+	inventory_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	inventory_panel.add_theme_stylebox_override("panel", _panel_style())
+	add_child(inventory_panel)
+	var inventory_column := VBoxContainer.new()
+	inventory_panel.add_child(inventory_column)
+	var inventory_heading := Label.new()
+	inventory_heading.text = "Mochila · materiais"
+	inventory_column.add_child(inventory_heading)
+	var inventory_scroll := ScrollContainer.new()
+	inventory_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_column.add_child(inventory_scroll)
+	inventory_text = Label.new()
+	inventory_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	inventory_scroll.add_child(inventory_text)
+	var inventory_close := Button.new()
+	inventory_close.text = "Fechar"
+	inventory_close.custom_minimum_size.y = 44
+	inventory_close.pressed.connect(func(): inventory_toggled.emit())
+	inventory_column.add_child(inventory_close)
 	joystick = VirtualJoystick.new()
 	joystick.size = Vector2(128, 128)
 	joystick.direction_changed.connect(func(value: Vector2): movement_changed.emit(value))
@@ -133,6 +164,9 @@ func _layout() -> void:
 	mission_label.size = Vector2(size.x - margin.x - right_inset, 17)
 	loot_label.position = Vector2(margin.x, margin.y + 122)
 	loot_label.size = Vector2(size.x - margin.x - right_inset, 35)
+	inventory_button.position = Vector2(size.x - right_inset - 98, margin.y + 12)
+	inventory_panel.size = Vector2(minf(300, size.x - margin.x - right_inset - 12), minf(330, size.y - margin.y - bottom_inset - 12))
+	inventory_panel.position = (size - inventory_panel.size) * 0.5
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for i in range(actions.size()):
 		actions[i].position = Vector2(size.x - right_inset - 184 + (i % 3) * 64, size.y - bottom_inset - 120 + (i / 3) * 64)
@@ -154,7 +188,30 @@ func set_progress(xp: int, gold: int, kills: int, loot: String) -> void:
 func set_mission(value: String) -> void:
 	mission_label.text = "◆ " + value.replace("Missão comum: ", "")
 
+func show_inventory(progress: GameProgress) -> void:
+	inventory_open = true
+	inventory_panel.show()
+	inventory_button.disabled = true
+	interact_button.visible = false
+	dash_button.enabled = false
+	var lines: Array[String] = ["Ouro: %d" % progress.gold]
+	for item: String in GameProgress.ITEMS:
+		var count := int(progress.bag.get(item, 0))
+		if count > 0:
+			lines.append("%s  x%d" % [item, count])
+	if lines.size() == 1:
+		lines.append("Nenhum material na mochila.")
+	inventory_text.text = "\n".join(lines)
+	_layout()
+
+func close_inventory() -> void:
+	inventory_open = false
+	inventory_panel.hide()
+	inventory_button.disabled = false
+	dash_button.enabled = not restart.visible and not station_panel.visible and not inventory_open
+
 func show_death() -> void:
+	close_inventory()
 	close_station()
 	joystick.reset()
 	dash_button.enabled = false
@@ -170,6 +227,7 @@ func set_nearby_station(name: String) -> void:
 func show_station(name: String, progress: GameProgress) -> void:
 	station_name = name
 	station_page = 0
+	close_inventory()
 	station_panel.show()
 	interact_button.enabled = false
 	interact_button.visible = false
