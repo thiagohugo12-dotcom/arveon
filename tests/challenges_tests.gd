@@ -74,3 +74,13 @@ static func run(suite, main) -> void:
 	await suite.frames(16)
 	main._start_guardian()
 	suite.check(not is_instance_valid(main.guardian), "completed guardian cannot respawn on altar interaction")
+
+	main.progress.xp = main.progress.xp_for_level(100)
+	main.hud.set_rpg_status(main.progress, main.player)
+	suite.check(main.hud.progress_label.text.begins_with("Nv 100"), "HUD reflects preserved level 100 cap")
+	for resolution: Vector2 in [Vector2(360, 640), Vector2(640, 360)]:
+		main.hud.size = resolution
+		main.hud._layout()
+		main.hud.set_nearby_station("Desafiar Guardião (opcional)")
+		suite.check(main.hud.interact_button.size.x == 120 and main.hud.interact_button.caption.text == "E · Guardião\nOpcional", "optional guardian interaction stays legible %s" % resolution)
+		suite.check(main.hud.mission_label.get_rect().end.y <= main.hud.loot_label.position.y, "expanded mission text avoids reward text %s" % resolution)

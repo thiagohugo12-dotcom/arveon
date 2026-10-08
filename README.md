@@ -27,12 +27,26 @@ python -m http.server 8000 --directory build/web
 ```
 Abra http://localhost:8000. Celular: mesma rede, `http://IP_DO_PC:8000`, permitindo acesso local no firewall. WebGL 2.0 é necessário. Export sem threads não exige isolamento COOP/COEP. Windows pode executar no editor; export nativo/Android/iOS serão configurados depois, sem certificados inventados.
 
-## CI
-`.github/workflows/web.yml` importa, testa e exporta Web com Godot 4.5.1 e templates correspondentes; guarda artifact `andar-1-web` por 14 dias. Não publica site ou Pages. Após push, veja Actions → Web build. Publicação requer escolha de hospedagem/visibilidade; não há segredos no projeto.
+## v0.3.0 — O Despertar do Aventureiro
+C/toque em Personagem: nível, atributos e pontos. 1/Corte Circular,
+2/Investida, 3/Fúria Ancestral. Habilidades são manuais; não funcionam no
+acampamento ou em menus. Mochila mostra equipamentos; o Ferreiro fabrica
+sete receitas e aprimora até +3 usando ouro e materiais da mochila.
 
-## GitHub e histórico
-O ZIP contém `grande-arvore-rpg-history.bundle` com commits e checkpoint. Para recuperar o Git e criar o repositório privado, siga `docs/GITHUB_SETUP.md`. Nenhum remoto foi criado nesta sessão.
+Elite aparece após a fase inicial. O altar no nordeste permite desafiar o
+Guardião das Raízes sem exigência de nível; interaja com E/toque. Desvie dos
+avisos dourados. É opcional; missões adicionais e vitória persistem sem
+repetir recompensas. Save v5 migra v1–4, preservando os atributos existentes.
+Poção e proficiência ainda não estão implementadas. Valores são provisórios.
+
+## CI e ambientes
+Actions importa, executa testes e exporta Web. O PR da branch
+`feat/andar1-v020-primeiro-passe` publica o build validado em Preview e atualiza
+TESTE: https://grande-arvore-rpg-teste.vercel.app/.
+PRODUÇÃO: https://grande-arvore-rpg.vercel.app/ — não alterada por esta versão.
+Não fazer merge em main ou publicar em produção sem autorização de Thiago.
 
 ## Contratos
 `AGENTS.md`, `docs/design/GAME_DESIGN.md`, `docs/ARCHITECTURE.md`, `docs/QA_CHECKLIST.md` e `docs/VALIDATION.md`.
-Slots Skill 1/2, Ultimate e poção são reservas desabilitadas. Assets geométricos provisórios. IA simples sem desvio de obstáculos. Nenhum Andar 2.
+Corte, Investida e Fúria estão ativos; poção permanece desabilitada. Assets geométricos provisórios. IA simples sem desvio de obstáculos. Nenhum Andar 2.
+

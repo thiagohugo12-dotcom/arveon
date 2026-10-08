@@ -157,7 +157,7 @@ func _ready() -> void:
 		actions[4].activated.connect(func(): character_toggled.emit())
 	interact_button = TouchActionButton.new()
 	interact_button.title = "Interagir"
-	interact_button.size = Vector2(80, 52)
+	interact_button.size = Vector2(120, 52)
 	interact_button.visible = false
 	interact_button.activated.connect(func(): interact_pressed.emit())
 	add_child(interact_button)
@@ -223,9 +223,9 @@ func _layout() -> void:
 	progress_label.position = Vector2(margin.x, margin.y + 85)
 	progress_label.size = Vector2(information_width, 20)
 	mission_label.position = Vector2(margin.x, margin.y + 104)
-	mission_label.size = Vector2(information_width, 38)
+	mission_label.size = Vector2(information_width, 52)
 	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	loot_label.position = Vector2(margin.x, margin.y + 143)
+	loot_label.position = Vector2(margin.x, margin.y + 159)
 	loot_label.size = Vector2(information_width, 42)
 	inventory_button.position = Vector2(size.x - right_inset - 100, minimap.position.y + minimap.size.y + 6)
 	inventory_panel.size = Vector2(minf(300, size.x - margin.x - right_inset - 12), minf(330, size.y - margin.y - bottom_inset - 12))
@@ -233,7 +233,7 @@ func _layout() -> void:
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for i in range(actions.size()):
 		actions[i].position = Vector2(size.x - right_inset - 184 + (i % 3) * 64, size.y - bottom_inset - 120 + (i / 3) * 64)
-	interact_button.position = Vector2(size.x * 0.5 - 40, size.y - bottom_inset - (185 if size.y > size.x else 67))
+	interact_button.position = Vector2(size.x * 0.5 - 60, size.y - bottom_inset - (185 if size.y > size.x else 67))
 	station_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(320, size.y - margin.y - bottom_inset - 12))
 	station_panel.position = (size - station_panel.size) * 0.5
 	rpg_panel.size = Vector2(minf(320, size.x - margin.x - right_inset - 12), minf(460, size.y - margin.y - bottom_inset - 12))
@@ -357,7 +357,7 @@ func show_death() -> void:
 func set_nearby_station(name: String) -> void:
 	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open and not rpg_panel.visible
 	interact_button.visible = interact_button.enabled
-	interact_button.set_caption("E · " + name if interact_button.enabled else "Interagir")
+	interact_button.set_caption(("E · Guardião\nOpcional" if name == "Desafiar Guardião (opcional)" else "E · " + name) if interact_button.enabled else "Interagir")
 
 func show_station(name: String, progress: GameProgress) -> void:
 	station_name = name
@@ -570,7 +570,7 @@ func close_character() -> void:
 
 func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	var lvl := progress.level()
-	progress_label.text = "Nv %d · XP %d/%d · Ouro %d" % [lvl, progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl), progress.gold] if lvl < RPGRules.MAX_LEVEL else "Nv 20 · Ouro %d" % progress.gold
+	progress_label.text = "Nv %d · XP %d/%d · Ouro %d" % [lvl, progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl), progress.gold] if lvl < RPGRules.MAX_LEVEL else "Nv %d · Ouro %d" % [RPGRules.MAX_LEVEL, progress.gold]
 	var names := ["Corte", "Investida", "Fúria"]
 	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or restart.visible
 	for i in range(3):

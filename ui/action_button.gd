@@ -11,6 +11,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	caption = Label.new()
 	caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	caption.add_theme_font_size_override("font_size", 12)
