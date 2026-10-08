@@ -220,7 +220,7 @@ func show_death() -> void:
 	restart.show()
 
 func set_nearby_station(name: String) -> void:
-	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible
+	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open
 	interact_button.visible = interact_button.enabled
 	interact_button.set_caption("E · " + name if interact_button.enabled else "Interagir")
 
