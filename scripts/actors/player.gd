@@ -8,12 +8,43 @@ extends CharacterBody2D
 @onready var view: ActorView = $View
 var input_driver: InputDriver
 var last_direction := Vector2.DOWN
+var progression: GameProgress
+var base_max_hp := 0
+var base_move_speed := 0.0
+var base_dash_speed := 0.0
+var base_weapon_damage := 0
+var base_weapon_interval := 0.0
 
 func _ready() -> void:
 	health.changed.connect(view.set_health)
 	health.died.connect(_on_died)
 	attack.attacked.connect(_on_attack)
 	health.initialize(stats.max_hp)
+
+func apply_progression(progress: GameProgress) -> void:
+	if base_max_hp == 0:
+		stats = stats.duplicate() as ActorData
+		attack.weapon = attack.weapon.duplicate() as WeaponData
+		base_max_hp = stats.max_hp
+		base_move_speed = stats.move_speed
+		base_dash_speed = stats.dash_speed
+		base_weapon_damage = attack.weapon.damage
+		base_weapon_interval = attack.weapon.interval
+	progression = progress
+	var vitality := int(progress.attributes.get("Vitalidade", 0))
+	var strength := int(progress.attributes.get("Força", 0))
+	var agility := int(progress.attributes.get("Agilidade", 0))
+	var spirit := int(progress.attributes.get("Espírito", 0))
+	var old_max := health.maximum
+	stats.max_hp = base_max_hp + vitality * 8 + spirit * 2
+	stats.move_speed = base_move_speed + agility * 2.0
+	stats.dash_speed = base_dash_speed + agility * 3.0
+	attack.weapon.damage = base_weapon_damage + strength * 2 + spirit
+	attack.weapon.interval = maxf(0.25, base_weapon_interval * (1.0 - minf(0.25, agility * 0.01)))
+	if stats.max_hp != old_max:
+		health.maximum = stats.max_hp
+		health.current = mini(health.maximum, health.current + maxi(0, stats.max_hp - old_max))
+		health.changed.emit(health.current, health.maximum)
 
 func _physics_process(delta: float) -> void:
 	if not health.is_alive() or input_driver == null:
