@@ -6,13 +6,17 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 3
+const SAVE_VERSION := 4
+const ATTRIBUTES := ["Força", "Vitalidade", "Agilidade", "Espírito"]
+const POINTS_PER_LEVEL := 2
+const MAX_LEVEL := 100
 
 var save_path: String = "user://andar1_progress.json"
 var bag: Dictionary = {}
 var chest: Dictionary = {}
 var gold: int = 0
 var xp: int = 0
+var attributes: Dictionary = {"Força": 0, "Vitalidade": 0, "Agilidade": 0, "Espírito": 0}
 var kills: int = 0
 var mission_index: int = 0
 var mission_progress: int = 0
@@ -20,6 +24,51 @@ var mission_completed: int = 0
 var harvested_until: Dictionary = {}
 var opened_caches: Dictionary = {}
 var discovered_pois: Dictionary = {}
+
+func xp_for_level(level: int) -> int:
+	var target := clampi(level, 1, MAX_LEVEL)
+	return (target - 1) * target * 25
+
+func level() -> int:
+	var result := 1
+	while result < MAX_LEVEL and xp >= xp_for_level(result + 1):
+		result += 1
+	return result
+
+func attribute_points_available() -> int:
+	var spent := 0
+	for key: String in ATTRIBUTES:
+		spent += int(attributes.get(key, 0))
+	return maxi(0, (level() - 1) * POINTS_PER_LEVEL - spent)
+
+func spend_attribute_point(attribute: String) -> bool:
+	if not ATTRIBUTES.has(attribute) or attribute_points_available() <= 0:
+		return false
+	attributes[attribute] = int(attributes.get(attribute, 0)) + 1
+	return true
+
+func add_xp(amount: int) -> bool:
+	if amount <= 0 or xp > 100000000 - amount:
+		return false
+	xp += amount
+	return true
+
+func _valid_attributes(value: Variant, total_xp: int) -> Variant:
+	if not value is Dictionary or value.size() != ATTRIBUTES.size():
+		return null
+	var validated := {}
+	var spent := 0
+	for key: String in ATTRIBUTES:
+		if not value.has(key) or not value[key] is float or value[key] < 0 or value[key] != floorf(value[key]):
+			return null
+		validated[key] = int(value[key])
+		spent += int(value[key])
+	var possible_level := 1
+	while possible_level < MAX_LEVEL and total_xp >= xp_for_level(possible_level + 1):
+		possible_level += 1
+	if spent > (possible_level - 1) * POINTS_PER_LEVEL:
+		return null
+	return validated
 
 func discover_nearby(point: Vector2) -> bool:
 	var changed := false
@@ -99,7 +148,7 @@ func save() -> bool:
 	if file == null:
 		return false
 	file.store_string(JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
-		"gold": gold, "xp": xp, "kills": kills, "mission_index": mission_index,
+		"gold": gold, "xp": xp, "attributes": attributes, "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
 		"discovered_pois": discovered_pois}))
@@ -140,13 +189,20 @@ func load_save() -> bool:
 			return false
 		new_harvested = harvested_value
 		new_opened = opened_value
-	if loaded_version == SAVE_VERSION:
+	if loaded_version >= 3:
 		var discovered_value: Variant = _valid_discoveries(parsed.get("discovered_pois"))
 		if discovered_value == null:
 			return false
 		new_discovered = discovered_value
+	var new_attributes: Dictionary = {"Força": 0, "Vitalidade": 0, "Agilidade": 0, "Espírito": 0}
+	if loaded_version >= 4:
+		var attribute_value: Variant = _valid_attributes(parsed.get("attributes"), int(parsed.xp))
+		if attribute_value == null:
+			return false
+		new_attributes = attribute_value
 	bag = new_bag
 	chest = new_chest
+	attributes = new_attributes
 	gold = int(parsed.gold)
 	xp = int(parsed.xp)
 	kills = int(parsed.kills)
