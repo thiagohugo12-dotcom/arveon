@@ -318,6 +318,7 @@ func _run() -> void:
 	check(cached.load_save() and cached.opened_caches.has("west_roots") and cached.open_exploration_chest("west_roots").is_empty(), "opened cache remains claimed after reload")
 	player.position = SafeCamp.STATIONS["Baú"] + Vector2(28, 0)
 	main._interact()
+	await frames()
 	var next_page := hud.station_content.get_child(4).get_child(2) as Button
 	var page_touch := InputEventScreenTouch.new()
 	page_touch.index = 9
@@ -332,6 +333,7 @@ func _run() -> void:
 	hud.close_station()
 	player.position = SafeCamp.STATIONS["Vendedor"] + Vector2(-30, 0)
 	main._interact()
+	await frames()
 	next_page = hud.station_content.get_child(5).get_child(2) as Button
 	page_touch.position = next_page.global_position + next_page.size * 0.5
 	check(hud.station_scroll.get_global_rect().has_point(page_touch.position), "vendor pagination fits mobile panel")

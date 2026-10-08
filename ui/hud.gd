@@ -183,6 +183,7 @@ func close_station() -> void:
 func refresh_station(progress: GameProgress) -> void:
 	station_title.text = station_name
 	for child in station_content.get_children():
+		station_content.remove_child(child)
 		child.queue_free()
 	if station_name == "Ferreiro":
 		_add_description("Equipamento inicial. Evolução de armas será adicionada em uma versão futura.")
