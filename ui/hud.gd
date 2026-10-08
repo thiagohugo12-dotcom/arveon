@@ -38,7 +38,7 @@ func _ready() -> void:
 	progress_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(progress_label)
 	mission_label = Label.new()
-	mission_label.add_theme_font_size_override("font_size", 12)
+	mission_label.add_theme_font_size_override("font_size", 11)
 	mission_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(mission_label)
 	loot_label = Label.new()
@@ -90,9 +90,9 @@ func _layout() -> void:
 	hp_bar.size = Vector2(minf(220, size.x - margin.x - right_inset), 12)
 	progress_label.position = Vector2(margin.x, margin.y + 85)
 	progress_label.size = Vector2(size.x - margin.x - right_inset, 20)
-	mission_label.position = Vector2(margin.x, margin.y + 106)
-	mission_label.size = Vector2(size.x - margin.x - right_inset, 19)
-	loot_label.position = Vector2(margin.x, margin.y + 128)
+	mission_label.position = Vector2(margin.x, margin.y + 104)
+	mission_label.size = Vector2(size.x - margin.x - right_inset, 17)
+	loot_label.position = Vector2(margin.x, margin.y + 122)
 	loot_label.size = Vector2(size.x - margin.x - right_inset, 35)
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for i in range(actions.size()):
@@ -110,7 +110,7 @@ func set_progress(xp: int, gold: int, kills: int, loot: String) -> void:
 	loot_label.text = loot
 
 func set_mission(value: String) -> void:
-	mission_label.text = value
+	mission_label.text = "◆ " + value.replace("Missão comum: ", "")
 
 func show_death() -> void:
 	joystick.reset()

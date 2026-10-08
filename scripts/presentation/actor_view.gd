@@ -7,6 +7,7 @@ var facing := Vector2.DOWN
 var hp_ratio: float = 1.0
 var flash_left: float = 0.0
 var attack_left: float = 0.0
+var warning: bool = false
 var walking: bool = false
 var anim_time: float = 0.0
 var anim_frame: int = 0
@@ -37,6 +38,11 @@ func play_attack() -> void:
 	attack_left = 0.16
 	queue_redraw()
 
+func set_warning(value: bool) -> void:
+	if warning != value:
+		warning = value
+		queue_redraw()
+
 func _process(delta: float) -> void:
 	if flash_left > 0.0:
 		flash_left = maxf(0.0, flash_left - delta)
@@ -65,6 +71,9 @@ func _draw() -> void:
 		var side: float = -1.0 if facing.x < -0.3 else 1.0
 		px(side * 15.0 - 3.0, -22.0, 5, 31, Color("#fce7a1"))
 		px(side * 20.0 - 3.0, -17.0, 4, 22, LIGHT)
+	if warning:
+		px(-11, -39, 22, 5, Color("#f4b942"))
+		px(-2, -47, 4, 7, Color("#ffe39a"))
 	if flash_left > 0.0:
 		px(-15, -22, 30, 37, Color(1.0, 1.0, 1.0, flash_left * 2.5))
 	px(-17, -30, 34, 4, LINE)

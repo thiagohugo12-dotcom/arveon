@@ -137,6 +137,31 @@ func _run() -> void:
 	check(main.earned_xp == 70 and main.earned_gold == 22, "second free mission grants reward without spending gold")
 	main.mission.record_material()
 	check(main.mission.progress == 0, "irrelevant material events do not advance hunt")
+	# Enemy roles remain deliberately distinct and lightweight.
+	var boar := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
+	boar.kind = 0
+	boar.stats = boar.stats.duplicate() as ActorData
+	main.add_child(boar)
+	boar.target = player
+	boar.position = player.position + Vector2(150, 0)
+	boar._physics_process(0.016)
+	check(boar.charge_windup > 0.0, "boar telegraphs a charge at mid range")
+	var spider := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
+	spider.kind = 1
+	spider.stats = spider.stats.duplicate() as ActorData
+	main.add_child(spider)
+	spider.target = player
+	spider.position = player.position + Vector2(55, 0)
+	spider._physics_process(0.016)
+	check(spider.velocity.x > 0.0, "spider retreats when too close")
+	var cactus := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
+	cactus.kind = 2
+	cactus.stats = cactus.stats.duplicate() as ActorData
+	main.add_child(cactus)
+	cactus.target = player
+	cactus.position = player.position + Vector2(180, 0)
+	cactus._physics_process(0.016)
+	check(cactus.special_left > 0.0 and cactus.velocity.is_zero_approx(), "mandacaru prepares ranged attack at preferred distance")
 	main.queue_free()
 	await frames()
 	print("RESULT: %d checks, %d failures" % [checks, failures])

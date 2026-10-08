@@ -1,6 +1,7 @@
 extends Node2D
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/actors/enemy.tscn")
+const PROJECTILE_SCRIPT := preload("res://scripts/components/enemy_projectile.gd")
 const MAX_ENEMIES := 5
 const SPAWN_INTERVAL := 2.8
 const ENEMY_POSITIONS := [
@@ -29,6 +30,7 @@ func _ready() -> void:
 	player.input_driver = input_driver
 	enemy.target = player
 	enemy.defeated.connect(_on_enemy_defeated)
+	enemy.projectile_requested.connect(_on_enemy_projectile)
 	hud.movement_changed.connect(input_driver.set_touch_direction)
 	hud.dash_pressed.connect(input_driver.request_dash)
 	hud.restart_pressed.connect(func(): get_tree().reload_current_scene())
@@ -67,8 +69,15 @@ func _spawn_enemy() -> void:
 	actor.position = ENEMY_POSITIONS[spawn_count % ENEMY_POSITIONS.size()]
 	actor.target = player
 	actor.defeated.connect(_on_enemy_defeated)
+	actor.projectile_requested.connect(_on_enemy_projectile)
 	add_child(actor)
 	spawn_count += 1
+
+func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> void:
+	var projectile := Area2D.new()
+	projectile.set_script(PROJECTILE_SCRIPT)
+	add_child(projectile)
+	projectile.setup(origin, direction, damage, player)
 
 func _on_enemy_defeated(kind: int) -> void:
 	defeated_count += 1
