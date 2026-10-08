@@ -13,6 +13,7 @@ const ENEMY_POSITIONS := [
 @onready var enemy: EnemyActor = $Enemy
 @onready var input_driver: InputDriver = $InputDriver
 @onready var hud: GameHUD = $Interface/HUD
+@onready var exploration_view: ExplorationView = $Andar1/ExploreView
 
 var spawn_remaining: float = SPAWN_INTERVAL
 var spawn_count: int = 0
@@ -26,6 +27,7 @@ var mission_reward_message: String = ""
 var progress := GameProgress.new()
 var station_nearby := ""
 var activity_remaining := 0.0
+var exploration_refresh := 0.0
 
 func _ready() -> void:
 	var test_save := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
@@ -39,6 +41,9 @@ func _ready() -> void:
 		mission.progress = progress.mission_progress
 		mission.completed_count = progress.mission_completed
 	collected_materials = progress.bag
+	exploration_view.progress = progress
+	exploration_view.current_time = int(Time.get_unix_time_from_system())
+	exploration_view.queue_redraw()
 	mission.completed.connect(_on_mission_completed)
 	loot_rng.randomize()
 	player.input_driver = input_driver
@@ -67,13 +72,18 @@ func _process(delta: float) -> void:
 	hud.set_dash_cooldown(player.dash.cooldown_left)
 	if not player.health.is_alive():
 		return
+	exploration_refresh -= delta
+	if exploration_refresh <= 0.0:
+		exploration_refresh = 1.0
+		exploration_view.current_time = int(Time.get_unix_time_from_system())
+		exploration_view.queue_redraw()
 	activity_remaining -= delta
 	if activity_remaining <= 0.0:
 		activity_remaining = 0.25
 		for actor in get_tree().get_nodes_in_group("damageable_enemies"):
 			if actor is EnemyActor:
 				actor.update_activity(player.global_position)
-	var near := SafeCamp.nearest_station(player.global_position)
+	var near := _interaction_target().get("label", "") as String
 	if near != station_nearby and not hud.station_panel.visible:
 		station_nearby = near
 		hud.set_nearby_station(near)
@@ -156,12 +166,47 @@ func _on_player_died() -> void:
 func _interact() -> void:
 	if not player.health.is_alive() or hud.station_panel.visible:
 		return
+	var found := _interaction_target()
+	match found.get("kind", ""):
+		"station":
+			input_driver.reset()
+			input_driver.blocked = true
+			hud.show_station(found.id, progress)
+		"resource":
+			var item := progress.collect_resource(found.id, int(Time.get_unix_time_from_system()))
+			if item.is_empty():
+				return
+			mission.record_material()
+			_save_progress()
+			hud.set_progress(earned_xp, earned_gold, defeated_count, "Coletou +1 " + item)
+			hud.set_mission(mission.summary())
+			exploration_view.queue_redraw()
+			station_nearby = ""
+		"cache":
+			var reward := progress.open_exploration_chest(found.id)
+			if reward.is_empty():
+				return
+			earned_gold = progress.gold
+			mission.record_material()
+			_save_progress()
+			hud.set_progress(earned_xp, earned_gold, defeated_count,
+				"Baú escondido: +%d ouro, +1 %s" % [reward.gold, reward.item])
+			hud.set_mission(mission.summary())
+			exploration_view.queue_redraw()
+			station_nearby = ""
+
+func _interaction_target() -> Dictionary:
 	var station := SafeCamp.nearest_station(player.global_position)
-	if station.is_empty():
-		return
-	input_driver.reset()
-	input_driver.blocked = true
-	hud.show_station(station, progress)
+	if not station.is_empty():
+		return {"kind": "station", "id": station, "label": station}
+	var now := int(Time.get_unix_time_from_system())
+	var resource := Exploration.resource_at(player.global_position, progress.harvested_until, now)
+	var cache := Exploration.chest_at(player.global_position, progress.opened_caches)
+	if not resource.is_empty() and (cache.is_empty() or player.global_position.distance_squared_to(resource.position) <= player.global_position.distance_squared_to(cache.position)):
+		return {"kind": "resource", "id": resource.id, "label": "Coletar " + resource.item}
+	if not cache.is_empty():
+		return {"kind": "cache", "id": cache.id, "label": "Baú escondido"}
+	return {}
 
 func _station_action(action: String, item: String) -> void:
 	if not player.health.is_alive() or hud.station_panel.visible == false:

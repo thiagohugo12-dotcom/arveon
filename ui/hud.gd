@@ -25,6 +25,8 @@ var station_content: VBoxContainer
 var station_scroll: ScrollContainer
 var station_name := ""
 var station_close_button: Button
+var station_page := 0
+const ITEMS_PER_PAGE := 3
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -164,6 +166,7 @@ func set_nearby_station(name: String) -> void:
 
 func show_station(name: String, progress: GameProgress) -> void:
 	station_name = name
+	station_page = 0
 	station_panel.show()
 	interact_button.enabled = false
 	dash_button.enabled = false
@@ -185,13 +188,47 @@ func refresh_station(progress: GameProgress) -> void:
 		_add_description("Equipamento inicial. Evolução de armas será adicionada em uma versão futura.")
 	elif station_name == "Baú":
 		_add_description("Mochila/Baú · itens guardados ficam protegidos.")
-		for item: String in GameProgress.ITEMS:
+		for item: String in _page_items(GameProgress.ITEMS):
 			_add_row(item, "%d/%d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar", int(progress.bag.get(item, 0)) > 0, int(progress.chest.get(item, 0)) > 0)
+		_add_page_navigation(GameProgress.ITEMS.size(), progress)
 	elif station_name == "Vendedor":
 		_add_description("Ouro %d · Compra %d · Venda %d" % [progress.gold, GameProgress.BUY_PRICE, GameProgress.SELL_PRICE])
-		_add_description("Ganhe recursos no combate e nas missões.")
-		for item: String in GameProgress.TRADE_ITEMS:
-			_add_row(item, "x%d" % progress.bag.get(item, 0), "Comprar", "Vender", progress.gold >= GameProgress.BUY_PRICE, int(progress.bag.get(item, 0)) > 0)
+		_add_description("Materiais de combate e coleta · recursos podem ser vendidos.")
+		for item: String in _page_items(GameProgress.SELL_ITEMS):
+			_add_row(item, "x%d" % progress.bag.get(item, 0), "Comprar", "Vender", GameProgress.TRADE_ITEMS.has(item) and progress.gold >= GameProgress.BUY_PRICE, int(progress.bag.get(item, 0)) > 0)
+		_add_page_navigation(GameProgress.SELL_ITEMS.size(), progress)
+
+func _page_items(items: Array) -> Array:
+	var start := station_page * ITEMS_PER_PAGE
+	return items.slice(start, mini(start + ITEMS_PER_PAGE, items.size()))
+
+func _add_page_navigation(count: int, progress: GameProgress) -> void:
+	var total := ceili(float(count) / ITEMS_PER_PAGE)
+	var row := HBoxContainer.new()
+	station_content.add_child(row)
+	var previous := Button.new()
+	previous.text = "◀"
+	previous.disabled = station_page == 0
+	previous.custom_minimum_size = Vector2(48, 40)
+	previous.pressed.connect(func():
+		station_page -= 1
+		refresh_station(progress)
+	)
+	row.add_child(previous)
+	var label := Label.new()
+	label.text = "Página %d/%d" % [station_page + 1, total]
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	var following := Button.new()
+	following.text = "▶"
+	following.disabled = station_page >= total - 1
+	following.custom_minimum_size = Vector2(48, 40)
+	following.pressed.connect(func():
+		station_page += 1
+		refresh_station(progress)
+	)
+	row.add_child(following)
 
 func _add_description(value: String) -> void:
 	var label := Label.new()

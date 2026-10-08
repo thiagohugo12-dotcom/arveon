@@ -1,11 +1,12 @@
 class_name GameProgress
 extends RefCounted
 
-const ITEMS := ["Couro", "Seda", "Essência", "Broto Ancestral"]
+const ITEMS := ["Couro", "Seda", "Essência", "Broto Ancestral", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
+const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 1
+const SAVE_VERSION := 2
 
 var save_path: String = "user://andar1_progress.json"
 var bag: Dictionary = {}
@@ -16,6 +17,8 @@ var kills: int = 0
 var mission_index: int = 0
 var mission_progress: int = 0
 var mission_completed: int = 0
+var harvested_until: Dictionary = {}
+var opened_caches: Dictionary = {}
 
 func add_item(item: String, amount: int = 1) -> bool:
 	if not ITEMS.has(item) or amount < 1:
@@ -44,13 +47,34 @@ func buy(item: String) -> bool:
 	return true
 
 func sell(item: String) -> bool:
-	if not TRADE_ITEMS.has(item) or int(bag.get(item, 0)) < 1:
+	if not SELL_ITEMS.has(item) or int(bag.get(item, 0)) < 1:
 		return false
 	bag[item] = int(bag[item]) - 1
 	if bag[item] == 0:
 		bag.erase(item)
 	gold += SELL_PRICE
 	return true
+
+func collect_resource(id: String, now: int) -> String:
+	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+		if spot.id == id and now >= int(harvested_until.get(id, 0)) and now > 0:
+			var item: String = spot.item
+			add_item(item)
+			harvested_until[id] = now + Exploration.RESOURCE_COOLDOWN
+			return item
+	return ""
+
+func open_exploration_chest(id: String) -> Dictionary:
+	if opened_caches.has(id):
+		return {}
+	for chest_data: Dictionary in Exploration.HIDDEN_CHESTS:
+		if chest_data.id == id:
+			gold += int(chest_data.gold)
+			var item: String = chest_data.item
+			add_item(item)
+			opened_caches[id] = true
+			return {"gold": int(chest_data.gold), "item": item}
+	return {}
 
 func death_loss() -> String:
 	for item: String in ITEMS:
@@ -67,7 +91,8 @@ func save() -> bool:
 		return false
 	file.store_string(JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
 		"gold": gold, "xp": xp, "kills": kills, "mission_index": mission_index,
-		"mission_progress": mission_progress, "mission_completed": mission_completed}))
+		"mission_progress": mission_progress, "mission_completed": mission_completed,
+		"harvested_until": harvested_until, "opened_caches": opened_caches}))
 	file.close()
 	return true
 
@@ -78,7 +103,7 @@ func load_save() -> bool:
 	if file == null:
 		return false
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not parsed is Dictionary or parsed.get("version") != SAVE_VERSION:
+	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != SAVE_VERSION):
 		return false
 	for key: String in ["gold", "xp", "kills", "mission_index", "mission_progress", "mission_completed"]:
 		if not parsed.has(key) or not parsed[key] is float or parsed[key] < 0 or parsed[key] > 100000000:
@@ -89,6 +114,15 @@ func load_save() -> bool:
 	var new_chest: Variant = _valid_items(parsed.get("chest"))
 	if new_bag == null or new_chest == null:
 		return false
+	var new_harvested: Dictionary = {}
+	var new_opened: Dictionary = {}
+	if parsed.version == SAVE_VERSION:
+		var harvested_value: Variant = _valid_exploration(parsed.get("harvested_until"), false)
+		var opened_value: Variant = _valid_exploration(parsed.get("opened_caches"), true)
+		if harvested_value == null or opened_value == null:
+			return false
+		new_harvested = harvested_value
+		new_opened = opened_value
 	bag = new_bag
 	chest = new_chest
 	gold = int(parsed.gold)
@@ -97,7 +131,32 @@ func load_save() -> bool:
 	mission_index = int(parsed.mission_index)
 	mission_progress = int(parsed.mission_progress)
 	mission_completed = int(parsed.mission_completed)
+	harvested_until = new_harvested
+	opened_caches = new_opened
 	return true
+
+func _valid_exploration(value: Variant, is_cache: bool) -> Variant:
+	if not value is Dictionary:
+		return null
+	var result := {}
+	var sources: Array = Exploration.HIDDEN_CHESTS if is_cache else Exploration.RESOURCE_SPOTS
+	for id: String in value:
+		var found := false
+		for entry: Dictionary in sources:
+			if entry.id == id:
+				found = true
+				break
+		if not found:
+			return null
+		if is_cache:
+			if value[id] != true:
+				return null
+			result[id] = true
+		else:
+			if not value[id] is float or value[id] < 0 or value[id] > 1000000000000 or value[id] != floorf(value[id]):
+				return null
+			result[id] = int(value[id])
+	return result
 
 func _valid_items(value: Variant) -> Variant:
 	if not value is Dictionary:

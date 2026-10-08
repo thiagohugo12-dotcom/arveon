@@ -187,7 +187,7 @@ func _run() -> void:
 	main._station_action("Guardar", "Essência")
 	check(main.progress.bag.get("Essência", 0) == 2 and main.progress.chest.get("Essência", 0) == 1, "chest transfer preserves total")
 	await frames()
-	var last_chest_button := hud.station_content.get_child(4).get_child(2) as Button
+	var last_chest_button := hud.station_content.get_child(3).get_child(2) as Button
 	check(hud.station_scroll.get_global_rect().has_point(last_chest_button.global_position + last_chest_button.size * 0.5), "all chest rows fit the mobile viewport")
 	var interact_key := InputEventAction.new()
 	interact_key.action = "interact"
@@ -286,6 +286,63 @@ func _run() -> void:
 	player.position = Vector2(180, 750)
 	persistent._physics_process(0.1)
 	check(not persistent.chasing and persistent.position.distance_to(saved_position) < 90.0, "monster returns toward home after losing player")
+	# Gathering, exploration caches, persistence and the paged mobile station UI.
+	player.position = Exploration.RESOURCE_SPOTS[0].position
+	main._process(0.0)
+	var herbs_before := int(main.progress.bag.get("Ervas", 0))
+	main._input(interact_key)
+	check(main.progress.bag.get("Ervas", 0) == herbs_before + 1 and hud.loot_label.text.contains("Ervas"), "keyboard gathering adds an existing inventory item with feedback")
+	main._input(interact_key)
+	check(main.progress.bag.get("Ervas", 0) == herbs_before + 1, "gathering cannot duplicate before five minute cooldown")
+	var harvested := GameProgress.new()
+	harvested.save_path = test_path
+	check(harvested.load_save() and harvested.harvested_until.has("herb_west") and harvested.bag.get("Ervas", 0) == herbs_before + 1, "collected resource and cooldown survive reload")
+	var now := int(Time.get_unix_time_from_system())
+	check(harvested.collect_resource("herb_west", now + Exploration.RESOURCE_COOLDOWN + 1) == "Ervas", "resource respawns after real time cooldown")
+	player.position = Exploration.HIDDEN_CHESTS[0].position
+	main._process(0.0)
+	var gold_before := main.progress.gold
+	var leather_before := int(main.progress.bag.get("Couro", 0))
+	var cache_touch := InputEventScreenTouch.new()
+	cache_touch.index = 8
+	cache_touch.pressed = true
+	cache_touch.position = hud.interact_button.global_position + hud.interact_button.size * 0.5
+	hud.interact_button._input(cache_touch)
+	cache_touch.pressed = false
+	hud.interact_button._input(cache_touch)
+	check(main.progress.gold == gold_before + 6 and main.progress.bag.get("Couro", 0) == leather_before + 1 and hud.loot_label.text.contains("Baú escondido"), "touch opens hidden cache and shows balanced rewards")
+	main._input(interact_key)
+	check(main.progress.gold == gold_before + 6, "opened cache cannot grant duplicate reward")
+	var cached := GameProgress.new()
+	cached.save_path = test_path
+	check(cached.load_save() and cached.opened_caches.has("west_roots") and cached.open_exploration_chest("west_roots").is_empty(), "opened cache remains claimed after reload")
+	player.position = SafeCamp.STATIONS["Baú"] + Vector2(28, 0)
+	main._interact()
+	var next_page := hud.station_content.get_child(4).get_child(2) as Button
+	var page_touch := InputEventScreenTouch.new()
+	page_touch.index = 9
+	page_touch.pressed = true
+	page_touch.position = next_page.global_position + next_page.size * 0.5
+	check(hud.station_scroll.get_global_rect().has_point(page_touch.position), "chest pagination fits mobile panel")
+	hud._input(page_touch)
+	await frames()
+	check(hud.station_page == 1 and hud.station_content.get_child(2).get_child(0).text.begins_with("Ervas"), "touch page displays gathered material in storage")
+	main._station_action("Guardar", "Ervas")
+	check(main.progress.chest.get("Ervas", 0) == 1 and main.progress.bag.get("Ervas", 0) == herbs_before, "gathered resource transfers into protected chest")
+	hud.close_station()
+	player.position = SafeCamp.STATIONS["Vendedor"] + Vector2(-30, 0)
+	main._interact()
+	next_page = hud.station_content.get_child(5).get_child(2) as Button
+	page_touch.position = next_page.global_position + next_page.size * 0.5
+	check(hud.station_scroll.get_global_rect().has_point(page_touch.position), "vendor pagination fits mobile panel")
+	hud._input(page_touch)
+	await frames()
+	check(hud.station_page == 1 and hud.station_content.get_child(2).get_child(0).text.begins_with("Ervas"), "touch page exposes resource sales")
+	main.progress.add_item("Ervas")
+	var sale_gold := main.progress.gold
+	main._station_action("Vender", "Ervas")
+	check(main.progress.gold == sale_gold + GameProgress.SELL_PRICE and main.progress.bag.get("Ervas", 0) == herbs_before, "vendor sells gathered resources through existing wallet")
+	hud.close_station()
 	main.queue_free()
 	await frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
