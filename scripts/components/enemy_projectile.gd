@@ -26,7 +26,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	global_position += direction * speed * delta
 	lifetime -= delta
-	if SafeCamp.contains(global_position):
+	if SafeCamp.in_clearance(global_position):
 		queue_free()
 		return
 	if is_instance_valid(target) and target.health.is_alive() and global_position.distance_to(target.global_position) <= 19.0:

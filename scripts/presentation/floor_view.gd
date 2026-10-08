@@ -40,6 +40,7 @@ func _draw() -> void:
 
 func _draw_camp() -> void:
 	var area := SafeCamp.AREA
+	draw_rect(area.grow(SafeCamp.CLEARANCE), Color("#b6b98282"), false, 3.0)
 	draw_rect(area.grow(5), Color("#253627"))
 	draw_rect(area, Color("#92794c"))
 	draw_rect(area.grow(-8), Color("#667750"))

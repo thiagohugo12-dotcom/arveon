@@ -5,8 +5,8 @@ const PROJECTILE_SCRIPT := preload("res://scripts/components/enemy_projectile.gd
 const MAX_ENEMIES := 5
 const SPAWN_INTERVAL := 2.8
 const ENEMY_POSITIONS := [
-	Vector2(760, 400), Vector2(930, 440), Vector2(610, 650),
-	Vector2(250, 460), Vector2(630, 185), Vector2(955, 665)
+	Vector2(850, 400), Vector2(930, 440), Vector2(610, 750),
+	Vector2(180, 460), Vector2(630, 135), Vector2(955, 665)
 ]
 
 @onready var player: PlayerActor = $Player
@@ -171,7 +171,7 @@ func _station_action(action: String, item: String) -> void:
 		hud.set_progress(earned_xp, earned_gold, defeated_count, "%s: 1 %s" % [action, item])
 	hud.refresh_station(progress)
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact") and not event.is_echo():
 		if hud.station_panel.visible:
 			hud.close_station()

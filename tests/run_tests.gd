@@ -66,17 +66,17 @@ func _run() -> void:
 		driver.set_touch_direction(direction)
 		check(driver.movement().is_equal_approx(direction.limit_length()), "8 direction input " + str(direction))
 	driver.reset()
-	player.position = Vector2(700, 400)
-	enemy.position = Vector2(900, 400)
+	player.position = Vector2(810, 400)
+	enemy.position = Vector2(1000, 400)
 	await frames()
 	check(player.attack.select_target(player) == null, "out of range excluded")
-	enemy.position = Vector2(820, 400)
+	enemy.position = Vector2(930, 400)
 	await frames()
 	check(player.attack.select_target(player) == enemy, "target at reach boundary valid")
 	var second := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	main.add_child(second)
 	second.set_physics_process(false)
-	second.position = Vector2(750, 400)
+	second.position = Vector2(860, 400)
 	await frames()
 	check(player.attack.select_target(player) == second, "nearest valid target selected")
 	player.attack.cooldown_left = 0.0
@@ -149,31 +149,54 @@ func _run() -> void:
 	check(main.progress.gold == 17, "shop refuses action outside station")
 	player.position = SafeCamp.STATIONS["Vendedor"] + Vector2(-30, 0)
 	main._interact()
-	main._station_action("Vender", "Couro")
+	await frames()
+	var vendor_sell := hud.station_content.get_child(3).get_child(1) as Button
+	check(hud.station_panel.visible and not vendor_sell.disabled, "vendor exposes an enabled sell button for owned material")
+	vendor_sell.pressed.emit()
 	check(main.progress.gold == 19 and main.progress.bag.get("Couro", 0) == 0, "vendor sells existing material into wallet")
-	main.hud.close_station()
+	await frames()
+	var vendor_buy := hud.station_content.get_child(7).get_child(0) as Button
+	check(not vendor_buy.disabled, "vendor enables purchase with sufficient gold")
+	vendor_buy.pressed.emit()
+	check(main.progress.gold == 14 and main.progress.bag.get("Essência", 0) == 1, "vendor buy button exchanges gold for real material")
+	var overlap_touch := InputEventScreenTouch.new()
+	overlap_touch.index = 4
+	overlap_touch.pressed = true
+	overlap_touch.position = hud.interact_button.global_position + Vector2(40, 25)
+	hud.interact_button._input(overlap_touch)
+	check(hud.interact_button.touch_index == -1, "hidden interaction hitbox does not steal modal touch")
+	hud.station_close_button.pressed.emit()
+	check(not hud.station_panel.visible and not driver.blocked, "close button releases movement and closes shop")
 	main.progress.add_item("Essência", 2)
 	player.position = SafeCamp.STATIONS["Baú"] + Vector2(28, 0)
 	main._interact()
 	main._station_action("Guardar", "Essência")
-	check(main.progress.bag.get("Essência", 0) == 1 and main.progress.chest.get("Essência", 0) == 1, "chest transfer preserves total")
-	main.hud.close_station()
+	check(main.progress.bag.get("Essência", 0) == 2 and main.progress.chest.get("Essência", 0) == 1, "chest transfer preserves total")
+	var interact_key := InputEventAction.new()
+	interact_key.action = "interact"
+	interact_key.pressed = true
+	main._input(interact_key)
+	check(not hud.station_panel.visible, "E closes an open station even with UI focus")
 	main._save_progress()
 	var reloaded := GameProgress.new()
 	reloaded.save_path = test_path
-	check(reloaded.load_save() and reloaded.gold == 19 and reloaded.chest.get("Essência", 0) == 1 and reloaded.mission_completed == 2, "save round-trip includes economy, chest and mission")
-	check(reloaded.death_loss() == "Essência" and reloaded.bag.get("Essência", 0) == 0 and reloaded.chest.get("Essência", 0) == 1, "death protects chest and only removes a bag unit")
+	check(reloaded.load_save() and reloaded.gold == 14 and reloaded.chest.get("Essência", 0) == 1 and reloaded.mission_completed == 2, "save round-trip includes economy, chest and mission")
+	check(reloaded.death_loss() == "Essência" and reloaded.bag.get("Essência", 0) == 1 and reloaded.chest.get("Essência", 0) == 1, "death protects chest and only removes a bag unit")
 	check(not reloaded.buy("Broto Ancestral") and not reloaded.transfer("Couro", true), "unavailable purchase and empty transfer do not mutate state")
 	player.health.initialize(player.stats.max_hp)
 	player.position = SafeCamp.RESPAWN
 	var safe_hp := player.health.current
 	player.receive_damage(99)
 	check(player.health.current == safe_hp and SafeCamp.nearest_station(SafeCamp.STATIONS["Ferreiro"]) == "Ferreiro", "camp prevents damage and exposes smith interaction")
+	player.attack.cooldown_left = 0.0
+	player.attack.tick(0.016, player)
+	check(player.attack.cooldown_left == 0.0, "automatic attack stays off inside protected perimeter")
+	check(SafeCamp.in_clearance(Vector2(779, 450)) and not SafeCamp.in_clearance(Vector2(790, 450)), "protection has a 130 px outer clearance")
 	var guard := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	guard.kind = 1
 	main.add_child(guard)
 	guard.target = player
-	guard.position = Vector2(670, 460)
+	guard.position = Vector2(810, 460)
 	guard._physics_process(0.016)
 	check(guard.velocity.is_zero_approx(), "enemy does not attack a player in camp")
 	var projectile := EnemyProjectile.new()
@@ -182,14 +205,15 @@ func _run() -> void:
 	projectile._physics_process(0.04)
 	check(projectile.is_queued_for_deletion() and player.health.current == safe_hp, "enemy projectile dissolves at camp boundary")
 	player.position = Vector2(560, 560)
-	guard.position = Vector2(660, 455)
-	for step in range(30):
+	guard.position = Vector2(810, 455)
+	for step in range(70):
 		guard._physics_process(0.016)
-	check(not SafeCamp.contains(guard.position), "enemy path cannot enter camp")
+	check(not SafeCamp.in_clearance(guard.position), "enemy path stays beyond the weapon reach of camp")
 	main.mission.record_material()
 	check(main.mission.progress == 0, "irrelevant material events do not advance hunt")
 	# Enemy roles remain deliberately distinct and lightweight.
 	player.health.initialize(player.stats.max_hp)
+	player.position = Vector2(950, 750)
 	var boar := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	boar.kind = 0
 	boar.stats = boar.stats.duplicate() as ActorData

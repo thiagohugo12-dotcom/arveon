@@ -6,6 +6,8 @@ signal attacked(target: Node2D)
 var cooldown_left: float = 0.0
 
 func tick(delta: float, origin: Node2D) -> void:
+	if SafeCamp.in_clearance(origin.global_position):
+		return
 	cooldown_left = maxf(0.0, cooldown_left - delta)
 	if cooldown_left > 0.0 or weapon == null:
 		return

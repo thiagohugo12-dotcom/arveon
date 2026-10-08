@@ -32,7 +32,7 @@ func _physics_process(delta: float) -> void:
 		view.set_moving(false)
 		view.set_warning(false)
 		return
-	if SafeCamp.contains(target.global_position) or SafeCamp.contains(global_position):
+	if SafeCamp.in_clearance(target.global_position) or SafeCamp.in_clearance(global_position):
 		view.set_moving(false)
 		view.set_warning(false)
 		charge_windup = 0.0
@@ -51,7 +51,7 @@ func _physics_process(delta: float) -> void:
 		2: _cactus_behavior(offset, distance)
 	var before := global_position
 	move_and_slide()
-	if SafeCamp.contains(global_position):
+	if SafeCamp.in_clearance(global_position):
 		global_position = before
 		velocity = Vector2.ZERO
 	view.set_moving(velocity.length_squared() > 1.0)
@@ -113,7 +113,7 @@ func _fire_cactus_spine() -> void:
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive():
 		view.set_warning(false)
 		return
-	if SafeCamp.contains(target.global_position):
+	if SafeCamp.in_clearance(target.global_position):
 		view.set_warning(false)
 		return
 	var direction := global_position.direction_to(target.global_position)

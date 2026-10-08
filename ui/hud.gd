@@ -24,6 +24,7 @@ var station_title: Label
 var station_content: VBoxContainer
 var station_scroll: ScrollContainer
 var station_name := ""
+var station_close_button: Button
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -91,11 +92,11 @@ func _ready() -> void:
 	station_content = VBoxContainer.new()
 	station_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	station_scroll.add_child(station_content)
-	var close := Button.new()
-	close.text = "Fechar"
-	close.custom_minimum_size.y = 40
-	close.pressed.connect(func(): close_station())
-	column.add_child(close)
+	station_close_button = Button.new()
+	station_close_button.text = "Fechar"
+	station_close_button.custom_minimum_size.y = 44
+	station_close_button.pressed.connect(func(): close_station())
+	column.add_child(station_close_button)
 	restart = Button.new()
 	restart.text = "Você caiu · Reiniciar"
 	restart.visible = false
@@ -165,12 +166,15 @@ func show_station(name: String, progress: GameProgress) -> void:
 	station_name = name
 	station_panel.show()
 	interact_button.enabled = false
+	dash_button.enabled = false
 	refresh_station(progress)
 	_layout()
 
 func close_station() -> void:
 	if station_panel.visible:
 		station_panel.hide()
+		dash_button.enabled = not restart.visible
+		dash_button.queue_redraw()
 		panel_closed.emit()
 
 func refresh_station(progress: GameProgress) -> void:
@@ -182,11 +186,12 @@ func refresh_station(progress: GameProgress) -> void:
 	elif station_name == "Baú":
 		_add_description("Mochila → Baú · itens guardados ficam protegidos na morte.")
 		for item: String in GameProgress.ITEMS:
-			_add_row(item, "Mochila %d · Baú %d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar")
+			_add_row(item, "Mochila %d · Baú %d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar", int(progress.bag.get(item, 0)) > 0, int(progress.chest.get(item, 0)) > 0)
 	elif station_name == "Vendedor":
 		_add_description("Ouro %d · Comprar %d · Vender %d" % [progress.gold, GameProgress.BUY_PRICE, GameProgress.SELL_PRICE])
+		_add_description("Ganhe ouro e materiais derrotando criaturas ou concluindo missões.")
 		for item: String in GameProgress.TRADE_ITEMS:
-			_add_row(item, "Mochila %d" % progress.bag.get(item, 0), "Comprar", "Vender")
+			_add_row(item, "Mochila %d" % progress.bag.get(item, 0), "Comprar", "Vender", progress.gold >= GameProgress.BUY_PRICE, int(progress.bag.get(item, 0)) > 0)
 
 func _add_description(value: String) -> void:
 	var label := Label.new()
@@ -194,13 +199,14 @@ func _add_description(value: String) -> void:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	station_content.add_child(label)
 
-func _add_row(item: String, count: String, left: String, right: String) -> void:
+func _add_row(item: String, count: String, left: String, right: String, can_left: bool, can_right: bool) -> void:
 	_add_description(item + " · " + count)
 	var buttons := HBoxContainer.new()
 	station_content.add_child(buttons)
 	for action: String in [left, right]:
 		var button := Button.new()
 		button.text = action
+		button.disabled = not (can_left if action == left else can_right)
 		button.custom_minimum_size = Vector2(100, 39)
 		button.pressed.connect(func(): station_action.emit(action, item))
 		buttons.add_child(button)

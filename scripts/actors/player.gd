@@ -33,7 +33,7 @@ func _physics_process(delta: float) -> void:
 	attack.tick(delta, self)
 
 func receive_damage(amount: int) -> void:
-	if SafeCamp.contains(global_position):
+	if SafeCamp.in_clearance(global_position):
 		return
 	health.damage(amount)
 	view.flash()
