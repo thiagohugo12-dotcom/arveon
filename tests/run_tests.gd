@@ -354,7 +354,11 @@ func _run() -> void:
 	bag_touch.position = hud.inventory_button.global_position + hud.inventory_button.size * 0.5
 	hud._input(bag_touch)
 	check(hud.inventory_open and hud.inventory_panel.visible and driver.blocked, "portrait touch opens the bag and blocks input")
-	check(hud.inventory_text.text.contains("Ouro: %d" % main.progress.gold) and hud.inventory_text.text.contains("Madeira  x2"), "bag shows wallet and carried materials")
+	var wood_visible := false
+	for row in hud.inventory_list.get_children():
+		if row is HBoxContainer and (row.get_child(0) as Label).text == "Madeira":
+			wood_visible = (row.get_child(1) as Label).text == "× 2"
+	check(hud.inventory_gold.text == "Ouro: %d" % main.progress.gold and wood_visible, "bag shows wallet and carried material in separate cells")
 	check(hud.inventory_panel.get_global_rect().has_point(hud.inventory_close.global_position + hud.inventory_close.size * 0.5), "portrait bag close target fits panel")
 	var saved_player_pos := player.position
 	player.dash.time_left = 0.1
@@ -365,7 +369,11 @@ func _run() -> void:
 	check(player.position == saved_player_pos and player.velocity.is_zero_approx() and player.dash.time_left == 0.0 and player.attack.cooldown_left == 0.0, "open bag cancels dash and suppresses movement and attack")
 	main.progress.add_item("Pedras")
 	main._save_progress()
-	check(hud.inventory_text.text.contains("Pedras  x1"), "open bag refreshes after inventory save")
+	var stone_visible := false
+	for row in hud.inventory_list.get_children():
+		if row is HBoxContainer and (row.get_child(0) as Label).text == "Pedras":
+			stone_visible = (row.get_child(1) as Label).text == "× 1"
+	check(stone_visible, "open bag refreshes after inventory save")
 	var bag_reloaded := GameProgress.new()
 	bag_reloaded.save_path = test_path
 	check(bag_reloaded.load_save() and bag_reloaded.bag.get("Madeira", 0) == 2 and bag_reloaded.bag.get("Pedras", 0) == 1, "bag content persists in existing save")
@@ -379,6 +387,18 @@ func _run() -> void:
 	hud._input(bag_touch)
 	check(hud.inventory_open and hud.inventory_panel.get_global_rect().end.y <= hud.size.y and hud.inventory_panel.get_global_rect().position.y >= 0, "landscape touch opens bag entirely on screen")
 	check(hud.inventory_scroll.is_visible_in_tree() and hud.inventory_close.get_global_rect().end.y <= hud.size.y, "landscape bag scroll and close stay accessible")
+	for item: String in GameProgress.ITEMS:
+		if int(main.progress.bag.get(item, 0)) == 0:
+			main.progress.add_item(item)
+	main._save_progress()
+	await frames()
+	var rows_readable := hud.inventory_scroll.size.x >= 220.0 and hud.inventory_list.size.x >= 220.0
+	for row in hud.inventory_list.get_children():
+		var name := row.get_child(0) as Label
+		var amount := row.get_child(1) as Label
+		rows_readable = rows_readable and name.autowrap_mode == TextServer.AUTOWRAP_OFF and name.size.x >= 150.0 and amount.size.x >= 44.0
+	check(rows_readable and hud.inventory_list.get_child_count() == GameProgress.ITEMS.size(), "all eight items retain readable name and quantity widths (vertical-text regression)")
+	check(hud.inventory_list.size.y > hud.inventory_scroll.size.y and hud.inventory_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED, "long bag scrolls vertically without horizontal squeeze")
 	bag_touch.position = hud.inventory_close.global_position + hud.inventory_close.size * 0.5
 	hud._input(bag_touch)
 	check(not hud.inventory_open and not driver.blocked, "landscape touch closes bag")
@@ -386,6 +406,12 @@ func _run() -> void:
 	hud.size = Vector2(360, 640)
 	hud._layout()
 	check(not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.joystick.get_global_rect()), "portrait minimap avoids bag and joystick")
+	bag_touch.position = hud.inventory_button.global_position + hud.inventory_button.size * 0.5
+	hud._input(bag_touch)
+	await frames()
+	check(hud.inventory_list.size.x >= 220.0 and (hud.inventory_list.get_child(0).get_child(0) as Label).size.x >= 150.0, "portrait item names stay horizontal with a real layout width")
+	bag_touch.position = hud.inventory_close.global_position + hud.inventory_close.size * 0.5
+	hud._input(bag_touch)
 	check(hud.minimap.mouse_filter == Control.MOUSE_FILTER_IGNORE, "minimap does not capture touch input")
 	var undiscovered := Exploration.RESOURCE_SPOTS[7].id as String
 	check(not main.progress.discovered_pois.has(undiscovered) and not main.progress.opened_caches.has("east_grove"), "far resource and hidden cache start undiscovered")

@@ -19,7 +19,8 @@ var mission_label: Label
 var loot_label: Label
 var inventory_button: Button
 var inventory_panel: PanelContainer
-var inventory_text: Label
+var inventory_gold: Label
+var inventory_list: VBoxContainer
 var inventory_scroll: ScrollContainer
 var inventory_close: Button
 var inventory_open := false
@@ -80,17 +81,24 @@ func _ready() -> void:
 	inventory_panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(inventory_panel)
 	var inventory_column := VBoxContainer.new()
+	inventory_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_panel.add_child(inventory_column)
 	var inventory_heading := Label.new()
 	inventory_heading.text = "Mochila · materiais"
 	inventory_column.add_child(inventory_heading)
+	inventory_gold = Label.new()
+	inventory_gold.add_theme_font_size_override("font_size", 15)
+	inventory_column.add_child(inventory_gold)
 	inventory_scroll = ScrollContainer.new()
 	inventory_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	inventory_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_scroll.custom_minimum_size.x = 220
+	inventory_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	inventory_column.add_child(inventory_scroll)
-	inventory_text = Label.new()
-	inventory_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	inventory_scroll.add_child(inventory_text)
+	inventory_list = VBoxContainer.new()
+	inventory_list.custom_minimum_size.x = 220
+	inventory_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_scroll.add_child(inventory_list)
 	inventory_close = Button.new()
 	inventory_close.text = "Fechar"
 	inventory_close.custom_minimum_size.y = 44
@@ -213,14 +221,34 @@ func show_inventory(progress: GameProgress) -> void:
 	_layout()
 
 func refresh_inventory(progress: GameProgress) -> void:
-	var lines: Array[String] = ["Ouro: %d" % progress.gold]
+	inventory_gold.text = "Ouro: %d" % progress.gold
+	for child in inventory_list.get_children():
+		inventory_list.remove_child(child)
+		child.queue_free()
+	var has_material := false
 	for item: String in GameProgress.ITEMS:
 		var count := int(progress.bag.get(item, 0))
 		if count > 0:
-			lines.append("%s  x%d" % [item, count])
-	if lines.size() == 1:
-		lines.append("Nenhum material na mochila.")
-	inventory_text.text = "\n".join(lines)
+			has_material = true
+			var row := HBoxContainer.new()
+			row.custom_minimum_size.y = 32
+			inventory_list.add_child(row)
+			var name := Label.new()
+			name.text = item
+			name.custom_minimum_size.x = 150
+			name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			name.autowrap_mode = TextServer.AUTOWRAP_OFF
+			row.add_child(name)
+			var amount := Label.new()
+			amount.text = "× %d" % count
+			amount.custom_minimum_size.x = 44
+			amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			row.add_child(amount)
+	if not has_material:
+		var empty := Label.new()
+		empty.text = "Nenhum material na mochila."
+		empty.autowrap_mode = TextServer.AUTOWRAP_OFF
+		inventory_list.add_child(empty)
 
 func close_inventory() -> void:
 	inventory_open = false
