@@ -7,6 +7,8 @@ var facing := Vector2.DOWN
 var hp_ratio: float = 1.0
 var flash_left: float = 0.0
 var attack_left: float = 0.0
+var damage_left: float = 0.0
+var damage_amount: int = 0
 var warning: bool = false
 var walking: bool = false
 var anim_time: float = 0.0
@@ -34,6 +36,13 @@ func flash() -> void:
 	flash_left = 0.14
 	queue_redraw()
 
+func show_damage(amount: int) -> void:
+	if amount <= 0:
+		return
+	damage_amount = amount
+	damage_left = 0.7
+	flash()
+
 func play_attack() -> void:
 	attack_left = 0.16
 	queue_redraw()
@@ -49,6 +58,9 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	if attack_left > 0.0:
 		attack_left = maxf(0.0, attack_left - delta)
+		queue_redraw()
+	if damage_left > 0.0:
+		damage_left = maxf(0.0, damage_left - delta)
 		queue_redraw()
 	anim_time += delta
 	if anim_time >= (0.14 if walking else 0.55):
@@ -76,6 +88,12 @@ func _draw() -> void:
 		px(-2, -47, 4, 7, Color("#ffe39a"))
 	if flash_left > 0.0:
 		px(-15, -22, 30, 37, Color(1.0, 1.0, 1.0, flash_left * 2.5))
+	if attack_left > 0.0:
+		var attack_color := Color("#f7d47c")
+		draw_arc(Vector2.ZERO, 24.0, -1.8, 0.6, 9, attack_color, 3.0)
+	if damage_left > 0.0:
+		var float_y := -42.0 - (0.7 - damage_left) * 24.0
+		draw_string(ThemeDB.fallback_font, Vector2(-9, float_y), "-%d" % damage_amount, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#ffcc7a", damage_left / 0.7))
 	px(-17, -30, 34, 4, LINE)
 	px(-16, -29, 32.0 * hp_ratio, 2, Color("#8ce395"))
 
