@@ -301,7 +301,7 @@ func _run() -> void:
 	check(harvested.collect_resource("herb_west", now + Exploration.RESOURCE_COOLDOWN + 1) == "Ervas", "resource respawns after real time cooldown")
 	player.position = Exploration.HIDDEN_CHESTS[0].position
 	main._process(0.0)
-	var gold_before := main.progress.gold
+	var gold_before: int = main.progress.gold
 	var leather_before := int(main.progress.bag.get("Couro", 0))
 	var cache_touch := InputEventScreenTouch.new()
 	cache_touch.index = 8
@@ -339,7 +339,7 @@ func _run() -> void:
 	await frames()
 	check(hud.station_page == 1 and hud.station_content.get_child(2).get_child(0).text.begins_with("Ervas"), "touch page exposes resource sales")
 	main.progress.add_item("Ervas")
-	var sale_gold := main.progress.gold
+	var sale_gold: int = main.progress.gold
 	main._station_action("Vender", "Ervas")
 	check(main.progress.gold == sale_gold + GameProgress.SELL_PRICE and main.progress.bag.get("Ervas", 0) == herbs_before, "vendor sells gathered resources through existing wallet")
 	hud.close_station()
