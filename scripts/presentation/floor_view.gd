@@ -1,3 +1,4 @@
+class_name FloorView
 extends Node2D
 
 # Static low-cost ground drawing, deliberately not a tiled debug grid.
@@ -6,6 +7,19 @@ const FOREST_LIGHT := Color("#244431")
 const TRAIL := Color("#564b35")
 const TRAIL_HIGHLIGHT := Color("#6d5a3d")
 const ROCK := Color("#45554d")
+const ROCKS := [Rect2(340, 300, 130, 50), Rect2(760, 520, 90, 110)]
+const TRAILS := [
+	[Vector2(40, 450), Vector2(240, 445), Vector2(360, 480), Vector2(545, 458), Vector2(720, 445), Vector2(880, 485), Vector2(1160, 455)],
+	[Vector2(550, 50), Vector2(555, 220), Vector2(540, 400), Vector2(570, 550), Vector2(540, 690), Vector2(560, 860)],
+	[Vector2(240, 445), Vector2(205, 360), Vector2(170, 225), Vector2(95, 145)],
+	[Vector2(560, 390), Vector2(660, 250), Vector2(800, 165), Vector2(905, 90)],
+	[Vector2(530, 520), Vector2(405, 625), Vector2(230, 700), Vector2(120, 735)],
+	[Vector2(690, 505), Vector2(830, 680), Vector2(1040, 740), Vector2(1100, 790)],
+	[Vector2(890, 480), Vector2(1010, 360), Vector2(1080, 335)]
+]
+const TRAIL_WIDTHS := [62.0, 54.0, 24.0, 24.0, 26.0, 26.0, 22.0]
+const RESERVED := [Vector2(850, 400), Vector2(930, 440), Vector2(610, 750),
+	Vector2(180, 460), Vector2(630, 135), Vector2(955, 665)]
 
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 1200, 900), FOREST)
@@ -16,27 +30,69 @@ func _draw() -> void:
 		for y in range(0, 900, 32):
 			if rng.randi_range(0, 4) == 0:
 				draw_rect(Rect2(x + 4, y + 5, 24, 20), FOREST_LIGHT)
-	# Compact crossing paths and a clearing around the initial player.
-	draw_rect(Rect2(45, 404, 1110, 108), TRAIL)
-	draw_rect(Rect2(500, 60, 110, 790), TRAIL)
-	draw_rect(Rect2(55, 415, 1080, 13), TRAIL_HIGHLIGHT)
-	draw_rect(Rect2(512, 72, 12, 760), TRAIL_HIGHLIGHT)
+	# Meandering routes and branches keep all points of interest walkable.
+	for center: Vector2 in [Vector2(175, 215), Vector2(260, 685), Vector2(900, 175), Vector2(980, 715)]:
+		draw_rect(Rect2(center - Vector2(39, 31), Vector2(78, 62)), Color("#34513a"))
+		draw_rect(Rect2(center - Vector2(31, 25), Vector2(62, 50)), Color("#45513a"))
+	for i in range(TRAILS.size()):
+		draw_polyline(PackedVector2Array(TRAILS[i]), TRAIL, TRAIL_WIDTHS[i], false)
+		draw_polyline(PackedVector2Array(TRAILS[i]), TRAIL_HIGHLIGHT, 3.0, false)
 	draw_rect(Rect2(465, 355, 185, 200), Color("#476447"))
-	for i in range(155):
-		var px_pos := Vector2(rng.randi_range(23, 1175), rng.randi_range(25, 875))
-		if Rect2(465, 350, 190, 205).has_point(px_pos):
+	for i in range(205):
+		var px_pos := Vector2(rng.randi_range(30, 1160), rng.randi_range(30, 865))
+		if not _free_for_decoration(px_pos):
 			continue
-		var green := Color("#396447") if i % 3 == 0 else Color("#31553b")
-		draw_rect(Rect2(px_pos, Vector2(10, 7)), green)
-		draw_rect(Rect2(px_pos + Vector2(3, -4), Vector2(4, 5)), Color("#6a8d57"))
-	for i in range(80):
+		match i % 4:
+			0, 1:
+				_draw_tree(px_pos, i % 2 == 0)
+			2:
+				draw_rect(Rect2(px_pos, Vector2(13, 8)), Color("#315a3b"))
+				draw_rect(Rect2(px_pos + Vector2(3, -5), Vector2(8, 8)), Color("#63894e"))
+			3:
+				draw_rect(Rect2(px_pos, Vector2(18, 5)), Color("#684d34"))
+				draw_rect(Rect2(px_pos + Vector2(4, -3), Vector2(12, 3)), Color("#9c7850"))
+	for i in range(65):
 		var blade := Vector2(rng.randi_range(20, 1170), rng.randi_range(30, 870))
+		if not _free_for_decoration(blade):
+			continue
 		draw_rect(Rect2(blade, Vector2(3, 6)), Color("#668952"))
 		draw_rect(Rect2(blade + Vector2(5, -2), Vector2(3, 7)), Color("#426d4c"))
 	# Visual rocks exactly match the two blocking CollisionShape2D rectangles.
-	_draw_stone(Rect2(340, 300, 130, 50))
-	_draw_stone(Rect2(760, 520, 90, 110))
+	for rock: Rect2 in ROCKS:
+		_draw_stone(rock)
 	_draw_camp()
+
+func _free_for_decoration(at: Vector2) -> bool:
+	if SafeCamp.AREA.grow(26).has_point(at):
+		return false
+	for rock: Rect2 in ROCKS:
+		if rock.grow(18).has_point(at):
+			return false
+	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+		if at.distance_squared_to(spot.position) < 42.0 * 42.0:
+			return false
+	for cache: Dictionary in Exploration.HIDDEN_CHESTS:
+		if at.distance_squared_to(cache.position) < 42.0 * 42.0:
+			return false
+	for spawn: Vector2 in RESERVED:
+		if at.distance_squared_to(spawn) < 24.0 * 24.0:
+			return false
+	for i in range(TRAILS.size()):
+		var trail: Array = TRAILS[i]
+		for j in range(trail.size() - 1):
+			if at.distance_to(Geometry2D.get_closest_point_to_segment(at, trail[j], trail[j + 1])) < TRAIL_WIDTHS[i] * 0.5 + 12.0:
+				return false
+	return true
+
+func _draw_tree(at: Vector2, tall: bool) -> void:
+	draw_rect(Rect2(at + Vector2(-8, 11), Vector2(23, 5)), Color("#172e26"))
+	draw_rect(Rect2(at + Vector2(1, 1), Vector2(5, 13)), Color("#705237"))
+	if tall:
+		draw_rect(Rect2(at + Vector2(-9, -15), Vector2(25, 16)), Color("#284c38"))
+		draw_rect(Rect2(at + Vector2(-5, -20), Vector2(17, 12)), Color("#3f7048"))
+	else:
+		draw_rect(Rect2(at + Vector2(-10, -11), Vector2(27, 13)), Color("#365e3f"))
+		draw_rect(Rect2(at + Vector2(-5, -16), Vector2(17, 10)), Color("#5d824c"))
 
 func _draw_camp() -> void:
 	var area := SafeCamp.AREA

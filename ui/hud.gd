@@ -23,6 +23,7 @@ var inventory_text: Label
 var inventory_scroll: ScrollContainer
 var inventory_close: Button
 var inventory_open := false
+var minimap: MiniMap
 var restart: Button
 var cooldown: float = 0.0
 var interact_button: TouchActionButton
@@ -65,9 +66,12 @@ func _ready() -> void:
 	loot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	loot_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(loot_label)
+	minimap = MiniMap.new()
+	minimap.size = Vector2(120, 100)
+	add_child(minimap)
 	inventory_button = Button.new()
 	inventory_button.text = "Mochila"
-	inventory_button.custom_minimum_size = Vector2(90, 40)
+	inventory_button.custom_minimum_size = Vector2(100, 44)
 	inventory_button.pressed.connect(func(): inventory_toggled.emit())
 	add_child(inventory_button)
 	inventory_panel = PanelContainer.new()
@@ -156,18 +160,21 @@ func _layout() -> void:
 			margin.y += float(safe.position.y) / screen.y * size.y
 			bottom_inset += float(screen.y - safe.end.y) / screen.y * size.y
 			right_inset += float(screen.x - safe.end.x) / screen.x * size.x
+	minimap.position = Vector2(size.x - right_inset - minimap.size.x, margin.y)
+	var information_width := minimap.position.x - margin.x - 8.0
 	heading.position = margin
-	heading.size = Vector2(size.x - margin.x - right_inset, 44)
+	heading.size = Vector2(information_width, 44)
 	hp_label.position = Vector2(margin.x, margin.y + 46)
 	hp_bar.position = Vector2(margin.x, margin.y + 68)
-	hp_bar.size = Vector2(minf(220, size.x - margin.x - right_inset), 12)
+	hp_bar.size = Vector2(minf(220, information_width), 12)
 	progress_label.position = Vector2(margin.x, margin.y + 85)
-	progress_label.size = Vector2(size.x - margin.x - right_inset, 20)
+	progress_label.size = Vector2(information_width, 20)
 	mission_label.position = Vector2(margin.x, margin.y + 104)
-	mission_label.size = Vector2(size.x - margin.x - right_inset, 17)
-	loot_label.position = Vector2(margin.x, margin.y + 122)
-	loot_label.size = Vector2(size.x - margin.x - right_inset, 35)
-	inventory_button.position = Vector2(size.x - right_inset - 98, margin.y + 12)
+	mission_label.size = Vector2(information_width, 38)
+	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	loot_label.position = Vector2(margin.x, margin.y + 143)
+	loot_label.size = Vector2(information_width, 42)
+	inventory_button.position = Vector2(size.x - right_inset - 100, minimap.position.y + minimap.size.y + 6)
 	inventory_panel.size = Vector2(minf(300, size.x - margin.x - right_inset - 12), minf(330, size.y - margin.y - bottom_inset - 12))
 	inventory_panel.position = (size - inventory_panel.size) * 0.5
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)

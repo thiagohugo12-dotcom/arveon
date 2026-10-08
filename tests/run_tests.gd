@@ -382,6 +382,31 @@ func _run() -> void:
 	bag_touch.position = hud.inventory_close.global_position + hud.inventory_close.size * 0.5
 	hud._input(bag_touch)
 	check(not hud.inventory_open and not driver.blocked, "landscape touch closes bag")
+	check(not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.dash_button.get_global_rect()), "landscape minimap avoids bag and dash controls")
+	hud.size = Vector2(360, 640)
+	hud._layout()
+	check(not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.joystick.get_global_rect()), "portrait minimap avoids bag and joystick")
+	check(hud.minimap.mouse_filter == Control.MOUSE_FILTER_IGNORE, "minimap does not capture touch input")
+	var undiscovered := Exploration.RESOURCE_SPOTS[7].id as String
+	check(not main.progress.discovered_pois.has(undiscovered) and not main.progress.opened_caches.has("east_grove"), "far resource and hidden cache start undiscovered")
+	player.position = Exploration.RESOURCE_SPOTS[7].position
+	main.activity_remaining = 0.0
+	main._process(0.0)
+	check(main.progress.discovered_pois.has(undiscovered) and hud.minimap.player_position == player.position, "minimap follows player and discovers visited resource")
+	var map_reloaded := GameProgress.new()
+	map_reloaded.save_path = test_path
+	check(map_reloaded.load_save() and map_reloaded.discovered_pois.has(undiscovered) and not map_reloaded.opened_caches.has("east_grove"), "discovery persists without revealing unopened chest")
+	var old_save := JSON.parse_string(FileAccess.get_file_as_string(test_path)) as Dictionary
+	old_save.version = 2
+	old_save.erase("discovered_pois")
+	var legacy_path := test_path + ".v2"
+	var legacy_file := FileAccess.open(legacy_path, FileAccess.WRITE)
+	legacy_file.store_string(JSON.stringify(old_save))
+	legacy_file.close()
+	var legacy := GameProgress.new()
+	legacy.save_path = legacy_path
+	check(legacy.load_save() and legacy.bag.get("Madeira", 0) == 2 and legacy.discovered_pois.is_empty(), "v0.2.3 save migrates without losing inventory")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(legacy_path))
 	main.queue_free()
 	await frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))

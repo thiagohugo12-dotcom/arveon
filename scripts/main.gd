@@ -41,6 +41,9 @@ func _ready() -> void:
 		mission.progress = progress.mission_progress
 		mission.completed_count = progress.mission_completed
 	collected_materials = progress.bag
+	hud.minimap.progress = progress
+	hud.minimap.player_position = player.global_position
+	hud.minimap.queue_redraw()
 	exploration_view.progress = progress
 	exploration_view.current_time = int(Time.get_unix_time_from_system())
 	exploration_view.queue_redraw()
@@ -81,6 +84,10 @@ func _process(delta: float) -> void:
 	activity_remaining -= delta
 	if activity_remaining <= 0.0:
 		activity_remaining = 0.25
+		if progress.discover_nearby(player.global_position):
+			_save_progress()
+			hud.minimap.queue_redraw()
+		hud.minimap.update_player(player.global_position)
 		for actor in get_tree().get_nodes_in_group("damageable_enemies"):
 			if actor is EnemyActor:
 				actor.update_activity(player.global_position)
@@ -170,6 +177,7 @@ func _toggle_inventory() -> void:
 	if hud.inventory_open:
 		hud.close_inventory()
 		input_driver.blocked = false
+		station_nearby = ""
 	elif player.health.is_alive() and not hud.station_panel.visible:
 		input_driver.reset()
 		input_driver.blocked = true
@@ -201,6 +209,7 @@ func _interact() -> void:
 			earned_gold = progress.gold
 			mission.record_material()
 			_save_progress()
+			hud.minimap.queue_redraw()
 			hud.set_progress(earned_xp, earned_gold, defeated_count,
 				"Baú escondido: +%d ouro, +1 %s" % [reward.gold, reward.item])
 			hud.set_mission(mission.summary())

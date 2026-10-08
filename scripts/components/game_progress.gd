@@ -6,7 +6,7 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 2
+const SAVE_VERSION := 3
 
 var save_path: String = "user://andar1_progress.json"
 var bag: Dictionary = {}
@@ -19,6 +19,15 @@ var mission_progress: int = 0
 var mission_completed: int = 0
 var harvested_until: Dictionary = {}
 var opened_caches: Dictionary = {}
+var discovered_pois: Dictionary = {}
+
+func discover_nearby(point: Vector2) -> bool:
+	var changed := false
+	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+		if not discovered_pois.has(spot.id) and point.distance_squared_to(spot.position) <= 95.0 * 95.0:
+			discovered_pois[spot.id] = true
+			changed = true
+	return changed
 
 func add_item(item: String, amount: int = 1) -> bool:
 	if not ITEMS.has(item) or amount < 1:
@@ -92,7 +101,8 @@ func save() -> bool:
 	file.store_string(JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
 		"gold": gold, "xp": xp, "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
-		"harvested_until": harvested_until, "opened_caches": opened_caches}))
+		"harvested_until": harvested_until, "opened_caches": opened_caches,
+		"discovered_pois": discovered_pois}))
 	file.close()
 	return true
 
@@ -103,7 +113,7 @@ func load_save() -> bool:
 	if file == null:
 		return false
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not parsed is Dictionary or (parsed.get("version") != 1 and parsed.get("version") != SAVE_VERSION):
+	if not parsed is Dictionary or not [1, 2, SAVE_VERSION].has(parsed.get("version")):
 		return false
 	for key: String in ["gold", "xp", "kills", "mission_index", "mission_progress", "mission_completed"]:
 		if not parsed.has(key) or not parsed[key] is float or parsed[key] < 0 or parsed[key] > 100000000:
@@ -116,13 +126,19 @@ func load_save() -> bool:
 		return false
 	var new_harvested: Dictionary = {}
 	var new_opened: Dictionary = {}
-	if parsed.version == SAVE_VERSION:
+	var new_discovered: Dictionary = {}
+	if parsed.version >= 2:
 		var harvested_value: Variant = _valid_exploration(parsed.get("harvested_until"), false)
 		var opened_value: Variant = _valid_exploration(parsed.get("opened_caches"), true)
 		if harvested_value == null or opened_value == null:
 			return false
 		new_harvested = harvested_value
 		new_opened = opened_value
+	if parsed.version == SAVE_VERSION:
+		var discovered_value: Variant = _valid_discoveries(parsed.get("discovered_pois"))
+		if discovered_value == null:
+			return false
+		new_discovered = discovered_value
 	bag = new_bag
 	chest = new_chest
 	gold = int(parsed.gold)
@@ -133,7 +149,23 @@ func load_save() -> bool:
 	mission_completed = int(parsed.mission_completed)
 	harvested_until = new_harvested
 	opened_caches = new_opened
+	discovered_pois = new_discovered
 	return true
+
+func _valid_discoveries(value: Variant) -> Variant:
+	if not value is Dictionary:
+		return null
+	var result := {}
+	for id: String in value:
+		var valid := false
+		for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+			if spot.id == id:
+				valid = true
+				break
+		if not valid or value[id] != true:
+			return null
+		result[id] = true
+	return result
 
 func _valid_exploration(value: Variant, is_cache: bool) -> Variant:
 	if not value is Dictionary:
