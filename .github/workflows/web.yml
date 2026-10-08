@@ -47,6 +47,25 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tests.log; then exit 1; fi
           grep -E '^RESULT: [0-9]+ checks, 0 failures$' /tmp/tests.log
+      - name: Render mobile layouts in software GL
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          mkdir -p build/mobile-qa
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mobile_capture.gd 2>&1 | tee /tmp/render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/render.log; then exit 1; fi
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 28
+      - name: Save rendered layout evidence
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-layout-qa
+          path: build/mobile-qa/
+          if-no-files-found: error
+          retention-days: 14
       - name: Export Web
         shell: bash
         run: |

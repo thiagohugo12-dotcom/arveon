@@ -117,6 +117,7 @@ func use_skill(index: int) -> bool:
 			fury_left = 6.0 + skill_ranks[2] - 1
 			attack.damage_scale = 1.3 + 0.1 * (skill_ranks[2] - 1)
 			view.set_fury(true)
+			view.play_skill(2)
 	skill_used.emit(index)
 	return true
 

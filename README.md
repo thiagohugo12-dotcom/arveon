@@ -6,7 +6,7 @@ Fundação Godot 4.5.1 + GDScript, 2D Compatibility. Apenas **Andar 1 — Mata d
 2. Clone o repositório ou extraia este projeto em `C:\Projetos\grande-arvore-rpg`.
 3. No Project Manager: **Importar → project.godot → Importar e editar**.
 4. Espere a importação e pressione **F6** para a cena aberta ou **F5** para o projeto.
-5. WASD/setas movem; **Shift ou Espaço** fazem Dash. Ataque é automático. Joystick e Dash também funcionam com mouse. Para multitouch, teste num celular.
+5. WASD/setas movem; **Shift ou Espaço** fazem Dash. Ataque é automático. **1/2/3** ativam Corte Circular, Investida e Fúria; **C** abre Personagem, **M** abre Mapa e **Esc** fecha os painéis. Joystick e Dash também funcionam com mouse. Para multitouch, teste num celular.
 6. Redimensione a janela para retrato e paisagem; Dash permanece à direita. Ao morrer, use Reiniciar.
 
 ## Verificação sem interface
