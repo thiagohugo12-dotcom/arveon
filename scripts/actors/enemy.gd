@@ -177,7 +177,7 @@ func receive_damage(amount: int) -> void:
 	if not is_targetable():
 		return
 	health.damage(amount)
-	view.flash()
+	view.show_damage(amount)
 
 func _on_died() -> void:
 	remove_from_group("damageable_enemies")
