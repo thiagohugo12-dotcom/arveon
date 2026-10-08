@@ -138,6 +138,7 @@ func _run() -> void:
 	main.mission.record_material()
 	check(main.mission.progress == 0, "irrelevant material events do not advance hunt")
 	# Enemy roles remain deliberately distinct and lightweight.
+	player.health.initialize(player.stats.max_health)
 	var boar := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	boar.kind = 0
 	boar.stats = boar.stats.duplicate() as ActorData
