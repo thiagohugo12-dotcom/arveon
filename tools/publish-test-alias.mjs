@@ -32,12 +32,18 @@ if (existing && existing.projectId !== VERCEL_PROJECT_ID) throw new Error('Test 
 const alias = await api(`/v2/deployments/${deployment.id}/aliases`, 'POST', { alias: TEST_ALIAS });
 if (alias.alias !== TEST_ALIAS || !alias.uid) throw new Error('Alias assignment was not confirmed');
 
-// Publish this test-game URL for mobile access while preserving protection elsewhere.
-await api(`/aliases/${alias.uid}/protection-bypass`, 'PATCH', {
-  override: { action: 'create', scope: 'alias-protection-override' },
-});
+// A fixed alias retains its protection override when reassigned. Creating it twice returns HTTP 400.
+const assigned = await api(`/v4/aliases/${TEST_ALIAS}`);
+if (assigned.deploymentId !== deployment.id) throw new Error('Test alias does not point to the tested build');
+if (assigned.protectionBypass?.['*']?.scope !== 'alias-protection-override') {
+  await api(`/aliases/${alias.uid}/protection-bypass`, 'PATCH', {
+    override: { action: 'create', scope: 'alias-protection-override' },
+  });
+}
 const confirmed = await api(`/v4/aliases/${TEST_ALIAS}`);
-if (confirmed.deploymentId !== deployment.id) throw new Error('Test alias does not point to the tested build');
+if (confirmed.deploymentId !== deployment.id || confirmed.protectionBypass?.['*']?.scope !== 'alias-protection-override') {
+  throw new Error('Test alias is not assigned or lacks its public test override');
+}
 console.log(`TESTE: https://${TEST_ALIAS}`);
 console.log(`Preview commit: ${process.env.PREVIEW_COMMIT_SHA}`);
 if (process.env.GITHUB_STEP_SUMMARY) {
