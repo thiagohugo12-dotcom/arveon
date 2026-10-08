@@ -54,3 +54,11 @@ progressão de equipamento, sincronização de saves nem economia definitiva.
 
 ## Pendências reais de design
 Percentuais de morte, capacidade de inventário e baú, valores de balanceamento, espécies/receitas definitivas, identidade de arte final e escolha de orientação. Número total de andares e nome definitivo não estão fixados.
+
+## Exploração e interface v0.2.4 — aprovada em 2026-10-08
+O Andar 1 mantém o acampamento, oito pontos de coleta e três baús escondidos.
+Mochila acessível por toque mostra ouro e materiais e pausa movimento/ataque.
+O piso provisório recebe trilhas ramificadas, clareiras e vegetação sem colisões
+novas. Minimapa leve acompanha o jogador, revela pontos de coleta por visita
+e só mostra baús escondidos depois de abertos. Descobertas integram o save
+local existente, sem sincronização de contas ou mapa de outros andares.

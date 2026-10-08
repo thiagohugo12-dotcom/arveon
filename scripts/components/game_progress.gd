@@ -113,7 +113,13 @@ func load_save() -> bool:
 	if file == null:
 		return false
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	if not parsed is Dictionary or not [1, 2, SAVE_VERSION].has(parsed.get("version")):
+	if not parsed is Dictionary:
+		return false
+	var version_value: Variant = parsed.get("version")
+	if not version_value is float or version_value != floorf(version_value):
+		return false
+	var loaded_version := int(version_value)
+	if loaded_version < 1 or loaded_version > SAVE_VERSION:
 		return false
 	for key: String in ["gold", "xp", "kills", "mission_index", "mission_progress", "mission_completed"]:
 		if not parsed.has(key) or not parsed[key] is float or parsed[key] < 0 or parsed[key] > 100000000:
@@ -127,14 +133,14 @@ func load_save() -> bool:
 	var new_harvested: Dictionary = {}
 	var new_opened: Dictionary = {}
 	var new_discovered: Dictionary = {}
-	if parsed.version >= 2:
+	if loaded_version >= 2:
 		var harvested_value: Variant = _valid_exploration(parsed.get("harvested_until"), false)
 		var opened_value: Variant = _valid_exploration(parsed.get("opened_caches"), true)
 		if harvested_value == null or opened_value == null:
 			return false
 		new_harvested = harvested_value
 		new_opened = opened_value
-	if parsed.version == SAVE_VERSION:
+	if loaded_version == SAVE_VERSION:
 		var discovered_value: Variant = _valid_discoveries(parsed.get("discovered_pois"))
 		if discovered_value == null:
 			return false
