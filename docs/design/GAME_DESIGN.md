@@ -17,8 +17,28 @@ Valores ajustáveis em `data/`: jogador 100 HP, velocidade 180 px/s; arma 120 px
 Dash: 0,14 s a 620 px/s, cooldown 1,2 s; mantém colisões, não concede invulnerabilidade. Ataque escolhe o alvo mais próximo com linha de visão desobstruída por World. Empates mantêm o primeiro do grupo. Inimigo persegue até 480 px, para a 28 px e ataca até 36 px. Sem pathfinding nesta etapa.
 Morte do jogador para movimento/ataques e exibe reiniciar. Morte do inimigo remove o provisório; não há drops ou respawn automático. Reiniciar recarrega o slice. São escolhas técnicas de teste, não definição da economia ou progressão final.
 
-## Fora do escopo / pendente
-História, classes, skills, economia, inventário, progressão permanente, multiplayer/backend, chefes, arte final, tamanho e orientação definitiva. Nenhuma decisão do projeto anterior foi presumida como aprovada aqui.
+## Não implementado no protótipo técnico (ainda que alguns itens já estejam decididos no produto)
+Conteúdo completo, skills, economia, inventário, progressão permanente, multiplayer/backend, chefes, arte final, tamanho e orientação definitiva. Decisões aprovadas estão registradas abaixo; implementação não deve inferir que tudo já existe.
 
 ## Alterações estruturais
 Agentes sugerem via ADR em `docs/decisions/`. O dono aprova; Director registra e atualiza este documento. Sem aprovação, contrato vigente permanece.
+
+
+## Decisões de produto aprovadas em conversa (não confundir com sistemas implementados)
+Estas regras são a direção do jogo completo. O protótipo técnico atual não as implementa integralmente.
+
+- Mundo: a Grande Árvore conecta domínios/andares compactos inspirados em paisagens, culturas e folclore do Brasil; folclore não implica vilania. O topo permanece misterioso. Guardiões podem retornar ou ajudar após serem superados.
+- Lore: apenas resumos curtos durante gameplay; histórias completas e fragmentos opcionais no Códice/Lendas. Sem cutscene de desbloqueio: mostrar mensagem simples.
+- Andar 1: Mata dos Primeiros Passos, com área segura pequena (vendedor, ferreiro, baú), trilha, mata e Guardião original de raízes; desafio direto, sem pré-requisito de nível. O segundo andar somente após o primeiro estar polido.
+- Andares especiais são raros e espaçados, por exemplo primeiro no 5, depois próximo no 12, sem padrão matemático obrigatório. Exigem eventualmente item, ritual, puzzle, exploração ou caçada; outros mistérios são opcionais.
+- Sem classes fixas: personagem usa Espada, Lança, Arco, Machado ou Cajado; cada categoria tem proficiência própria persistente. Teto inicial proposto 30, marcos 3/5/8/10/12/15/18/20/25/30 conforme planejamento.
+- Combate: básico automático, alvo próximo válido, toque para fixar alvo futuramente; Dash direito com direção atual ou última direção, breve invulnerabilidade é desejo para versão futura e ainda não existe no protótipo. Dois slots de skills de proficiência, uma Ultimate, até uma skill da própria arma, duas passivas. Ultimate acumula lutando.
+- Evolução: nível geral mais proficiência de categoria, ambos podem restringir equipamento. HP, ataque, defesa e crítico são principais, valores crescem automaticamente por nível; build via arma, itens, proficiência e passivas. Sem stamina para correr.
+- Raridades: comum, incomum, raro, épico, lendário e mítico. Drops/ferreiro são fontes de equipamento; itens de chance ~1% podem ser especiais, não obrigatórios para avançar.
+- Missão comum gratuita sempre ativa, recompensa automática e substituição imediata; contrato de caçada opcional comprado com ouro do jogo, com possível compra recorrente.
+- Morte em qualquer lugar, inclusive Guardiões: retorno à área segura, perda de 1 item não equipado da mochila mais algum XP e ouro; equipado e itens guardados no baú protegidos. Percentuais e compartilhamento de baús pendentes.
+- HUD mobile: joystick à esquerda, Dash/2 skills/Ultimate/poção à direita; ataque básico não precisa de botão. Orientação e viewport responsivos.
+- A próxima v0.2 é uma iteração experimental com sprites procedurais, animações leves, vários inimigos e feedback XP/ouro sem inventário ou persistência. Não afirmar que representa o visual definitivo.
+
+## Pendências reais de design
+Percentuais de morte, capacidade de inventário e baú, valores de balanceamento, espécies/receitas definitivas, identidade de arte final e escolha de orientação. Número total de andares e nome definitivo não estão fixados.

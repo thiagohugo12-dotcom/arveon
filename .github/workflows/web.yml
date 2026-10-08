@@ -99,3 +99,40 @@ jobs:
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
           cd web
           npx --yes vercel@62.7.0 deploy --prod --yes --token "$VERCEL_TOKEN"
+
+  preview:
+    name: Preview proposed Godot Web changes
+    needs: web
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download tested Web export
+        uses: actions/download-artifact@v4
+        with:
+          name: andar-1-web
+          path: web
+      - name: Prepare Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Publish preview
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_6XRzZ5HN4AOw2hWyIpf8McMU
+          VERCEL_PROJECT_ID: prj_gYKlx91MiswTmwj2PLiN5liQD0B7
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo '::error title=Vercel token missing::Create the VERCEL_TOKEN repository secret.'
+            exit 1
+          fi
+          test -s web/index.html && test -s web/index.wasm && test -s web/index.pck
+          mkdir -p web/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
+          cd web
+          preview_url="$(npx --yes vercel@62.7.0 deploy --yes --token "$VERCEL_TOKEN")"
+          echo "Preview URL: $preview_url"
+          echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Abrir protótipo experimental]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
