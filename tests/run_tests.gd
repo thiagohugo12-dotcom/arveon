@@ -86,6 +86,7 @@ func _run() -> void:
 	check(second.health.current == 36, "attack cooldown enforced")
 	second.receive_damage(999)
 	check(player.attack.select_target(player) == enemy, "dead target excluded immediately")
+	check(second.view.defeat_left > 0.0 and second.collision_layer == 0 and not second.is_in_group("damageable_enemies"), "defeated enemy briefly fades without remaining targetable")
 	await frames()
 	player.position = Vector2(805, 510)
 	enemy.position = Vector2(805, 630)
@@ -241,6 +242,8 @@ func _run() -> void:
 	boar.home_position = boar.global_position
 	boar._physics_process(0.016)
 	check(boar.charge_windup > 0.0, "boar telegraphs a charge at mid range")
+	boar.view.play_attack()
+	check(boar.view.attack_left >= 0.23, "attack arc remains perceptible for several frames")
 	var spider := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	spider.kind = 1
 	spider.stats = spider.stats.duplicate() as ActorData
@@ -266,6 +269,7 @@ func _run() -> void:
 	persistent.home_position = persistent.position
 	persistent.target = player
 	persistent.receive_damage(7)
+	check(persistent.view.damage_amount == 7 and persistent.view.damage_left > 0.0 and persistent.view.flash_left > 0.0, "enemy reacts visually and displays its damage")
 	var saved_hp := persistent.health.current
 	var saved_position := persistent.position
 	persistent.update_activity(saved_position + Vector2(650, 0))
@@ -340,9 +344,19 @@ func _run() -> void:
 	var sale_gold: int = main.progress.gold
 	main._station_action("Vender", "Ervas")
 	check(main.progress.gold == sale_gold + GameProgress.SELL_PRICE and main.progress.bag.get("Ervas", 0) == herbs_before, "vendor sells gathered resources through existing wallet (%d -> %d, bag %s)" % [sale_gold, main.progress.gold, main.progress.bag.get("Ervas", 0)])
+	check(hud.notice_left > 0.0 and hud.loot_label.text.contains("ouro"), "sale shows a temporary wallet notice")
+	hud._process(3.0)
+	check(not hud.loot_label.visible and hud.notice_left == 0.0, "progress notice disappears automatically")
 	hud.close_station()
 	# Real touch events are not emulated as mouse clicks in project.godot.
 	player.position = Vector2(950, 750)
+	var hp_before_hit := player.health.current
+	player.receive_damage(4)
+	check(player.health.current == hp_before_hit - 4 and player.view.damage_amount == 4 and hud.health_flash_left > 0.0 and (hud.hp_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color == Color("#e57970"), "damage shows a red HP response and legible player hit number")
+	player.health.initialize(player.stats.max_hp)
+	check((hud.hp_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color == Color("#85d8c0"), "recovery shows a distinct HP response")
+	hud._process(0.6)
+	check((hud.hp_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color == Color("#80cf88"), "HP feedback returns to its normal color")
 	main.progress.add_item("Madeira", 2)
 	main._save_progress()
 	hud.size = Vector2(360, 640)
@@ -405,7 +419,7 @@ func _run() -> void:
 	check(not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.dash_button.get_global_rect()), "landscape minimap avoids bag and dash controls")
 	hud.size = Vector2(360, 640)
 	hud._layout()
-	check(not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.joystick.get_global_rect()), "portrait minimap avoids bag and joystick")
+	check(hud.minimap.size == Vector2(96, 80) and not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.joystick.get_global_rect()), "compact portrait minimap avoids bag and joystick")
 	bag_touch.position = hud.inventory_button.global_position + hud.inventory_button.size * 0.5
 	hud._input(bag_touch)
 	await frames()

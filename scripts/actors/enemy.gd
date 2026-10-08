@@ -181,5 +181,11 @@ func receive_damage(amount: int) -> void:
 
 func _on_died() -> void:
 	remove_from_group("damageable_enemies")
+	set_physics_process(false)
+	collision_layer = 0
+	collision_mask = 0
+	velocity = Vector2.ZERO
+	view.play_defeat()
 	defeated.emit(kind)
-	queue_free()
+	get_tree().create_timer(0.22).timeout.connect(queue_free)
+

@@ -27,6 +27,9 @@ var inventory_open := false
 var minimap: MiniMap
 var restart: Button
 var cooldown: float = 0.0
+var notice_left := 0.0
+var health_flash_left := 0.0
+var previous_health := -1
 var interact_button: TouchActionButton
 var station_panel: PanelContainer
 var station_title: Label
@@ -41,7 +44,7 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	heading = Label.new()
-	heading.text = "Andar 1 · Mata dos Primeiros Passos"
+	heading.text = "Mata dos Primeiros Passos"
 	heading.add_theme_font_size_override("font_size", 16)
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -53,9 +56,10 @@ func _ready() -> void:
 	hp_bar = ProgressBar.new()
 	hp_bar.show_percentage = false
 	hp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_bar.add_theme_stylebox_override("fill", _health_fill(Color("#80cf88")))
 	add_child(hp_bar)
 	progress_label = Label.new()
-	progress_label.add_theme_font_size_override("font_size", 12)
+	progress_label.add_theme_font_size_override("font_size", 11)
 	progress_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(progress_label)
 	mission_label = Label.new()
@@ -68,7 +72,7 @@ func _ready() -> void:
 	loot_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(loot_label)
 	minimap = MiniMap.new()
-	minimap.size = Vector2(120, 100)
+	minimap.size = Vector2(96, 80)
 	add_child(minimap)
 	inventory_button = Button.new()
 	inventory_button.text = "Mochila"
@@ -195,13 +199,38 @@ func _layout() -> void:
 	restart.size = Vector2(240, 48)
 
 func set_health(current: int, maximum: int) -> void:
-	hp_label.text = "HP %d / %d · Ataque automático" % [current, maximum]
+	hp_label.text = "HP %d / %d" % [current, maximum]
 	hp_bar.max_value = maximum
 	hp_bar.value = current
+	if previous_health >= 0 and current != previous_health:
+		health_flash_left = 0.55
+		hp_bar.add_theme_stylebox_override("fill", _health_fill(Color("#e57970") if current < previous_health else Color("#85d8c0")))
+	previous_health = current
 
 func set_progress(xp: int, gold: int, kills: int, loot: String) -> void:
 	progress_label.text = "XP %d  ·  Ouro %d  ·  Abates %d" % [xp, gold, kills]
-	loot_label.text = loot
+	if not loot.is_empty():
+		show_notice(loot)
+
+func show_notice(message: String) -> void:
+	loot_label.text = message
+	loot_label.show()
+	notice_left = 2.5
+
+func _process(delta: float) -> void:
+	if notice_left > 0.0:
+		notice_left = maxf(0.0, notice_left - delta)
+		if notice_left == 0.0:
+			loot_label.hide()
+	if health_flash_left > 0.0:
+		health_flash_left = maxf(0.0, health_flash_left - delta)
+		if health_flash_left == 0.0:
+			hp_bar.add_theme_stylebox_override("fill", _health_fill(Color("#80cf88")))
+
+func _health_fill(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	return style
 
 func set_mission(value: String) -> void:
 	mission_label.text = "◆ " + value.replace("Missão comum: ", "")

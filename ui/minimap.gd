@@ -1,8 +1,8 @@
 class_name MiniMap
 extends Control
 
-const MAP_ORIGIN := Vector2(4, 14)
-const MAP_SIZE := Vector2(112, 84)
+const MAP_ORIGIN := Vector2(4, 12)
+const MAP_SIZE := Vector2(88, 66)
 const WORLD_SIZE := Vector2(1200, 900)
 
 var progress: GameProgress
@@ -10,11 +10,11 @@ var player_position := SafeCamp.RESPAWN
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	size = Vector2(120, 100)
+	size = Vector2(96, 80)
 	var title := Label.new()
 	title.text = "Mapa"
 	title.position = Vector2(6, -2)
-	title.add_theme_font_size_override("font_size", 10)
+	title.add_theme_font_size_override("font_size", 9)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(title)
 

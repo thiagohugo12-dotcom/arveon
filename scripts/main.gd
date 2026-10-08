@@ -130,11 +130,13 @@ func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> v
 
 func _on_enemy_defeated(kind: int) -> void:
 	defeated_count += 1
-	earned_xp += [12, 10, 16][kind]
-	earned_gold += loot_rng.randi_range(2, 5)
+	var gained_xp: int = [12, 10, 16][kind]
+	var gained_gold := loot_rng.randi_range(2, 5)
+	earned_xp += gained_xp
+	earned_gold += gained_gold
 	var material: String = ["Couro", "Seda", "Essência"][kind]
 	collected_materials[material] = int(collected_materials.get(material, 0)) + 1
-	var drop_text := "+1 " + material
+	var drop_text := "+%d XP · +%d ouro · +1 %s" % [gained_xp, gained_gold, material]
 	mission.record_defeat()
 	mission.record_material()
 	if loot_rng.randf() < 0.01:
@@ -151,6 +153,7 @@ func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
 	earned_xp += xp_reward
 	earned_gold += gold_reward
 	mission_reward_message = "Missão concluída! +%d XP, +%d ouro" % [xp_reward, gold_reward]
+	hud.show_notice(mission_reward_message)
 	_save_progress()
 
 func _save_progress() -> void:
@@ -197,8 +200,12 @@ func _interact() -> void:
 			if item.is_empty():
 				return
 			mission.record_material()
+			var resource_text := "Coletou +1 " + item
+			if not mission_reward_message.is_empty():
+				resource_text += " · " + mission_reward_message
+				mission_reward_message = ""
 			_save_progress()
-			hud.set_progress(earned_xp, earned_gold, defeated_count, "Coletou +1 " + item)
+			hud.set_progress(earned_xp, earned_gold, defeated_count, resource_text)
 			hud.set_mission(mission.summary())
 			exploration_view.queue_redraw()
 			station_nearby = ""
@@ -208,10 +215,13 @@ func _interact() -> void:
 				return
 			earned_gold = progress.gold
 			mission.record_material()
+			var cache_text := "Baú escondido: +%d ouro, +1 %s" % [reward.gold, reward.item]
+			if not mission_reward_message.is_empty():
+				cache_text += " · " + mission_reward_message
+				mission_reward_message = ""
 			_save_progress()
 			hud.minimap.queue_redraw()
-			hud.set_progress(earned_xp, earned_gold, defeated_count,
-				"Baú escondido: +%d ouro, +1 %s" % [reward.gold, reward.item])
+			hud.set_progress(earned_xp, earned_gold, defeated_count, cache_text)
 			hud.set_mission(mission.summary())
 			exploration_view.queue_redraw()
 			station_nearby = ""
@@ -241,7 +251,12 @@ func _station_action(action: String, item: String) -> void:
 	if success:
 		earned_gold = progress.gold
 		_save_progress()
-		hud.set_progress(earned_xp, earned_gold, defeated_count, "%s: 1 %s" % [action, item])
+		var trade_text := "%s: 1 %s" % [action, item]
+		if action == "Vender":
+			trade_text += " · +%d ouro" % GameProgress.SELL_PRICE
+		elif action == "Comprar":
+			trade_text += " · -%d ouro" % GameProgress.BUY_PRICE
+		hud.set_progress(earned_xp, earned_gold, defeated_count, trade_text)
 	hud.refresh_station(progress)
 
 func _input(event: InputEvent) -> void:

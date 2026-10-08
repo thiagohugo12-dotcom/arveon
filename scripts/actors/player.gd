@@ -38,10 +38,10 @@ func _physics_process(delta: float) -> void:
 	attack.tick(delta, self)
 
 func receive_damage(amount: int) -> void:
-	if SafeCamp.in_clearance(global_position):
+	if SafeCamp.in_clearance(global_position) or not health.is_alive() or amount <= 0:
 		return
 	health.damage(amount)
-	view.flash()
+	view.show_damage(amount)
 
 func _on_attack(_target: Node2D) -> void:
 	view.play_attack()

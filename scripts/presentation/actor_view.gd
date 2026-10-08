@@ -9,6 +9,7 @@ var flash_left: float = 0.0
 var attack_left: float = 0.0
 var damage_left: float = 0.0
 var damage_amount: int = 0
+var defeat_left: float = 0.0
 var warning: bool = false
 var walking: bool = false
 var anim_time: float = 0.0
@@ -40,11 +41,16 @@ func show_damage(amount: int) -> void:
 	if amount <= 0:
 		return
 	damage_amount = amount
-	damage_left = 0.7
+	damage_left = 0.85
 	flash()
 
 func play_attack() -> void:
-	attack_left = 0.16
+	attack_left = 0.24
+	queue_redraw()
+
+func play_defeat() -> void:
+	defeat_left = 0.22
+	set_moving(false)
 	queue_redraw()
 
 func set_warning(value: bool) -> void:
@@ -61,6 +67,10 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	if damage_left > 0.0:
 		damage_left = maxf(0.0, damage_left - delta)
+		queue_redraw()
+	if defeat_left > 0.0:
+		defeat_left = maxf(0.0, defeat_left - delta)
+		modulate = Color(1.0, 1.0, 1.0, maxf(0.0, defeat_left / 0.22))
 		queue_redraw()
 	anim_time += delta
 	if anim_time >= (0.14 if walking else 0.55):
@@ -90,10 +100,17 @@ func _draw() -> void:
 		px(-15, -22, 30, 37, Color(1.0, 1.0, 1.0, flash_left * 2.5))
 	if attack_left > 0.0:
 		var attack_color := Color("#f7d47c")
-		draw_arc(Vector2.ZERO, 24.0, -1.8, 0.6, 9, attack_color, 3.0)
+		draw_arc(Vector2.ZERO, 27.0, facing.angle() - 0.9, facing.angle() + 0.7, 10, attack_color, 4.0)
 	if damage_left > 0.0:
-		var float_y := -42.0 - (0.7 - damage_left) * 24.0
-		draw_string(ThemeDB.fallback_font, Vector2(-9, float_y), "-%d" % damage_amount, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#ffcc7a", damage_left / 0.7))
+		var float_y := -42.0 - (0.85 - damage_left) * 24.0
+		var number := "-%d" % damage_amount
+		draw_string(ThemeDB.fallback_font, Vector2(-10, float_y + 1), number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.08, 0.12, 0.11, damage_left / 0.85))
+		draw_string(ThemeDB.fallback_font, Vector2(-11, float_y), number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffcf85", damage_left / 0.85))
+	if defeat_left > 0.0:
+		var drift := (0.22 - defeat_left) * 22.0
+		for side in [-1, 1]:
+			px(side * (10 + drift), -13 - drift, 6, 6, Color("#d0aa71"))
+			px(side * (8 + drift), 3 + drift, 4, 4, Color("#685641"))
 	px(-17, -30, 34, 4, LINE)
 	px(-16, -29, 32.0 * hp_ratio, 2, Color("#8ce395"))
 
@@ -167,3 +184,4 @@ func _draw_cactus(b: float) -> void:
 	px(-8, -4 + b, 3, 3, LINE)
 	px(5, -4 + b, 3, 3, LINE)
 	px(-2, 4 + b, 5, 3, Color("#204d38"))
+
