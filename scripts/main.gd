@@ -20,8 +20,11 @@ var earned_xp: int = 0
 var earned_gold: int = 0
 var collected_materials: Dictionary = {}
 var loot_rng := RandomNumberGenerator.new()
+var mission := CommonMission.new()
+var mission_reward_message: String = ""
 
 func _ready() -> void:
+	mission.completed.connect(_on_mission_completed)
 	loot_rng.randomize()
 	player.input_driver = input_driver
 	enemy.target = player
@@ -33,6 +36,7 @@ func _ready() -> void:
 	player.health.died.connect(hud.show_death)
 	hud.set_health(player.health.current, player.health.maximum)
 	hud.set_progress(earned_xp, earned_gold, defeated_count, "")
+	hud.set_mission(mission.summary())
 	get_window().size_changed.connect(_adapt_orientation)
 	_adapt_orientation()
 
@@ -73,10 +77,21 @@ func _on_enemy_defeated(kind: int) -> void:
 	var material: String = ["Couro", "Seda", "Essência"][kind]
 	collected_materials[material] = int(collected_materials.get(material, 0)) + 1
 	var drop_text := "+1 " + material
+	mission.record_defeat()
+	mission.record_material()
 	if loot_rng.randf() < 0.01:
 		collected_materials["Broto Ancestral"] = int(collected_materials.get("Broto Ancestral", 0)) + 1
 		drop_text += " · Broto Ancestral raro!"
+	if not mission_reward_message.is_empty():
+		drop_text += " · " + mission_reward_message
+		mission_reward_message = ""
 	hud.set_progress(earned_xp, earned_gold, defeated_count, drop_text)
+	hud.set_mission(mission.summary())
+
+func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
+	earned_xp += xp_reward
+	earned_gold += gold_reward
+	mission_reward_message = "Missão concluída! +%d XP, +%d ouro" % [xp_reward, gold_reward]
 
 func _adapt_orientation() -> void:
 	var window := get_window()

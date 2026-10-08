@@ -123,6 +123,20 @@ func _run() -> void:
 	check(driver.movement().is_zero_approx() and not driver.consume_dash(), "focus loss clears pending commands")
 	player.receive_damage(999)
 	check(not player.health.is_alive() and hud.restart.visible and not hud.dash_button.enabled, "player death disables gameplay and offers restart")
+	# The free contract is always available and immediately renews on completion.
+	check(main.mission.summary().contains("Derrote criaturas 0/8"), "common hunt mission active without acceptance")
+	for i in range(7):
+		main.mission.record_defeat()
+	check(main.mission.progress == 7 and main.mission.completed_count == 0, "mission progress counts defeated creatures")
+	main.mission.record_defeat()
+	check(main.mission.mission_index == 1 and main.mission.progress == 0, "completed hunt automatically creates collection mission")
+	check(main.earned_xp == 40 and main.earned_gold == 12, "first free mission grants XP and gold")
+	for i in range(5):
+		main.mission.record_material()
+	check(main.mission.mission_index == 0 and main.mission.completed_count == 2, "collecting materials automatically renews common mission")
+	check(main.earned_xp == 70 and main.earned_gold == 22, "second free mission grants reward without spending gold")
+	main.mission.record_material()
+	check(main.mission.progress == 0, "irrelevant material events do not advance hunt")
 	main.queue_free()
 	await frames()
 	print("RESULT: %d checks, %d failures" % [checks, failures])

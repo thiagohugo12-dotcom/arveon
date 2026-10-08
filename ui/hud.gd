@@ -11,6 +11,7 @@ var heading: Label
 var hp_label: Label
 var hp_bar: ProgressBar
 var progress_label: Label
+var mission_label: Label
 var loot_label: Label
 var restart: Button
 var cooldown: float = 0.0
@@ -36,6 +37,10 @@ func _ready() -> void:
 	progress_label.add_theme_font_size_override("font_size", 12)
 	progress_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(progress_label)
+	mission_label = Label.new()
+	mission_label.add_theme_font_size_override("font_size", 12)
+	mission_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(mission_label)
 	loot_label = Label.new()
 	loot_label.add_theme_font_size_override("font_size", 11)
 	loot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -85,7 +90,9 @@ func _layout() -> void:
 	hp_bar.size = Vector2(minf(220, size.x - margin.x - right_inset), 12)
 	progress_label.position = Vector2(margin.x, margin.y + 85)
 	progress_label.size = Vector2(size.x - margin.x - right_inset, 20)
-	loot_label.position = Vector2(margin.x, margin.y + 105)
+	mission_label.position = Vector2(margin.x, margin.y + 106)
+	mission_label.size = Vector2(size.x - margin.x - right_inset, 19)
+	loot_label.position = Vector2(margin.x, margin.y + 128)
 	loot_label.size = Vector2(size.x - margin.x - right_inset, 35)
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for i in range(actions.size()):
@@ -101,6 +108,9 @@ func set_health(current: int, maximum: int) -> void:
 func set_progress(xp: int, gold: int, kills: int, loot: String) -> void:
 	progress_label.text = "XP %d  ·  Ouro %d  ·  Abates %d" % [xp, gold, kills]
 	loot_label.text = loot
+
+func set_mission(value: String) -> void:
+	mission_label.text = value
 
 func show_death() -> void:
 	joystick.reset()
