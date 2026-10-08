@@ -203,6 +203,11 @@ func refresh_station(progress: GameProgress) -> void:
 		for item: String in GameProgress.SELL_ITEMS:
 			if int(progress.bag.get(item, 0)) > 0:
 				available_items.append(item)
+		available_items.sort_custom(func(a: String, b: String) -> bool:
+			var a_resource := not GameProgress.TRADE_ITEMS.has(a)
+			var b_resource := not GameProgress.TRADE_ITEMS.has(b)
+			return a_resource and not b_resource if a_resource != b_resource else GameProgress.SELL_ITEMS.find(a) < GameProgress.SELL_ITEMS.find(b)
+		)
 		for item: String in GameProgress.TRADE_ITEMS:
 			if not available_items.has(item):
 				available_items.append(item)
