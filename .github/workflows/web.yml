@@ -46,6 +46,7 @@ jobs:
           set -euo pipefail
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tests.log; then exit 1; fi
+          grep -E '^RESULT: [0-9]+ checks, 0 failures$' /tmp/tests.log
       - name: Export Web
         shell: bash
         run: |
@@ -103,9 +104,14 @@ jobs:
   preview:
     name: Preview proposed Godot Web changes
     needs: web
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/andar1-v020-primeiro-passe') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    concurrency:
+      group: grande-arvore-rpg-fixed-test-preview
+      cancel-in-progress: true
     steps:
       - name: Download tested Web export
         uses: actions/download-artifact@v4
@@ -122,6 +128,9 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: team_6XRzZ5HN4AOw2hWyIpf8McMU
           VERCEL_PROJECT_ID: prj_gYKlx91MiswTmwj2PLiN5liQD0B7
+          TEST_ALIAS: grande-arvore-rpg-teste.vercel.app
+          PREVIEW_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PREVIEW_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
           set -euo pipefail
           if [[ -z "$VERCEL_TOKEN" ]]; then
@@ -132,16 +141,13 @@ jobs:
           mkdir -p web/.vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
           cd web
-          preview_url="$(npx --yes vercel@62.7.0 deploy --yes --meta githubCommitSha=${{ github.event.pull_request.head.sha }} --meta githubCommitRef=${{ github.head_ref }})"
+          preview_url="$(npx --yes vercel@62.7.0 deploy --yes --scope "$VERCEL_ORG_ID" --non-interactive --meta "githubCommitSha=$PREVIEW_COMMIT_SHA" --meta "githubCommitRef=$PREVIEW_BRANCH")"
           PREVIEW_URL="$preview_url" node --input-type=module -e '
-            const value = process.env.PREVIEW_URL;
-            const url = new URL(value);
-            if (url.protocol !== "https:" || url.origin !== value || !url.hostname.endsWith(".vercel.app")) process.exit(1);
+            const url = new URL(process.env.PREVIEW_URL);
+            if (url.protocol !== "https:" || !url.hostname.endsWith(".vercel.app")) process.exit(1);
           '
-          if [[ "${{ github.head_ref }}" == 'feat/andar1-v020-primeiro-passe' ]]; then
-            npx --yes vercel@62.7.0 alias set "$preview_url" grande-arvore-rpg-teste.vercel.app
-            echo '[TESTE fixo](https://grande-arvore-rpg-teste.vercel.app)' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          npx --yes vercel@62.7.0 alias set "$preview_url" "$TEST_ALIAS" --scope "$VERCEL_ORG_ID" --non-interactive
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
-          echo "[Abrir protótipo experimental]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+          echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
