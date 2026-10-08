@@ -336,14 +336,14 @@ func _run() -> void:
 	await frames()
 	next_page = hud.station_content.get_child(5).get_child(2) as Button
 	page_touch.position = next_page.global_position + next_page.size * 0.5
-	check(hud.station_scroll.get_global_rect().has_point(page_touch.position), "vendor pagination fits mobile panel")
+	check(hud.station_scroll.get_global_rect().has_point(page_touch.position), "vendor pagination fits mobile panel (%s, %s)" % [hud.station_scroll.get_global_rect(), page_touch.position])
 	hud._input(page_touch)
 	await frames()
-	check(hud.station_page == 1 and hud.station_content.get_child(2).get_child(0).text.begins_with("Ervas"), "touch page exposes resource sales")
+	check(hud.station_page == 1 and hud.station_content.get_child(2).get_child(0).text.begins_with("Ervas"), "touch page exposes resource sales (page %d, station %s)" % [hud.station_page, hud.station_name])
 	main.progress.add_item("Ervas")
 	var sale_gold: int = main.progress.gold
 	main._station_action("Vender", "Ervas")
-	check(main.progress.gold == sale_gold + GameProgress.SELL_PRICE and main.progress.bag.get("Ervas", 0) == herbs_before, "vendor sells gathered resources through existing wallet")
+	check(main.progress.gold == sale_gold + GameProgress.SELL_PRICE and main.progress.bag.get("Ervas", 0) == herbs_before, "vendor sells gathered resources through existing wallet (%d -> %d, bag %s)" % [sale_gold, main.progress.gold, main.progress.bag.get("Ervas", 0)])
 	hud.close_station()
 	main.queue_free()
 	await frames()

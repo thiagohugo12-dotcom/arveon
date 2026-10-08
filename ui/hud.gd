@@ -194,7 +194,7 @@ func refresh_station(progress: GameProgress) -> void:
 		_add_page_navigation(GameProgress.ITEMS.size(), progress)
 	elif station_name == "Vendedor":
 		_add_description("Ouro %d · Compra %d · Venda %d" % [progress.gold, GameProgress.BUY_PRICE, GameProgress.SELL_PRICE])
-		_add_description("Materiais de combate e coleta · recursos podem ser vendidos.")
+		_add_description("Coletas: venda por ouro.")
 		for item: String in _page_items(GameProgress.SELL_ITEMS):
 			_add_row(item, "x%d" % progress.bag.get(item, 0), "Comprar", "Vender", GameProgress.TRADE_ITEMS.has(item) and progress.gold >= GameProgress.BUY_PRICE, int(progress.bag.get(item, 0)) > 0)
 		_add_page_navigation(GameProgress.SELL_ITEMS.size(), progress)
