@@ -32,6 +32,12 @@ func _physics_process(delta: float) -> void:
 		view.set_moving(false)
 		view.set_warning(false)
 		return
+	if SafeCamp.contains(target.global_position) or SafeCamp.contains(global_position):
+		view.set_moving(false)
+		view.set_warning(false)
+		charge_windup = 0.0
+		charge_left = 0.0
+		return
 	var offset := target.global_position - global_position
 	var distance := offset.length()
 	if distance > stats.detection_range:
@@ -43,7 +49,11 @@ func _physics_process(delta: float) -> void:
 		0: _boar_behavior(delta, offset, distance)
 		1: _spider_behavior(offset, distance)
 		2: _cactus_behavior(offset, distance)
+	var before := global_position
 	move_and_slide()
+	if SafeCamp.contains(global_position):
+		global_position = before
+		velocity = Vector2.ZERO
 	view.set_moving(velocity.length_squared() > 1.0)
 	if kind != 2:
 		_try_contact(distance)
@@ -101,6 +111,9 @@ func _cactus_behavior(offset: Vector2, distance: float) -> void:
 
 func _fire_cactus_spine() -> void:
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive():
+		view.set_warning(false)
+		return
+	if SafeCamp.contains(target.global_position):
 		view.set_warning(false)
 		return
 	var direction := global_position.direction_to(target.global_position)

@@ -26,6 +26,8 @@ func frames(count: int = 2) -> void:
 		await process_frame
 
 func _run() -> void:
+	var test_path := "user://qa_area_segura_%d.json" % Time.get_ticks_usec()
+	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", test_path)
 	var health := Health.new()
 	root.add_child(health)
 	health.initialize(10)
@@ -64,17 +66,17 @@ func _run() -> void:
 		driver.set_touch_direction(direction)
 		check(driver.movement().is_equal_approx(direction.limit_length()), "8 direction input " + str(direction))
 	driver.reset()
-	player.position = Vector2(600, 400)
+	player.position = Vector2(700, 400)
 	enemy.position = Vector2(900, 400)
 	await frames()
 	check(player.attack.select_target(player) == null, "out of range excluded")
-	enemy.position = Vector2(720, 400)
+	enemy.position = Vector2(820, 400)
 	await frames()
 	check(player.attack.select_target(player) == enemy, "target at reach boundary valid")
 	var second := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	main.add_child(second)
 	second.set_physics_process(false)
-	second.position = Vector2(650, 400)
+	second.position = Vector2(750, 400)
 	await frames()
 	check(player.attack.select_target(player) == second, "nearest valid target selected")
 	player.attack.cooldown_left = 0.0
@@ -140,6 +142,50 @@ func _run() -> void:
 		main.mission.record_material()
 	check(main.mission.mission_index == 0 and main.mission.completed_count == 2, "collecting materials automatically renews common mission")
 	check(main.earned_xp == 70 and main.earned_gold == 22, "second free mission grants reward without spending gold")
+	player.health.initialize(player.stats.max_hp)
+	hud.restart.hide()
+	check(main.progress.buy("Couro") and main.earned_gold == 22 and main.progress.gold == 17, "vendor spends existing gold wallet")
+	main._station_action("Comprar", "Couro") # Closed panel must never trade.
+	check(main.progress.gold == 17, "shop refuses action outside station")
+	player.position = SafeCamp.STATIONS["Vendedor"] + Vector2(-30, 0)
+	main._interact()
+	main._station_action("Vender", "Couro")
+	check(main.progress.gold == 19 and main.progress.bag.get("Couro", 0) == 0, "vendor sells existing material into wallet")
+	main.hud.close_station()
+	main.progress.add_item("Essência", 2)
+	player.position = SafeCamp.STATIONS["Baú"] + Vector2(28, 0)
+	main._interact()
+	main._station_action("Guardar", "Essência")
+	check(main.progress.bag.get("Essência", 0) == 1 and main.progress.chest.get("Essência", 0) == 1, "chest transfer preserves total")
+	main.hud.close_station()
+	main._save_progress()
+	var reloaded := GameProgress.new()
+	reloaded.save_path = test_path
+	check(reloaded.load_save() and reloaded.gold == 19 and reloaded.chest.get("Essência", 0) == 1 and reloaded.mission_completed == 2, "save round-trip includes economy, chest and mission")
+	check(reloaded.death_loss() == "Essência" and reloaded.bag.get("Essência", 0) == 0 and reloaded.chest.get("Essência", 0) == 1, "death protects chest and only removes a bag unit")
+	check(not reloaded.buy("Broto Ancestral") and not reloaded.transfer("Couro", true), "unavailable purchase and empty transfer do not mutate state")
+	player.health.initialize(player.stats.max_hp)
+	player.position = SafeCamp.RESPAWN
+	var safe_hp := player.health.current
+	player.receive_damage(99)
+	check(player.health.current == safe_hp and SafeCamp.nearest_station(SafeCamp.STATIONS["Ferreiro"]) == "Ferreiro", "camp prevents damage and exposes smith interaction")
+	var guard := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
+	guard.kind = 1
+	main.add_child(guard)
+	guard.target = player
+	guard.position = Vector2(670, 460)
+	guard._physics_process(0.016)
+	check(guard.velocity.is_zero_approx(), "enemy does not attack a player in camp")
+	var projectile := EnemyProjectile.new()
+	main.add_child(projectile)
+	projectile.setup(Vector2(657, 450), Vector2.LEFT, 8, player)
+	projectile._physics_process(0.04)
+	check(projectile.is_queued_for_deletion() and player.health.current == safe_hp, "enemy projectile dissolves at camp boundary")
+	player.position = Vector2(560, 560)
+	guard.position = Vector2(660, 455)
+	for step in range(30):
+		guard._physics_process(0.016)
+	check(not SafeCamp.contains(guard.position), "enemy path cannot enter camp")
 	main.mission.record_material()
 	check(main.mission.progress == 0, "irrelevant material events do not advance hunt")
 	# Enemy roles remain deliberately distinct and lightweight.
@@ -170,5 +216,7 @@ func _run() -> void:
 	check(cactus.special_left > 0.0 and cactus.velocity.is_zero_approx(), "mandacaru prepares ranged attack at preferred distance")
 	main.queue_free()
 	await frames()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
+	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
 	print("RESULT: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)

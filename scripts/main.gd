@@ -23,8 +23,21 @@ var collected_materials: Dictionary = {}
 var loot_rng := RandomNumberGenerator.new()
 var mission := CommonMission.new()
 var mission_reward_message: String = ""
+var progress := GameProgress.new()
+var station_nearby := ""
 
 func _ready() -> void:
+	var test_save := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	if not test_save.is_empty():
+		progress.save_path = test_save
+	if progress.load_save():
+		earned_xp = progress.xp
+		earned_gold = progress.gold
+		defeated_count = progress.kills
+		mission.mission_index = progress.mission_index
+		mission.progress = progress.mission_progress
+		mission.completed_count = progress.mission_completed
+	collected_materials = progress.bag
 	mission.completed.connect(_on_mission_completed)
 	loot_rng.randomize()
 	player.input_driver = input_driver
@@ -33,9 +46,16 @@ func _ready() -> void:
 	enemy.projectile_requested.connect(_on_enemy_projectile)
 	hud.movement_changed.connect(input_driver.set_touch_direction)
 	hud.dash_pressed.connect(input_driver.request_dash)
+	hud.interact_pressed.connect(_interact)
+	hud.station_action.connect(_station_action)
+	hud.panel_closed.connect(func():
+		input_driver.blocked = false
+		station_nearby = ""
+	)
 	hud.restart_pressed.connect(func(): get_tree().reload_current_scene())
 	player.health.changed.connect(hud.set_health)
 	player.health.died.connect(hud.show_death)
+	player.health.died.connect(_on_player_died)
 	hud.set_health(player.health.current, player.health.maximum)
 	hud.set_progress(earned_xp, earned_gold, defeated_count, "")
 	hud.set_mission(mission.summary())
@@ -46,6 +66,10 @@ func _process(delta: float) -> void:
 	hud.set_dash_cooldown(player.dash.cooldown_left)
 	if not player.health.is_alive():
 		return
+	var near := SafeCamp.nearest_station(player.global_position)
+	if near != station_nearby and not hud.station_panel.visible:
+		station_nearby = near
+		hud.set_nearby_station(near)
 	spawn_remaining -= delta
 	if spawn_remaining <= 0.0:
 		spawn_remaining = SPAWN_INTERVAL
@@ -96,11 +120,64 @@ func _on_enemy_defeated(kind: int) -> void:
 		mission_reward_message = ""
 	hud.set_progress(earned_xp, earned_gold, defeated_count, drop_text)
 	hud.set_mission(mission.summary())
+	_save_progress()
 
 func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
 	earned_xp += xp_reward
 	earned_gold += gold_reward
 	mission_reward_message = "Missão concluída! +%d XP, +%d ouro" % [xp_reward, gold_reward]
+	_save_progress()
+
+func _save_progress() -> void:
+	progress.xp = earned_xp
+	progress.gold = earned_gold
+	progress.kills = defeated_count
+	progress.mission_index = mission.mission_index
+	progress.mission_progress = mission.progress
+	progress.mission_completed = mission.completed_count
+	if not progress.save():
+		push_warning("Não foi possível salvar o progresso local.")
+
+func _on_player_died() -> void:
+	input_driver.reset()
+	input_driver.blocked = false
+	var lost := progress.death_loss()
+	hud.set_progress(earned_xp, earned_gold, defeated_count,
+		"Perdeu 1 " + lost + " da mochila; baú protegido" if not lost.is_empty() else "Baú protegido · sem material na mochila")
+	_save_progress()
+
+func _interact() -> void:
+	if not player.health.is_alive() or hud.station_panel.visible:
+		return
+	var station := SafeCamp.nearest_station(player.global_position)
+	if station.is_empty():
+		return
+	input_driver.reset()
+	input_driver.blocked = true
+	hud.show_station(station, progress)
+
+func _station_action(action: String, item: String) -> void:
+	if not player.health.is_alive() or hud.station_panel.visible == false:
+		return
+	var success := false
+	match [hud.station_name, action]:
+		["Baú", "Guardar"]: success = progress.transfer(item, true)
+		["Baú", "Retirar"]: success = progress.transfer(item, false)
+		["Vendedor", "Comprar"]: success = progress.buy(item)
+		["Vendedor", "Vender"]: success = progress.sell(item)
+	if success:
+		earned_gold = progress.gold
+		_save_progress()
+		hud.set_progress(earned_xp, earned_gold, defeated_count, "%s: 1 %s" % [action, item])
+	hud.refresh_station(progress)
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("interact") and not event.is_echo():
+		if hud.station_panel.visible:
+			hud.close_station()
+		else:
+			_interact()
+		get_viewport().set_input_as_handled()
 
 func _adapt_orientation() -> void:
 	var window := get_window()

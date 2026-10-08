@@ -40,5 +40,17 @@ Estas regras são a direção do jogo completo. O protótipo técnico atual não
 - HUD mobile: joystick à esquerda, Dash/2 skills/Ultimate/poção à direita; ataque básico não precisa de botão. Orientação e viewport responsivos.
 - A próxima v0.2 é uma iteração experimental com sprites procedurais, animações leves, vários inimigos e feedback XP/ouro sem inventário ou persistência. Não afirmar que representa o visual definitivo.
 
+## Área Segura v0.2.1 — regra aprovada em 2026-10-08
+Conforme `docs/decisions/AREA_SEGURA_V021.md`, o acampamento central contém baú,
+ferreiro e vendedor. Mochila e baú guardam os materiais já existentes sem limite
+experimental. Ouro, XP, missão e materiais são salvos localmente no navegador.
+Vendedor compra/vende Couro, Seda e Essência por 5/2 ouro, valores provisórios;
+Broto Ancestral não é comercializado. O ferreiro apresenta o equipamento inicial,
+sem melhoria funcional ou receita inventada. Morte retorna à área segura após
+reinício e remove uma unidade de material da mochila, se houver; baú é protegido.
+XP e ouro não são penalizados até aprovação de percentuais. Inimigos e espinhos
+não atravessam o limite seguro. Este recorte não define capacidade final,
+progressão de equipamento, sincronização de saves nem economia definitiva.
+
 ## Pendências reais de design
 Percentuais de morte, capacidade de inventário e baú, valores de balanceamento, espécies/receitas definitivas, identidade de arte final e escolha de orientação. Número total de andares e nome definitivo não estão fixados.
