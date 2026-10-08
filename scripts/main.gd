@@ -25,6 +25,7 @@ var mission := CommonMission.new()
 var mission_reward_message: String = ""
 var progress := GameProgress.new()
 var station_nearby := ""
+var activity_remaining := 0.0
 
 func _ready() -> void:
 	var test_save := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
@@ -66,6 +67,12 @@ func _process(delta: float) -> void:
 	hud.set_dash_cooldown(player.dash.cooldown_left)
 	if not player.health.is_alive():
 		return
+	activity_remaining -= delta
+	if activity_remaining <= 0.0:
+		activity_remaining = 0.25
+		for actor in get_tree().get_nodes_in_group("damageable_enemies"):
+			if actor is EnemyActor:
+				actor.update_activity(player.global_position)
 	var near := SafeCamp.nearest_station(player.global_position)
 	if near != station_nearby and not hud.station_panel.visible:
 		station_nearby = near

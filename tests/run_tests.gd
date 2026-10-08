@@ -87,8 +87,8 @@ func _run() -> void:
 	second.receive_damage(999)
 	check(player.attack.select_target(player) == enemy, "dead target excluded immediately")
 	await frames()
-	player.position = Vector2(405, 280)
-	enemy.position = Vector2(405, 365)
+	player.position = Vector2(805, 510)
+	enemy.position = Vector2(805, 630)
 	await frames()
 	check(player.attack.select_target(player) == null, "world obstacle blocks automatic attack")
 	player.position = Vector2(1160, 400)
@@ -214,6 +214,7 @@ func _run() -> void:
 	main.add_child(guard)
 	guard.target = player
 	guard.position = Vector2(810, 460)
+	guard.home_position = guard.position
 	guard._physics_process(0.016)
 	check(guard.velocity.is_zero_approx(), "enemy does not attack a player in camp")
 	var projectile := EnemyProjectile.new()
@@ -237,6 +238,7 @@ func _run() -> void:
 	main.add_child(boar)
 	boar.target = player
 	boar.global_position = player.global_position + Vector2(150, 0)
+	boar.home_position = boar.global_position
 	boar._physics_process(0.016)
 	check(boar.charge_windup > 0.0, "boar telegraphs a charge at mid range")
 	var spider := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
@@ -245,6 +247,7 @@ func _run() -> void:
 	main.add_child(spider)
 	spider.target = player
 	spider.global_position = player.global_position + Vector2(55, 0)
+	spider.home_position = spider.global_position
 	spider._physics_process(0.016)
 	check(spider.velocity.x > 0.0, "spider retreats when too close")
 	var cactus := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
@@ -253,8 +256,36 @@ func _run() -> void:
 	main.add_child(cactus)
 	cactus.target = player
 	cactus.global_position = player.global_position + Vector2(180, 0)
+	cactus.home_position = cactus.global_position
 	cactus._physics_process(0.016)
 	check(cactus.special_left > 0.0 and cactus.velocity.is_zero_approx(), "mandacaru prepares ranged attack at preferred distance")
+	# AI suspension retains entity, position and HP. Distinct thresholds prevent rapid toggling.
+	var persistent := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
+	main.add_child(persistent)
+	persistent.position = Vector2(930, 750)
+	persistent.home_position = persistent.position
+	persistent.target = player
+	persistent.receive_damage(7)
+	var saved_hp := persistent.health.current
+	var saved_position := persistent.position
+	persistent.update_activity(saved_position + Vector2(650, 0))
+	check(not persistent.awake and not persistent.is_physics_processing() and persistent.position == saved_position and persistent.health.current == saved_hp, "distant enemy sleeps without disappearing or resetting")
+	persistent.receive_damage(100)
+	check(persistent.health.current == saved_hp and not persistent.is_targetable(), "sleeping enemy cannot be farmed")
+	persistent.update_activity(saved_position + Vector2(570, 0))
+	check(not persistent.awake, "sleep threshold has hysteresis")
+	persistent.update_activity(saved_position + Vector2(510, 0))
+	check(persistent.awake and persistent.is_physics_processing() and persistent.health.current == saved_hp, "approaching wakes original enemy with original health")
+	persistent.update_activity(saved_position + Vector2(570, 0))
+	check(persistent.awake, "awake enemy does not flicker at intermediate distance")
+	persistent.set_physics_process(false)
+	player.position = saved_position + Vector2(150, 0)
+	persistent._physics_process(0.016)
+	check(persistent.chasing, "monster acquires target inside territory")
+	persistent.position = saved_position + Vector2(90, 0)
+	player.position = Vector2(180, 750)
+	persistent._physics_process(0.1)
+	check(not persistent.chasing and persistent.position.distance_to(saved_position) < 90.0, "monster returns toward home after losing player")
 	main.queue_free()
 	await frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
