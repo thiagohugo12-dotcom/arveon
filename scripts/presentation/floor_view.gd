@@ -1,11 +1,12 @@
 class_name FloorView
 extends Node2D
 
-# Static low-cost ground drawing, deliberately not a tiled debug grid.
-const FOREST := Color("#1c382a")
+# A static pixel atlas and seeded brush stamps. All geometry is presentation only.
+const ATLAS := preload("res://assets/art/forest_atlas.png")
+const FOREST := Color("#294c37")
 const FOREST_LIGHT := Color("#244431")
-const TRAIL := Color("#564b35")
-const TRAIL_HIGHLIGHT := Color("#6d5a3d")
+const TRAIL := Color("#786044")
+const TRAIL_HIGHLIGHT := Color("#a28255")
 const ROCK := Color("#45554d")
 const ROCKS := [Rect2(340, 300, 130, 50), Rect2(760, 520, 90, 110)]
 const TRAILS := [
@@ -21,53 +22,124 @@ const TRAIL_WIDTHS := [62.0, 54.0, 24.0, 24.0, 26.0, 26.0, 22.0]
 const RESERVED := [Vector2(850, 400), Vector2(930, 440), Vector2(610, 750),
 	Vector2(180, 460), Vector2(630, 135), Vector2(955, 665)]
 
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 1200, 900), FOREST)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 12051
-	# Small tonal squares make a readable pixel-style floor.
-	for x in range(0, 1200, 32):
-		for y in range(0, 900, 32):
-			if rng.randi_range(0, 4) == 0:
-				draw_rect(Rect2(x + 4, y + 5, 24, 20), FOREST_LIGHT)
-	# Meandering routes and branches keep all points of interest walkable.
+	_draw_ground()
+	_draw_paths()
 	for center: Vector2 in [Vector2(175, 215), Vector2(260, 685), Vector2(900, 175), Vector2(980, 715)]:
-		draw_rect(Rect2(center - Vector2(39, 31), Vector2(78, 62)), Color("#34513a"))
-		draw_rect(Rect2(center - Vector2(31, 25), Vector2(62, 50)), Color("#45513a"))
-	for i in range(TRAILS.size()):
-		draw_polyline(PackedVector2Array(TRAILS[i]), TRAIL, TRAIL_WIDTHS[i], false)
-		# Broken, integer ground accents avoid a continuous bright seam on vertical paths.
-		var trail: Array = TRAILS[i]
-		for j in range(trail.size() - 1):
-			var distance: float = trail[j].distance_to(trail[j + 1])
-			for n in range(0, int(distance), 36):
-				var point: Vector2 = trail[j].lerp(trail[j + 1], float(n) / distance).floor()
-				draw_rect(Rect2(point, Vector2(5, 3)), TRAIL_HIGHLIGHT)
-	draw_rect(Rect2(465, 355, 185, 200), Color("#476447"))
-	for i in range(205):
-		var px_pos := Vector2(rng.randi_range(30, 1160), rng.randi_range(30, 865))
-		if not _free_for_decoration(px_pos):
-			continue
-		match i % 4:
-			0, 1:
-				_draw_tree(px_pos, i % 2 == 0)
-			2:
-				draw_rect(Rect2(px_pos, Vector2(13, 8)), Color("#315a3b"))
-				draw_rect(Rect2(px_pos + Vector2(3, -5), Vector2(8, 8)), Color("#63894e"))
-			3:
-				draw_rect(Rect2(px_pos, Vector2(18, 5)), Color("#684d34"))
-				draw_rect(Rect2(px_pos + Vector2(4, -3), Vector2(12, 3)), Color("#9c7850"))
-	for i in range(65):
-		var blade := Vector2(rng.randi_range(20, 1170), rng.randi_range(30, 870))
-		if not _free_for_decoration(blade):
-			continue
-		draw_rect(Rect2(blade, Vector2(3, 6)), Color("#668952"))
-		draw_rect(Rect2(blade + Vector2(5, -2), Vector2(3, 7)), Color("#426d4c"))
-	# Visual rocks exactly match the two blocking CollisionShape2D rectangles.
+		_draw_clearing(center)
+	_draw_decoration()
 	for rock: Rect2 in ROCKS:
 		_draw_stone(rock)
 	_draw_camp()
 
+func _hash(x: int, y: int) -> int:
+	var n := x * 74509 + y * 53197 + 19033
+	return absi((n ^ (n >> 11)) * 31337) % 9973
+
+func _draw_ground() -> void:
+	for y in range(0, 900, 32):
+		for x in range(0, 1200, 32):
+			var tile := _hash(x / 32, y / 32) % 4
+			draw_texture_rect_region(ATLAS, Rect2(x, y, 32, 32), Rect2(tile * 32, 0, 32, 32))
+
+func _draw_paths() -> void:
+	# Same trail centerlines as v0.3.1. Stepped edge widths make dirt less geometric.
+	for border in [7.0, 0.0]:
+		for i in range(TRAILS.size()):
+			var path: Array = TRAILS[i]
+			for j in range(path.size() - 1):
+				var start: Vector2 = path[j]
+				var finish: Vector2 = path[j + 1]
+				var length := start.distance_to(finish)
+				var normal := (finish - start).normalized().orthogonal()
+				var steps := ceili(length / 8.0)
+				for n in range(steps):
+					var t0 := float(n) / steps
+					var t1 := float(n + 1) / steps
+					var p0 := start.lerp(finish, t0).floor()
+					var p1 := start.lerp(finish, t1).floor()
+					var w0: float = TRAIL_WIDTHS[i] * 0.5 + border + _hash(n, i * 53 + j) % 7 - 3
+					var w1: float = TRAIL_WIDTHS[i] * 0.5 + border + _hash(n + 1, i * 53 + j) % 7 - 3
+					draw_colored_polygon(PackedVector2Array([
+						(p0 + normal * w0).floor(), (p1 + normal * w1).floor(),
+						(p1 - normal * w1).floor(), (p0 - normal * w0).floor()
+					]), Color("#493d30") if border > 0.0 else TRAIL)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 33042
+	for i in range(TRAILS.size()):
+		var trail: Array = TRAILS[i]
+		for j in range(trail.size() - 1):
+			var length: float = trail[j].distance_to(trail[j + 1])
+			for n in range(0, int(length), 23):
+				var at: Vector2 = trail[j].lerp(trail[j + 1], float(n) / length).floor()
+				at += Vector2(rng.randi_range(-8, 8), rng.randi_range(-6, 6))
+				draw_rect(Rect2(at, Vector2(2 + n % 3, 2)), TRAIL_HIGHLIGHT if n % 3 == 0 else Color("#655137"))
+
+func _draw_clearing(center: Vector2) -> void:
+	for y in range(-28, 29, 6):
+		var span := roundi(39.0 * sqrt(maxf(0.0, 1.0 - pow(y / 33.0, 2))))
+		span += _hash(roundi(center.x), y) % 5 - 2
+		draw_rect(Rect2(center + Vector2(-span, y), Vector2(span * 2, 6)), Color("#556246"))
+	for n in range(11):
+		var x := _hash(n, roundi(center.x)) % 61 - 30
+		var y := _hash(n, roundi(center.y)) % 37 - 18
+		draw_rect(Rect2(center + Vector2(x, y), Vector2(3, 2)), Color("#aa9363"))
+
+func _draw_decoration() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12051
+	var trees: Array[Vector2] = []
+	for i in range(290):
+		var at := Vector2(rng.randi_range(30, 1160), rng.randi_range(30, 865))
+		if not _free_for_decoration(at):
+			continue
+		if i % 3 != 2:
+			var free := true
+			for tree in trees:
+				if at.distance_squared_to(tree) < 46.0 * 46.0:
+					free = false
+					break
+			if free:
+				trees.append(at)
+				_draw_tree(at, i % 3)
+		elif i % 2 == 0:
+			_draw_shrub(at)
+		else:
+			_draw_ground_details(at, i)
+	for i in range(100):
+		var at := Vector2(rng.randi_range(22, 1175), rng.randi_range(25, 875))
+		if _free_for_decoration(at):
+			_draw_ground_details(at, i)
+
+func _draw_tree(at: Vector2, variant: int) -> void:
+	# The crown, bark, shadow and leaves are a real 64x64 sprite in the atlas.
+	draw_texture_rect_region(ATLAS, Rect2(at + Vector2(-32, -52), Vector2(64, 64)), Rect2(variant * 64, 64, 64, 64))
+
+func _draw_shrub(at: Vector2) -> void:
+	draw_rect(Rect2(at + Vector2(-10, 3), Vector2(22, 5)), Color("#18392e"))
+	for patch in [Rect2(-10, -1, 9, 6), Rect2(-5, -6, 10, 9), Rect2(3, -3, 9, 9)]:
+		draw_rect(Rect2(at + patch.position, patch.size), Color("#417348"))
+	draw_rect(Rect2(at + Vector2(-4, -5), Vector2(5, 2)), Color("#80a45c"))
+	draw_rect(Rect2(at + Vector2(4, -2), Vector2(3, 2)), Color("#7ca45c"))
+
+func _draw_ground_details(at: Vector2, seed: int) -> void:
+	match seed % 4:
+		0:
+			draw_rect(Rect2(at, Vector2(3, 4)), Color("#72945b"))
+			draw_rect(Rect2(at + Vector2(-3, 1), Vector2(3, 2)), Color("#486b43"))
+		1:
+			draw_rect(Rect2(at, Vector2(6, 3)), Color("#a27652"))
+			draw_rect(Rect2(at + Vector2(2, -1), Vector2(3, 1)), Color("#c39a63"))
+		2:
+			draw_rect(Rect2(at, Vector2(4, 3)), Color("#879381"))
+			draw_rect(Rect2(at + Vector2(1, -1), Vector2(2, 1)), Color("#bac0a2"))
+		3:
+			draw_rect(Rect2(at, Vector2(2, 2)), Color("#efdc92"))
+			draw_rect(Rect2(at + Vector2(-3, 0), Vector2(2, 2)), Color("#caa367"))
+			draw_rect(Rect2(at + Vector2(-1, 2), Vector2(2, 2)), Color("#687f51"))
 func _free_for_decoration(at: Vector2) -> bool:
 	if SafeCamp.AREA.grow(26).has_point(at):
 		return false
@@ -90,61 +162,74 @@ func _free_for_decoration(at: Vector2) -> bool:
 				return false
 	return true
 
-func _draw_tree(at: Vector2, tall: bool) -> void:
-	draw_rect(Rect2(at + Vector2(-8, 11), Vector2(23, 5)), Color("#172e26"))
-	draw_rect(Rect2(at + Vector2(1, 1), Vector2(5, 13)), Color("#705237"))
-	draw_rect(Rect2(at + Vector2(2, 3), Vector2(2, 8)), Color("#a17b4b"))
-	if tall:
-		draw_rect(Rect2(at + Vector2(-9, -15), Vector2(25, 16)), Color("#284c38"))
-		draw_rect(Rect2(at + Vector2(-5, -20), Vector2(17, 12)), Color("#3f7048"))
-	else:
-		draw_rect(Rect2(at + Vector2(-10, -11), Vector2(27, 13)), Color("#365e3f"))
-		draw_rect(Rect2(at + Vector2(-5, -16), Vector2(17, 10)), Color("#5d824c"))
-	draw_rect(Rect2(at + Vector2(-3, -14 if tall else -10), Vector2(7, 3)), Color("#779759"))
-
 func _draw_camp() -> void:
 	var area := SafeCamp.AREA
-	# The former clearance outline created a long pale vertical line across the forest.
-	# Clearance/hitboxes remain in SafeCamp; only subtle corner ground marks are drawn.
-	var edge := area.grow(SafeCamp.CLEARANCE)
-	for corner: Vector2 in [edge.position, Vector2(edge.end.x, edge.position.y), edge.end, Vector2(edge.position.x, edge.end.y)]:
-		draw_rect(Rect2(corner - Vector2(3, 2), Vector2(6, 4)), Color("#526747"))
-	draw_rect(area.grow(5), Color("#253627"))
-	draw_rect(area, Color("#92794c"))
-	draw_rect(area.grow(-8), Color("#667750"))
-	for x in range(482, 646, 16):
-		draw_rect(Rect2(x, 363, 8, 6), Color("#bead72"))
-		draw_rect(Rect2(x, 541, 8, 6), Color("#bead72"))
-	for y in range(379, 540, 20):
-		draw_rect(Rect2(472, y, 6, 9), Color("#bead72"))
-		draw_rect(Rect2(642, y, 6, 9), Color("#bead72"))
-	# Pixel shapes for the chest, forge and vendor stall; labels follow the same HUD font.
-	_draw_station(SafeCamp.STATIONS["Baú"], Color("#6e4b29"), Color("#d5b369"))
-	_draw_station(SafeCamp.STATIONS["Ferreiro"], Color("#424849"), Color("#ed9c46"))
-	_draw_station(SafeCamp.STATIONS["Vendedor"], Color("#365b4b"), Color("#d7c87b"))
+	# Warm, protected clearing. The fence is visual; physics remain unchanged.
+	draw_rect(area.grow(5), Color("#263c31"))
+	for y in range(int(area.position.y), int(area.end.y), 8):
+		var edge := _hash(y, 47) % 5
+		draw_rect(Rect2(area.position.x + edge, y, area.size.x - edge * 2, 8), Color("#756044"))
+		draw_rect(Rect2(area.position.x + 7 + edge, y, area.size.x - 14 - edge * 2, 8), Color("#4b6849"))
+	for y in range(int(area.position.y) + 13, int(area.end.y) - 12, 21):
+		for x in range(int(area.position.x) + 13, int(area.end.x) - 11, 24):
+			if _hash(x, y) % 3 == 0:
+				draw_rect(Rect2(x, y, 5, 3), Color("#5f7c4d"))
+			elif _hash(x, y) % 4 == 0:
+				draw_rect(Rect2(x, y, 3, 2), Color("#b09a68"))
+	for x in range(int(area.position.x) + 6, int(area.end.x) - 5, 12):
+		for y in [int(area.position.y) + 5, int(area.end.y) - 8]:
+			_draw_fence(Vector2(x, y))
+	for y in range(int(area.position.y) + 15, int(area.end.y) - 10, 15):
+		for x in [int(area.position.x) + 4, int(area.end.x) - 8]:
+			_draw_fence(Vector2(x, y))
+	_draw_station(SafeCamp.STATIONS["Baú"], Color("#6f482c"), Color("#d4ae69"))
+	_draw_station(SafeCamp.STATIONS["Ferreiro"], Color("#454c4a"), Color("#efab66"))
+	_draw_station(SafeCamp.STATIONS["Vendedor"], Color("#40694d"), Color("#d6c681"))
 	_draw_npc(Vector2(606, 423), Color("#637587"), Color("#764e37"))
 	_draw_npc(Vector2(606, 475), Color("#9b6947"), Color("#dbc079"))
-	draw_rect(Rect2(526, 420, 27, 9), Color("#604734"))
-	draw_rect(Rect2(530, 411, 20, 12), Color("#de8d4b"))
-	draw_rect(Rect2(534, 407, 12, 10), Color("#f2c26b"))
+	_draw_fire(Vector2(540, 424))
+
+func _draw_fence(at: Vector2) -> void:
+	draw_rect(Rect2(at + Vector2(1, 3), Vector2(8, 6)), Color("#493d2e"))
+	draw_rect(Rect2(at + Vector2(0, 0), Vector2(8, 5)), Color("#baa570"))
+	draw_rect(Rect2(at + Vector2(2, 0), Vector2(4, 2)), Color("#e1c282"))
 
 func _draw_station(at: Vector2, base: Color, accent: Color) -> void:
-	draw_rect(Rect2(at + Vector2(-15, -11), Vector2(30, 27)), Color("#273027"))
-	draw_rect(Rect2(at + Vector2(-13, -14), Vector2(26, 24)), base)
-	draw_rect(Rect2(at + Vector2(-10, -10), Vector2(20, 6)), accent)
-	draw_rect(Rect2(at + Vector2(-4, -7), Vector2(8, 12)), accent.darkened(0.3))
+	draw_rect(Rect2(at + Vector2(-17, 11), Vector2(34, 7)), Color("#253b32"))
+	draw_rect(Rect2(at + Vector2(-16, -16), Vector2(32, 29)), Color("#2d3933"))
+	draw_rect(Rect2(at + Vector2(-13, -13), Vector2(26, 23)), base)
+	draw_rect(Rect2(at + Vector2(-16, -18), Vector2(32, 7)), accent.darkened(0.25))
+	draw_rect(Rect2(at + Vector2(-12, -19), Vector2(24, 3)), accent)
+	draw_rect(Rect2(at + Vector2(-10, -9), Vector2(20, 5)), accent)
+	draw_rect(Rect2(at + Vector2(-10, -4), Vector2(20, 2)), accent.darkened(0.4))
+	draw_rect(Rect2(at + Vector2(-6, 2), Vector2(12, 6)), Color("#26372d"))
+	draw_rect(Rect2(at + Vector2(-2, 0), Vector2(4, 8)), accent.lightened(0.12))
 
 func _draw_npc(at: Vector2, tunic: Color, hat: Color) -> void:
-	draw_rect(Rect2(at + Vector2(-9, 12), Vector2(7, 5)), Color("#253228"))
-	draw_rect(Rect2(at + Vector2(3, 12), Vector2(7, 5)), Color("#253228"))
-	draw_rect(Rect2(at + Vector2(-10, -3), Vector2(20, 16)), tunic)
-	draw_rect(Rect2(at + Vector2(-7, -14), Vector2(14, 11)), Color("#c79d71"))
-	draw_rect(Rect2(at + Vector2(-10, -18), Vector2(20, 5)), hat)
-	draw_rect(Rect2(at + Vector2(-6, -7), Vector2(3, 3)), Color("#212a28"))
-	draw_rect(Rect2(at + Vector2(3, -7), Vector2(3, 3)), Color("#212a28"))
+	draw_rect(Rect2(at + Vector2(-10, 15), Vector2(20, 4)), Color("#263b32"))
+	draw_rect(Rect2(at + Vector2(-8, 10), Vector2(6, 6)), Color("#373c37"))
+	draw_rect(Rect2(at + Vector2(2, 10), Vector2(6, 6)), Color("#373c37"))
+	draw_rect(Rect2(at + Vector2(-10, -4), Vector2(20, 16)), tunic.darkened(0.25))
+	draw_rect(Rect2(at + Vector2(-8, -3), Vector2(16, 14)), tunic)
+	draw_rect(Rect2(at + Vector2(-7, -15), Vector2(14, 12)), Color("#c79d71"))
+	draw_rect(Rect2(at + Vector2(-9, -20), Vector2(18, 6)), hat)
+	draw_rect(Rect2(at + Vector2(-5, -8), Vector2(3, 3)), Color("#212a28"))
+	draw_rect(Rect2(at + Vector2(3, -8), Vector2(3, 3)), Color("#212a28"))
+
+func _draw_fire(at: Vector2) -> void:
+	draw_rect(Rect2(at + Vector2(-16, 4), Vector2(32, 6)), Color("#443e31"))
+	draw_rect(Rect2(at + Vector2(-11, 0), Vector2(22, 8)), Color("#78553a"))
+	draw_rect(Rect2(at + Vector2(-8, -10), Vector2(17, 13)), Color("#d87543"))
+	draw_rect(Rect2(at + Vector2(-5, -16), Vector2(10, 16)), Color("#f3b95e"))
+	draw_rect(Rect2(at + Vector2(-2, -10), Vector2(5, 11)), Color("#ffe09a"))
 
 func _draw_stone(area: Rect2) -> void:
-	draw_rect(area, Color("#20362f"))
-	draw_rect(area.grow(-4), ROCK)
-	draw_rect(Rect2(area.position + Vector2(8, 7), area.size - Vector2(23, 22)), Color("#65786b"))
-	draw_rect(Rect2(area.position + Vector2(11, 10), area.size * Vector2(0.35, 0.18)), Color("#879486"))
+	# Its full silhouette still covers the unchanged blocking rectangles.
+	draw_rect(area, Color("#243d37"))
+	for y in range(int(area.position.y) + 3, int(area.end.y) - 2, 5):
+		var left := area.position.x + 3 + _hash(y, 97) % 3
+		var right := area.end.x - 3 - _hash(y, 107) % 3
+		draw_rect(Rect2(left, y, right - left, 5), Color("#526b61"))
+	for i in range(12):
+		var at := area.position + Vector2(9 + _hash(i, 52) % maxi(1, int(area.size.x) - 18), 8 + _hash(i, 53) % maxi(1, int(area.size.y) - 16))
+		draw_rect(Rect2(at, Vector2(4 + i % 3, 2)), Color("#91a097") if i % 3 == 0 else Color("#3b5950"))
