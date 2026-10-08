@@ -143,7 +143,7 @@ func _run() -> void:
 	boar.stats = boar.stats.duplicate() as ActorData
 	main.add_child(boar)
 	boar.target = player
-	boar.position = player.position + Vector2(150, 0)
+	boar.global_position = player.global_position + Vector2(150, 0)
 	boar._physics_process(0.016)
 	check(boar.charge_windup > 0.0, "boar telegraphs a charge at mid range")
 	var spider := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
@@ -151,7 +151,7 @@ func _run() -> void:
 	spider.stats = spider.stats.duplicate() as ActorData
 	main.add_child(spider)
 	spider.target = player
-	spider.position = player.position + Vector2(55, 0)
+	spider.global_position = player.global_position + Vector2(55, 0)
 	spider._physics_process(0.016)
 	check(spider.velocity.x > 0.0, "spider retreats when too close")
 	var cactus := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
@@ -159,7 +159,7 @@ func _run() -> void:
 	cactus.stats = cactus.stats.duplicate() as ActorData
 	main.add_child(cactus)
 	cactus.target = player
-	cactus.position = player.position + Vector2(180, 0)
+	cactus.global_position = player.global_position + Vector2(180, 0)
 	cactus._physics_process(0.016)
 	check(cactus.special_left > 0.0 and cactus.velocity.is_zero_approx(), "mandacaru prepares ranged attack at preferred distance")
 	main.queue_free()
