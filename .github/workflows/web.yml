@@ -98,7 +98,7 @@ jobs:
           mkdir -p web/.vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
           cd web
-          npx --yes vercel@62.7.0 deploy --prod --yes --token "$VERCEL_TOKEN"
+          npx --yes vercel@62.7.0 deploy --prod --yes
 
   preview:
     name: Preview proposed Godot Web changes
@@ -132,7 +132,16 @@ jobs:
           mkdir -p web/.vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
           cd web
-          preview_url="$(npx --yes vercel@62.7.0 deploy --yes --token "$VERCEL_TOKEN")"
+          preview_url="$(npx --yes vercel@62.7.0 deploy --yes --meta githubCommitSha=${{ github.event.pull_request.head.sha }} --meta githubCommitRef=${{ github.head_ref }})"
+          PREVIEW_URL="$preview_url" node --input-type=module -e '
+            const value = process.env.PREVIEW_URL;
+            const url = new URL(value);
+            if (url.protocol !== "https:" || url.origin !== value || !url.hostname.endsWith(".vercel.app")) process.exit(1);
+          '
+          if [[ "${{ github.head_ref }}" == 'feat/andar1-v020-primeiro-passe' ]]; then
+            npx --yes vercel@62.7.0 alias set "$preview_url" grande-arvore-rpg-teste.vercel.app
+            echo '[TESTE fixo](https://grande-arvore-rpg-teste.vercel.app)' >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
           echo "[Abrir protótipo experimental]($preview_url)" >> "$GITHUB_STEP_SUMMARY"

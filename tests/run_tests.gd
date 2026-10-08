@@ -5,6 +5,11 @@ var checks: int = 0
 var deaths: int = 0
 
 func _initialize() -> void:
+	# A runtime error can abort _run before quit; always bound the runner itself.
+	create_timer(15.0).timeout.connect(func():
+		push_error("FAIL: gameplay tests did not finish within 15 seconds")
+		quit(1)
+	)
 	call_deferred("_run")
 
 func check(condition: bool, message: String) -> void:
@@ -138,7 +143,7 @@ func _run() -> void:
 	main.mission.record_material()
 	check(main.mission.progress == 0, "irrelevant material events do not advance hunt")
 	# Enemy roles remain deliberately distinct and lightweight.
-	player.health.initialize(player.stats.max_health)
+	player.health.initialize(player.stats.max_hp)
 	var boar := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	boar.kind = 0
 	boar.stats = boar.stats.duplicate() as ActorData
