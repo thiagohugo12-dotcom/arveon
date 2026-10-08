@@ -20,6 +20,8 @@ var loot_label: Label
 var inventory_button: Button
 var inventory_panel: PanelContainer
 var inventory_text: Label
+var inventory_scroll: ScrollContainer
+var inventory_close: Button
 var inventory_open := false
 var restart: Button
 var cooldown: float = 0.0
@@ -78,13 +80,14 @@ func _ready() -> void:
 	var inventory_heading := Label.new()
 	inventory_heading.text = "Mochila · materiais"
 	inventory_column.add_child(inventory_heading)
-	var inventory_scroll := ScrollContainer.new()
+	inventory_scroll = ScrollContainer.new()
 	inventory_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inventory_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_column.add_child(inventory_scroll)
 	inventory_text = Label.new()
 	inventory_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inventory_scroll.add_child(inventory_text)
-	var inventory_close := Button.new()
+	inventory_close = Button.new()
 	inventory_close.text = "Fechar"
 	inventory_close.custom_minimum_size.y = 44
 	inventory_close.pressed.connect(func(): inventory_toggled.emit())
@@ -189,11 +192,20 @@ func set_mission(value: String) -> void:
 	mission_label.text = "◆ " + value.replace("Missão comum: ", "")
 
 func show_inventory(progress: GameProgress) -> void:
+	if station_panel.visible or restart.visible:
+		return
 	inventory_open = true
 	inventory_panel.show()
 	inventory_button.disabled = true
 	interact_button.visible = false
+	interact_button.enabled = false
 	dash_button.enabled = false
+	dash_button.queue_redraw()
+	joystick.reset()
+	refresh_inventory(progress)
+	_layout()
+
+func refresh_inventory(progress: GameProgress) -> void:
 	var lines: Array[String] = ["Ouro: %d" % progress.gold]
 	for item: String in GameProgress.ITEMS:
 		var count := int(progress.bag.get(item, 0))
@@ -202,13 +214,13 @@ func show_inventory(progress: GameProgress) -> void:
 	if lines.size() == 1:
 		lines.append("Nenhum material na mochila.")
 	inventory_text.text = "\n".join(lines)
-	_layout()
 
 func close_inventory() -> void:
 	inventory_open = false
 	inventory_panel.hide()
 	inventory_button.disabled = false
 	dash_button.enabled = not restart.visible and not station_panel.visible and not inventory_open
+	dash_button.queue_redraw()
 
 func show_death() -> void:
 	close_inventory()
@@ -334,6 +346,13 @@ func _input(event: InputEvent) -> void:
 	if restart.visible:
 		_activate_touch_button(restart, event.position)
 		return
+	if inventory_open:
+		if inventory_panel.get_global_rect().has_point(event.position):
+			_activate_touch_button(inventory_close, event.position)
+			get_viewport().set_input_as_handled()
+		return
+	if not station_panel.visible and _activate_touch_button(inventory_button, event.position):
+		return
 	if not station_panel.visible:
 		return
 	if _activate_touch_button(station_close_button, event.position):
@@ -367,3 +386,4 @@ func set_dash_cooldown(value: float) -> void:
 	if rounded != cooldown:
 		cooldown = rounded
 		dash_button.set_caption("Dash" if value <= 0.0 else "Dash\n%.1fs" % value)
+

@@ -20,6 +20,11 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		view.set_moving(false)
 		return
+	if input_driver.blocked:
+		dash.time_left = 0.0
+		velocity = Vector2.ZERO
+		view.set_moving(false)
+		return
 	dash.tick(delta)
 	var movement := input_driver.movement()
 	if not movement.is_zero_approx():

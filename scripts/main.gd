@@ -153,6 +153,8 @@ func _save_progress() -> void:
 	progress.mission_index = mission.mission_index
 	progress.mission_progress = mission.progress
 	progress.mission_completed = mission.completed_count
+	if hud.inventory_open:
+		hud.refresh_inventory(progress)
 	if not progress.save():
 		push_warning("Não foi possível salvar o progresso local.")
 
@@ -250,3 +252,4 @@ func _adapt_orientation() -> void:
 	if window.content_scale_size != desired:
 		window.content_scale_size = desired
 	hud.call_deferred("_layout")
+

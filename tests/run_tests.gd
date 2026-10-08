@@ -341,9 +341,51 @@ func _run() -> void:
 	main._station_action("Vender", "Ervas")
 	check(main.progress.gold == sale_gold + GameProgress.SELL_PRICE and main.progress.bag.get("Ervas", 0) == herbs_before, "vendor sells gathered resources through existing wallet (%d -> %d, bag %s)" % [sale_gold, main.progress.gold, main.progress.bag.get("Ervas", 0)])
 	hud.close_station()
+	# Real touch events are not emulated as mouse clicks in project.godot.
+	player.position = Vector2(950, 750)
+	main.progress.add_item("Madeira", 2)
+	main._save_progress()
+	hud.size = Vector2(360, 640)
+	hud._layout()
+	await frames()
+	var bag_touch := InputEventScreenTouch.new()
+	bag_touch.index = 10
+	bag_touch.pressed = true
+	bag_touch.position = hud.inventory_button.global_position + hud.inventory_button.size * 0.5
+	hud._input(bag_touch)
+	check(hud.inventory_open and hud.inventory_panel.visible and driver.blocked, "portrait touch opens the bag and blocks input")
+	check(hud.inventory_text.text.contains("Ouro: %d" % main.progress.gold) and hud.inventory_text.text.contains("Madeira  x2"), "bag shows wallet and carried materials")
+	check(hud.inventory_panel.get_global_rect().has_point(hud.inventory_close.global_position + hud.inventory_close.size * 0.5), "portrait bag close target fits panel")
+	var saved_player_pos := player.position
+	player.dash.time_left = 0.1
+	player.attack.cooldown_left = 0.0
+	Input.action_press("move_right")
+	player._physics_process(0.016)
+	Input.action_release("move_right")
+	check(player.position == saved_player_pos and player.velocity.is_zero_approx() and player.dash.time_left == 0.0 and player.attack.cooldown_left == 0.0, "open bag cancels dash and suppresses movement and attack")
+	main.progress.add_item("Pedras")
+	main._save_progress()
+	check(hud.inventory_text.text.contains("Pedras  x1"), "open bag refreshes after inventory save")
+	var bag_reloaded := GameProgress.new()
+	bag_reloaded.save_path = test_path
+	check(bag_reloaded.load_save() and bag_reloaded.bag.get("Madeira", 0) == 2 and bag_reloaded.bag.get("Pedras", 0) == 1, "bag content persists in existing save")
+	bag_touch.position = hud.inventory_close.global_position + hud.inventory_close.size * 0.5
+	hud._input(bag_touch)
+	check(not hud.inventory_open and not hud.inventory_panel.visible and not driver.blocked, "touch closes bag and resumes input")
+	hud.size = Vector2(640, 360)
+	hud._layout()
+	await frames()
+	bag_touch.position = hud.inventory_button.global_position + hud.inventory_button.size * 0.5
+	hud._input(bag_touch)
+	check(hud.inventory_open and hud.inventory_panel.get_global_rect().end.y <= hud.size.y and hud.inventory_panel.get_global_rect().position.y >= 0, "landscape touch opens bag entirely on screen")
+	check(hud.inventory_scroll.is_visible_in_tree() and hud.inventory_close.get_global_rect().end.y <= hud.size.y, "landscape bag scroll and close stay accessible")
+	bag_touch.position = hud.inventory_close.global_position + hud.inventory_close.size * 0.5
+	hud._input(bag_touch)
+	check(not hud.inventory_open and not driver.blocked, "landscape touch closes bag")
 	main.queue_free()
 	await frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
 	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
 	print("RESULT: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
