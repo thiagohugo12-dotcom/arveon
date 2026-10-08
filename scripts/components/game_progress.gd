@@ -11,6 +11,9 @@ const ATTRIBUTES := RPGRules.ATTRIBUTES
 const MAX_LEVEL := RPGRules.MAX_LEVEL
 const POINTS_PER_LEVEL := 2
 
+const ADVENTURES := {"explorar": 3, "forjar": 1, "elite": 1, "guardiao": 1}
+var adventures: Dictionary = {"explorar": 0, "forjar": 0, "elite": 0, "guardiao": 0}
+
 var save_path: String = "user://andar1_progress.json"
 var bag: Dictionary = {}
 var chest: Dictionary = {}
@@ -189,7 +192,7 @@ func save() -> bool:
 		"gold": gold, "xp": xp, "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
-		"discovered_pois": discovered_pois, "rpg": {"level": level(), "attributes": attributes,
+		"discovered_pois": discovered_pois, "adventures": adventures, "rpg": {"level": level(), "attributes": attributes,
 		"skills": skills, "equipment": equipment, "equipped": equipped}}))
 	file.close()
 	return true
@@ -254,6 +257,16 @@ func load_save() -> bool:
 		if rpg_value == null:
 			return false
 		new_rpg = rpg_value
+	var new_adventures: Dictionary = {"explorar": 0, "forjar": 0, "elite": 0, "guardiao": 0}
+	if parsed.has("adventures"):
+		if not parsed.adventures is Dictionary or parsed.adventures.size() != 4:
+			return false
+		for key: String in ADVENTURES:
+			var amount: Variant = parsed.adventures.get(key)
+			if not _bounded_integer(amount, 0, ADVENTURES[key]):
+				return false
+			new_adventures[key] = int(amount)
+	adventures = new_adventures
 	bag = new_bag
 	chest = new_chest
 	gold = int(parsed.gold)
@@ -374,3 +387,21 @@ func add_xp(amount: int) -> bool:
 		return false
 	xp += amount
 	return true
+
+func record_adventure(id: String) -> Dictionary:
+	if not ADVENTURES.has(id) or adventures[id] >= ADVENTURES[id]:
+		return {}
+	adventures[id] += 1
+	if adventures[id] < ADVENTURES[id]:
+		return {}
+	var rewards := {"explorar": [30, 10], "forjar": [40, 15], "elite": [60, 20], "guardiao": [120, 40]}
+	xp += rewards[id][0]
+	gold += rewards[id][1]
+	return {"xp": rewards[id][0], "gold": rewards[id][1]}
+
+func adventure_summary() -> String:
+	var names := {"explorar": "Coletar na mata", "forjar": "Fabricar no Ferreiro", "elite": "Vencer um elite", "guardiao": "Guardião (opcional)"}
+	for key: String in ADVENTURES:
+		if adventures[key] < ADVENTURES[key]:
+			return "%s %d/%d" % [names[key], adventures[key], ADVENTURES[key]]
+	return "Desafios do Andar 1 concluídos"

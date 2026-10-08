@@ -17,6 +17,7 @@ var anim_frame: int = 0
 var skill_left := 0.0
 var skill_effect := 0
 var fury := false
+var elite := false
 
 func play_skill(index: int) -> void:
 	skill_effect = index
@@ -98,6 +99,9 @@ func px(x: float, y: float, w: float, h: float, color: Color) -> void:
 	draw_rect(Rect2(x, y, w, h), color)
 
 func _draw() -> void:
+	if elite:
+		draw_rect(Rect2(-22, -36, 44, 3), Color("#e5b968"))
+		draw_string(ThemeDB.fallback_font, Vector2(-15, -42), "ELITE", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#e5b968"))
 	if fury:
 		draw_arc(Vector2.ZERO, 24, 0, TAU, 12, Color("#e7a15b"), 3)
 	if skill_left > 0.0:

@@ -7,6 +7,10 @@ var current_time := 0
 func _draw() -> void:
 	if progress == null:
 		return
+	var altar := Vector2(1060, 155)
+	draw_rect(Rect2(altar - Vector2(24, 20), Vector2(48, 40)), Color("#4b5740"))
+	draw_rect(Rect2(altar - Vector2(10, 30), Vector2(20, 44)), Color("#8a7854"))
+	draw_string(ThemeDB.fallback_font, altar + Vector2(-54, -38), "Guardião · opcional", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#decb91"))
 	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
 		if int(progress.harvested_until.get(spot.id, 0)) > current_time:
 			continue

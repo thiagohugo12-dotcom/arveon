@@ -5,7 +5,7 @@ signal defeated(kind: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: int)
 
 @export var stats: ActorData
-@export_range(0, 2, 1) var kind: int = 0  # 0 Javali, 1 Aranha, 2 Mandacaru
+@export_range(0, 4, 1) var kind: int = 0  # 0 Javali, 1 Aranha, 2 Mandacaru
 @onready var health: Health = $Health
 @onready var view: ActorView = $View
 var target: PlayerActor
@@ -27,7 +27,8 @@ var chasing := false
 
 func _ready() -> void:
 	home_position = global_position
-	view.appearance = kind + 1
+	view.appearance = (0 if kind == 3 else kind) + 1
+	view.elite = kind == 3
 	view.queue_redraw()
 	add_to_group("damageable_enemies")
 	health.changed.connect(view.set_health)
@@ -71,7 +72,7 @@ func _physics_process(delta: float) -> void:
 		return
 	view.set_facing(offset)
 	match kind:
-		0: _boar_behavior(delta, offset, distance)
+		0, 3: _boar_behavior(delta, offset, distance)
 		1: _spider_behavior(offset, distance)
 		2: _cactus_behavior(offset, distance)
 	var before := global_position

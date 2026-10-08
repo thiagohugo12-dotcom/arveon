@@ -272,7 +272,7 @@ static func _interface(suite, main) -> void:
 	forge_touch.pressed = true
 	forge_touch.position = forge_button.global_position + forge_button.size * 0.5
 	hud._input(forge_touch)
-	suite.check(p.equipment.has("machado") and p.gold == 65, "mobile smith button crafts through existing wallet and inventory")
+	suite.check(p.equipment.has("machado") and p.gold == 80 and p.adventures.forjar == 1, "mobile smith button crafts through existing wallet and inventory")
 	hud.close_station()
 	player.position = Vector2(930, 750)
 	hud.rpg_panel.tab = 1

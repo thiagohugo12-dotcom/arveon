@@ -2,6 +2,11 @@ extends Node2D
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/actors/enemy.tscn")
 const PROJECTILE_SCRIPT := preload("res://scripts/components/enemy_projectile.gd")
+const GUARDIAN_SCRIPT = preload("res://scripts/actors/root_guardian.gd")
+const GUARDIAN_VIEW = preload("res://scripts/presentation/guardian_view.gd")
+const GUARDIAN_ALTAR := Vector2(1060, 155)
+var guardian: EnemyActor
+
 const MAX_ENEMIES := 5
 const SPAWN_INTERVAL := 2.8
 const ENEMY_POSITIONS := [
@@ -75,7 +80,7 @@ func _ready() -> void:
 	known_level = progress.level()
 	hud.set_health(player.health.current, player.health.maximum)
 	hud.set_progress(earned_xp, earned_gold, defeated_count, "")
-	hud.set_mission(mission.summary())
+	hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
 	get_window().size_changed.connect(_adapt_orientation)
 	_adapt_orientation()
 
@@ -115,6 +120,8 @@ func _process(delta: float) -> void:
 func _spawn_enemy() -> void:
 	var actor := ENEMY_SCENE.instantiate() as EnemyActor
 	actor.kind = (spawn_count + 1) % 3
+	if spawn_count % 8 == 7:
+		actor.kind = 3
 	# Duplicating the resource ensures variants never mutate the original enemy template.
 	actor.stats = actor.stats.duplicate() as ActorData
 	match actor.kind:
@@ -126,6 +133,10 @@ func _spawn_enemy() -> void:
 			actor.stats.max_hp = 64
 			actor.stats.move_speed = 48.0
 			actor.stats.contact_damage = 10
+		3:
+			actor.stats.max_hp = 120
+			actor.stats.move_speed = 60.0
+			actor.stats.contact_damage = 12
 	actor.position = ENEMY_POSITIONS[spawn_count % ENEMY_POSITIONS.size()]
 	actor.target = player
 	actor.defeated.connect(_on_enemy_defeated)
@@ -141,13 +152,17 @@ func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> v
 
 func _on_enemy_defeated(kind: int) -> void:
 	defeated_count += 1
-	var gained_xp: int = [12, 10, 16][kind]
+	var gained_xp: int = [12, 10, 16, 35, 80][kind]
 	var gained_gold := loot_rng.randi_range(2, 5)
 	earned_xp += gained_xp
 	earned_gold += gained_gold
-	var material: String = ["Couro", "Seda", "Essência"][kind]
+	var material: String = ["Couro", "Seda", "Essência", "Couro", "Essência"][kind]
 	collected_materials[material] = int(collected_materials.get(material, 0)) + 1
 	var drop_text := "+%d XP · +%d ouro · +1 %s" % [gained_xp, gained_gold, material]
+	if kind == 3:
+		_record_adventure("elite")
+	elif kind == 4:
+		_record_adventure("guardiao")
 	mission.record_defeat()
 	mission.record_material()
 	if loot_rng.randf() < 0.01:
@@ -157,7 +172,7 @@ func _on_enemy_defeated(kind: int) -> void:
 		drop_text += " · " + mission_reward_message
 		mission_reward_message = ""
 	hud.set_progress(earned_xp, earned_gold, defeated_count, drop_text)
-	hud.set_mission(mission.summary())
+	hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
 	_save_progress()
 
 func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
@@ -175,6 +190,7 @@ func _save_progress() -> void:
 	progress.mission_index = mission.mission_index
 	progress.mission_progress = mission.progress
 	progress.mission_completed = mission.completed_count
+	hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
 	if progress.level() > known_level:
 		known_level = progress.level()
 		hud.show_notice("Level Up! Nível %d · %d pontos de atributo · %d de habilidade" % [known_level, progress.attribute_points(), progress.skill_points()])
@@ -208,6 +224,8 @@ func _interact() -> void:
 		return
 	var found := _interaction_target()
 	match found.get("kind", ""):
+		"guardian":
+			_start_guardian()
 		"station":
 			input_driver.reset()
 			input_driver.blocked = true
@@ -216,6 +234,7 @@ func _interact() -> void:
 			var item := progress.collect_resource(found.id, int(Time.get_unix_time_from_system()))
 			if item.is_empty():
 				return
+			_record_adventure("explorar")
 			mission.record_material()
 			var resource_text := "Coletou +1 " + item
 			if not mission_reward_message.is_empty():
@@ -223,7 +242,7 @@ func _interact() -> void:
 				mission_reward_message = ""
 			_save_progress()
 			hud.set_progress(earned_xp, earned_gold, defeated_count, resource_text)
-			hud.set_mission(mission.summary())
+			hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
 			exploration_view.queue_redraw()
 			station_nearby = ""
 		"cache":
@@ -239,11 +258,13 @@ func _interact() -> void:
 			_save_progress()
 			hud.minimap.queue_redraw()
 			hud.set_progress(earned_xp, earned_gold, defeated_count, cache_text)
-			hud.set_mission(mission.summary())
+			hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
 			exploration_view.queue_redraw()
 			station_nearby = ""
 
 func _interaction_target() -> Dictionary:
+	if player.global_position.distance_to(GUARDIAN_ALTAR) <= 58.0 and progress.adventures.guardiao == 0 and not is_instance_valid(guardian):
+		return {"kind": "guardian", "label": "Desafiar Guardião (opcional)"}
 	var station := SafeCamp.nearest_station(player.global_position)
 	if not station.is_empty():
 		return {"kind": "station", "id": station, "label": station}
@@ -340,6 +361,9 @@ func _rpg_action(action: String, id: String, expected: int) -> void:
 			success = progress.unequip(id)
 	if not success:
 		return
+	if action == "forge":
+		earned_gold = progress.gold
+		_record_adventure("forjar")
 	earned_gold = progress.gold
 	player.apply_progression(progress)
 	_save_progress()
@@ -357,3 +381,33 @@ func _adapt_orientation() -> void:
 		window.content_scale_size = desired
 	hud.call_deferred("_layout")
 
+
+func _record_adventure(id: String) -> void:
+	progress.xp = earned_xp
+	progress.gold = earned_gold
+	var reward := progress.record_adventure(id)
+	earned_xp = progress.xp
+	earned_gold = progress.gold
+	if not reward.is_empty():
+		hud.show_notice("Desafio concluído! +%d XP · +%d ouro" % [reward.xp, reward.gold])
+
+func _start_guardian() -> void:
+	if is_instance_valid(guardian) or progress.adventures.guardiao > 0:
+		return
+	if get_tree().get_nodes_in_group("damageable_enemies").size() >= MAX_ENEMIES:
+		hud.show_notice("Elimine uma criatura antes de desafiar o Guardião")
+		return
+	guardian = ENEMY_SCENE.instantiate() as EnemyActor
+	var template := guardian.stats.duplicate() as ActorData
+	guardian.set_script(GUARDIAN_SCRIPT)
+	guardian.get_node("View").set_script(GUARDIAN_VIEW)
+	guardian.kind = 4
+	guardian.stats = template
+	guardian.stats.max_hp = 320
+	guardian.stats.move_speed = 45.0
+	guardian.position = GUARDIAN_ALTAR + Vector2(0, 80)
+	guardian.target = player
+	guardian.defeated.connect(_on_enemy_defeated)
+	guardian.projectile_requested.connect(_on_enemy_projectile)
+	add_child(guardian)
+	hud.show_notice("Guardião: evite as áreas douradas. Desafio opcional!")
