@@ -85,8 +85,8 @@ func load_save() -> bool:
 			return false
 	if parsed.mission_index >= 2 or parsed.mission_progress >= [8, 5][int(parsed.mission_index)]:
 		return false
-	var new_bag := _valid_items(parsed.get("bag"))
-	var new_chest := _valid_items(parsed.get("chest"))
+	var new_bag: Variant = _valid_items(parsed.get("bag"))
+	var new_chest: Variant = _valid_items(parsed.get("chest"))
 	if new_bag == null or new_chest == null:
 		return false
 	bag = new_bag
