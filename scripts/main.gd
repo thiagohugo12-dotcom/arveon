@@ -65,6 +65,7 @@ func _ready() -> void:
 	hud.interact_pressed.connect(_interact)
 	hud.inventory_toggled.connect(_toggle_inventory)
 	hud.character_toggled.connect(_toggle_character)
+	hud.map_toggled.connect(_toggle_map)
 	hud.skill_pressed.connect(_use_skill)
 	hud.rpg_action.connect(_rpg_action)
 	hud.station_action.connect(_station_action)
@@ -214,13 +215,13 @@ func _toggle_inventory() -> void:
 		hud.close_inventory()
 		input_driver.blocked = false
 		station_nearby = ""
-	elif player.health.is_alive() and not hud.station_panel.visible and not hud.rpg_panel.visible:
+	elif player.health.is_alive() and not hud.station_panel.visible and not hud.rpg_panel.visible and not hud.map_panel.visible:
 		input_driver.reset()
 		input_driver.blocked = true
 		hud.show_inventory(progress)
 
 func _interact() -> void:
-	if not player.health.is_alive() or hud.station_panel.visible or hud.inventory_open or hud.rpg_panel.visible:
+	if not player.health.is_alive() or hud.station_panel.visible or hud.inventory_open or hud.rpg_panel.visible or hud.map_panel.visible:
 		return
 	var found := _interaction_target()
 	match found.get("kind", ""):
@@ -300,6 +301,10 @@ func _station_action(action: String, item: String) -> void:
 func _input(event: InputEvent) -> void:
 	if event.is_echo():
 		return
+	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_M:
+		_toggle_map()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("character"):
 		_toggle_character()
 		get_viewport().set_input_as_handled()
@@ -310,7 +315,9 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 	if event.is_action_pressed("ui_cancel"):
-		if hud.rpg_panel.visible:
+		if hud.map_panel.visible:
+			_toggle_map()
+		elif hud.rpg_panel.visible:
 			_toggle_character()
 		elif hud.inventory_open:
 			_toggle_inventory()
@@ -319,7 +326,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("interact") and not event.is_echo():
-		if hud.rpg_panel.visible:
+		if hud.map_panel.visible:
+			_toggle_map()
+		elif hud.rpg_panel.visible:
 			_toggle_character()
 		elif hud.inventory_open:
 			_toggle_inventory()
@@ -338,10 +347,20 @@ func _toggle_character() -> void:
 		hud.close_character()
 		input_driver.blocked = false
 		station_nearby = ""
-	elif player.health.is_alive() and not hud.inventory_open and not hud.station_panel.visible:
+	elif player.health.is_alive() and not hud.inventory_open and not hud.station_panel.visible and not hud.map_panel.visible:
 		input_driver.reset()
 		input_driver.blocked = true
 		hud.show_character(progress)
+
+func _toggle_map() -> void:
+	if hud.map_panel.visible:
+		hud.close_map()
+		input_driver.blocked = false
+		station_nearby = ""
+	elif player.health.is_alive() and not hud.inventory_open and not hud.station_panel.visible and not hud.rpg_panel.visible:
+		input_driver.reset()
+		input_driver.blocked = true
+		hud.show_map(progress)
 
 func _rpg_action(action: String, id: String, expected: int) -> void:
 	if not player.health.is_alive():

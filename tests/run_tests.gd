@@ -419,7 +419,7 @@ func _run() -> void:
 	check(not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.dash_button.get_global_rect()), "landscape minimap avoids bag and dash controls")
 	hud.size = Vector2(360, 640)
 	hud._layout()
-	check(hud.minimap.size == Vector2(96, 80) and not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.joystick.get_global_rect()), "compact portrait minimap avoids bag and joystick")
+	check(hud.minimap.size == Vector2(84, 64) and not hud.minimap.get_global_rect().intersects(hud.inventory_button.get_global_rect()) and not hud.minimap.get_global_rect().intersects(hud.joystick.get_global_rect()), "compact portrait minimap avoids bag and joystick")
 	bag_touch.position = hud.inventory_button.global_position + hud.inventory_button.size * 0.5
 	hud._input(bag_touch)
 	await frames()

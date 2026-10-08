@@ -235,7 +235,7 @@ static func _interface(suite, main) -> void:
 		suite.check(player.skill_cooldowns[0] > 0.0 and not hud.actions[0].enabled, "touch skill activates and exposes cooldown %s" % size)
 		skill_touch.pressed = false
 		hud.actions[0]._input(skill_touch)
-		suite.check(not hud.actions[4].get_rect().intersects(hud.joystick.get_rect()) and not hud.actions[0].get_rect().intersects(hud.minimap.get_rect()), "RPG controls avoid joystick and minimap %s" % size)
+		suite.check(not hud.character_button.get_rect().intersects(hud.joystick.get_rect()) and not hud.actions[0].get_rect().intersects(hud.minimap.get_rect()), "RPG controls avoid joystick and minimap %s" % size)
 	# Real raw ScreenDrag must scroll when mouse-from-touch emulation is disabled.
 	for item: String in GameProgress.ITEMS:
 		p.add_item(item)

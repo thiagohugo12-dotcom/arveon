@@ -8,6 +8,7 @@ signal interact_pressed
 signal station_action(action: String, item: String)
 signal panel_closed
 signal inventory_toggled
+signal map_toggled
 signal character_toggled
 signal skill_pressed(index: int)
 signal rpg_action(action: String, id: String, expected: int)
@@ -28,6 +29,14 @@ var progress_label: Label
 var mission_label: Label
 var loot_label: Label
 var inventory_button: Button
+var character_button: PixelMenuButton
+var map_button: PixelMenuButton
+var map_panel: PanelContainer
+var expanded_map: MiniMap
+var map_close: Button
+var gold_label: Label
+var info_back: Panel
+var mission_back: Panel
 var inventory_panel: PanelContainer
 var inventory_gold: Label
 var inventory_list: VBoxContainer
@@ -53,14 +62,27 @@ const ITEMS_PER_PAGE := 3
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	theme = _pixel_theme()
+	info_back = Panel.new()
+	info_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_back.add_theme_stylebox_override("panel", _compact_style())
+	add_child(info_back)
+	mission_back = Panel.new()
+	mission_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mission_back.add_theme_stylebox_override("panel", _compact_style())
+	add_child(mission_back)
+	gold_label = Label.new()
+	gold_label.add_theme_font_size_override("font_size", 11)
+	gold_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(gold_label)
 	heading = Label.new()
-	heading.text = "Mata dos Primeiros Passos"
-	heading.add_theme_font_size_override("font_size", 16)
+	heading.text = "Mata · Andar 1"
+	heading.add_theme_font_size_override("font_size", 11)
 	heading.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	heading.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(heading)
 	hp_label = Label.new()
-	hp_label.add_theme_font_size_override("font_size", 14)
+	hp_label.add_theme_font_size_override("font_size", 12)
 	hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hp_label)
 	hp_bar = ProgressBar.new()
@@ -82,13 +104,47 @@ func _ready() -> void:
 	loot_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(loot_label)
 	minimap = MiniMap.new()
-	minimap.size = Vector2(96, 80)
+	minimap.size = Vector2(84, 64)
 	add_child(minimap)
-	inventory_button = Button.new()
-	inventory_button.text = "Mochila"
-	inventory_button.custom_minimum_size = Vector2(100, 44)
+	inventory_button = PixelMenuButton.new()
+	inventory_button.glyph = "bag"
+	inventory_button.tooltip_text = "Mochila"
+	inventory_button.custom_minimum_size = Vector2(44, 44)
 	inventory_button.pressed.connect(func(): inventory_toggled.emit())
 	add_child(inventory_button)
+	character_button = PixelMenuButton.new()
+	character_button.glyph = "character"
+	character_button.tooltip_text = "Personagem · C"
+	character_button.pressed.connect(func(): character_toggled.emit())
+	add_child(character_button)
+	map_button = PixelMenuButton.new()
+	map_button.glyph = "map"
+	map_button.tooltip_text = "Mapa · M"
+	map_button.pressed.connect(func(): map_toggled.emit())
+	add_child(map_button)
+	map_panel = PanelContainer.new()
+	map_panel.z_index = 10
+	map_panel.visible = false
+	map_panel.add_theme_stylebox_override("panel", _panel_style())
+	add_child(map_panel)
+	var map_column := VBoxContainer.new()
+	map_panel.add_child(map_column)
+	var map_title := Label.new()
+	map_title.text = "Mapa · Mata dos Primeiros Passos"
+	map_title.add_theme_font_size_override("font_size", 12)
+	map_column.add_child(map_title)
+	expanded_map = MiniMap.new()
+	expanded_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_column.add_child(expanded_map)
+	var legend := Label.new()
+	legend.text = "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
+	legend.add_theme_font_size_override("font_size", 11)
+	map_column.add_child(legend)
+	map_close = Button.new()
+	map_close.text = "Fechar"
+	map_close.custom_minimum_size.y = 44
+	map_close.pressed.connect(func(): map_toggled.emit())
+	map_column.add_child(map_close)
 	inventory_panel = PanelContainer.new()
 	inventory_panel.z_index = 10
 	inventory_panel.visible = false
@@ -151,10 +207,13 @@ func _ready() -> void:
 	for i in range(3):
 		actions[i].enabled = true
 		actions[i].activated.connect(func(): skill_pressed.emit(i))
-		actions[4].visible = true
-		actions[4].enabled = true
-		actions[4].set_caption("Person.\nC")
-		actions[4].activated.connect(func(): character_toggled.emit())
+	for i in [3, 4]:
+		actions[i].hide()
+		actions[i].enabled = false
+	for i in [0, 1, 2, 5]:
+		actions[i].icon = ["cut", "charge", "fury", "", "", "dash"][i]
+		actions[i].tooltip_text = ["Corte Circular", "Investida", "Fúria Ancestral", "", "", "Dash"][i]
+		actions[i].set_caption("")
 	interact_button = TouchActionButton.new()
 	interact_button.title = "Interagir"
 	interact_button.size = Vector2(120, 52)
@@ -213,26 +272,41 @@ func _layout() -> void:
 			margin.y += float(safe.position.y) / screen.y * size.y
 			bottom_inset += float(screen.y - safe.end.y) / screen.y * size.y
 			right_inset += float(screen.x - safe.end.x) / screen.x * size.x
-	minimap.position = Vector2(size.x - right_inset - minimap.size.x, margin.y)
-	var information_width := minimap.position.x - margin.x - 8.0
-	heading.position = margin
-	heading.size = Vector2(information_width, 44)
-	hp_label.position = Vector2(margin.x, margin.y + 46)
-	hp_bar.position = Vector2(margin.x, margin.y + 68)
-	hp_bar.size = Vector2(minf(220, information_width), 12)
-	progress_label.position = Vector2(margin.x, margin.y + 85)
-	progress_label.size = Vector2(information_width, 20)
-	mission_label.position = Vector2(margin.x, margin.y + 104)
-	mission_label.size = Vector2(information_width, 52)
+	var menu_x := size.x - right_inset - 140
+	for i in range(3):
+		var button: Button = [inventory_button, character_button, map_button][i]
+		button.position = Vector2(menu_x + i * 48, margin.y)
+		button.size = Vector2(44, 44)
+	minimap.position = Vector2(size.x - right_inset - minimap.size.x, margin.y + 50)
+	var information_width := minf(192, menu_x - margin.x - 8)
+	info_back.position = margin
+	info_back.size = Vector2(information_width, 74)
+	heading.position = margin + Vector2(6, 2)
+	heading.size = Vector2(information_width - 12, 16)
+	hp_label.position = margin + Vector2(6, 18)
+	hp_label.size = Vector2(information_width - 12, 18)
+	gold_label.position = margin + Vector2(6, 54)
+	gold_label.size = Vector2(information_width - 12, 16)
+	hp_bar.position = margin + Vector2(6, 37)
+	hp_bar.size = Vector2(information_width - 12, 6)
+	progress_label.position = margin + Vector2(6, 42)
+	progress_label.size = Vector2(information_width - 12, 16)
+	var mission_width := minf(232, minimap.position.x - margin.x - 8)
+	mission_back.position = margin + Vector2(0, 80)
+	mission_back.size = Vector2(mission_width, 56)
+	mission_label.position = mission_back.position + Vector2(6, 3)
+	mission_label.size = mission_back.size - Vector2(12, 6)
 	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	loot_label.position = Vector2(margin.x, margin.y + 159)
-	loot_label.size = Vector2(information_width, 42)
-	inventory_button.position = Vector2(size.x - right_inset - 100, minimap.position.y + minimap.size.y + 6)
+	loot_label.position = Vector2(margin.x, margin.y + 140)
+	loot_label.size = Vector2(minf(320, size.x - margin.x - right_inset), 42)
+	map_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(400, size.y - margin.y - bottom_inset - 12))
+	map_panel.position = (size - map_panel.size) * 0.5
 	inventory_panel.size = Vector2(minf(300, size.x - margin.x - right_inset - 12), minf(330, size.y - margin.y - bottom_inset - 12))
 	inventory_panel.position = (size - inventory_panel.size) * 0.5
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
-	for i in range(actions.size()):
-		actions[i].position = Vector2(size.x - right_inset - 184 + (i % 3) * 64, size.y - bottom_inset - 120 + (i / 3) * 64)
+	for slot in range(4):
+		var i: int = [0, 1, 2, 5][slot]
+		actions[i].position = Vector2(size.x - right_inset - 120 + (slot % 2) * 64, size.y - bottom_inset - 120 + (slot / 2) * 64)
 	interact_button.position = Vector2(size.x * 0.5 - 60, size.y - bottom_inset - (185 if size.y > size.x else 67))
 	station_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(320, size.y - margin.y - bottom_inset - 12))
 	station_panel.position = (size - station_panel.size) * 0.5
@@ -279,7 +353,7 @@ func set_mission(value: String) -> void:
 	mission_label.text = "◆ " + value.replace("Missão comum: ", "")
 
 func show_inventory(progress: GameProgress) -> void:
-	if station_panel.visible or restart.visible or rpg_panel.visible:
+	if station_panel.visible or restart.visible or rpg_panel.visible or map_panel.visible:
 		return
 	inventory_open = true
 	inventory_category = 0
@@ -352,10 +426,11 @@ func show_death() -> void:
 	interact_button.visible = false
 	restart.show()
 	rpg_panel.hide()
+	map_panel.hide()
 	_sync_controls()
 
 func set_nearby_station(name: String) -> void:
-	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open and not rpg_panel.visible
+	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open and not rpg_panel.visible and not map_panel.visible
 	interact_button.visible = interact_button.enabled
 	interact_button.set_caption(("E · Guardião\nOpcional" if name == "Desafiar Guardião (opcional)" else "E · " + name) if interact_button.enabled else "Interagir")
 
@@ -483,6 +558,10 @@ func _input(event: InputEvent) -> void:
 	if restart.visible:
 		_activate_touch_button(restart, event.position)
 		return
+	if map_panel.visible:
+		_activate_touch_button(map_close, event.position)
+		get_viewport().set_input_as_handled()
+		return
 	if rpg_panel.visible:
 		if _activate_touch_button(rpg_panel.close_button, event.position):
 			return
@@ -497,8 +576,10 @@ func _input(event: InputEvent) -> void:
 			_begin_scroll(inventory_scroll, event)
 		get_viewport().set_input_as_handled()
 		return
-	if not station_panel.visible and _activate_touch_button(inventory_button, event.position):
-		return
+	if not station_panel.visible:
+		for button in [inventory_button, character_button, map_button]:
+			if _activate_touch_button(button, event.position):
+				return
 	if not station_panel.visible:
 		return
 	if station_name == "Ferreiro":
@@ -540,15 +621,17 @@ func set_dash_cooldown(value: float) -> void:
 	var rounded := snappedf(value, 0.1)
 	if rounded != cooldown:
 		cooldown = rounded
-		dash_button.set_caption("Dash" if value <= 0.0 else "Dash\n%.1fs" % value)
+		dash_button.set_recharge(value, 0.8)
 
 func _sync_controls() -> void:
 	scroll_touch = -1
 	touch_scroll = null
-	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or restart.visible
+	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
+	for button in [inventory_button, character_button, map_button]:
+		button.disabled = blocked
 	joystick.reset()
 	joystick.set_process_input(not blocked)
-	for i in [0, 1, 2, 4, 5]:
+	for i in [0, 1, 2, 5]:
 		actions[i].enabled = not blocked and (i >= 3 or skill_available[i])
 		actions[i].touch_index = -1
 		actions[i].queue_redraw()
@@ -557,7 +640,7 @@ func _sync_controls() -> void:
 		interact_button.hide()
 
 func show_character(progress: GameProgress) -> void:
-	if inventory_open or station_panel.visible or restart.visible:
+	if inventory_open or station_panel.visible or restart.visible or map_panel.visible:
 		return
 	rpg_panel.show()
 	rpg_panel.refresh(progress)
@@ -570,21 +653,57 @@ func close_character() -> void:
 
 func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	var lvl := progress.level()
-	progress_label.text = "Nv %d · XP %d/%d · Ouro %d" % [lvl, progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl), progress.gold] if lvl < RPGRules.MAX_LEVEL else "Nv %d · Ouro %d" % [RPGRules.MAX_LEVEL, progress.gold]
-	var names := ["Corte", "Investida", "Fúria"]
-	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or restart.visible
+	progress_label.text = "Nv %d · XP %d/%d" % [lvl, progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl)] if lvl < RPGRules.MAX_LEVEL else "Nv %d · Nível máximo" % RPGRules.MAX_LEVEL
+	gold_label.text = "Ouro %d" % progress.gold
+	character_button.notification = progress.attribute_points_available() > 0
+	expanded_map.update_player(player.global_position)
+	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
 	for i in range(3):
 		var left := player.skill_cooldowns[i]
-		var caption: String = names[i] + ("\n%.1fs" % snappedf(left, 0.1) if left > 0.0 else "\n%d" % (i + 1))
-		if i == 2 and player.fury_left > 0.0:
-			caption = "Fúria\nAtiva"
-		if actions[i].caption.text != caption:
-			actions[i].set_caption(caption)
+		actions[i].set_recharge(left, [5.0, 8.0, 35.0][i] * player.cooldown_factor, i == 2 and player.fury_left > 0.0)
 		var enabled := not blocked and left <= 0.0
 		skill_available[i] = left <= 0.0
 		if actions[i].enabled != enabled:
 			actions[i].enabled = enabled
 			actions[i].queue_redraw()
+
+func show_map(progress: GameProgress) -> void:
+	if inventory_open or station_panel.visible or rpg_panel.visible or restart.visible:
+		return
+	expanded_map.progress = progress
+	expanded_map.player_position = minimap.player_position
+	expanded_map.queue_redraw()
+	map_panel.show()
+	_sync_controls()
+	_layout()
+
+func close_map() -> void:
+	map_panel.hide()
+	_sync_controls()
+
+func _compact_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#14271fee")
+	style.set_border_width_all(1)
+	style.border_color = Color("#526548")
+	return style
+
+func _pixel_theme() -> Theme:
+	var result := Theme.new()
+	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("#203e32") if state != "pressed" else Color("#405b3b")
+		style.border_color = Color("#b6b382") if state != "disabled" else Color("#526548")
+		style.set_border_width_all(2)
+		style.set_content_margin_all(6)
+		if state == "focus":
+			style.bg_color = Color.TRANSPARENT
+			style.border_color = Color("#f2c26b")
+		result.set_stylebox(state, "Button", style)
+	result.set_color("font_color", "Label", Color("#ece4c4"))
+	result.set_color("font_outline_color", "Label", Color("#112219"))
+	result.set_constant("outline_size", "Label", 2)
+	return result
 
 func _add_equipment(id: String, progress: GameProgress, destination: VBoxContainer, in_bag: bool) -> void:
 	var item: Dictionary = RPGRules.EQUIPMENT[id]
