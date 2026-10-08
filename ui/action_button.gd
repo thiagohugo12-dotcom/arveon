@@ -25,7 +25,7 @@ func set_caption(value: String) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
-		if event.pressed and enabled and touch_index == -1 and get_global_rect().has_point(event.position):
+		if event.pressed and enabled and is_visible_in_tree() and touch_index == -1 and get_global_rect().has_point(event.position):
 			touch_index = event.index
 			activated.emit()
 			get_viewport().set_input_as_handled()

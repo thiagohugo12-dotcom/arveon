@@ -62,3 +62,14 @@ O piso provisório recebe trilhas ramificadas, clareiras e vegetação sem colis
 novas. Minimapa leve acompanha o jogador, revela pontos de coleta por visita
 e só mostra baús escondidos depois de abertos. Descobertas integram o save
 local existente, sem sincronização de contas ou mapa de outros andares.
+
+
+## v0.3.0 — pedido aprovado em 08/10/2026
+Thiago autorizou atributos distribuíveis, equipamentos e Ferreiro até +3,
+Corte Circular, Investida, Fúria Ancestral, elite, chefe opcional e missões do
+Andar 1. A curva dos commits b14b641/8de85fc é preservada: nível 1–100,
+XP acumulado (n−1)×n×25, dois pontos de atributos por nível.
+Força +2 dano; Vitalidade +8 HP; Espírito +1 dano e +2 HP; Agilidade
++2 movimento, +3 dash e até 25% de redução do intervalo básico.
+Receitas e valores novos são provisórios. Save v5 migra v1–4 e preserva
+os atributos de v4. Sem Andar 2 ou mudanças em produção.

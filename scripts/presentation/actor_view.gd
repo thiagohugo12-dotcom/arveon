@@ -14,6 +14,19 @@ var warning: bool = false
 var walking: bool = false
 var anim_time: float = 0.0
 var anim_frame: int = 0
+var skill_left := 0.0
+var skill_effect := 0
+var fury := false
+
+func play_skill(index: int) -> void:
+	skill_effect = index
+	skill_left = 0.28
+	queue_redraw()
+
+func set_fury(value: bool) -> void:
+	if fury != value:
+		fury = value
+		queue_redraw()
 
 const LINE := Color("#172822")
 const PALE := Color("#f1d5a2")
@@ -59,6 +72,9 @@ func set_warning(value: bool) -> void:
 		queue_redraw()
 
 func _process(delta: float) -> void:
+	if skill_left > 0.0:
+		skill_left = maxf(0.0, skill_left - delta)
+		queue_redraw()
 	if flash_left > 0.0:
 		flash_left = maxf(0.0, flash_left - delta)
 		queue_redraw()
@@ -82,6 +98,13 @@ func px(x: float, y: float, w: float, h: float, color: Color) -> void:
 	draw_rect(Rect2(x, y, w, h), color)
 
 func _draw() -> void:
+	if fury:
+		draw_arc(Vector2.ZERO, 24, 0, TAU, 12, Color("#e7a15b"), 3)
+	if skill_left > 0.0:
+		if skill_effect == 0:
+			draw_arc(Vector2.ZERO, 90 * (1.0 - skill_left / 0.4), 0, TAU, 20, Color("#f7d47c"), 4)
+		else:
+			draw_line(-facing * 28, facing * 28, Color("#f28d61"), 8)
 	var step: float = -2.0 if walking and anim_frame % 2 == 0 else 0.0
 	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
 	match appearance:

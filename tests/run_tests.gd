@@ -467,6 +467,7 @@ func _run() -> void:
 	main.earned_xp = main.progress.xp_for_level(2)
 	main._save_progress()
 	check(player.health.maximum == player.base_max_hp + 8, "main applies progression when saving XP changes")
+	await preload("res://tests/rpg_tests.gd").run(self, main)
 	main.queue_free()
 	await frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))

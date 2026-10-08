@@ -28,6 +28,8 @@ var progress := GameProgress.new()
 var station_nearby := ""
 var activity_remaining := 0.0
 var exploration_refresh := 0.0
+var rpg_refresh := 0.0
+var known_level := 1
 
 func _ready() -> void:
 	var test_save := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
@@ -50,7 +52,6 @@ func _ready() -> void:
 	mission.completed.connect(_on_mission_completed)
 	loot_rng.randomize()
 	player.input_driver = input_driver
-	player.apply_progression(progress)
 	enemy.target = player
 	enemy.defeated.connect(_on_enemy_defeated)
 	enemy.projectile_requested.connect(_on_enemy_projectile)
@@ -58,6 +59,9 @@ func _ready() -> void:
 	hud.dash_pressed.connect(input_driver.request_dash)
 	hud.interact_pressed.connect(_interact)
 	hud.inventory_toggled.connect(_toggle_inventory)
+	hud.character_toggled.connect(_toggle_character)
+	hud.skill_pressed.connect(_use_skill)
+	hud.rpg_action.connect(_rpg_action)
 	hud.station_action.connect(_station_action)
 	hud.panel_closed.connect(func():
 		input_driver.blocked = false
@@ -67,6 +71,8 @@ func _ready() -> void:
 	player.health.changed.connect(hud.set_health)
 	player.health.died.connect(hud.show_death)
 	player.health.died.connect(_on_player_died)
+	player.apply_progression(progress, true)
+	known_level = progress.level()
 	hud.set_health(player.health.current, player.health.maximum)
 	hud.set_progress(earned_xp, earned_gold, defeated_count, "")
 	hud.set_mission(mission.summary())
@@ -75,6 +81,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	hud.set_dash_cooldown(player.dash.cooldown_left)
+	rpg_refresh -= delta
+	if rpg_refresh <= 0.0:
+		rpg_refresh = 0.1
+		hud.set_rpg_status(progress, player)
 	if not player.health.is_alive():
 		return
 	exploration_refresh -= delta
@@ -165,10 +175,15 @@ func _save_progress() -> void:
 	progress.mission_index = mission.mission_index
 	progress.mission_progress = mission.progress
 	progress.mission_completed = mission.completed_count
+	if progress.level() > known_level:
+		known_level = progress.level()
+		hud.show_notice("Level Up! Nível %d · %d pontos de atributo · %d de habilidade" % [known_level, progress.attribute_points(), progress.skill_points()])
+		player.view.flash()
 	if hud.inventory_open:
 		hud.refresh_inventory(progress)
 	if not progress.save():
 		push_warning("Não foi possível salvar o progresso local.")
+	hud.set_rpg_status(progress, player)
 
 func _on_player_died() -> void:
 	input_driver.reset()
@@ -183,13 +198,13 @@ func _toggle_inventory() -> void:
 		hud.close_inventory()
 		input_driver.blocked = false
 		station_nearby = ""
-	elif player.health.is_alive() and not hud.station_panel.visible:
+	elif player.health.is_alive() and not hud.station_panel.visible and not hud.rpg_panel.visible:
 		input_driver.reset()
 		input_driver.blocked = true
 		hud.show_inventory(progress)
 
 func _interact() -> void:
-	if not player.health.is_alive() or hud.station_panel.visible or hud.inventory_open:
+	if not player.health.is_alive() or hud.station_panel.visible or hud.inventory_open or hud.rpg_panel.visible:
 		return
 	var found := _interaction_target()
 	match found.get("kind", ""):
@@ -262,14 +277,77 @@ func _station_action(action: String, item: String) -> void:
 	hud.refresh_station(progress)
 
 func _input(event: InputEvent) -> void:
+	if event.is_echo():
+		return
+	if event.is_action_pressed("character"):
+		_toggle_character()
+		get_viewport().set_input_as_handled()
+		return
+	for i in range(3):
+		if event.is_action_pressed(["skill_1", "skill_2", "ultimate"][i]):
+			_use_skill(i)
+			get_viewport().set_input_as_handled()
+			return
+	if event.is_action_pressed("ui_cancel"):
+		if hud.rpg_panel.visible:
+			_toggle_character()
+		elif hud.inventory_open:
+			_toggle_inventory()
+		elif hud.station_panel.visible:
+			hud.close_station()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("interact") and not event.is_echo():
-		if hud.inventory_open:
+		if hud.rpg_panel.visible:
+			_toggle_character()
+		elif hud.inventory_open:
 			_toggle_inventory()
 		elif hud.station_panel.visible:
 			hud.close_station()
 		else:
 			_interact()
 		get_viewport().set_input_as_handled()
+
+func _use_skill(index: int) -> void:
+	player.use_skill(index)
+	hud.set_rpg_status(progress, player)
+
+func _toggle_character() -> void:
+	if hud.rpg_panel.visible:
+		hud.close_character()
+		input_driver.blocked = false
+		station_nearby = ""
+	elif player.health.is_alive() and not hud.inventory_open and not hud.station_panel.visible:
+		input_driver.reset()
+		input_driver.blocked = true
+		hud.show_character(progress)
+
+func _rpg_action(action: String, id: String, expected: int) -> void:
+	if not player.health.is_alive():
+		return
+	var success := false
+	if hud.rpg_panel.visible:
+		if action == "attribute":
+			success = progress.allocate_attribute(id)
+		elif action == "skill":
+			success = progress.improve_skill(id)
+	elif hud.station_panel.visible and hud.station_name == "Ferreiro" and action == "forge":
+		success = progress.forge(id, expected)
+	elif hud.inventory_open and hud.inventory_category == 1:
+		if action == "equip":
+			success = progress.equip(id)
+		elif action == "unequip":
+			success = progress.unequip(id)
+	if not success:
+		return
+	earned_gold = progress.gold
+	player.apply_progression(progress)
+	_save_progress()
+	if hud.rpg_panel.visible:
+		hud.rpg_panel.refresh(progress)
+	elif hud.station_panel.visible:
+		hud.refresh_station(progress)
+	hud.show_notice("Equipamento fabricado/aprimorado" if action == "forge" else "Personagem atualizado")
 
 func _adapt_orientation() -> void:
 	var window := get_window()
@@ -278,5 +356,4 @@ func _adapt_orientation() -> void:
 	if window.content_scale_size != desired:
 		window.content_scale_size = desired
 	hud.call_deferred("_layout")
-
 

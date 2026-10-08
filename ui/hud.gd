@@ -8,6 +8,16 @@ signal interact_pressed
 signal station_action(action: String, item: String)
 signal panel_closed
 signal inventory_toggled
+signal character_toggled
+signal skill_pressed(index: int)
+signal rpg_action(action: String, id: String, expected: int)
+var rpg_panel: RPGPanel
+var inventory_category := 0
+var inventory_tabs: HBoxContainer
+var menu_progress: GameProgress
+var skill_available: Array[bool] = [true, true, true]
+var scroll_touch := -1
+var touch_scroll: ScrollContainer
 var joystick: VirtualJoystick
 var dash_button: TouchActionButton
 var actions: Array[TouchActionButton] = []
@@ -80,6 +90,7 @@ func _ready() -> void:
 	inventory_button.pressed.connect(func(): inventory_toggled.emit())
 	add_child(inventory_button)
 	inventory_panel = PanelContainer.new()
+	inventory_panel.z_index = 10
 	inventory_panel.visible = false
 	inventory_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	inventory_panel.add_theme_stylebox_override("panel", _panel_style())
@@ -88,11 +99,25 @@ func _ready() -> void:
 	inventory_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_panel.add_child(inventory_column)
 	var inventory_heading := Label.new()
-	inventory_heading.text = "Mochila · materiais"
+	inventory_heading.text = "Mochila"
 	inventory_column.add_child(inventory_heading)
 	inventory_gold = Label.new()
 	inventory_gold.add_theme_font_size_override("font_size", 15)
 	inventory_column.add_child(inventory_gold)
+	inventory_tabs = HBoxContainer.new()
+	inventory_column.add_child(inventory_tabs)
+	for i in range(3):
+		var tab := Button.new()
+		tab.text = ["Materiais", "Equip.", "Consumo"][i]
+		tab.custom_minimum_size.y = 44
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tab.add_theme_font_size_override("font_size", 12)
+		tab.pressed.connect(func():
+			inventory_category = i
+			inventory_scroll.scroll_vertical = 0
+			refresh_inventory(menu_progress)
+		)
+		inventory_tabs.add_child(tab)
 	inventory_scroll = ScrollContainer.new()
 	inventory_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	inventory_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -123,6 +148,13 @@ func _ready() -> void:
 		if title == "Dash":
 			dash_button = button
 			button.activated.connect(func(): dash_pressed.emit())
+	for i in range(3):
+		actions[i].enabled = true
+		actions[i].activated.connect(func(): skill_pressed.emit(i))
+		actions[4].visible = true
+		actions[4].enabled = true
+		actions[4].set_caption("Person.\nC")
+		actions[4].activated.connect(func(): character_toggled.emit())
 	interact_button = TouchActionButton.new()
 	interact_button.title = "Interagir"
 	interact_button.size = Vector2(80, 52)
@@ -130,6 +162,7 @@ func _ready() -> void:
 	interact_button.activated.connect(func(): interact_pressed.emit())
 	add_child(interact_button)
 	station_panel = PanelContainer.new()
+	station_panel.z_index = 10
 	station_panel.visible = false
 	station_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	station_panel.add_theme_stylebox_override("panel", _panel_style())
@@ -141,8 +174,10 @@ func _ready() -> void:
 	column.add_child(station_title)
 	station_scroll = ScrollContainer.new()
 	station_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	station_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	column.add_child(station_scroll)
 	station_content = VBoxContainer.new()
+	station_content.custom_minimum_size.x = 220
 	station_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	station_scroll.add_child(station_content)
 	station_close_button = Button.new()
@@ -150,7 +185,13 @@ func _ready() -> void:
 	station_close_button.custom_minimum_size.y = 44
 	station_close_button.pressed.connect(func(): close_station())
 	column.add_child(station_close_button)
+	rpg_panel = RPGPanel.new()
+	rpg_panel.z_index = 10
+	add_child(rpg_panel)
+	rpg_panel.closed.connect(func(): character_toggled.emit())
+	rpg_panel.action_requested.connect(func(action: String, id: String, expected: int): rpg_action.emit(action, id, expected))
 	restart = Button.new()
+	restart.z_index = 20
 	restart.text = "Você caiu · Reiniciar"
 	restart.visible = false
 	restart.pressed.connect(func(): restart_pressed.emit())
@@ -195,6 +236,8 @@ func _layout() -> void:
 	interact_button.position = Vector2(size.x * 0.5 - 40, size.y - bottom_inset - (185 if size.y > size.x else 67))
 	station_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(320, size.y - margin.y - bottom_inset - 12))
 	station_panel.position = (size - station_panel.size) * 0.5
+	rpg_panel.size = Vector2(minf(320, size.x - margin.x - right_inset - 12), minf(460, size.y - margin.y - bottom_inset - 12))
+	rpg_panel.position = (size - rpg_panel.size) * 0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
 	restart.size = Vector2(240, 48)
 
@@ -236,9 +279,10 @@ func set_mission(value: String) -> void:
 	mission_label.text = "◆ " + value.replace("Missão comum: ", "")
 
 func show_inventory(progress: GameProgress) -> void:
-	if station_panel.visible or restart.visible:
+	if station_panel.visible or restart.visible or rpg_panel.visible:
 		return
 	inventory_open = true
+	inventory_category = 0
 	inventory_panel.show()
 	inventory_button.disabled = true
 	interact_button.visible = false
@@ -247,13 +291,25 @@ func show_inventory(progress: GameProgress) -> void:
 	dash_button.queue_redraw()
 	joystick.reset()
 	refresh_inventory(progress)
+	_sync_controls()
 	_layout()
 
 func refresh_inventory(progress: GameProgress) -> void:
+	menu_progress = progress
 	inventory_gold.text = "Ouro: %d" % progress.gold
 	for child in inventory_list.get_children():
 		inventory_list.remove_child(child)
 		child.queue_free()
+	if inventory_category == 1:
+		for id: String in progress.equipment:
+			_add_equipment(id, progress, inventory_list, true)
+		return
+	if inventory_category == 2:
+		var empty := Label.new()
+		empty.text = "Nenhum consumível nesta etapa."
+		empty.add_theme_font_size_override("font_size", 12)
+		inventory_list.add_child(empty)
+		return
 	var has_material := false
 	for item: String in GameProgress.ITEMS:
 		var count := int(progress.bag.get(item, 0))
@@ -285,6 +341,7 @@ func close_inventory() -> void:
 	inventory_button.disabled = false
 	dash_button.enabled = not restart.visible and not station_panel.visible and not inventory_open
 	dash_button.queue_redraw()
+	_sync_controls()
 
 func show_death() -> void:
 	close_inventory()
@@ -294,9 +351,11 @@ func show_death() -> void:
 	dash_button.queue_redraw()
 	interact_button.visible = false
 	restart.show()
+	rpg_panel.hide()
+	_sync_controls()
 
 func set_nearby_station(name: String) -> void:
-	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open
+	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open and not rpg_panel.visible
 	interact_button.visible = interact_button.enabled
 	interact_button.set_caption("E · " + name if interact_button.enabled else "Interagir")
 
@@ -305,6 +364,7 @@ func show_station(name: String, progress: GameProgress) -> void:
 	station_page = 0
 	close_inventory()
 	station_panel.show()
+	_sync_controls()
 	interact_button.enabled = false
 	interact_button.visible = false
 	dash_button.enabled = false
@@ -317,6 +377,7 @@ func close_station() -> void:
 		dash_button.enabled = not restart.visible
 		dash_button.queue_redraw()
 		panel_closed.emit()
+		_sync_controls()
 
 func refresh_station(progress: GameProgress) -> void:
 	station_title.text = station_name
@@ -324,7 +385,9 @@ func refresh_station(progress: GameProgress) -> void:
 		station_content.remove_child(child)
 		child.queue_free()
 	if station_name == "Ferreiro":
-		_add_description("Equipamento inicial. Evolução de armas será adicionada em uma versão futura.")
+		_add_description("Ouro %d · fabricar ou aprimorar até +3.\nMateriais usados: somente os da mochila." % progress.gold)
+		for id: String in RPGRules.EQUIPMENT:
+			_add_equipment(id, progress, station_content, false)
 	elif station_name == "Baú":
 		_add_description("Mochila/Baú · itens guardados ficam protegidos.")
 		for item: String in _page_items(GameProgress.ITEMS):
@@ -384,6 +447,7 @@ func _add_page_navigation(count: int, progress: GameProgress) -> void:
 func _add_description(value: String) -> void:
 	var label := Label.new()
 	label.text = value
+	label.add_theme_font_size_override("font_size", 13)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	station_content.add_child(label)
 
@@ -405,19 +469,44 @@ func _add_row(item: String, count: String, left: String, right: String, can_left
 		buttons.add_child(button)
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventScreenDrag and event.index == scroll_touch and is_instance_valid(touch_scroll):
+		touch_scroll.scroll_vertical -= roundi(event.relative.y)
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventScreenTouch and not event.pressed and event.index == scroll_touch:
+		scroll_touch = -1
+		touch_scroll = null
+		get_viewport().set_input_as_handled()
+		return
 	if not event is InputEventScreenTouch or not event.pressed:
 		return
 	if restart.visible:
 		_activate_touch_button(restart, event.position)
 		return
+	if rpg_panel.visible:
+		if _activate_touch_button(rpg_panel.close_button, event.position):
+			return
+		if not _touch_buttons(rpg_panel, event.position):
+			_begin_scroll(rpg_panel.scroll, event)
+		get_viewport().set_input_as_handled()
+		return
 	if inventory_open:
-		if inventory_panel.get_global_rect().has_point(event.position):
-			_activate_touch_button(inventory_close, event.position)
-			get_viewport().set_input_as_handled()
+		if _activate_touch_button(inventory_close, event.position):
+			return
+		if not _touch_buttons(inventory_panel, event.position):
+			_begin_scroll(inventory_scroll, event)
+		get_viewport().set_input_as_handled()
 		return
 	if not station_panel.visible and _activate_touch_button(inventory_button, event.position):
 		return
 	if not station_panel.visible:
+		return
+	if station_name == "Ferreiro":
+		if _activate_touch_button(station_close_button, event.position):
+			return
+		if not _touch_buttons(station_panel, event.position):
+			_begin_scroll(station_scroll, event)
+		get_viewport().set_input_as_handled()
 		return
 	if _activate_touch_button(station_close_button, event.position):
 		return
@@ -429,6 +518,8 @@ func _input(event: InputEvent) -> void:
 		for node in row.get_children():
 			if node is Button and _activate_touch_button(node, event.position):
 				return
+	_begin_scroll(station_scroll, event)
+	get_viewport().set_input_as_handled()
 
 func _activate_touch_button(button: Button, position: Vector2) -> bool:
 	if not button.disabled and button.is_visible_in_tree() and button.get_global_rect().has_point(position):
@@ -450,4 +541,108 @@ func set_dash_cooldown(value: float) -> void:
 	if rounded != cooldown:
 		cooldown = rounded
 		dash_button.set_caption("Dash" if value <= 0.0 else "Dash\n%.1fs" % value)
+
+func _sync_controls() -> void:
+	scroll_touch = -1
+	touch_scroll = null
+	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or restart.visible
+	joystick.reset()
+	joystick.set_process_input(not blocked)
+	for i in [0, 1, 2, 4, 5]:
+		actions[i].enabled = not blocked and (i >= 3 or skill_available[i])
+		actions[i].touch_index = -1
+		actions[i].queue_redraw()
+	if blocked:
+		interact_button.enabled = false
+		interact_button.hide()
+
+func show_character(progress: GameProgress) -> void:
+	if inventory_open or station_panel.visible or restart.visible:
+		return
+	rpg_panel.show()
+	rpg_panel.refresh(progress)
+	_sync_controls()
+	_layout()
+
+func close_character() -> void:
+	rpg_panel.hide()
+	_sync_controls()
+
+func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
+	var lvl := progress.level()
+	progress_label.text = "Nv %d · XP %d/%d · Ouro %d" % [lvl, progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl), progress.gold] if lvl < RPGRules.MAX_LEVEL else "Nv 20 · Ouro %d" % progress.gold
+	var names := ["Corte", "Investida", "Fúria"]
+	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or restart.visible
+	for i in range(3):
+		var left := player.skill_cooldowns[i]
+		var caption: String = names[i] + ("\n%.1fs" % snappedf(left, 0.1) if left > 0.0 else "\n%d" % (i + 1))
+		if i == 2 and player.fury_left > 0.0:
+			caption = "Fúria\nAtiva"
+		if actions[i].caption.text != caption:
+			actions[i].set_caption(caption)
+		var enabled := not blocked and left <= 0.0
+		skill_available[i] = left <= 0.0
+		if actions[i].enabled != enabled:
+			actions[i].enabled = enabled
+			actions[i].queue_redraw()
+
+func _add_equipment(id: String, progress: GameProgress, destination: VBoxContainer, in_bag: bool) -> void:
+	var item: Dictionary = RPGRules.EQUIPMENT[id]
+	var owned := progress.equipment.has(id)
+	var upgrade := int(progress.equipment.get(id, 0))
+	var box := VBoxContainer.new()
+	destination.add_child(box)
+	var label := Label.new()
+	label.text = "%s +%d · %s" % [item.name, upgrade, item.slot]
+	label.add_theme_font_size_override("font_size", 13)
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(label)
+	var description := Label.new()
+	var current: String = progress.equipped[item.slot]
+	description.text = RPGRules.bonus_text(id, upgrade)
+	if current != id:
+		description.text += "\nAtual: " + (RPGRules.EQUIPMENT[current].name if current != "" else "nenhum")
+		if current != "":
+			description.text += "\n" + RPGRules.bonus_text(current, int(progress.equipment[current]))
+	description.add_theme_font_size_override("font_size", 12)
+	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(description)
+	var button := Button.new()
+	button.custom_minimum_size.y = 44
+	box.add_child(button)
+	if in_bag:
+		button.text = "Desequipar" if current == id else "Equipar"
+		button.pressed.connect(func(): rpg_action.emit("unequip" if current == id else "equip", item.slot if current == id else id, 0))
+	else:
+		var expected := int(progress.equipment.get(id, -1))
+		var cost := RPGRules.recipe(id, owned, upgrade)
+		var price := Label.new()
+		price.text = "Máximo +3" if owned and upgrade >= 3 else RPGRules.cost_text(cost)
+		price.add_theme_font_size_override("font_size", 12)
+		price.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(price)
+		box.move_child(price, 2)
+		if owned and upgrade < 3:
+			description.text += "\nApós melhoria: " + RPGRules.bonus_text(id, upgrade + 1)
+		button.text = "Aprimorar para +%d" % (upgrade + 1) if owned else "Fabricar"
+		button.disabled = not progress.can_forge(id)
+		button.pressed.connect(func(): rpg_action.emit("forge", id, expected))
+	box.add_child(HSeparator.new())
+
+func _touch_buttons(node: Node, point: Vector2) -> bool:
+	if node is Control and node.clip_contents and not node.get_global_rect().has_point(point):
+		return false
+	if node is Button:
+		return _activate_touch_button(node, point)
+	var children := node.get_children()
+	children.reverse()
+	for child in children:
+		if _touch_buttons(child, point):
+			return true
+	return false
+
+func _begin_scroll(scroll: ScrollContainer, event: InputEventScreenTouch) -> void:
+	if scroll_touch == -1 and scroll.get_global_rect().has_point(event.position):
+		scroll_touch = event.index
+		touch_scroll = scroll
 

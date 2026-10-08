@@ -4,6 +4,7 @@ extends Node
 signal attacked(target: Node2D)
 @export var weapon: WeaponData
 var cooldown_left: float = 0.0
+var damage_scale := 1.0
 
 func tick(delta: float, origin: Node2D) -> void:
 	if SafeCamp.in_clearance(origin.global_position):
@@ -15,7 +16,7 @@ func tick(delta: float, origin: Node2D) -> void:
 	cooldown_left = weapon.interval
 	var target: Node2D = select_target(origin)
 	if target != null:
-		target.receive_damage(weapon.damage)
+		target.receive_damage(roundi(weapon.damage * damage_scale))
 		attacked.emit(target)
 
 func select_target(origin: Node2D) -> Node2D:
