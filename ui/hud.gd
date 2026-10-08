@@ -76,6 +76,7 @@ func _ready() -> void:
 	interact_button = TouchActionButton.new()
 	interact_button.title = "Interagir"
 	interact_button.size = Vector2(80, 52)
+	interact_button.visible = false
 	interact_button.activated.connect(func(): interact_pressed.emit())
 	add_child(interact_button)
 	station_panel = PanelContainer.new()
@@ -158,10 +159,12 @@ func show_death() -> void:
 	joystick.reset()
 	dash_button.enabled = false
 	dash_button.queue_redraw()
+	interact_button.visible = false
 	restart.show()
 
 func set_nearby_station(name: String) -> void:
 	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible
+	interact_button.visible = interact_button.enabled
 	interact_button.set_caption("E · " + name if interact_button.enabled else "Interagir")
 
 func show_station(name: String, progress: GameProgress) -> void:
@@ -169,6 +172,7 @@ func show_station(name: String, progress: GameProgress) -> void:
 	station_page = 0
 	station_panel.show()
 	interact_button.enabled = false
+	interact_button.visible = false
 	dash_button.enabled = false
 	refresh_station(progress)
 	_layout()
@@ -195,9 +199,16 @@ func refresh_station(progress: GameProgress) -> void:
 	elif station_name == "Vendedor":
 		_add_description("Ouro %d · Compra %d · Venda %d" % [progress.gold, GameProgress.BUY_PRICE, GameProgress.SELL_PRICE])
 		_add_description("Coletas: venda por ouro.")
-		for item: String in _page_items(GameProgress.SELL_ITEMS):
+		var available_items: Array[String] = []
+		for item: String in GameProgress.SELL_ITEMS:
+			if int(progress.bag.get(item, 0)) > 0:
+				available_items.append(item)
+		for item: String in GameProgress.TRADE_ITEMS:
+			if not available_items.has(item):
+				available_items.append(item)
+		for item: String in _page_items(available_items):
 			_add_row(item, "x%d" % progress.bag.get(item, 0), "Comprar", "Vender", GameProgress.TRADE_ITEMS.has(item) and progress.gold >= GameProgress.BUY_PRICE, int(progress.bag.get(item, 0)) > 0)
-		_add_page_navigation(GameProgress.SELL_ITEMS.size(), progress)
+		_add_page_navigation(available_items.size(), progress)
 
 func _page_items(items: Array) -> Array:
 	var start := station_page * ITEMS_PER_PAGE
