@@ -18,6 +18,7 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if not health.is_alive() or input_driver == null:
 		velocity = Vector2.ZERO
+		view.set_moving(false)
 		return
 	dash.tick(delta)
 	var movement := input_driver.movement()
@@ -28,6 +29,7 @@ func _physics_process(delta: float) -> void:
 		dash.request(movement, last_direction, stats)
 	velocity = dash.direction * stats.dash_speed if dash.active() else movement * stats.move_speed
 	move_and_slide()
+	view.set_moving(velocity.length_squared() > 1.0)
 	attack.tick(delta, self)
 
 func receive_damage(amount: int) -> void:
@@ -35,9 +37,10 @@ func receive_damage(amount: int) -> void:
 	view.flash()
 
 func _on_attack(_target: Node2D) -> void:
-	view.flash()
+	view.play_attack()
 
 func _on_died() -> void:
 	velocity = Vector2.ZERO
+	view.set_moving(false)
 	if input_driver != null:
 		input_driver.reset()
