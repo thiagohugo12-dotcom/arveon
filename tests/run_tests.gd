@@ -148,16 +148,28 @@ func _run() -> void:
 	main._station_action("Comprar", "Couro") # Closed panel must never trade.
 	check(main.progress.gold == 17, "shop refuses action outside station")
 	player.position = SafeCamp.STATIONS["Vendedor"] + Vector2(-30, 0)
-	main._interact()
+	main._process(0.0)
+	var open_touch := InputEventScreenTouch.new()
+	open_touch.index = 5
+	open_touch.pressed = true
+	open_touch.position = hud.interact_button.global_position + hud.interact_button.size * 0.5
+	hud.interact_button._input(open_touch)
+	open_touch.pressed = false
+	hud.interact_button._input(open_touch)
 	await frames()
 	var vendor_sell := hud.station_content.get_child(3).get_child(1) as Button
 	check(hud.station_panel.visible and not vendor_sell.disabled, "vendor exposes an enabled sell button for owned material")
-	vendor_sell.pressed.emit()
+	var shop_touch := InputEventScreenTouch.new()
+	shop_touch.index = 6
+	shop_touch.pressed = true
+	shop_touch.position = vendor_sell.global_position + vendor_sell.size * 0.5
+	hud._input(shop_touch)
 	check(main.progress.gold == 19 and main.progress.bag.get("Couro", 0) == 0, "vendor sells existing material into wallet")
 	await frames()
 	var vendor_buy := hud.station_content.get_child(7).get_child(0) as Button
 	check(not vendor_buy.disabled, "vendor enables purchase with sufficient gold")
-	vendor_buy.pressed.emit()
+	shop_touch.position = vendor_buy.global_position + vendor_buy.size * 0.5
+	hud._input(shop_touch)
 	check(main.progress.gold == 14 and main.progress.bag.get("Essência", 0) == 1, "vendor buy button exchanges gold for real material")
 	var overlap_touch := InputEventScreenTouch.new()
 	overlap_touch.index = 4
@@ -165,7 +177,8 @@ func _run() -> void:
 	overlap_touch.position = hud.interact_button.global_position + Vector2(40, 25)
 	hud.interact_button._input(overlap_touch)
 	check(hud.interact_button.touch_index == -1, "hidden interaction hitbox does not steal modal touch")
-	hud.station_close_button.pressed.emit()
+	shop_touch.position = hud.station_close_button.global_position + hud.station_close_button.size * 0.5
+	hud._input(shop_touch)
 	check(not hud.station_panel.visible and not driver.blocked, "close button releases movement and closes shop")
 	main.progress.add_item("Essência", 2)
 	player.position = SafeCamp.STATIONS["Baú"] + Vector2(28, 0)

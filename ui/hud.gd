@@ -211,6 +211,32 @@ func _add_row(item: String, count: String, left: String, right: String, can_left
 		button.pressed.connect(func(): station_action.emit(action, item))
 		buttons.add_child(button)
 
+func _input(event: InputEvent) -> void:
+	if not event is InputEventScreenTouch or not event.pressed:
+		return
+	if restart.visible:
+		_activate_touch_button(restart, event.position)
+		return
+	if not station_panel.visible:
+		return
+	if _activate_touch_button(station_close_button, event.position):
+		return
+	if not station_scroll.get_global_rect().has_point(event.position):
+		return
+	for row in station_content.get_children():
+		if row.is_queued_for_deletion() or not row is HBoxContainer:
+			continue
+		for node in row.get_children():
+			if node is Button and _activate_touch_button(node, event.position):
+				return
+
+func _activate_touch_button(button: Button, position: Vector2) -> bool:
+	if not button.disabled and button.is_visible_in_tree() and button.get_global_rect().has_point(position):
+		button.pressed.emit()
+		get_viewport().set_input_as_handled()
+		return true
+	return false
+
 func _panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color("#1b2f27")
