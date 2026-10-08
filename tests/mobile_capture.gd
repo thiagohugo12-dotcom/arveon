@@ -42,13 +42,16 @@ func _run() -> void:
 		p.add_item(item, 12)
 	p.forge("machado", -1)
 	p.forge("couro", -1)
-	for resolution: Vector2i in [Vector2i(360, 640), Vector2i(640, 360)]:
+	for resolution: Vector2i in [Vector2i(360, 640), Vector2i(390, 844), Vector2i(640, 360), Vector2i(960, 540)]:
 		root.size = resolution
 		root.content_scale_size = resolution
 		await _frames()
-		var orientation := "portrait" if resolution.y > resolution.x else "landscape"
+		var orientation := "%dx%d" % [resolution.x, resolution.y]
 		main.hud.set_rpg_status(p, main.player)
 		await _capture(orientation + "_world")
+		main.hud.show_map(p)
+		await _capture(orientation + "_map")
+		main.hud.close_map()
 		main.hud.show_inventory(p)
 		await _capture(orientation + "_materials")
 		main.hud.inventory_category = 1

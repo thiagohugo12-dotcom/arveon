@@ -621,7 +621,7 @@ func set_dash_cooldown(value: float) -> void:
 	var rounded := snappedf(value, 0.1)
 	if rounded != cooldown:
 		cooldown = rounded
-		dash_button.set_recharge(value, 0.8)
+		dash_button.set_recharge(value, 1.2)
 
 func _sync_controls() -> void:
 	scroll_touch = -1

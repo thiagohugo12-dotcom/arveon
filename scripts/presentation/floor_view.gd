@@ -36,7 +36,13 @@ func _draw() -> void:
 		draw_rect(Rect2(center - Vector2(31, 25), Vector2(62, 50)), Color("#45513a"))
 	for i in range(TRAILS.size()):
 		draw_polyline(PackedVector2Array(TRAILS[i]), TRAIL, TRAIL_WIDTHS[i], false)
-		draw_polyline(PackedVector2Array(TRAILS[i]), TRAIL_HIGHLIGHT, 3.0, false)
+		# Broken, integer ground accents avoid a continuous bright seam on vertical paths.
+		var trail: Array = TRAILS[i]
+		for j in range(trail.size() - 1):
+			var distance: float = trail[j].distance_to(trail[j + 1])
+			for n in range(0, int(distance), 36):
+				var point: Vector2 = trail[j].lerp(trail[j + 1], float(n) / distance).floor()
+				draw_rect(Rect2(point, Vector2(5, 3)), TRAIL_HIGHLIGHT)
 	draw_rect(Rect2(465, 355, 185, 200), Color("#476447"))
 	for i in range(205):
 		var px_pos := Vector2(rng.randi_range(30, 1160), rng.randi_range(30, 865))
@@ -87,16 +93,22 @@ func _free_for_decoration(at: Vector2) -> bool:
 func _draw_tree(at: Vector2, tall: bool) -> void:
 	draw_rect(Rect2(at + Vector2(-8, 11), Vector2(23, 5)), Color("#172e26"))
 	draw_rect(Rect2(at + Vector2(1, 1), Vector2(5, 13)), Color("#705237"))
+	draw_rect(Rect2(at + Vector2(2, 3), Vector2(2, 8)), Color("#a17b4b"))
 	if tall:
 		draw_rect(Rect2(at + Vector2(-9, -15), Vector2(25, 16)), Color("#284c38"))
 		draw_rect(Rect2(at + Vector2(-5, -20), Vector2(17, 12)), Color("#3f7048"))
 	else:
 		draw_rect(Rect2(at + Vector2(-10, -11), Vector2(27, 13)), Color("#365e3f"))
 		draw_rect(Rect2(at + Vector2(-5, -16), Vector2(17, 10)), Color("#5d824c"))
+	draw_rect(Rect2(at + Vector2(-3, -14 if tall else -10), Vector2(7, 3)), Color("#779759"))
 
 func _draw_camp() -> void:
 	var area := SafeCamp.AREA
-	draw_rect(area.grow(SafeCamp.CLEARANCE), Color("#b6b98282"), false, 3.0)
+	# The former clearance outline created a long pale vertical line across the forest.
+	# Clearance/hitboxes remain in SafeCamp; only subtle corner ground marks are drawn.
+	var edge := area.grow(SafeCamp.CLEARANCE)
+	for corner: Vector2 in [edge.position, Vector2(edge.end.x, edge.position.y), edge.end, Vector2(edge.position.x, edge.end.y)]:
+		draw_rect(Rect2(corner - Vector2(3, 2), Vector2(6, 4)), Color("#526747"))
 	draw_rect(area.grow(5), Color("#253627"))
 	draw_rect(area, Color("#92794c"))
 	draw_rect(area.grow(-8), Color("#667750"))

@@ -108,7 +108,14 @@ func _draw() -> void:
 		if skill_effect == 0:
 			draw_arc(Vector2.ZERO, 90 * (1.0 - skill_left / 0.4), 0, TAU, 20, Color("#f7d47c"), 4)
 		else:
-			draw_line(-facing * 28, facing * 28, Color("#f28d61"), 8)
+			if skill_effect == 1:
+				for i in range(3):
+					var mark := (-facing * (20 + i * 10)).floor()
+					draw_rect(Rect2(mark - Vector2(3, 3), Vector2(6, 6)), Color("#f28d61"))
+			else:
+				for i in range(8):
+					var mark := (Vector2.RIGHT.rotated(i * TAU / 8) * (30 + (0.28 - skill_left) * 50)).floor()
+					draw_rect(Rect2(mark - Vector2(2, 2), Vector2(4, 4)), Color("#f7d47c"))
 	var step: float = -2.0 if walking and anim_frame % 2 == 0 else 0.0
 	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
 	match appearance:

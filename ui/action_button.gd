@@ -22,6 +22,9 @@ func _ready() -> void:
 	caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	caption.add_theme_font_size_override("font_size", 12)
 	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption.add_theme_color_override("font_color", Color("#fff0ce"))
+	caption.add_theme_color_override("font_outline_color", Color("#14231d"))
+	caption.add_theme_constant_override("outline_size", 3)
 	add_child(caption)
 	set_caption(title)
 
@@ -71,6 +74,3 @@ func _draw() -> void:
 		if recharge > 0.0:
 			draw_rect(Rect2(4, 4, size.x - 8, (size.y - 8) * recharge), Color("#0a171ec7"))
 			draw_rect(Rect2(4, size.y - 6, (size.x - 8) * (1.0 - recharge), 2), Color("#e2b969"))
-		caption.add_theme_color_override("font_color", Color("#fff0ce"))
-		caption.add_theme_color_override("font_outline_color", Color("#14231d"))
-		caption.add_theme_constant_override("outline_size", 3)
