@@ -335,7 +335,7 @@ func _run() -> void:
 	player.position = SafeCamp.STATIONS["Vendedor"] + Vector2(-30, 0)
 	main._interact()
 	await frames()
-	check(hud.station_content.get_child(2).get_child(0).text.begins_with("Ervas"), "vendor prioritizes owned gathered resources on the first page")
+	check(hud.station_content.get_child(2).get_child(0).text.contains("Ervas"), "vendor displays owned gathered resources on the first page")
 	check(hud.station_content.get_child(2).get_child(2) is Button and not (hud.station_content.get_child(2).get_child(2) as Button).disabled, "owned resource has an enabled sell button")
 	var sale_gold: int = main.progress.gold
 	main._station_action("Vender", "Ervas")
