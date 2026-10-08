@@ -33,3 +33,7 @@ Execução no navegador, publicação remota e teste humano no celular devem ser
 ## Atualização concorrente preservada
 
 Durante o trabalho, `16c2195` já corrigiu `max_hp` e adicionou watchdog de 15 segundos. Essas alterações foram preservadas. Nessa execução os testes/exportação passaram, o Preview ficou READY, mas o alias falhou com `User not found`: o comando de alias não informava o escopo da equipe. A correção complementar especifica o mesmo escopo na publicação e no alias.
+
+## Credencial de CI e acesso mobile
+
+O token de CI publica a exportação, mas comandos da CLI que consultam a identidade pessoal falham com `User not found`. Publicação mantém o projeto explicitamente vinculado em `.vercel/project.json`; o alias usa a API oficial com `teamId`, sem consultar usuário pessoal. Antes de alterar o alias, valida projeto, estado READY e ambiente Preview. Apenas o alias TESTE recebe acesso público para abrir no celular; a proteção do projeto e as demais URLs não são alteradas. Helper validado com API simulada para sucesso e rejeição de produção sem mutações.
