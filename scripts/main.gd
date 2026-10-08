@@ -50,6 +50,7 @@ func _ready() -> void:
 	mission.completed.connect(_on_mission_completed)
 	loot_rng.randomize()
 	player.input_driver = input_driver
+	player.apply_progression(progress)
 	enemy.target = player
 	enemy.defeated.connect(_on_enemy_defeated)
 	enemy.projectile_requested.connect(_on_enemy_projectile)
@@ -158,6 +159,7 @@ func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
 
 func _save_progress() -> void:
 	progress.xp = earned_xp
+	player.apply_progression(progress)
 	progress.gold = earned_gold
 	progress.kills = defeated_count
 	progress.mission_index = mission.mission_index
@@ -276,4 +278,5 @@ func _adapt_orientation() -> void:
 	if window.content_scale_size != desired:
 		window.content_scale_size = desired
 	hud.call_deferred("_layout")
+
 

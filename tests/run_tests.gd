@@ -447,10 +447,31 @@ func _run() -> void:
 	legacy.save_path = legacy_path
 	check(legacy.load_save() and legacy.bag.get("Madeira", 0) == 2 and legacy.discovered_pois.is_empty(), "v0.2.3 save migrates without losing inventory")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(legacy_path))
+	var build := GameProgress.new()
+	build.xp = build.xp_for_level(3)
+	check(build.level() == 3 and build.attribute_points_available() == 4, "levels derive available points from cumulative XP")
+	check(build.spend_attribute_point("Vitalidade") and build.spend_attribute_point("Força"), "valid attributes spend a point")
+	check(not build.spend_attribute_point("invalid"), "unknown attribute rejected")
+	player.apply_progression(build)
+	check(player.health.maximum == player.base_max_hp + 8 and player.attack.weapon.damage == player.base_weapon_damage + 2, "progression changes actual HP and attack")
+	player.apply_progression(build)
+	check(player.health.maximum == player.base_max_hp + 8, "reapplying attributes does not compound bonuses")
+	check((load("res://data/actors/player.tres") as ActorData).max_hp == player.base_max_hp, "progression preserves shared actor resource")
+	build.save_path = test_path + ".attributes"
+	check(build.save(), "v4 attributes save succeeds")
+	var restored := GameProgress.new()
+	restored.save_path = build.save_path
+	check(restored.load_save() and restored.attributes == build.attributes, "v4 attributes survive reload")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(build.save_path))
+	main.progress.attributes.Vitalidade = 1
+	main.earned_xp = main.progress.xp_for_level(2)
+	main._save_progress()
+	check(player.health.maximum == player.base_max_hp + 8, "main applies progression when saving XP changes")
 	main.queue_free()
 	await frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
 	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
 	print("RESULT: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
+
 
