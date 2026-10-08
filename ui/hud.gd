@@ -184,14 +184,14 @@ func refresh_station(progress: GameProgress) -> void:
 	if station_name == "Ferreiro":
 		_add_description("Equipamento inicial. Evolução de armas será adicionada em uma versão futura.")
 	elif station_name == "Baú":
-		_add_description("Mochila → Baú · itens guardados ficam protegidos na morte.")
+		_add_description("Mochila/Baú · itens guardados ficam protegidos.")
 		for item: String in GameProgress.ITEMS:
-			_add_row(item, "Mochila %d · Baú %d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar", int(progress.bag.get(item, 0)) > 0, int(progress.chest.get(item, 0)) > 0)
+			_add_row(item, "%d/%d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar", int(progress.bag.get(item, 0)) > 0, int(progress.chest.get(item, 0)) > 0)
 	elif station_name == "Vendedor":
-		_add_description("Ouro %d · Comprar %d · Vender %d" % [progress.gold, GameProgress.BUY_PRICE, GameProgress.SELL_PRICE])
-		_add_description("Ganhe ouro e materiais derrotando criaturas ou concluindo missões.")
+		_add_description("Ouro %d · Compra %d · Venda %d" % [progress.gold, GameProgress.BUY_PRICE, GameProgress.SELL_PRICE])
+		_add_description("Ganhe recursos no combate e nas missões.")
 		for item: String in GameProgress.TRADE_ITEMS:
-			_add_row(item, "Mochila %d" % progress.bag.get(item, 0), "Comprar", "Vender", progress.gold >= GameProgress.BUY_PRICE, int(progress.bag.get(item, 0)) > 0)
+			_add_row(item, "x%d" % progress.bag.get(item, 0), "Comprar", "Vender", progress.gold >= GameProgress.BUY_PRICE, int(progress.bag.get(item, 0)) > 0)
 
 func _add_description(value: String) -> void:
 	var label := Label.new()
@@ -200,14 +200,19 @@ func _add_description(value: String) -> void:
 	station_content.add_child(label)
 
 func _add_row(item: String, count: String, left: String, right: String, can_left: bool, can_right: bool) -> void:
-	_add_description(item + " · " + count)
 	var buttons := HBoxContainer.new()
 	station_content.add_child(buttons)
+	var label := Label.new()
+	label.text = item + " " + count
+	label.add_theme_font_size_override("font_size", 12)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	buttons.add_child(label)
 	for action: String in [left, right]:
 		var button := Button.new()
 		button.text = action
 		button.disabled = not (can_left if action == left else can_right)
-		button.custom_minimum_size = Vector2(100, 39)
+		button.add_theme_font_size_override("font_size", 12)
+		button.custom_minimum_size = Vector2(76, 40)
 		button.pressed.connect(func(): station_action.emit(action, item))
 		buttons.add_child(button)
 

@@ -157,7 +157,7 @@ func _run() -> void:
 	open_touch.pressed = false
 	hud.interact_button._input(open_touch)
 	await frames()
-	var vendor_sell := hud.station_content.get_child(3).get_child(1) as Button
+	var vendor_sell := hud.station_content.get_child(2).get_child(2) as Button
 	check(hud.station_panel.visible and not vendor_sell.disabled, "vendor exposes an enabled sell button for owned material")
 	var shop_touch := InputEventScreenTouch.new()
 	shop_touch.index = 6
@@ -166,8 +166,9 @@ func _run() -> void:
 	hud._input(shop_touch)
 	check(main.progress.gold == 19 and main.progress.bag.get("Couro", 0) == 0, "vendor sells existing material into wallet")
 	await frames()
-	var vendor_buy := hud.station_content.get_child(7).get_child(0) as Button
+	var vendor_buy := hud.station_content.get_child(4).get_child(1) as Button
 	check(not vendor_buy.disabled, "vendor enables purchase with sufficient gold")
+	check(hud.station_scroll.get_global_rect().has_point(vendor_buy.global_position + vendor_buy.size * 0.5), "all vendor buttons fit the mobile viewport")
 	shop_touch.position = vendor_buy.global_position + vendor_buy.size * 0.5
 	hud._input(shop_touch)
 	check(main.progress.gold == 14 and main.progress.bag.get("Essência", 0) == 1, "vendor buy button exchanges gold for real material")
@@ -185,6 +186,9 @@ func _run() -> void:
 	main._interact()
 	main._station_action("Guardar", "Essência")
 	check(main.progress.bag.get("Essência", 0) == 2 and main.progress.chest.get("Essência", 0) == 1, "chest transfer preserves total")
+	await frames()
+	var last_chest_button := hud.station_content.get_child(4).get_child(2) as Button
+	check(hud.station_scroll.get_global_rect().has_point(last_chest_button.global_position + last_chest_button.size * 0.5), "all chest rows fit the mobile viewport")
 	var interact_key := InputEventAction.new()
 	interact_key.action = "interact"
 	interact_key.pressed = true
