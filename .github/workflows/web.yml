@@ -63,3 +63,39 @@ jobs:
           path: build/web/
           if-no-files-found: error
           retention-days: 14
+
+  deploy:
+    name: Publish tested Web build to Vercel
+    needs: web
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download validated Godot Web build
+        uses: actions/download-artifact@v4
+        with:
+          name: andar-1-web
+          path: web
+      - name: Set up Node.js for Vercel CLI
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Publish to existing Vercel project
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_6XRzZ5HN4AOw2hWyIpf8McMU
+          VERCEL_PROJECT_ID: prj_gYKlx91MiswTmwj2PLiN5liQD0B7
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo '::error title=Vercel token missing::Add the VERCEL_TOKEN secret in GitHub Actions settings before running the deployment.'
+            exit 1
+          fi
+          test -s web/index.html
+          test -s web/index.wasm
+          test -s web/index.pck
+          mkdir -p web/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
+          cd web
+          npx --yes vercel@62.7.0 deploy --prod --yes --token "$VERCEL_TOKEN"
