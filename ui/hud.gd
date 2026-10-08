@@ -10,6 +10,8 @@ var actions: Array[TouchActionButton] = []
 var heading: Label
 var hp_label: Label
 var hp_bar: ProgressBar
+var progress_label: Label
+var loot_label: Label
 var restart: Button
 var cooldown: float = 0.0
 
@@ -30,6 +32,15 @@ func _ready() -> void:
 	hp_bar.show_percentage = false
 	hp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hp_bar)
+	progress_label = Label.new()
+	progress_label.add_theme_font_size_override("font_size", 12)
+	progress_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(progress_label)
+	loot_label = Label.new()
+	loot_label.add_theme_font_size_override("font_size", 11)
+	loot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	loot_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(loot_label)
 	joystick = VirtualJoystick.new()
 	joystick.size = Vector2(128, 128)
 	joystick.direction_changed.connect(func(value: Vector2): movement_changed.emit(value))
@@ -72,6 +83,10 @@ func _layout() -> void:
 	hp_label.position = Vector2(margin.x, margin.y + 46)
 	hp_bar.position = Vector2(margin.x, margin.y + 68)
 	hp_bar.size = Vector2(minf(220, size.x - margin.x - right_inset), 12)
+	progress_label.position = Vector2(margin.x, margin.y + 85)
+	progress_label.size = Vector2(size.x - margin.x - right_inset, 20)
+	loot_label.position = Vector2(margin.x, margin.y + 105)
+	loot_label.size = Vector2(size.x - margin.x - right_inset, 35)
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for i in range(actions.size()):
 		actions[i].position = Vector2(size.x - right_inset - 184 + (i % 3) * 64, size.y - bottom_inset - 120 + (i / 3) * 64)
@@ -82,6 +97,10 @@ func set_health(current: int, maximum: int) -> void:
 	hp_label.text = "HP %d / %d · Ataque automático" % [current, maximum]
 	hp_bar.max_value = maximum
 	hp_bar.value = current
+
+func set_progress(xp: int, gold: int, kills: int, loot: String) -> void:
+	progress_label.text = "XP %d  ·  Ouro %d  ·  Abates %d" % [xp, gold, kills]
+	loot_label.text = loot
 
 func show_death() -> void:
 	joystick.reset()
