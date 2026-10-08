@@ -53,6 +53,7 @@ func _ready() -> void:
 	hud.movement_changed.connect(input_driver.set_touch_direction)
 	hud.dash_pressed.connect(input_driver.request_dash)
 	hud.interact_pressed.connect(_interact)
+	hud.inventory_toggled.connect(_toggle_inventory)
 	hud.station_action.connect(_station_action)
 	hud.panel_closed.connect(func():
 		input_driver.blocked = false
@@ -163,8 +164,17 @@ func _on_player_died() -> void:
 		"Perdeu 1 " + lost + " da mochila; baú protegido" if not lost.is_empty() else "Baú protegido · sem material na mochila")
 	_save_progress()
 
+func _toggle_inventory() -> void:
+	if hud.inventory_open:
+		hud.close_inventory()
+		input_driver.blocked = false
+	elif player.health.is_alive() and not hud.station_panel.visible:
+		input_driver.reset()
+		input_driver.blocked = true
+		hud.show_inventory(progress)
+
 func _interact() -> void:
-	if not player.health.is_alive() or hud.station_panel.visible:
+	if not player.health.is_alive() or hud.station_panel.visible or hud.inventory_open:
 		return
 	var found := _interaction_target()
 	match found.get("kind", ""):
@@ -225,7 +235,9 @@ func _station_action(action: String, item: String) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact") and not event.is_echo():
-		if hud.station_panel.visible:
+		if hud.inventory_open:
+			_toggle_inventory()
+		elif hud.station_panel.visible:
 			hud.close_station()
 		else:
 			_interact()
