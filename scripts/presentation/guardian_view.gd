@@ -43,11 +43,12 @@ func _draw() -> void:
 	draw_rect(Rect2(-10, -5, 5, 4), Color("#e8c077"))
 	draw_rect(Rect2(5, -5, 5, 4), Color("#e8c077"))
 	draw_rect(Rect2(-5, 5, 10, 3), Color("#493927"))
-	for p in [Vector2(-20, -35), Vector2(-13, -44), Vector2(1, -48), Vector2(15, -41), Vector2(22, -32)]:
-		draw_rect(Rect2(p, Vector2(13, 7)), Color("#284b36"))
-		draw_rect(Rect2(p + Vector2(3, -2), Vector2(7, 4)), Color("#5c8651"))
-	draw_rect(Rect2(-9, -43, 5, 3), Color("#9baa65"))
-	draw_rect(Rect2(11, -39, 4, 3), Color("#a3a46c"))
+	for p in [Vector2(-35, -43), Vector2(-27, -51), Vector2(-15, -57), Vector2(0, -59), Vector2(17, -53), Vector2(28, -43)]:
+		draw_rect(Rect2(p, Vector2(17, 14)), Color("#203e32"))
+		draw_rect(Rect2(p + Vector2(2, -2), Vector2(13, 10)), Color("#416d48"))
+		draw_rect(Rect2(p + Vector2(4, -2), Vector2(6, 3)), Color("#73935b"))
+	draw_rect(Rect2(-22, -47, 5, 3), Color("#a5a66b"))
+	draw_rect(Rect2(21, -42, 4, 3), Color("#9baa65"))
 	draw_rect(Rect2(-34, -57, 68, 5), Color("#1a241e"))
 	draw_rect(Rect2(-34, -57, 68 * hp_ratio, 5), Color("#97c273"))
 	draw_string(ThemeDB.fallback_font, Vector2(-48, -64), "Guardião das Raízes", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#e7cf8a"))

@@ -99,6 +99,7 @@ func _run() -> void:
 	for sample in samples:
 		sample.walking = true
 		sample.anim_frame = 1
+		sample.queue_redraw()
 	await _capture("actors_stride")
 	gallery.queue_free()
 	main.queue_free()
