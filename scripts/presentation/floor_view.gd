@@ -7,7 +7,7 @@ const OAK := preload("res://assets/art/forest_oak_v034.png")
 const SPRUCE := preload("res://assets/art/forest_spruce_v034.png")
 const BERRY := preload("res://assets/art/forest_shrub_v034.png")
 const LINDEN := preload("res://assets/art/forest_linden_v034.png")
-const SAMPLE_REGION := Rect2(650, 180, 500, 460)
+const FOREST_REGION := Rect2(-80, -80, 1360, 1060)
 const FOREST := Color("#294c37")
 const FOREST_LIGHT := Color("#244431")
 const TRAIL := Color("#b98955")
@@ -45,18 +45,19 @@ func _hash(x: int, y: int) -> int:
 	return absi((n ^ (n >> 11)) * 31337) % 9973
 
 func _forest_weight(at: Vector2) -> float:
-	if not SAMPLE_REGION.has_point(at):
+	if not FOREST_REGION.has_point(at):
 		return 0.0
-	var margin: float = minf(minf(at.x - SAMPLE_REGION.position.x, SAMPLE_REGION.end.x - at.x),
-		minf(at.y - SAMPLE_REGION.position.y, SAMPLE_REGION.end.y - at.y))
+	var margin: float = minf(minf(at.x - FOREST_REGION.position.x, FOREST_REGION.end.x - at.x),
+		minf(at.y - FOREST_REGION.position.y, FOREST_REGION.end.y - at.y))
 	return clampf(margin / 76.0, 0.0, 1.0)
 
 func _draw_ground() -> void:
 	for y in range(0, 900, 32):
 		for x in range(0, 1200, 32):
-			var tile := _hash(x / 32, y / 32) % 4
-			draw_texture_rect_region(ATLAS, Rect2(x, y, 32, 32), Rect2(tile * 32, 0, 32, 32))
 			var blend := _forest_weight(Vector2(x + 16, y + 16))
+			if blend < 1.0:
+				var tile := _hash(x / 32, y / 32) % 4
+				draw_texture_rect_region(ATLAS, Rect2(x, y, 32, 32), Rect2(tile * 32, 0, 32, 32))
 			if blend > 0.0:
 				var patch := _hash(x / 32, y / 32) % 7
 				var tint := Color("#467a43") if patch < 4 else Color("#4a8048") if patch < 6 else Color("#527c40")
@@ -140,13 +141,15 @@ func _draw_decoration() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12051
 	# A separate low-cost understorey pass breaks up the empty grass between trees.
-	for i in range(260):
-		var at := SAMPLE_REGION.position + Vector2(rng.randf_range(0, SAMPLE_REGION.size.x), rng.randf_range(0, SAMPLE_REGION.size.y))
+	for i in range(1250):
+		var at := FOREST_REGION.position + Vector2(rng.randf_range(0, FOREST_REGION.size.x), rng.randf_range(0, FOREST_REGION.size.y))
 		if _forest_weight(at) > 0.3 and _free_for_decoration(at):
 			if i % 9 == 0:
 				_draw_flower(at, i)
-			elif i % 11 == 0:
+			elif i % 17 == 0:
 				_draw_pebble(at, i)
+			elif i % 13 == 0:
+				_draw_shrub(at)
 			else:
 				_draw_grass(at, i)
 	rng.seed = 12051
@@ -196,7 +199,7 @@ func _draw_shrub(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(4, -2), Vector2(3, 2)), Color("#7ca45c"))
 
 func _draw_ground_details(at: Vector2, seed: int) -> void:
-	if SAMPLE_REGION.has_point(at):
+	if FOREST_REGION.has_point(at):
 		match seed % 5:
 			0, 1:
 				_draw_grass(at, seed)
