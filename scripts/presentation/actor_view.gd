@@ -197,6 +197,7 @@ func _draw() -> void:
 		for side in [-1, 1]:
 			px(side * (10 + drift), -13 - drift, 6, 6, Color("#d0aa71"))
 			px(side * (8 + drift), 3 + drift, 4, 4, Color("#685641"))
-	px(-17, -30, 34, 4, LINE)
-	px(-16, -29, 32.0 * hp_ratio, 2, Color("#8ce395"))
+	if appearance != 0:
+		px(-17, -30, 34, 4, LINE)
+		px(-16, -29, 32.0 * hp_ratio, 2, Color("#8ce395"))
 
