@@ -3,10 +3,14 @@ extends Node2D
 
 # A static pixel atlas and seeded brush stamps. All geometry is presentation only.
 const ATLAS := preload("res://assets/art/forest_atlas.png")
+const OAK := preload("res://assets/art/forest_oak_v034.png")
+const SPRUCE := preload("res://assets/art/forest_spruce_v034.png")
+const BERRY := preload("res://assets/art/forest_shrub_v034.png")
+const SAMPLE_REGION := Rect2(650, 180, 500, 460)
 const FOREST := Color("#294c37")
 const FOREST_LIGHT := Color("#244431")
-const TRAIL := Color("#786044")
-const TRAIL_HIGHLIGHT := Color("#a28255")
+const TRAIL := Color("#b98955")
+const TRAIL_HIGHLIGHT := Color("#d1a06c")
 const ROCK := Color("#45554d")
 const ROCKS := [Rect2(340, 300, 130, 50), Rect2(760, 520, 90, 110)]
 const TRAILS := [
@@ -42,8 +46,17 @@ func _hash(x: int, y: int) -> int:
 func _draw_ground() -> void:
 	for y in range(0, 900, 32):
 		for x in range(0, 1200, 32):
-			var tile := _hash(x / 32, y / 32) % 4
-			draw_texture_rect_region(ATLAS, Rect2(x, y, 32, 32), Rect2(tile * 32, 0, 32, 32))
+			if SAMPLE_REGION.has_point(Vector2(x + 16, y + 16)):
+				var patch := _hash(x / 32, y / 32) % 7
+				draw_rect(Rect2(x, y, 32, 32), Color("#467a43") if patch < 4 else Color("#4a8048") if patch < 6 else Color("#527c40"))
+				for n in range(7):
+					var px := x + _hash(x + n * 23, y) % 30
+					var py := y + _hash(x, y + n * 19) % 30
+					var tone := Color("#609149") if n % 3 else Color("#315f45")
+					draw_rect(Rect2(px, py, 3 + n % 3, 2), tone)
+			else:
+				var tile := _hash(x / 32, y / 32) % 4
+				draw_texture_rect_region(ATLAS, Rect2(x, y, 32, 32), Rect2(tile * 32, 0, 32, 32))
 
 func _draw_paths() -> void:
 	# One continuous outline per trail prevents spikes at changes in direction.
@@ -63,23 +76,40 @@ func _draw_paths() -> void:
 				var prev: Vector2 = centers[maxi(0, n - 1)]
 				var next: Vector2 = centers[mini(n + 1, centers.size() - 1)]
 				var normal := (next - prev).normalized().orthogonal()
-				var waviness := sin(float(n) * 0.32 + i) * 2.0 + float(_hash(n / 5, i * 19) % 3 - 1)
+				var waviness := sin(float(n) * 0.17 + i) * 2.8 + sin(float(n) * 0.49 + i * 3) * 1.5 + float(_hash(n / 5, i * 19) % 3 - 1)
 				var width: float = TRAIL_WIDTHS[i] * 0.5 + border + waviness
 				left.append((centers[n] + normal * width).floor())
 				right.append((centers[n] - normal * width).floor())
 			for n in range(right.size() - 1, -1, -1):
 				left.append(right[n])
-			draw_colored_polygon(left, Color("#493d30") if border > 0.0 else TRAIL)
+			draw_colored_polygon(left, Color("#55743e") if border > 0.0 else TRAIL)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 33042
 	for i in range(TRAILS.size()):
 		var trail: Array = TRAILS[i]
 		for j in range(trail.size() - 1):
 			var length: float = trail[j].distance_to(trail[j + 1])
-			for n in range(0, int(length), 23):
+			for n in range(0, int(length), 17):
 				var at: Vector2 = trail[j].lerp(trail[j + 1], float(n) / length).floor()
-				at += Vector2(rng.randi_range(-8, 8), rng.randi_range(-6, 6))
-				draw_rect(Rect2(at, Vector2(2 + n % 3, 2)), TRAIL_HIGHLIGHT if n % 3 == 0 else Color("#655137"))
+				at += Vector2(rng.randi_range(-12, 12), rng.randi_range(-9, 9))
+				draw_rect(Rect2(at, Vector2(2 + n % 3, 2)), TRAIL_HIGHLIGHT if n % 3 == 0 else Color("#97734a"))
+				if n % 4 == 0:
+					_draw_pebble(at + Vector2(6, 4), n)
+				if n % 3 == 0:
+					var direction: Vector2 = (trail[j + 1] - trail[j]).normalized().orthogonal()
+					var side := -1 if n % 2 else 1
+					_draw_grass(at + direction * side * (TRAIL_WIDTHS[i] * 0.5 + 6), n)
+
+func _draw_grass(at: Vector2, seed: int) -> void:
+	var dark := Color("#366a3d")
+	var light := Color("#79a949") if seed % 4 else Color("#a3bb52")
+	draw_colored_polygon(PackedVector2Array([at + Vector2(-5, 3), at + Vector2(-3, -5), at, at + Vector2(1, -8), at + Vector2(3, 0), at + Vector2(6, -4), at + Vector2(5, 4)]), dark)
+	draw_rect(Rect2(at + Vector2(-2, -3), Vector2(2, 5)), light)
+	draw_rect(Rect2(at + Vector2(3, -1), Vector2(2, 4)), light)
+
+func _draw_pebble(at: Vector2, seed: int) -> void:
+	draw_colored_polygon(PackedVector2Array([at + Vector2(-4, 2), at + Vector2(-2, -2), at + Vector2(2, -3), at + Vector2(5, 1), at + Vector2(3, 3)]), Color("#8c7e62"))
+	draw_rect(Rect2(at + Vector2(-1, -2), Vector2(3, 1)), Color("#c7b795") if seed % 2 else Color("#b2ab8a"))
 
 func _draw_clearing(center: Vector2) -> void:
 	for y in range(-28, 29, 6):
@@ -120,9 +150,17 @@ func _draw_decoration() -> void:
 
 func _draw_tree(at: Vector2, variant: int) -> void:
 	# The crown, bark, shadow and leaves are a real 64x64 sprite in the atlas.
-	draw_texture_rect_region(ATLAS, Rect2(at + Vector2(-32, -52), Vector2(64, 64)), Rect2(variant * 64, 64, 64, 64))
+	if SAMPLE_REGION.has_point(at):
+		var sprite: Texture2D = SPRUCE if variant == 1 else OAK
+		var size := sprite.get_size()
+		draw_texture(sprite, at - Vector2(size.x * 0.5, size.y - 8))
+	else:
+		draw_texture_rect_region(ATLAS, Rect2(at + Vector2(-32, -52), Vector2(64, 64)), Rect2(variant * 64, 64, 64, 64))
 
 func _draw_shrub(at: Vector2) -> void:
+	if SAMPLE_REGION.has_point(at):
+		draw_texture(BERRY, at - Vector2(20, 27))
+		return
 	draw_rect(Rect2(at + Vector2(-10, 3), Vector2(22, 5)), Color("#18392e"))
 	for patch in [Rect2(-10, -1, 9, 6), Rect2(-5, -6, 10, 9), Rect2(3, -3, 9, 9)]:
 		draw_rect(Rect2(at + patch.position, patch.size), Color("#417348"))
@@ -130,6 +168,17 @@ func _draw_shrub(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(4, -2), Vector2(3, 2)), Color("#7ca45c"))
 
 func _draw_ground_details(at: Vector2, seed: int) -> void:
+	if SAMPLE_REGION.has_point(at):
+		match seed % 5:
+			0, 1:
+				_draw_grass(at, seed)
+			2:
+				_draw_flower(at, seed)
+			3:
+				_draw_pebble(at, seed)
+			4:
+				draw_rect(Rect2(at + Vector2(-2, 0), Vector2(5, 2)), Color("#b9864b"))
+		return
 	match seed % 4:
 		0:
 			draw_rect(Rect2(at, Vector2(3, 4)), Color("#72945b"))
@@ -144,6 +193,13 @@ func _draw_ground_details(at: Vector2, seed: int) -> void:
 			draw_rect(Rect2(at, Vector2(2, 2)), Color("#efdc92"))
 			draw_rect(Rect2(at + Vector2(-3, 0), Vector2(2, 2)), Color("#caa367"))
 			draw_rect(Rect2(at + Vector2(-1, 2), Vector2(2, 2)), Color("#687f51"))
+
+func _draw_flower(at: Vector2, seed: int) -> void:
+	draw_rect(Rect2(at + Vector2(0, 0), Vector2(2, 5)), Color("#285e3e"))
+	var petal := Color("#f7e9b0") if seed % 2 else Color("#f2b565")
+	for offset: Vector2 in [Vector2(-2, -3), Vector2(2, -3), Vector2(0, -5), Vector2(0, -1)]:
+		draw_rect(Rect2(at + offset, Vector2(2, 2)), petal)
+	draw_rect(Rect2(at + Vector2(0, -3), Vector2(2, 2)), Color("#c48a42"))
 func _free_for_decoration(at: Vector2) -> bool:
 	if SafeCamp.AREA.grow(26).has_point(at):
 		return false

@@ -75,6 +75,14 @@ func _run() -> void:
 	for index in range(4):
 		main.player.view.set_facing([Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT][index])
 		await _capture("explorer_world_%s" % ["down", "up", "left", "right"][index])
+	# Art direction gate: same playable forest location at mobile and desktop sizes.
+	main.player.position = Vector2(870, 430)
+	main.player.get_node("Camera2D").reset_smoothing()
+	main.player.view.set_facing(Vector2.DOWN)
+	for resolution: Vector2i in [Vector2i(390, 844), Vector2i(960, 540)]:
+		root.size = resolution
+		root.content_scale_size = resolution
+		await _capture("forest_pass_%dx%d" % [resolution.x, resolution.y])
 	# Separate art sheet makes every integrated actor and two walk poses reviewable.
 	root.size = Vector2i(640, 360)
 	root.content_scale_size = Vector2i(640, 360)
