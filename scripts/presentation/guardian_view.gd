@@ -17,15 +17,37 @@ func _draw() -> void:
 			2:
 				for angle in [-0.35, 0.0, 0.35]:
 					draw_line(Vector2.ZERO, telegraph_direction.rotated(angle) * 200.0, Color("#ffc570"), 3.0)
-	draw_rect(Rect2(-30, 22, 60, 8), Color("#14291e"))
-	for x in [-22, -10, 6, 20]:
-		draw_rect(Rect2(x, 6, 8, 22), Color("#876448"))
-	draw_rect(Rect2(-22, -20, 44, 46), Color("#69482f"))
-	draw_rect(Rect2(-14, -28, 28, 45), Color("#966c41") if flash_left <= 0.0 else Color("#f7e4aa"))
-	draw_rect(Rect2(-32, -34, 64, 18), Color("#315b3a"))
-	draw_rect(Rect2(-23, -44, 46, 17), Color("#608150"))
-	draw_rect(Rect2(-12, -8, 6, 6), Color("#e5c678"))
-	draw_rect(Rect2(6, -8, 6, 6), Color("#e5c678"))
+	# Root feet, knotted trunk and offset crown give the guardian its own silhouette.
+	draw_rect(Rect2(-32, 23, 64, 6), Color("#14291e"))
+	for side in [-1, 1]:
+		var s: float = side
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(s * 6, 4), Vector2(s * 20, 8), Vector2(s * 29, 25),
+			Vector2(s * 18, 22), Vector2(s * 10, 15)
+		]), Color("#60442e"))
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(s * 14, -24), Vector2(s * 28, -29), Vector2(s * 41, -19),
+			Vector2(s * 36, -10), Vector2(s * 22, -14)
+		]), Color("#294c38"))
+		draw_rect(Rect2(s * 25 - 4, -25, 9, 4), Color("#61905a"))
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-20, 17), Vector2(-23, -8), Vector2(-17, -28), Vector2(-10, -39),
+		Vector2(12, -39), Vector2(22, -24), Vector2(20, 7), Vector2(13, 22), Vector2(-9, 24)
+	]), Color("#4b392b"))
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-13, 14), Vector2(-16, -12), Vector2(-10, -34),
+		Vector2(10, -34), Vector2(16, -13), Vector2(13, 16)
+	]), Color("#977047") if flash_left <= 0.0 else Color("#f7e4aa"))
+	draw_rect(Rect2(-7, -20, 4, 26), Color("#b38b5b"))
+	draw_rect(Rect2(4, -27, 3, 19), Color("#684932"))
+	draw_rect(Rect2(-10, -5, 5, 4), Color("#e8c077"))
+	draw_rect(Rect2(5, -5, 5, 4), Color("#e8c077"))
+	draw_rect(Rect2(-5, 5, 10, 3), Color("#493927"))
+	for p in [Vector2(-20, -35), Vector2(-13, -44), Vector2(1, -48), Vector2(15, -41), Vector2(22, -32)]:
+		draw_rect(Rect2(p, Vector2(13, 7)), Color("#284b36"))
+		draw_rect(Rect2(p + Vector2(3, -2), Vector2(7, 4)), Color("#5c8651"))
+	draw_rect(Rect2(-9, -43, 5, 3), Color("#9baa65"))
+	draw_rect(Rect2(11, -39, 4, 3), Color("#a3a46c"))
 	draw_rect(Rect2(-34, -57, 68, 5), Color("#1a241e"))
 	draw_rect(Rect2(-34, -57, 68 * hp_ratio, 5), Color("#97c273"))
 	draw_string(ThemeDB.fallback_font, Vector2(-48, -64), "Guardião das Raízes", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#e7cf8a"))

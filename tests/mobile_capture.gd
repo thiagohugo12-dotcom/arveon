@@ -69,6 +69,33 @@ func _run() -> void:
 		main.hud.show_station("Ferreiro", p)
 		await _capture(orientation + "_smith")
 		main.hud.close_station()
+	# Separate art sheet makes every integrated actor and two walk poses reviewable.
+	root.size = Vector2i(640, 360)
+	root.content_scale_size = Vector2i(640, 360)
+	main.visible = false
+	var gallery := Node2D.new()
+	root.add_child(gallery)
+	var backdrop := ColorRect.new()
+	backdrop.color = Color("#294c37")
+	backdrop.size = Vector2(640, 360)
+	gallery.add_child(backdrop)
+	var samples: Array[ActorView] = []
+	for i in range(5):
+		var sample := ActorView.new()
+		sample.appearance = 1 if i == 4 else i
+		sample.elite = i == 4
+		sample.position = Vector2(73 + i * 101, 205)
+		gallery.add_child(sample)
+		samples.append(sample)
+	var boss := GuardianView.new()
+	boss.position = Vector2(572, 205)
+	gallery.add_child(boss)
+	await _capture("actors_idle")
+	for sample in samples:
+		sample.walking = true
+		sample.anim_frame = 1
+	await _capture("actors_stride")
+	gallery.queue_free()
 	main.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
