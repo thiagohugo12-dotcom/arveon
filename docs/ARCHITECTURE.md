@@ -3,10 +3,10 @@
 - `scripts/actors/`: Player e Enemy, movimentação e coordenação de componentes.
 - `scripts/components/`: Health, AutoAttack e DashMotor. Sem dependência da arte/HUD.
 - `scripts/input/`: converte teclado/touch em direção e pedido de dash; não move atores.
-- `scripts/presentation/`: FloorView usa atlas de solo/árvores e detalhes estáticos; ActorView usa atlas de quatro quadros por ator. GuardianView desenha o chefe. Desenho não muda hitboxes.
+- `scripts/presentation/`: FloorView usa chão/trilhas proceduralmente estáticos e cinco sprites compactos da floresta; ActorView usa atlas de quadros por ator. GuardianView desenha o chefe. Hitboxes são independentes do desenho.
 - `ui/`: joystick e ações touch, HP e morte. Só emite comandos e observa estado.
 - `data/`: Resources tipados `.tres` para atores/arma. Balanceamento desacoplado.
-- `assets/art/`: atlas pequenos, pixel art autoral reproduzível por `tools/generate_*_atlas.gd`; `audio/` reservado.
+- `assets/art/`: sprites pequenos em paleta limitada e atlas dos atores; `audio/` reservado.
 - `tests/`: runner sem plugins; testes executáveis em SceneTree headless.
 - `docs/`, `agents/`: contrato, decisões, responsabilidades.
 
