@@ -34,6 +34,14 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
           unzip -q /tmp/templates.tpz 'templates/web*' -d /tmp/godot-templates
           mv /tmp/godot-templates/templates/web* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+      - name: Preserve matching engine for visual QA
+        if: github.event_name == 'pull_request' && github.head_ref == 'feat/andar1-v020-primeiro-passe'
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-4.5.1-linux-qa
+          path: /tmp/godot.zip
+          if-no-files-found: error
+          retention-days: 1
       - name: Import and validate scripts
         shell: bash
         run: |
