@@ -6,6 +6,7 @@ const ATLAS := preload("res://assets/art/forest_atlas.png")
 const OAK := preload("res://assets/art/forest_oak_v034.png")
 const SPRUCE := preload("res://assets/art/forest_spruce_v034.png")
 const BERRY := preload("res://assets/art/forest_shrub_v034.png")
+const LINDEN := preload("res://assets/art/forest_linden_v034.png")
 const SAMPLE_REGION := Rect2(650, 180, 500, 460)
 const FOREST := Color("#294c37")
 const FOREST_LIGHT := Color("#244431")
@@ -43,20 +44,30 @@ func _hash(x: int, y: int) -> int:
 	var n := x * 74509 + y * 53197 + 19033
 	return absi((n ^ (n >> 11)) * 31337) % 9973
 
+func _forest_weight(at: Vector2) -> float:
+	if not SAMPLE_REGION.has_point(at):
+		return 0.0
+	var margin: float = minf(minf(at.x - SAMPLE_REGION.position.x, SAMPLE_REGION.end.x - at.x),
+		minf(at.y - SAMPLE_REGION.position.y, SAMPLE_REGION.end.y - at.y))
+	return clampf(margin / 76.0, 0.0, 1.0)
+
 func _draw_ground() -> void:
 	for y in range(0, 900, 32):
 		for x in range(0, 1200, 32):
-			if SAMPLE_REGION.has_point(Vector2(x + 16, y + 16)):
+			var tile := _hash(x / 32, y / 32) % 4
+			draw_texture_rect_region(ATLAS, Rect2(x, y, 32, 32), Rect2(tile * 32, 0, 32, 32))
+			var blend := _forest_weight(Vector2(x + 16, y + 16))
+			if blend > 0.0:
 				var patch := _hash(x / 32, y / 32) % 7
-				draw_rect(Rect2(x, y, 32, 32), Color("#467a43") if patch < 4 else Color("#4a8048") if patch < 6 else Color("#527c40"))
+				var tint := Color("#467a43") if patch < 4 else Color("#4a8048") if patch < 6 else Color("#527c40")
+				tint.a = blend
+				draw_rect(Rect2(x, y, 32, 32), tint)
 				for n in range(7):
 					var px := x + _hash(x + n * 23, y) % 30
 					var py := y + _hash(x, y + n * 19) % 30
 					var tone := Color("#609149") if n % 3 else Color("#315f45")
+					tone.a = blend
 					draw_rect(Rect2(px, py, 3 + n % 3, 2), tone)
-			else:
-				var tile := _hash(x / 32, y / 32) % 4
-				draw_texture_rect_region(ATLAS, Rect2(x, y, 32, 32), Rect2(tile * 32, 0, 32, 32))
 
 func _draw_paths() -> void:
 	# One continuous outline per trail prevents spikes at changes in direction.
@@ -68,7 +79,9 @@ func _draw_paths() -> void:
 			var finish: Vector2 = trail[j + 1]
 			var steps := ceili(start.distance_to(finish) / 8.0)
 			for n in range(0 if j == 0 else 1, steps + 1):
-				centers.append(start.lerp(finish, float(n) / steps))
+				var t := float(n) / steps
+				var bend := sin(t * PI) * (5.0 * sin(t * 5.0 + i * 2.3) + 3.0 * sin(t * 9.0 + j * 1.8))
+				centers.append(start.lerp(finish, t) + (finish - start).normalized().orthogonal() * bend)
 		for border in [7.0, 0.0]:
 			var left := PackedVector2Array()
 			var right := PackedVector2Array()
@@ -95,6 +108,8 @@ func _draw_paths() -> void:
 				draw_rect(Rect2(at, Vector2(2 + n % 3, 2)), TRAIL_HIGHLIGHT if n % 3 == 0 else Color("#97734a"))
 				if n % 4 == 0:
 					_draw_pebble(at + Vector2(6, 4), n)
+				else:
+					draw_rect(Rect2(at + Vector2(-4, 4), Vector2(5 + n % 4, 3)), Color("#9e7449"))
 				if n % 3 == 0:
 					var direction: Vector2 = (trail[j + 1] - trail[j]).normalized().orthogonal()
 					var side := -1 if n % 2 else 1
@@ -124,6 +139,17 @@ func _draw_clearing(center: Vector2) -> void:
 func _draw_decoration() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12051
+	# A separate low-cost understorey pass breaks up the empty grass between trees.
+	for i in range(260):
+		var at := SAMPLE_REGION.position + Vector2(rng.randf_range(0, SAMPLE_REGION.size.x), rng.randf_range(0, SAMPLE_REGION.size.y))
+		if _forest_weight(at) > 0.3 and _free_for_decoration(at):
+			if i % 9 == 0:
+				_draw_flower(at, i)
+			elif i % 11 == 0:
+				_draw_pebble(at, i)
+			else:
+				_draw_grass(at, i)
+	rng.seed = 12051
 	var trees: Array[Vector2] = []
 	for i in range(290):
 		var at := Vector2(rng.randi_range(30, 1160), rng.randi_range(30, 865))
@@ -149,16 +175,18 @@ func _draw_decoration() -> void:
 			_draw_ground_details(at, i)
 
 func _draw_tree(at: Vector2, variant: int) -> void:
-	# The crown, bark, shadow and leaves are a real 64x64 sprite in the atlas.
-	if SAMPLE_REGION.has_point(at):
-		var sprite: Texture2D = SPRUCE if variant == 1 else OAK
+	# Species alternate independently of skipped decoration slots.
+	var blend := _forest_weight(at)
+	if blend > float(_hash(roundi(at.x), roundi(at.y)) % 100) / 100.0:
+		var species := _hash(roundi(at.y), roundi(at.x)) % 5
+		var sprite: Texture2D = SPRUCE if species == 0 else LINDEN if species == 1 or species == 4 else OAK
 		var size := sprite.get_size()
 		draw_texture(sprite, at - Vector2(size.x * 0.5, size.y - 8))
 	else:
 		draw_texture_rect_region(ATLAS, Rect2(at + Vector2(-32, -52), Vector2(64, 64)), Rect2(variant * 64, 64, 64, 64))
 
 func _draw_shrub(at: Vector2) -> void:
-	if SAMPLE_REGION.has_point(at):
+	if _forest_weight(at) > float(_hash(roundi(at.x), roundi(at.y)) % 100) / 100.0:
 		draw_texture(BERRY, at - Vector2(20, 27))
 		return
 	draw_rect(Rect2(at + Vector2(-10, 3), Vector2(22, 5)), Color("#18392e"))
@@ -305,27 +333,37 @@ func _draw_fire(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(-2, -10), Vector2(5, 11)), Color("#ffe09a"))
 
 func _draw_stone(area: Rect2) -> void:
-	# Ground shadow covers the blocking footprint; the uneven facets read as rock.
-	draw_rect(area, Color("#2b4940"))
+	# An irregular silhouette fills the existing collision footprint without a box edge.
 	var p := area.position
 	var w := area.size.x
 	var h := area.size.y
-	var outline := PackedVector2Array([
-		p + Vector2(0, 9), p + Vector2(7, 5), p + Vector2(15, 0),
-		p + Vector2(w - 20, 0), p + Vector2(w - 9, 5), p + Vector2(w, 11),
-		p + Vector2(w, h - 8), p + Vector2(w - 8, h), p + Vector2(8, h), p + Vector2(0, h - 7)
-	])
-	draw_colored_polygon(outline, Color("#324e45"))
-	var top := PackedVector2Array([
-		p + Vector2(7, 13), p + Vector2(18, 5), p + Vector2(w - 22, 5),
-		p + Vector2(w - 8, 13), p + Vector2(w - 15, h - 14),
-		p + Vector2(17, h - 11), p + Vector2(6, h - 15)
-	])
-	draw_colored_polygon(top, Color("#697e71"))
 	draw_colored_polygon(PackedVector2Array([
-		p + Vector2(17, 12), p + Vector2(w - 26, 9),
-		p + Vector2(w - 37, h * 0.42), p + Vector2(28, h * 0.38)
-	]), Color("#96a293"))
+		p + Vector2(0, h * 0.32), p + Vector2(w * 0.14, h * 0.12),
+		p + Vector2(w * 0.34, 0), p + Vector2(w * 0.69, h * 0.06),
+		p + Vector2(w * 0.92, h * 0.18), p + Vector2(w, h * 0.40),
+		p + Vector2(w * 0.96, h * 0.78), p + Vector2(w * 0.79, h),
+		p + Vector2(w * 0.19, h * 0.97), p + Vector2(w * 0.02, h * 0.79)
+	]), Color("#2e5948"))
+	var outline := PackedVector2Array([
+		p + Vector2(3, h * 0.41), p + Vector2(w * 0.16, h * 0.16),
+		p + Vector2(w * 0.36, 3), p + Vector2(w * 0.65, h * 0.09),
+		p + Vector2(w * 0.87, h * 0.21), p + Vector2(w - 3, h * 0.46),
+		p + Vector2(w * 0.88, h * 0.83), p + Vector2(w * 0.75, h - 2),
+		p + Vector2(w * 0.23, h - 3), p + Vector2(w * 0.07, h * 0.76)
+	])
+	draw_colored_polygon(outline, Color("#3b5851"))
+	var top := PackedVector2Array([
+		p + Vector2(w * 0.13, h * 0.40), p + Vector2(w * 0.24, h * 0.17),
+		p + Vector2(w * 0.40, h * 0.09), p + Vector2(w * 0.64, h * 0.16),
+		p + Vector2(w * 0.78, h * 0.28), p + Vector2(w * 0.85, h * 0.54),
+		p + Vector2(w * 0.68, h * 0.76), p + Vector2(w * 0.27, h * 0.78)
+	])
+	draw_colored_polygon(top, Color("#79877b"))
+	draw_colored_polygon(PackedVector2Array([
+		p + Vector2(w * 0.24, h * 0.26), p + Vector2(w * 0.41, h * 0.12),
+		p + Vector2(w * 0.62, h * 0.18), p + Vector2(w * 0.49, h * 0.46),
+		p + Vector2(w * 0.20, h * 0.53)
+	]), Color("#a8ad93"))
 	for i in range(13):
 		var at := p + Vector2(10 + _hash(i, 52) % maxi(1, int(w) - 20), 9 + _hash(i, 53) % maxi(1, int(h) - 18))
 		draw_rect(Rect2(at, Vector2(3 + i % 3, 2)), Color("#b1b9a1") if i % 4 == 0 else Color("#4c685d"))

@@ -2,13 +2,14 @@
 
 A imagem aprovada nesta tarefa orienta a paleta: trilhas de terra ocre quente,
 folhagem do verde amarelado ao azul petróleo, sombras profundas e madeira quente.
-Os três sprites são criações originais isoladas, com transparência; não são recortes
+Os sprites são criações originais isoladas, com transparência; não são recortes
 do cenário de referência. A resolução nativa no jogo é 112×112 (árvore larga),
-78×112 (conífera) e 40×32 (arbusto), todos com filtro nearest.
+88×112 (árvore alta), 78×112 (conífera) e 40×32 (arbusto), todos com filtro nearest.
 
 | Recurso | Papel | Ponto de ancoragem |
 | --- | --- | --- |
 | `forest_oak_v034.png` | copa larga e raízes | centro do pé, base da imagem |
+| `forest_linden_v034.png` | copa alta e tronco bifurcado | centro do pé, base da imagem |
 | `forest_spruce_v034.png` | conífera | centro do pé, base da imagem |
 | `forest_shrub_v034.png` | sub-bosque | centro da base |
 
