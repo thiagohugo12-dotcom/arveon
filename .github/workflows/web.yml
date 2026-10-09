@@ -57,7 +57,7 @@ jobs:
           mkdir -p build/mobile-qa
           QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mobile_capture.gd 2>&1 | tee /tmp/render.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/render.log; then exit 1; fi
-          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 40
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 42
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
