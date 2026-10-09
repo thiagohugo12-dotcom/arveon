@@ -10,6 +10,8 @@ var facing := Vector2.DOWN
 var hp_ratio: float = 1.0
 var flash_left: float = 0.0
 var attack_left: float = 0.0
+var attack_direction := Vector2.DOWN
+var attack_distance := 27.0
 var damage_left: float = 0.0
 var damage_amount: int = 0
 var defeat_left: float = 0.0
@@ -77,7 +79,9 @@ func show_damage(amount: int) -> void:
 	damage_left = 0.85
 	flash()
 
-func play_attack() -> void:
+func play_attack(target_offset := Vector2.ZERO) -> void:
+	attack_direction = facing if target_offset.is_zero_approx() else target_offset.normalized()
+	attack_distance = 27.0 if target_offset.is_zero_approx() else target_offset.length()
 	attack_left = 0.24
 	queue_redraw()
 
@@ -183,7 +187,7 @@ func _draw() -> void:
 		px(-8, -27 + step, 16, 3, Color("#e5b968"))
 		px(-3, -32 + step, 6, 5, Color("#cf6c48"))
 	if attack_left > 0.0 and appearance == 0:
-		var side: float = -1.0 if facing.x < -0.3 else 1.0
+		var side: float = -1.0 if attack_direction.x < -0.3 else 1.0
 		px(side * 15.0 - 3.0, -22.0, 5, 31, Color("#fce7a1"))
 		px(side * 20.0 - 3.0, -17.0, 4, 22, LIGHT)
 	if warning:
@@ -195,7 +199,7 @@ func _draw() -> void:
 			px(p.x, p.y, 3, 3, Color("#ffe6aa", flash_left / 0.14))
 	if attack_left > 0.0:
 		for i in range(7):
-			var slash := (Vector2.RIGHT.rotated(facing.angle() - 0.9 + i * 0.26) * 27.0).floor()
+			var slash := (Vector2.RIGHT.rotated(attack_direction.angle() - 0.9 + i * 0.26) * 27.0).floor()
 			px(slash.x, slash.y, 5, 3, Color("#f7d47c"))
 	if damage_left > 0.0:
 		var float_y := -42.0 - (0.85 - damage_left) * 24.0

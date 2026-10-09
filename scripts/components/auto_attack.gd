@@ -5,19 +5,26 @@ signal attacked(target: Node2D)
 @export var weapon: WeaponData
 var cooldown_left: float = 0.0
 var damage_scale := 1.0
+const EMPTY_SEARCH_INTERVAL := 0.08
+var search_left := 0.0
 
 func tick(delta: float, origin: Node2D) -> void:
 	if SafeCamp.in_clearance(origin.global_position):
 		return
 	cooldown_left = maxf(0.0, cooldown_left - delta)
-	if cooldown_left > 0.0 or weapon == null:
+	search_left = maxf(0.0, search_left - delta)
+	if cooldown_left > 0.000001 or search_left > 0.000001 or weapon == null:
 		return
-	# Limit searches even when no target is available.
-	cooldown_left = weapon.interval
+	# An empty search is not a swing. Bound retries without spending hit cooldown.
 	var target: Node2D = select_target(origin)
-	if target != null:
-		target.receive_damage(roundi(weapon.damage * damage_scale))
-		attacked.emit(target)
+	if target == null:
+		search_left = EMPTY_SEARCH_INTERVAL
+		return
+	# Set before callbacks: re-entrant ticks cannot apply the same swing twice.
+	cooldown_left = weapon.interval
+	search_left = 0.0
+	attacked.emit(target)
+	target.receive_damage(roundi(weapon.damage * damage_scale))
 
 func select_target(origin: Node2D) -> Node2D:
 	if weapon == null:

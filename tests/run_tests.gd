@@ -515,6 +515,7 @@ func _run() -> void:
 	player.set_physics_process(false)
 	main.queue_free()
 	await frames()
+	await preload("res://tests/combat_feedback_tests.gd").run(self)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
 	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
 	print("RESULT: %d checks, %d failures" % [checks, failures])

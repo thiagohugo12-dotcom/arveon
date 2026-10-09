@@ -136,8 +136,9 @@ func _hit_skill(radius: float, multiplier: float, hits: Dictionary) -> void:
 		hits[id] = true
 		candidate.receive_damage(roundi((attack.weapon.damage * multiplier + spirit) * attack.damage_scale))
 
-func _on_attack(_target: Node2D) -> void:
-	view.play_attack()
+func _on_attack(target: Node2D) -> void:
+	# Snapshot the selected target, independently of movement/dash facing.
+	view.play_attack(target.global_position - global_position)
 
 func _on_died() -> void:
 	charge_left = 0.0
