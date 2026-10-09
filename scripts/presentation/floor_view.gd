@@ -107,7 +107,8 @@ func _draw_decoration() -> void:
 					break
 			if free:
 				trees.append(at)
-				_draw_tree(at, i % 3)
+				# Decoration slots skip every third index, so rotate variants independently.
+				_draw_tree(at, (i / 3) % 3)
 		elif i % 2 == 0:
 			_draw_shrub(at)
 		else:
@@ -173,12 +174,15 @@ func _draw_camp() -> void:
 		var edge := _hash(y, 47) % 5
 		draw_rect(Rect2(area.position.x + edge, y, area.size.x - edge * 2, 8), Color("#756044"))
 		draw_rect(Rect2(area.position.x + 7 + edge, y, area.size.x - 14 - edge * 2, 8), Color("#4b6849"))
-	# Worn paving and short plank runs imply foot traffic without a new collision.
-	for y in range(392, 539, 14):
-		for x in range(490, 632, 18):
-			if _hash(x, y) % 3 != 0:
-				draw_rect(Rect2(x, y, 10, 4), Color("#849064"))
-				draw_rect(Rect2(x + 2, y, 4, 1), Color("#b6a879"))
+	# Scattered worn flagstones suggest routes between stations while grass remains visible.
+	for n in range(18):
+		var center := Vector2(556 + _hash(n, 71) % 21 - 10, 369 + n * 10)
+		_draw_flagstone(center, n)
+	for n in range(9):
+		_draw_flagstone(Vector2(551 - n * 6, 394 + n * 2 + _hash(n, 72) % 7), n + 18)
+		_draw_flagstone(Vector2(566 + n * 6, 400 + n * 2 + _hash(n, 73) % 7), n + 27)
+	for n in range(7):
+		_draw_flagstone(Vector2(567 + n * 7, 499 + n * 2 + _hash(n, 74) % 5), n + 36)
 	for y in range(int(area.position.y) + 13, int(area.end.y) - 12, 21):
 		for x in range(int(area.position.x) + 13, int(area.end.x) - 11, 24):
 			if _hash(x, y) % 3 == 0:
@@ -197,6 +201,18 @@ func _draw_camp() -> void:
 	_draw_npc(Vector2(606, 423), Color("#637587"), Color("#764e37"))
 	_draw_npc(Vector2(606, 475), Color("#9b6947"), Color("#dbc079"))
 	_draw_fire(Vector2(516, 492))
+
+func _draw_flagstone(at: Vector2, seed: int) -> void:
+	var w := 8 + _hash(seed, 75) % 6
+	var h := 4 + _hash(seed, 76) % 3
+	var left := -w / 2
+	var edge := _hash(seed, 77) % 3
+	draw_colored_polygon(PackedVector2Array([
+		at + Vector2(left + 1, 0), at + Vector2(left + w - edge, 0),
+		at + Vector2(left + w, h - 2), at + Vector2(left + w - 2, h),
+		at + Vector2(left, h - 1)
+	]), Color("#75856b") if seed % 3 else Color("#907c5d"))
+	draw_rect(Rect2(at + Vector2(left + 2, 1), Vector2(maxi(2, w - 6), 1)), Color("#aeb096"))
 
 func _draw_fence(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(1, 3), Vector2(8, 6)), Color("#493d2e"))
