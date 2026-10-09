@@ -4,6 +4,7 @@ extends Node2D
 # Small hand-authored frames; visual state is independent of hitboxes/gameplay.
 const ATLAS := preload("res://assets/art/actor_atlas.png")
 const EXPLORER_ATLAS := preload("res://assets/art/explorer_atlas.png")
+const WALK_PIXELS_PER_FRAME := 16.0 # 11.25 frames/s at the unchanged 180 px/s.
 @export_enum("Aventureiro", "Javali", "Aranha", "Mandacaru") var appearance: int = 0
 var facing := Vector2.DOWN
 var hp_ratio: float = 1.0
@@ -111,9 +112,10 @@ func _process(delta: float) -> void:
 		if walking:
 			# A planted stride follows travel rather than the display frame rate.
 			walk_distance += minf(global_position.distance_to(last_visual_position), 24.0)
-			if walk_distance >= 12.0:
-				walk_distance = fmod(walk_distance, 12.0)
-				anim_frame = (anim_frame + 1) % 4
+			if walk_distance >= WALK_PIXELS_PER_FRAME:
+				var advanced := int(walk_distance / WALK_PIXELS_PER_FRAME)
+				walk_distance = fmod(walk_distance, WALK_PIXELS_PER_FRAME)
+				anim_frame = (anim_frame + advanced) % 4
 				queue_redraw()
 		else:
 			if settle_left > 0.0:
@@ -168,7 +170,8 @@ func _draw() -> void:
 	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
 	var tint := Color("#ffdbc0") if flash_left > 0.0 else Color.WHITE
 	if appearance == 0:
-		var column := anim_frame + 2 if walking or settle_left > 0.0 else idle_frame
+		# Held passing pose uses the approved appearance even when stopped.
+		var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
 		draw_texture_rect_region(EXPLORER_ATLAS, Rect2(-24, -32, 48, 48), Rect2(column * 48, _explorer_direction() * 48, 48, 48), tint)
 	else:
 		var frame := anim_frame if walking else 0
