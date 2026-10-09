@@ -101,6 +101,13 @@ func _run() -> void:
 		sample.anim_frame = 1
 		sample.queue_redraw()
 	await _capture("actors_stride")
+	samples[0].play_skill(0)
+	samples[1].show_damage(7)
+	samples[4].play_attack()
+	boss.warning = true
+	boss.telegraph_kind = 0
+	boss.queue_redraw()
+	await _capture("actors_effects")
 	gallery.queue_free()
 	main.queue_free()
 	await process_frame

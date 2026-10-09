@@ -104,23 +104,28 @@ func _draw() -> void:
 		draw_rect(Rect2(-22, -36, 44, 3), Color("#e5b968"))
 		draw_string(ThemeDB.fallback_font, Vector2(-15, -42), "ELITE", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#e5b968"))
 	if fury:
-		draw_arc(Vector2.ZERO, 24, 0, TAU, 12, Color("#e7a15b"), 3)
+		for i in range(8):
+			var mote := (Vector2.RIGHT.rotated((i + anim_frame * 0.15) * TAU / 8.0) * 24.0).floor()
+			px(mote.x, mote.y, 3, 3, Color("#e7a15b"))
 	if skill_left > 0.0:
 		if skill_effect == 0:
-			draw_arc(Vector2.ZERO, 90 * (1.0 - skill_left / 0.4), 0, TAU, 20, Color("#f7d47c"), 4)
+			var radius := 21.0 + (0.28 - skill_left) * 245.0
+			for i in range(16):
+				var spark := (Vector2.RIGHT.rotated(i * TAU / 16.0) * radius).floor()
+				px(spark.x, spark.y, 5, 3, Color("#f7d47c") if i % 2 else Color("#e4a95e"))
 		else:
 			if skill_effect == 1:
 				for i in range(3):
 					var mark := (-facing * (20 + i * 10)).floor()
-					draw_rect(Rect2(mark - Vector2(3, 3), Vector2(6, 6)), Color("#f28d61"))
+					px(mark.x - 3, mark.y - 3, 6 - i, 6 - i, Color("#f28d61") if i % 2 else Color("#f6c57a"))
 			else:
 				for i in range(8):
 					var mark := (Vector2.RIGHT.rotated(i * TAU / 8) * (30 + (0.28 - skill_left) * 50)).floor()
-					draw_rect(Rect2(mark - Vector2(2, 2), Vector2(4, 4)), Color("#f7d47c"))
+					px(mark.x - 2, mark.y - 2, 4, 4, Color("#f7d47c"))
 	var step: float = -2.0 if walking and anim_frame % 2 == 0 else 0.0
 	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
 	var frame := anim_frame if walking else 0
-	draw_texture_rect_region(ATLAS, Rect2(-24, -32 + step, 48, 48), Rect2(frame * 48, appearance * 48, 48, 48))
+	draw_texture_rect_region(ATLAS, Rect2(-24, -32 + step, 48, 48), Rect2(frame * 48, appearance * 48, 48, 48), Color("#ffdbc0") if flash_left > 0.0 else Color.WHITE)
 	if elite:
 		# Ochre mantle, bright crest and eye tint distinguish elite enemies at a glance.
 		px(-16, -24 + step, 7, 5, Color("#bd844b"))
@@ -135,10 +140,13 @@ func _draw() -> void:
 		px(-11, -39, 22, 5, Color("#f4b942"))
 		px(-2, -47, 4, 7, Color("#ffe39a"))
 	if flash_left > 0.0:
-		px(-15, -22, 30, 37, Color(1.0, 1.0, 1.0, flash_left * 2.5))
+		for i in range(4):
+			var p := Vector2(-19 + i * 11, -24 + (i % 2) * 26)
+			px(p.x, p.y, 3, 3, Color("#ffe6aa", flash_left / 0.14))
 	if attack_left > 0.0:
-		var attack_color := Color("#f7d47c")
-		draw_arc(Vector2.ZERO, 27.0, facing.angle() - 0.9, facing.angle() + 0.7, 10, attack_color, 4.0)
+		for i in range(7):
+			var slash := (Vector2.RIGHT.rotated(facing.angle() - 0.9 + i * 0.26) * 27.0).floor()
+			px(slash.x, slash.y, 5, 3, Color("#f7d47c"))
 	if damage_left > 0.0:
 		var float_y := -42.0 - (0.85 - damage_left) * 24.0
 		var number := "-%d" % damage_amount

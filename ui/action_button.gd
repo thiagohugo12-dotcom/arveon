@@ -74,3 +74,6 @@ func _draw() -> void:
 		if recharge > 0.0:
 			draw_rect(Rect2(4, 4, size.x - 8, (size.y - 8) * recharge), Color("#0a171ec7"))
 			draw_rect(Rect2(4, size.y - 6, (size.x - 8) * (1.0 - recharge), 2), Color("#e2b969"))
+		elif enabled:
+			for corner in [Vector2(5, 5), Vector2(size.x - 9, 5), Vector2(5, size.y - 9), Vector2(size.x - 9, size.y - 9)]:
+				draw_rect(Rect2(corner, Vector2(4, 4)), Color("#e2b969") if active else Color("#91ac7d"))
