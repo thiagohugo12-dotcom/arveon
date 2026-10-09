@@ -729,6 +729,7 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 	label.text = "%s  +%d\n%s%s" % [item.name, upgrade, item.slot.to_upper(), "  ·  EQUIPADO" if progress.equipped[item.slot] == id else ""]
 	label.add_theme_font_size_override("font_size", 13)
 	label.add_theme_color_override("font_color", Color("#edcb84"))
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	header.add_child(label)
 	var description := Label.new()
