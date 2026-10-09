@@ -58,6 +58,29 @@ func _run() -> void:
 	enemy.set_physics_process(false)
 	enemy.target = null
 	player.set_physics_process(false)
+	var world := main.get_node("Andar1")
+	var tree_feet := (world.get_node("FloorView") as FloorView).tree_positions()
+	check(tree_feet.size() > 15 and tree_feet.size() < 42, "sparse deterministic trees preserve open space")
+	var foot: Vector2 = tree_feet[0]
+	for candidate: Vector2 in tree_feet:
+		if candidate.x > 100 and candidate.x < 1100 and candidate.y > 100 and candidate.y < 800:
+			foot = candidate
+			break
+	player.position = foot + Vector2(-42, 1)
+	var tree_hit := player.move_and_collide(Vector2(50, 0))
+	check(tree_hit != null and tree_hit.get_position().distance_to(foot) < 15.0, "player stops at tree trunk base")
+	enemy.position = foot + Vector2(42, 1)
+	var enemy_tree_hit := enemy.move_and_collide(Vector2(-50, 0))
+	check(enemy_tree_hit != null and enemy_tree_hit.get_position().distance_to(foot) < 15.0, "enemy respects tree trunk")
+	player.position = Vector2(600, 326)
+	var fence_hit := player.move_and_collide(Vector2(0, 32))
+	check(fence_hit != null and fence_hit.get_position().y < 359.0, "north camp fence blocks crossing")
+	for target: Vector2 in [Vector2(540, 410), Vector2(608, 435), Vector2(560, 514)]:
+		player.position = target
+		check(not player.test_move(player.transform, Vector2(1, 0)), "service approach remains walkable %s" % target)
+	check(SafeCamp.nearest_station(Vector2(540, 410)) == "Baú" and
+		SafeCamp.nearest_station(Vector2(608, 435)) == "Ferreiro" and
+		SafeCamp.nearest_station(Vector2(560, 514)) == "Vendedor", "all three services remain reachable")
 	Input.action_press("move_up")
 	Input.action_press("move_right")
 	check(is_equal_approx(driver.movement().length(), 1.0), "keyboard diagonal normalized")
@@ -67,17 +90,18 @@ func _run() -> void:
 		driver.set_touch_direction(direction)
 		check(driver.movement().is_equal_approx(direction.limit_length()), "8 direction input " + str(direction))
 	driver.reset()
-	player.position = Vector2(810, 400)
-	enemy.position = Vector2(1000, 400)
+	# Test attack range along the open main trail; tree trunks now block line of sight.
+	player.position = Vector2(810, 475)
+	enemy.position = Vector2(1000, 475)
 	await frames()
 	check(player.attack.select_target(player) == null, "out of range excluded")
-	enemy.position = Vector2(930, 400)
+	enemy.position = Vector2(930, 475)
 	await frames()
 	check(player.attack.select_target(player) == enemy, "target at reach boundary valid")
 	var second := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	main.add_child(second)
 	second.set_physics_process(false)
-	second.position = Vector2(860, 400)
+	second.position = Vector2(860, 475)
 	await frames()
 	check(player.attack.select_target(player) == second, "nearest valid target selected")
 	player.attack.cooldown_left = 0.0
