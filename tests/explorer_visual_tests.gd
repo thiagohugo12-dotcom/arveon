@@ -31,5 +31,7 @@ static func run(suite: SceneTree) -> void:
 		view._process(1.0 / 60.0)
 		suite.check(view.anim_frame == phase, "explorer completes alternating contact and passing poses %d" % phase)
 	view.set_moving(false)
-	suite.check(view.anim_frame == 0, "explorer settles into idle when stopped")
+	suite.check(view.settle_left > 0.0, "explorer plants a foot before idle")
+	view._process(0.10)
+	suite.check(view.settle_left == 0.0 and view.anim_frame == 0, "explorer settles into idle when stopped")
 	view.queue_free()

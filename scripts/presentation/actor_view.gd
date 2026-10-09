@@ -18,6 +18,7 @@ var anim_time: float = 0.0
 var anim_frame: int = 0
 var idle_frame: int = 0
 var walk_distance := 0.0
+var settle_left := 0.0
 var last_visual_position := Vector2.ZERO
 var skill_left := 0.0
 var skill_effect := 0
@@ -49,9 +50,11 @@ func set_facing(value: Vector2) -> void:
 
 func set_moving(value: bool) -> void:
 	if walking != value:
+		var previous_frame := anim_frame
 		walking = value
 		if appearance == 0:
-			anim_frame = 0
+			anim_frame = 0 if value or previous_frame < 2 else 2
+			settle_left = 0.0 if value else 0.08
 			idle_frame = 0
 			walk_distance = 0.0
 			anim_time = 0.0
@@ -113,6 +116,10 @@ func _process(delta: float) -> void:
 				anim_frame = (anim_frame + 1) % 4
 				queue_redraw()
 		else:
+			if settle_left > 0.0:
+				settle_left = maxf(0.0, settle_left - delta)
+				if settle_left == 0.0:
+					queue_redraw()
 			anim_time += delta
 			if anim_time >= 0.65:
 				anim_time = 0.0
@@ -161,7 +168,7 @@ func _draw() -> void:
 	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
 	var tint := Color("#ffdbc0") if flash_left > 0.0 else Color.WHITE
 	if appearance == 0:
-		var column := anim_frame + 2 if walking else idle_frame
+		var column := anim_frame + 2 if walking or settle_left > 0.0 else idle_frame
 		draw_texture_rect_region(EXPLORER_ATLAS, Rect2(-24, -32, 48, 48), Rect2(column * 48, _explorer_direction() * 48, 48, 48), tint)
 	else:
 		var frame := anim_frame if walking else 0
