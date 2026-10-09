@@ -224,7 +224,9 @@ static func _interface(suite, main) -> void:
 		hud._input(touch)
 		await suite.frames()
 		suite.check(hud.inventory_category == 1 and hud.inventory_list.get_child_count() == 2, "touch backpack equipment category displays owned gear %s" % size)
-		var equip_button := hud.inventory_list.get_child(0).get_child(2) as Button
+		var equip_button := _button_with_text(hud.inventory_list.get_child(0), "Desequipar")
+		hud.inventory_scroll.scroll_vertical += maxi(0, roundi(equip_button.global_position.y - hud.inventory_scroll.global_position.y - 32))
+		await suite.frames()
 		touch.position = equip_button.global_position + equip_button.size * 0.5
 		hud._input(touch)
 		suite.check(p.equipped.Arma == "", "touch unequips owned starter weapon %s" % size)
@@ -271,11 +273,11 @@ static func _interface(suite, main) -> void:
 	p.add_item("Pedras", 4)
 	main._interact()
 	await suite.frames()
-	var forge_box := hud.station_content.get_child(2) as VBoxContainer
+	var forge_box := hud.station_content.get_child(2).get_child(0) as VBoxContainer
 	suite.check((forge_box.get_child(2) as Label).text.contains("35 ouro") and (forge_box.get_child(1) as Label).text.contains("Atual:"), "smith shows actual price and equipment comparison before craft action")
-	hud.station_scroll.scroll_vertical = roundi(forge_box.position.y)
-	await suite.frames()
 	var forge_button := forge_box.get_child(3) as Button
+	hud.station_scroll.scroll_vertical += maxi(0, roundi(forge_button.global_position.y - hud.station_scroll.global_position.y - 32))
+	await suite.frames()
 	var forge_touch := InputEventScreenTouch.new()
 	forge_touch.index = 15
 	forge_touch.pressed = true

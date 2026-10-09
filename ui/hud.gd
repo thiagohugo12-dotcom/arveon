@@ -1,6 +1,8 @@
 class_name GameHUD
 extends Control
 
+const ITEM_ICON := preload("res://ui/pixel_item_icon.gd")
+
 signal dash_pressed
 signal restart_pressed
 signal movement_changed(value: Vector2)
@@ -709,13 +711,26 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 	var item: Dictionary = RPGRules.EQUIPMENT[id]
 	var owned := progress.equipment.has(id)
 	var upgrade := int(progress.equipment.get(id, 0))
+	var card := PanelContainer.new()
+	var card_style := StyleBoxFlat.new()
+	card_style.bg_color = Color("#244135")
+	card_style.border_color = Color("#607951")
+	card_style.set_border_width_all(1)
+	card_style.set_content_margin_all(5)
+	card.add_theme_stylebox_override("panel", card_style)
+	destination.add_child(card)
 	var box := VBoxContainer.new()
-	destination.add_child(box)
+	box.add_theme_constant_override("separation", 3)
+	card.add_child(box)
+	var header := HBoxContainer.new()
+	box.add_child(header)
+	header.add_child(ITEM_ICON.new(item.slot))
 	var label := Label.new()
-	label.text = "%s +%d · %s" % [item.name, upgrade, item.slot]
+	label.text = "%s  +%d\n%s%s" % [item.name, upgrade, item.slot.to_upper(), "  ·  EQUIPADO" if progress.equipped[item.slot] == id else ""]
 	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color("#edcb84"))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(label)
+	header.add_child(label)
 	var description := Label.new()
 	var current: String = progress.equipped[item.slot]
 	description.text = RPGRules.bonus_text(id, upgrade)
@@ -746,7 +761,6 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 		button.text = "Aprimorar para +%d" % (upgrade + 1) if owned else "Fabricar"
 		button.disabled = not progress.can_forge(id)
 		button.pressed.connect(func(): rpg_action.emit("forge", id, expected))
-	box.add_child(HSeparator.new())
 
 func _touch_buttons(node: Node, point: Vector2) -> bool:
 	if node is Control and node.clip_contents and not node.get_global_rect().has_point(point):
