@@ -10,6 +10,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "tools/source/explorer_views.png"
 DEST = ROOT / "assets/art/explorer_atlas.png"
+PREVIEW = ROOT / "docs/art/EXPLORER_WALK_V035.gif"
 SIZE = 48
 # Source views were individually cut and reduced from the reference study.
 BOXES = [
@@ -40,34 +41,42 @@ def idle(base: Image.Image, phase: int) -> Image.Image:
 
 
 def walk(base: Image.Image, direction: int, phase: int) -> Image.Image:
-    """Recompose limbs, so arm and boot poses change instead of moving a static cutout."""
+    """Four footfall poses: left contact, right passing, right contact, left passing.
+
+    Contact feet remain on the source ground line; a passing boot lifts two pixels.
+    Limbs move independently while the scarf, pack, head and torso keep their anchor.
+    """
     result = base.copy()
-    stance = (-1, 0, 1, 0)[phase]
-    passing = 1 if phase == 1 else -1 if phase == 3 else 0
-    bounce = 1 if phase == 1 else 0
-    # Waist/torso is stable. Only the lower leg silhouettes and sleeves move.
     result.paste((0, 0, 0, 0), (0, 34, SIZE, SIZE))
     if direction < 2:
-        left = base.crop((5, 34, 24, 48))
-        right = base.crop((24, 34, 43, 48))
-        result.alpha_composite(left, (5 + stance * 3 + passing, 34 - bounce))
-        result.alpha_composite(right, (24 - stance * 3 - passing, 34 - bounce))
-        # Exposed trousers beneath the belt connect each displaced leg.
-        for x in range(17, 31):
-            color = base.getpixel((x, 34))
-            if color[3] > 0:
-                result.putpixel((x, 34), color)
+        boxes = [(8, 34, 24, 47), (24, 34, 42, 47)]
     else:
-        # Profiles overlap at the waist, but their boots alternate in depth.
-        rear = base.crop((8, 34, 25, 48))
-        front = base.crop((25, 34, 43, 48))
-        result.alpha_composite(rear, (8 + stance * 2 + passing, 34 - bounce))
-        result.alpha_composite(front, (25 - stance * 3 - passing, 34 - bounce))
-    # Outer sleeves and gloves swing opposite the advancing leg.
-    for x0, x1, sign in ((4, 13, 1), (35, 44, -1)):
-        arm = base.crop((x0, 23, x1, 34))
-        result.paste((0, 0, 0, 0), (x0, 23, x1, 34))
-        result.alpha_composite(arm, (x0, 23 + sign * (stance * 2 + passing)))
+        boxes = [(9, 34, 25, 47), (25, 34, 43, 47)]
+    # x shifts stay small and never change leg width. y=0 is the planted sole.
+    offsets = [((-1, 0), (1, -2)), ((1, 0), (-2, -2)),
+               ((-1, -2), (1, 0)), ((2, -2), (-1, 0))][phase]
+    # The lifted limb goes behind the planted one. The belt is restored last.
+    order = (1, 0) if phase < 2 else (0, 1)
+    for index in order:
+        x0, y0, x1, y1 = boxes[index]
+        dx, dy = offsets[index]
+        leg = base.crop((x0, y0, x1, y1))
+        result.alpha_composite(leg, (x0 + dx, y0 + dy))
+        # Two tiny hip bridges prevent a detached leg at the waist.
+        hip_x = 18 if index == 0 else 29
+        for y in range(34, 36):
+            color = base.getpixel((hip_x, y))
+            if color[3]:
+                result.putpixel((hip_x + dx // 2, y), color)
+    # Stable belt and tunic cover the hip seams; sleeves swing in counterphase.
+    result.alpha_composite(base.crop((0, 30, SIZE, 34)), (0, 30))
+    swing = (-1, 0, 1, 0)[phase]
+    arms = ((5, 15), (33, 43)) if direction < 2 else ((31, 43),)
+    for arm_index, (x0, x1) in enumerate(arms):
+        arm = base.crop((x0, 25, x1, 34))
+        result.paste((0, 0, 0, 0), (x0, 25, x1, 34))
+        offset = swing if arm_index == 0 else -swing
+        result.alpha_composite(arm, (x0, 25 + offset))
     return result
 
 
@@ -81,6 +90,16 @@ def main() -> None:
         for column, frame in enumerate(frames):
             atlas.alpha_composite(frame, (column * SIZE, direction * SIZE))
     atlas.save(DEST, optimize=True)
+    preview_frames = []
+    for phase in range(4):
+        sheet = Image.new("RGBA", (SIZE * 4, SIZE), "#477b49")
+        for direction in range(4):
+            sheet.alpha_composite(atlas.crop(((phase + 2) * SIZE, direction * SIZE,
+                                             (phase + 3) * SIZE, (direction + 1) * SIZE)),
+                                  (direction * SIZE, 0))
+        preview_frames.append(sheet.resize((SIZE * 12, SIZE * 3), Image.Resampling.NEAREST).convert("RGB"))
+    preview_frames[0].save(PREVIEW, save_all=True, append_images=preview_frames[1:],
+                           duration=160, loop=0, optimize=True)
     print(f"Wrote {DEST.relative_to(ROOT)}: {atlas.size}")
 
 

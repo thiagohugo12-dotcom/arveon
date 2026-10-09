@@ -107,9 +107,9 @@ func _process(delta: float) -> void:
 	if appearance == 0:
 		if walking:
 			# A planted stride follows travel rather than the display frame rate.
-			walk_distance += minf(global_position.distance_to(last_visual_position), 12.0)
-			if walk_distance >= 6.0:
-				walk_distance = fmod(walk_distance, 6.0)
+			walk_distance += minf(global_position.distance_to(last_visual_position), 24.0)
+			if walk_distance >= 12.0:
+				walk_distance = fmod(walk_distance, 12.0)
 				anim_frame = (anim_frame + 1) % 4
 				queue_redraw()
 		else:
