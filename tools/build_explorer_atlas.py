@@ -10,7 +10,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "tools/source/explorer_views.png"
 DEST = ROOT / "assets/art/explorer_atlas.png"
-PREVIEW = ROOT / "docs/art/EXPLORER_WALK_V035.gif"
+PREVIEW = ROOT / "docs/art/EXPLORER_WALK_V036.gif"
 SIZE = 48
 # Source views were individually cut and reduced from the reference study.
 BOXES = [
@@ -26,57 +26,55 @@ def transparent() -> Image.Image:
 
 
 def source_view(image: Image.Image, box: tuple[int, ...]) -> Image.Image:
-    return image.crop(box)
+    frame = image.crop(box)
+    if box[0] == 0:
+        # Two readable eyes at native size; the hair and broad scarf remain the
+        # recognisable silhouette from the approved explorer.
+        frame.putpixel((20, 16), (53, 38, 35, 255))
+        frame.putpixel((29, 16), (53, 38, 35, 255))
+    return frame
 
 
 def idle(base: Image.Image, phase: int) -> Image.Image:
     if phase == 0:
         return base.copy()
-    # A one-pixel breath at the scarf/shoulders; feet stay planted.
+    # Only the scarf fringe breathes; the whole head/torso never jumps.
     result = base.copy()
-    upper = base.crop((0, 0, SIZE, 33))
-    result.paste((0, 0, 0, 0), (0, 0, SIZE, 33))
-    result.alpha_composite(upper, (0, 1))
+    fringe = base.crop((14, 20, 32, 23))
+    result.paste((0, 0, 0, 0), (14, 20, 32, 23))
+    result.alpha_composite(fringe, (14, 21))
     return result
 
 
 def walk(base: Image.Image, direction: int, phase: int) -> Image.Image:
-    """Four footfall poses: left contact, right passing, right contact, left passing.
-
-    Contact feet remain on the source ground line; a passing boot lifts two pixels.
-    Limbs move independently while the scarf, pack, head and torso keep their anchor.
-    """
+    """Alternating contact/passing boots on one ground line, fixed torso anchor."""
     result = base.copy()
     result.paste((0, 0, 0, 0), (0, 34, SIZE, SIZE))
-    if direction < 2:
-        boxes = [(8, 34, 24, 47), (24, 34, 42, 47)]
-    else:
-        boxes = [(9, 34, 25, 47), (25, 34, 43, 47)]
-    # x shifts stay small and never change leg width. y=0 is the planted sole.
-    offsets = [((-1, 0), (1, -2)), ((1, 0), (-2, -2)),
-               ((-1, -2), (1, 0)), ((2, -2), (-1, 0))][phase]
-    # The lifted limb goes behind the planted one. The belt is restored last.
+    # Existing hand-drawn boots remain intact; move each independently by at
+    # most two pixels. Contact soles stay on the original y=45 baseline.
+    boxes = [(10, 34, 24, 47), (25, 34, 41, 47)] if direction < 2 else [
+        (10, 34, 25, 47), (25, 34, 41, 47)]
+    offsets = [((-1, 0), (1, -2)), ((1, 0), (-1, -1)),
+               ((-1, -2), (1, 0)), ((1, -1), (-1, 0))][phase]
     order = (1, 0) if phase < 2 else (0, 1)
     for index in order:
         x0, y0, x1, y1 = boxes[index]
         dx, dy = offsets[index]
         leg = base.crop((x0, y0, x1, y1))
         result.alpha_composite(leg, (x0 + dx, y0 + dy))
-        # Two tiny hip bridges prevent a detached leg at the waist.
-        hip_x = 18 if index == 0 else 29
+        # Bridge the thigh to the planted hips without stretching the boot.
+        hip_x = 18 if index == 0 else 30
         for y in range(34, 36):
             color = base.getpixel((hip_x, y))
             if color[3]:
                 result.putpixel((hip_x + dx // 2, y), color)
-    # Stable belt and tunic cover the hip seams; sleeves swing in counterphase.
     result.alpha_composite(base.crop((0, 30, SIZE, 34)), (0, 30))
     swing = (-1, 0, 1, 0)[phase]
     arms = ((5, 15), (33, 43)) if direction < 2 else ((31, 43),)
     for arm_index, (x0, x1) in enumerate(arms):
         arm = base.crop((x0, 25, x1, 34))
         result.paste((0, 0, 0, 0), (x0, 25, x1, 34))
-        offset = swing if arm_index == 0 else -swing
-        result.alpha_composite(arm, (x0, 25 + offset))
+        result.alpha_composite(arm, (x0, 25 + (swing if arm_index == 0 else -swing)))
     return result
 
 
