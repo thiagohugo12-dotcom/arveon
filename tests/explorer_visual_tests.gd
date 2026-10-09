@@ -35,3 +35,17 @@ static func run(suite: SceneTree) -> void:
 	view._process(0.10)
 	suite.check(view.settle_left == 0.0 and view.anim_frame == 0, "explorer settles into idle when stopped")
 	view.queue_free()
+	var npc_atlas := (load("res://assets/art/camp_npcs.png") as Texture2D).get_image()
+	suite.check(npc_atlas.get_size() == Vector2i(64, 80), "camp NPC atlas uses two compact idle frames per inhabitant")
+	for kind in range(2):
+		var first := npc_atlas.get_region(Rect2i(0, kind * 40, 32, 40))
+		var second := npc_atlas.get_region(Rect2i(32, kind * 40, 32, 40))
+		suite.check(first.get_data() != second.get_data(), "camp inhabitant has a distinct idle pose (%d)" % kind)
+	var camp := FloorView.new()
+	suite.root.add_child(camp)
+	var inhabitants := camp.get_children().filter(func(child: Node): return child is CampNpcView)
+	suite.check(inhabitants.size() == 2, "existing smith and vendor each have one integrated sprite")
+	if inhabitants.size() == 2:
+		suite.check(inhabitants[0].kind == 0 and inhabitants[1].kind == 1, "camp inhabitants keep their service identity")
+		suite.check(inhabitants[0].position == Vector2(606, 423) and inhabitants[1].position == Vector2(606, 475), "service NPC positions are unchanged")
+	camp.queue_free()

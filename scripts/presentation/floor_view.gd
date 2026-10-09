@@ -7,6 +7,7 @@ const SPRUCE := preload("res://assets/art/forest_spruce_v035.png")
 const BERRY := preload("res://assets/art/forest_shrub_v035.png")
 const LINDEN := preload("res://assets/art/forest_linden_v035.png")
 const REFUGE := preload("res://assets/art/forest_refuge_v035.png")
+const NPC_VIEW := preload("res://scripts/presentation/camp_npc_view.gd")
 const FOREST := Color("#294c37")
 const FOREST_LIGHT := Color("#244431")
 const TRAIL := Color("#b98955")
@@ -28,6 +29,11 @@ const RESERVED := [Vector2(850, 400), Vector2(930, 440), Vector2(610, 750),
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	for station: String in ["Ferreiro", "Vendedor"]:
+		var npc := NPC_VIEW.new()
+		npc.kind = 0 if station == "Ferreiro" else 1
+		npc.position = Vector2(606, 423 if station == "Ferreiro" else 475)
+		add_child(npc)
 
 func _draw() -> void:
 	_draw_ground()
@@ -251,8 +257,6 @@ func _draw_camp() -> void:
 	_draw_crate(Vector2(631, 535))
 	_draw_lantern(Vector2(479, 374))
 	_draw_lantern(Vector2(638, 474))
-	_draw_npc(Vector2(606, 423), Color("#637587"), Color("#764e37"))
-	_draw_npc(Vector2(606, 475), Color("#9b6947"), Color("#dbc079"))
 	_draw_fire(Vector2(516, 492))
 
 func _draw_flagstone(at: Vector2, seed: int) -> void:
@@ -351,17 +355,6 @@ func _draw_station(at: Vector2, base: Color, accent: Color) -> void:
 	draw_rect(Rect2(at + Vector2(-10, -4), Vector2(20, 2)), accent.darkened(0.4))
 	draw_rect(Rect2(at + Vector2(-6, 2), Vector2(12, 6)), Color("#26372d"))
 	draw_rect(Rect2(at + Vector2(-2, 0), Vector2(4, 8)), accent.lightened(0.12))
-
-func _draw_npc(at: Vector2, tunic: Color, hat: Color) -> void:
-	draw_rect(Rect2(at + Vector2(-10, 15), Vector2(20, 4)), Color("#263b32"))
-	draw_rect(Rect2(at + Vector2(-8, 10), Vector2(6, 6)), Color("#373c37"))
-	draw_rect(Rect2(at + Vector2(2, 10), Vector2(6, 6)), Color("#373c37"))
-	draw_rect(Rect2(at + Vector2(-10, -4), Vector2(20, 16)), tunic.darkened(0.25))
-	draw_rect(Rect2(at + Vector2(-8, -3), Vector2(16, 14)), tunic)
-	draw_rect(Rect2(at + Vector2(-7, -15), Vector2(14, 12)), Color("#c79d71"))
-	draw_rect(Rect2(at + Vector2(-9, -20), Vector2(18, 6)), hat)
-	draw_rect(Rect2(at + Vector2(-5, -8), Vector2(3, 3)), Color("#212a28"))
-	draw_rect(Rect2(at + Vector2(3, -8), Vector2(3, 3)), Color("#212a28"))
 
 func _draw_fire(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(-16, 4), Vector2(32, 6)), Color("#443e31"))
