@@ -38,6 +38,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p build
+          touch build/.gdignore
           godot --headless --path . --editor --import 2>&1 | tee /tmp/import.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/import.log; then exit 1; fi
       - name: Gameplay contract tests
@@ -83,6 +85,7 @@ jobs:
           mkdir -p build/web
           godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee /tmp/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/export.log; then exit 1; fi
+          if grep -E 'Storing File: res://build/|Storing File:.*combat_[0-9]+x[0-9]+_' /tmp/export.log; then exit 1; fi
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
