@@ -12,10 +12,10 @@ var tab := 0
 func _ready() -> void:
 	visible = false
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#1b2f27")
-	style.set_border_width_all(3)
-	style.border_color = Color("#d0b878")
-	style.set_content_margin_all(10)
+	style.bg_color = Color("#172920")
+	style.set_border_width_all(4)
+	style.border_color = Color("#bd9b5d")
+	style.set_content_margin_all(8)
 	add_theme_stylebox_override("panel", style)
 	var column := VBoxContainer.new()
 	add_child(column)
@@ -38,6 +38,7 @@ func _ready() -> void:
 	content = VBoxContainer.new()
 	content.custom_minimum_size.x = 240
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation", 6)
 	scroll.add_child(content)
 	close_button = Button.new()
 	close_button.text = "Fechar · C / Esc"
@@ -52,14 +53,16 @@ func refresh(value: GameProgress) -> void:
 		child.queue_free()
 	if tab == 0:
 		var lvl := progress.level()
-		_label("Aventureiro · Nível %d" % lvl)
-		_label("XP %d / %d · total %d" % [progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl), progress.xp] if lvl < RPGRules.MAX_LEVEL else "Nível máximo · XP total %d" % progress.xp)
-		_label("Pontos de atributo: %d · custo: 1" % progress.attribute_points())
+		_heading("AVENTUREIRO  ·  NÍVEL %d" % lvl)
+		_label("XP %d / %d  ·  total %d" % [progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl), progress.xp] if lvl < RPGRules.MAX_LEVEL else "Nível máximo  ·  XP total %d" % progress.xp)
+		_heading("ATRIBUTOS  ·  %d PONTOS" % progress.attribute_points())
 		for name: String in RPGRules.ATTRIBUTES:
+			var card := _card()
 			var row := HBoxContainer.new()
-			content.add_child(row)
+			card.add_child(row)
 			var label := Label.new()
-			label.text = "%s: %d / 198" % [name, progress.attributes[name]]
+			label.text = "%s\n%d / 198" % [name, progress.attributes[name]]
+			label.add_theme_font_size_override("font_size", 13)
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			row.add_child(label)
 			var button := Button.new()
@@ -69,27 +72,48 @@ func refresh(value: GameProgress) -> void:
 			button.pressed.connect(func(): action_requested.emit("attribute", name, 0))
 			row.add_child(button)
 		var values := progress.combat_stats()
-		_label("Dano %d · HP %d · Vel %d\nEspírito %d · Defesa %d" % [values.damage, values.hp, values.speed, values.spirit, values.armor])
-		_label("Força: +2 dano · Vitalidade: +8 HP\nAgilidade: movimento e cooldown (até −20%)\nEspírito: +1 dano, +2 HP e habilidades")
+		_heading("COMBATE")
+		_label("Dano %d  ·  HP %d  ·  Vel %d\nEspírito %d  ·  Defesa %d" % [values.damage, values.hp, values.speed, values.spirit, values.armor], _card())
+		_label("Força +2 dano  ·  Vitalidade +8 HP\nAgilidade: movimento e recarga (até −20%)\nEspírito: dano, HP e habilidades")
 	else:
-		_label("Pontos de habilidade: %d · custo: 1" % progress.skill_points())
+		_heading("HABILIDADES  ·  %d PONTOS" % progress.skill_points())
 		var descriptions := ["Ao redor: raio 90 · 5s. Grau aumenta dano.", "Avanço ofensivo · 8s. Grau aumenta dano.", "Dano e resistência por 6–8s · 35s. Grau aumenta o buff."]
 		for i in range(3):
 			var name: String = RPGRules.SKILLS[i]
-			_label("%s · grau %d / 3" % [name, progress.skills[name]])
-			_label(descriptions[i])
+			var card := _card()
+			_label("%s  ·  GRAU %d / 3" % [name.to_upper(), progress.skills[name]], card, true)
+			_label(descriptions[i], card)
 			var button := Button.new()
-			button.text = "Melhorar · 1 ponto"
+			button.text = "Melhorar  ·  1 ponto"
 			button.custom_minimum_size.y = 44
 			button.disabled = progress.skill_points() < 1 or int(progress.skills[name]) >= 3
 			button.pressed.connect(func(): action_requested.emit("skill", name, 0))
-			content.add_child(button)
-		_label("Teclado: 1 Corte · 2 Investida · 3 Fúria.\nDireção: joystick/WASD ou última direção.\nSem uso em menus ou no perímetro seguro.")
+			card.add_child(button)
+		_label("PC: 1 Corte  ·  2 Investida  ·  3 Fúria\nDireção: joystick/WASD ou última direção.\nIndisponível em menus e na área segura.")
 
-func _label(text: String) -> void:
+func _heading(text: String) -> void:
+	_label(text, content, true)
+
+func _card() -> VBoxContainer:
+	var panel := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#244135")
+	style.border_color = Color("#647952")
+	style.set_border_width_all(1)
+	style.set_content_margin_all(5)
+	panel.add_theme_stylebox_override("panel", style)
+	content.add_child(panel)
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation", 2)
+	panel.add_child(body)
+	return body
+
+func _label(text: String, destination: Container = null, heading: bool = false) -> void:
 	var label := Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_font_size_override("font_size", 13 if not heading else 14)
+	if heading:
+		label.add_theme_color_override("font_color", Color("#edcb84"))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	content.add_child(label)
+	(destination if destination != null else content).add_child(label)

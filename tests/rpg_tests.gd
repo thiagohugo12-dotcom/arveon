@@ -1,5 +1,14 @@
 extends RefCounted
 
+static func _button_with_text(root: Node, prefix: String) -> Button:
+	if root is Button and (root as Button).text.begins_with(prefix):
+		return root as Button
+	for child in root.get_children():
+		var found := _button_with_text(child, prefix)
+		if found != null:
+			return found
+	return null
+
 static func run(suite, main) -> void:
 	var p := GameProgress.new()
 	suite.check(p.level() == 1 and p.attribute_points() == 0 and p.skill_points() == 0, "RPG starts at level one without free points")
@@ -199,7 +208,7 @@ static func _interface(suite, main) -> void:
 		var touch := InputEventScreenTouch.new()
 		touch.pressed = true
 		touch.index = 12
-		var button := hud.rpg_panel.content.get_child(3).get_child(1) as Button
+		var button := _button_with_text(hud.rpg_panel.content, "+1")
 		touch.position = button.global_position + button.size * 0.5
 		var before := p.attribute_points()
 		hud._input(touch)
@@ -278,7 +287,7 @@ static func _interface(suite, main) -> void:
 	hud.rpg_panel.tab = 1
 	main._toggle_character()
 	await suite.frames()
-	var improvement := hud.rpg_panel.content.get_child(3) as Button
+	var improvement := _button_with_text(hud.rpg_panel.content, "Melhorar")
 	forge_touch.position = improvement.global_position + improvement.size * 0.5
 	hud._input(forge_touch)
 	suite.check(p.skills["Corte Circular"] == 2 and p.skill_points() == 0 and player.skill_ranks[0] == 2, "touch skill screen spends one earned point and applies upgraded rank")
