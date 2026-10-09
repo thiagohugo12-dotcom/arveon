@@ -3,10 +3,10 @@
 - `scripts/actors/`: Player e Enemy, movimentação e coordenação de componentes.
 - `scripts/components/`: Health, AutoAttack e DashMotor. Sem dependência da arte/HUD.
 - `scripts/input/`: converte teclado/touch em direção e pedido de dash; não move atores.
-- `scripts/presentation/`: ActorView e FloorView desenham placeholders; substituíveis por Sprite2D/AnimatedSprite2D mantendo os atores/componentes.
+- `scripts/presentation/`: FloorView usa atlas de solo/árvores e detalhes estáticos; ActorView usa atlas de quatro quadros por ator. GuardianView desenha o chefe. Desenho não muda hitboxes.
 - `ui/`: joystick e ações touch, HP e morte. Só emite comandos e observa estado.
 - `data/`: Resources tipados `.tres` para atores/arma. Balanceamento desacoplado.
-- `assets/`, `audio/`: fontes futuras. Sem arte final ou áudio artificial nesta fase.
+- `assets/art/`: atlas pequenos, pixel art autoral reproduzível por `tools/generate_*_atlas.gd`; `audio/` reservado.
 - `tests/`: runner sem plugins; testes executáveis em SceneTree headless.
 - `docs/`, `agents/`: contrato, decisões, responsabilidades.
 
@@ -15,7 +15,7 @@ InputDriver → Player → CharacterBody2D/DashMotor. AutoAttack → seleção d
 Personagens têm shape físico independente do desenho. World layer 1, Player 2, Enemy 3. Atores colidem com World; combate usa distância e HP, não depende de colisão de sprites. Parede bloqueia linha de visão do ataque; IA não contorna obstáculos ainda.
 
 ## Desempenho
-Física 60 Hz padrão; até cinco inimigos, incluindo o chefe opcional. Seleção de alvo somente no ritmo do ataque (não por frame), sem sort/alocação de lista adicional. Desenho de chão estático; sem luzes, shaders, partículas, navegação, threads ou rede. CPU/GPU e FPS devem ser medidos em dispositivo real antes de ampliar populações. Para escala futura, substituir busca em grupo por índice espacial preservando contrato de seleção; não implementar antecipadamente.
+Física 60 Hz padrão; até cinco inimigos, incluindo o chefe opcional. Seleção de alvo somente no ritmo do ataque (não por frame), sem sort/alocação de lista adicional. Desenho de chão estático e efeitos de poucos retângulos por quadro; sem luzes, shaders, partículas de nós, navegação, threads ou rede. CPU/GPU e FPS devem ser medidos em dispositivo real antes de ampliar populações. Para escala futura, substituir busca em grupo por índice espacial preservando contrato de seleção; não implementar antecipadamente.
 
 ## UI
 Canvas expand sem proporção fixa; HUD usa cantos e dimensão atual do viewport. Joystick esquerdo com um índice touch, ações à direita com índices independentes. Limpa comandos ao perder foco. Safe area nativa é aplicada quando disponível. Habilidades observam cooldown; Personagem, mochila e Ferreiro emitem comandos validados pelo Main.

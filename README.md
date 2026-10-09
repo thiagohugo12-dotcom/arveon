@@ -40,7 +40,7 @@ repetir recompensas. Save v5 migra v1–4, preservando os atributos existentes.
 Poção e proficiência ainda não estão implementadas. Valores são provisórios.
 
 ## CI e ambientes
-Actions importa, executa testes e exporta Web. O PR da branch
+Actions importa, executa testes, renderiza 31 capturas de QA e exporta Web. O PR da branch
 `feat/andar1-v020-primeiro-passe` publica o build validado em Preview e atualiza
 TESTE: https://grande-arvore-rpg-teste.vercel.app/.
 PRODUÇÃO: https://grande-arvore-rpg.vercel.app/ — não alterada por esta versão.
@@ -48,5 +48,13 @@ Não fazer merge em main ou publicar em produção sem autorização de Thiago.
 
 ## Contratos
 `AGENTS.md`, `docs/design/GAME_DESIGN.md`, `docs/ARCHITECTURE.md`, `docs/QA_CHECKLIST.md` e `docs/VALIDATION.md`.
-Corte, Investida e Fúria estão ativos; poção permanece desabilitada. Assets geométricos provisórios. IA simples sem desvio de obstáculos. Nenhum Andar 2.
+Corte, Investida e Fúria estão ativos; poção permanece desabilitada. IA simples sem desvio de obstáculos. Nenhum Andar 2.
+
+## v0.3.2 — Renovação Visual
+Atlas pixel art autorais para solo, árvores e quatro atores, gerados de forma
+reprodutível em `tools/`. Caminhos, área segura, pedras e construções receberam
+detalhes visuais sem alterar suas colisões. Personagem, Habilidades, Mochila e
+Ferreiro usam cartões e ícones; combate ganhou efeitos curtos de pixels. A câmera,
+regras, receitas e saves v5 permanecem compatíveis. Veja
+`docs/iterations/V0.3.2_RENOVACAO_VISUAL.md` para evidências e limites.
 
