@@ -81,6 +81,8 @@ func _run() -> void:
 	check(SafeCamp.nearest_station(Vector2(540, 410)) == "Baú" and
 		SafeCamp.nearest_station(Vector2(608, 435)) == "Ferreiro" and
 		SafeCamp.nearest_station(Vector2(560, 514)) == "Vendedor", "all three services remain reachable")
+	player.position = SafeCamp.RESPAWN
+	check(player.move_and_collide(Vector2(10, -120)) == null, "north camp opening leads to forest trail")
 	Input.action_press("move_up")
 	Input.action_press("move_right")
 	check(is_equal_approx(driver.movement().length(), 1.0), "keyboard diagonal normalized")
