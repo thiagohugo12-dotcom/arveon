@@ -255,12 +255,21 @@ func _free_for_decoration(at: Vector2) -> bool:
 
 func _draw_camp() -> void:
 	var area := SafeCamp.AREA
-	# Warm, protected clearing. The fence is visual; physics remain unchanged.
-	draw_rect(area.grow(5), Color("#263c31"))
-	for y in range(int(area.position.y), int(area.end.y), 8):
-		var edge := _hash(y, 47) % 5
-		draw_rect(Rect2(area.position.x + edge, y, area.size.x - edge * 2, 8), Color("#756044"))
-		draw_rect(Rect2(area.position.x + 7 + edge, y, area.size.x - 14 - edge * 2, 8), Color("#4b6849"))
+	# A sheltered clearing keeps the forest floor visible and the paths open.
+	for y in range(int(area.position.y) - 6, int(area.end.y) + 6, 7):
+		var extent := 13 + _hash(y, 47) % 9
+		var center := 557 + sin(float(y) * 0.06) * 8.0
+		draw_rect(Rect2(center - extent, y, extent * 2, 7), Color("#ad8051"))
+		for n in range(3):
+			var at := Vector2(center + _hash(y, n) % (extent * 2) - extent, y + _hash(n, y) % 6)
+			draw_rect(Rect2(at, Vector2(3, 2)), Color("#cf9c62") if n == 0 else Color("#906e47"))
+	for n in range(50):
+		var at := area.position + Vector2(8 + _hash(n, 115) % 165, 8 + _hash(n, 116) % 183)
+		if absf(at.x - 557.0) > 29.0:
+			if n % 6 == 0:
+				_draw_flower(at, n)
+			else:
+				_draw_grass(at, n)
 	# Scattered worn flagstones suggest routes between stations while grass remains visible.
 	for n in range(18):
 		var center := Vector2(556 + _hash(n, 71) % 21 - 10, 369 + n * 10)
@@ -276,15 +285,21 @@ func _draw_camp() -> void:
 				draw_rect(Rect2(x, y, 5, 3), Color("#678054"))
 			elif _hash(x, y) % 4 == 0:
 				draw_rect(Rect2(x, y, 3, 2), Color("#b09a68"))
-	for x in range(int(area.position.x) + 6, int(area.end.x) - 5, 12):
-		for y in [int(area.position.y) + 5, int(area.end.y) - 8]:
-			_draw_fence(Vector2(x, y))
-	for y in range(int(area.position.y) + 15, int(area.end.y) - 10, 15):
-		for x in [int(area.position.x) + 4, int(area.end.x) - 8]:
-			_draw_fence(Vector2(x, y))
-	_draw_station(SafeCamp.STATIONS["Baú"], Color("#6f482c"), Color("#d4ae69"))
-	_draw_station(SafeCamp.STATIONS["Ferreiro"], Color("#454c4a"), Color("#efab66"))
-	_draw_station(SafeCamp.STATIONS["Vendedor"], Color("#40694d"), Color("#d6c681"))
+	for segment: Vector2 in [Vector2(478, 515), Vector2(583, 641)]:
+		_draw_rail(Vector2(segment.x, 352), segment.y - segment.x)
+		_draw_rail(Vector2(segment.x, 548), segment.y - segment.x)
+	for y in [380, 400, 490, 510]:
+		_draw_fence(Vector2(473, y))
+		_draw_fence(Vector2(643, y))
+	_draw_camp_stall(SafeCamp.STATIONS["Baú"], 0)
+	_draw_camp_stall(SafeCamp.STATIONS["Ferreiro"], 1)
+	_draw_camp_stall(SafeCamp.STATIONS["Vendedor"], 2)
+	_draw_barrel(Vector2(480, 411))
+	_draw_barrel(Vector2(633, 420))
+	_draw_crate(Vector2(484, 526))
+	_draw_crate(Vector2(631, 535))
+	_draw_lantern(Vector2(479, 374))
+	_draw_lantern(Vector2(638, 474))
 	_draw_npc(Vector2(606, 423), Color("#637587"), Color("#764e37"))
 	_draw_npc(Vector2(606, 475), Color("#9b6947"), Color("#dbc079"))
 	_draw_fire(Vector2(516, 492))
@@ -302,9 +317,68 @@ func _draw_flagstone(at: Vector2, seed: int) -> void:
 	draw_rect(Rect2(at + Vector2(left + 2, 1), Vector2(maxi(2, w - 6), 1)), Color("#aeb096"))
 
 func _draw_fence(at: Vector2) -> void:
-	draw_rect(Rect2(at + Vector2(1, 3), Vector2(8, 6)), Color("#493d2e"))
-	draw_rect(Rect2(at + Vector2(0, 0), Vector2(8, 5)), Color("#baa570"))
-	draw_rect(Rect2(at + Vector2(2, 0), Vector2(4, 2)), Color("#e1c282"))
+	draw_rect(Rect2(at + Vector2(-2, 5), Vector2(8, 6)), Color("#334b37"))
+	draw_rect(Rect2(at + Vector2(-2, -4), Vector2(7, 13)), Color("#6e4930"))
+	draw_rect(Rect2(at + Vector2(-1, -6), Vector2(5, 4)), Color("#c18c53"))
+	draw_rect(Rect2(at + Vector2(0, 0), Vector2(2, 6)), Color("#a97240"))
+
+func _draw_rail(at: Vector2, length: float) -> void:
+	draw_rect(Rect2(at + Vector2(0, 4), Vector2(length, 5)), Color("#4f382e"))
+	draw_rect(Rect2(at, Vector2(length, 5)), Color("#8c5d38"))
+	draw_rect(Rect2(at + Vector2(0, 1), Vector2(length, 1)), Color("#b9844a"))
+	for x in range(0, int(length) + 1, 16):
+		_draw_fence(at + Vector2(x, 0))
+
+func _draw_barrel(at: Vector2) -> void:
+	draw_rect(Rect2(at + Vector2(-9, 8), Vector2(18, 4)), Color("#31523d"))
+	draw_rect(Rect2(at + Vector2(-7, -9), Vector2(14, 19)), Color("#6b432d"))
+	draw_rect(Rect2(at + Vector2(-5, -8), Vector2(10, 16)), Color("#a06d3c"))
+	for y in [-6, 5]:
+		draw_rect(Rect2(at + Vector2(-8, y), Vector2(16, 3)), Color("#40504b"))
+	draw_rect(Rect2(at + Vector2(-4, -5), Vector2(2, 10)), Color("#cc9351"))
+
+func _draw_crate(at: Vector2) -> void:
+	draw_rect(Rect2(at + Vector2(-10, 7), Vector2(20, 4)), Color("#31523d"))
+	draw_rect(Rect2(at + Vector2(-9, -9), Vector2(18, 18)), Color("#71472f"))
+	draw_rect(Rect2(at + Vector2(-7, -7), Vector2(14, 14)), Color("#a77642"))
+	draw_line(at + Vector2(-6, -6), at + Vector2(6, 6), Color("#765033"), 2)
+	draw_line(at + Vector2(6, -6), at + Vector2(-6, 6), Color("#765033"), 2)
+
+func _draw_lantern(at: Vector2) -> void:
+	draw_rect(Rect2(at + Vector2(-13, -12), Vector2(26, 28)), Color(1.0, 0.69, 0.31, 0.08))
+	draw_rect(Rect2(at + Vector2(-2, -23), Vector2(5, 19)), Color("#805437"))
+	draw_rect(Rect2(at + Vector2(-5, -7), Vector2(11, 13)), Color("#382f28"))
+	draw_rect(Rect2(at + Vector2(-3, -5), Vector2(7, 9)), Color("#efad4f"))
+	draw_rect(Rect2(at + Vector2(-1, -4), Vector2(3, 6)), Color("#ffe19a"))
+
+func _draw_camp_stall(at: Vector2, kind: int) -> void:
+	var wood := Color("#8c5a35") if kind != 1 else Color("#645246")
+	var roof := Color("#a67949") if kind == 0 else Color("#305d56") if kind == 1 else Color("#b58d52")
+	draw_rect(Rect2(at + Vector2(-20, 11), Vector2(40, 7)), Color("#34513d"))
+	draw_rect(Rect2(at + Vector2(-18, -16), Vector2(36, 28)), Color("#4b342b"))
+	draw_rect(Rect2(at + Vector2(-15, -12), Vector2(30, 22)), wood)
+	for x in [-12, -4, 4, 12]:
+		draw_rect(Rect2(at + Vector2(x, -11), Vector2(2, 19)), wood.lightened(0.17) if x % 3 else wood.darkened(0.2))
+	draw_colored_polygon(PackedVector2Array([
+		at + Vector2(-23, -14), at + Vector2(-18, -25),
+		at + Vector2(11, -27), at + Vector2(23, -18), at + Vector2(21, -12)
+	]), Color("#243f39"))
+	draw_colored_polygon(PackedVector2Array([
+		at + Vector2(-20, -17), at + Vector2(-17, -23),
+		at + Vector2(10, -25), at + Vector2(19, -18), at + Vector2(18, -15)
+	]), roof)
+	for x in range(-12, 16, 8):
+		draw_rect(Rect2(at + Vector2(x, -20 + x % 3), Vector2(5, 2)), roof.lightened(0.22))
+	if kind == 0:
+		_draw_crate(at + Vector2(0, 2))
+	elif kind == 1:
+		draw_rect(Rect2(at + Vector2(-9, -5), Vector2(18, 13)), Color("#334244"))
+		draw_rect(Rect2(at + Vector2(-5, -2), Vector2(10, 7)), Color("#df8951"))
+		draw_rect(Rect2(at + Vector2(-2, -1), Vector2(4, 5)), Color("#ffd77c"))
+	else:
+		draw_rect(Rect2(at + Vector2(-13, -4), Vector2(26, 4)), Color("#dcc18b"))
+		for x in [-8, 2]:
+			draw_rect(Rect2(at + Vector2(x, 0), Vector2(7, 7)), Color("#577c50"))
 
 func _draw_station(at: Vector2, base: Color, accent: Color) -> void:
 	draw_rect(Rect2(at + Vector2(-17, 11), Vector2(34, 7)), Color("#253b32"))

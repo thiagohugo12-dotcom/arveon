@@ -20,7 +20,7 @@ func _capture(name: String) -> void:
 	if result != OK:
 		push_error("Screenshot failed: " + name)
 		quit(1)
-	if name.begins_with("forest_pass_"):
+	if name.begins_with("forest_pass_") or name == "960x540_world":
 		# Small review copy in CI logs when artifact downloads are unavailable.
 		if name == "forest_pass_960x540":
 			frame.resize(640, 360, Image.INTERPOLATE_NEAREST)
