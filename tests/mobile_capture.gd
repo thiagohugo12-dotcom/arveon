@@ -73,8 +73,13 @@ func _run() -> void:
 	root.size = Vector2i(640, 360)
 	root.content_scale_size = Vector2i(640, 360)
 	main.visible = false
+	main.hud.hide()
 	var gallery := Node2D.new()
 	root.add_child(gallery)
+	var art_camera := Camera2D.new()
+	art_camera.position = Vector2(320, 180)
+	gallery.add_child(art_camera)
+	art_camera.make_current()
 	var backdrop := ColorRect.new()
 	backdrop.color = Color("#294c37")
 	backdrop.size = Vector2(640, 360)
