@@ -175,10 +175,11 @@ func is_targetable() -> bool:
 	return health.is_alive() and awake and not SafeCamp.in_clearance(global_position) and not is_queued_for_deletion()
 
 func receive_damage(amount: int) -> void:
-	if not is_targetable():
+	if amount <= 0 or not is_targetable():
 		return
+	var before := health.current
 	health.damage(amount)
-	view.show_damage(amount)
+	view.show_damage(before - health.current)
 
 func _on_died() -> void:
 	remove_from_group("damageable_enemies")

@@ -72,8 +72,9 @@ func receive_damage(amount: int) -> void:
 	var reduced := maxi(1, amount - armor)
 	if fury_left > 0.0:
 		reduced = maxi(1, ceili(reduced * (0.75 - 0.05 * (skill_ranks[2] - 1))))
+	var before := health.current
 	health.damage(reduced)
-	view.show_damage(reduced)
+	view.show_damage(before - health.current)
 
 func apply_progression(progress: GameProgress, initial: bool = false) -> void:
 	var values := progress.combat_stats()

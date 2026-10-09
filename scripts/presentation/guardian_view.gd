@@ -52,5 +52,4 @@ func _draw() -> void:
 	draw_rect(Rect2(-34, -57, 68, 5), Color("#1a241e"))
 	draw_rect(Rect2(-34, -57, 68 * hp_ratio, 5), Color("#97c273"))
 	draw_string(ThemeDB.fallback_font, Vector2(-48, -64), "Guardião das Raízes", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#e7cf8a"))
-	if damage_left > 0.0:
-		draw_string(ThemeDB.fallback_font, Vector2(-8, -78), "-%d" % damage_amount, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color("#ffd59a"))
+	_draw_hit_feedback(-78.0)

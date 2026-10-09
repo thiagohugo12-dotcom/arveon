@@ -57,6 +57,8 @@ func _ready() -> void:
 	mission.completed.connect(_on_mission_completed)
 	loot_rng.randomize()
 	player.input_driver = input_driver
+	player.view.damage_occluders = hud.damage_occluders
+	enemy.view.damage_occluders = hud.damage_occluders
 	enemy.target = player
 	enemy.defeated.connect(_on_enemy_defeated)
 	enemy.projectile_requested.connect(_on_enemy_projectile)
@@ -143,6 +145,7 @@ func _spawn_enemy() -> void:
 	actor.defeated.connect(_on_enemy_defeated)
 	actor.projectile_requested.connect(_on_enemy_projectile)
 	add_child(actor)
+	actor.view.damage_occluders = hud.damage_occluders
 	spawn_count += 1
 
 func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> void:
@@ -429,4 +432,5 @@ func _start_guardian() -> void:
 	guardian.defeated.connect(_on_enemy_defeated)
 	guardian.projectile_requested.connect(_on_enemy_projectile)
 	add_child(guardian)
+	guardian.view.damage_occluders = hud.damage_occluders
 	hud.show_notice("Guardião: evite as áreas douradas. Desafio opcional!")

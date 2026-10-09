@@ -78,5 +78,34 @@ static func run(suite: SceneTree) -> void:
 	player.view.attack_left = 0.0
 	player.attack.tick(0.0, player)
 	suite.check(enemy.health.current == 12 and player.view.attack_left == 0.0, "blocked strike applies no damage and emits no successful swing")
+	# Feedback follows HP actually removed; rejected hits produce no new effect.
+	enemy.view.flash_left = 0.0
+	enemy.view.impact_left = 0.0
+	enemy.view.damage_left = 0.0
+	enemy.receive_damage(0)
+	enemy.receive_damage(-7)
+	suite.check(enemy.health.current == 12 and enemy.view.impact_left == 0.0 and enemy.view.damage_left == 0.0, "zero/negative damage cannot create a ghost impact")
+	enemy.receive_damage(7)
+	suite.check(enemy.health.current == 5 and enemy.view.damage_amount == 7 and enemy.view.impact_left > 0.0 and enemy.view.flash_left > 0.0, "accepted damage starts a bounded flash, impact and readable number")
+	enemy.receive_damage(999)
+	suite.check(enemy.health.current == 0 and enemy.view.damage_amount == 5 and enemy.view.previous_damage_amount == 7 and enemy.view.previous_damage_left > 0.0, "overkill shows actual HP lost and preserves previous rapid hit")
+	enemy.receive_damage(5)
+	suite.check(enemy.view.damage_amount == 5, "dead enemy cannot receive a duplicate hit or restart feedback")
+	enemy.view._process(1.0)
+	suite.check(enemy.view.impact_left == 0.0 and enemy.view.damage_left == 0.0 and enemy.view.previous_damage_left == 0.0 and enemy.view.get_child_count() == 0, "feedback expires without particle, label, tween or timer nodes")
+	player.health.initialize(20)
+	player.armor = 2
+	player.receive_damage(7)
+	suite.check(player.health.current == 15 and player.view.damage_amount == 5, "player number reports damage after existing armor reduction")
+	player.health.initialize(3)
+	player.receive_damage(20)
+	suite.check(player.health.current == 0 and player.view.damage_amount == 3, "player overkill number matches HP removed")
+	var at := Vector2(-10, -42)
+	var canvas := player.view.get_global_transform_with_canvas()
+	var blocker: Rect2 = canvas * Rect2(at - Vector2(4, 21), Vector2(28, 26))
+	player.view.damage_occluders.append(blocker)
+	var readable := player.view._readable_damage_position(at, 20.0)
+	var readable_bounds: Rect2 = canvas * Rect2(readable - Vector2(4, 21), Vector2(28, 26))
+	suite.check(not readable_bounds.intersects(blocker), "hit number moves below HUD instead of being hidden behind it")
 	arena.queue_free()
 	await suite.frames()

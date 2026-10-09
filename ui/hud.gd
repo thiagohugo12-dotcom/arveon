@@ -46,6 +46,7 @@ var inventory_scroll: ScrollContainer
 var inventory_close: Button
 var inventory_open := false
 var minimap: MiniMap
+var damage_occluders: Array[Rect2] = []
 var restart: Button
 var cooldown: float = 0.0
 var notice_left := 0.0
@@ -316,6 +317,10 @@ func _layout() -> void:
 	rpg_panel.position = (size - rpg_panel.size) * 0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
 	restart.size = Vector2(240, 48)
+	# Existing HUD appearance is unchanged. A shared list keeps world hit numbers readable.
+	damage_occluders.clear()
+	for panel: Control in [info_back, mission_back, minimap, inventory_button, character_button, map_button]:
+		damage_occluders.append(panel.get_global_rect())
 
 func set_health(current: int, maximum: int) -> void:
 	hp_label.text = "HP %d / %d" % [current, maximum]

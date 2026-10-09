@@ -14,6 +14,12 @@ var attack_direction := Vector2.DOWN
 var attack_distance := 27.0
 var damage_left: float = 0.0
 var damage_amount: int = 0
+var previous_damage_left := 0.0
+var previous_damage_amount := 0
+var impact_left := 0.0
+const IMPACT_DURATION := 0.12
+const DAMAGE_DURATION := 0.85
+var damage_occluders: Array[Rect2] = [] # Shared HUD rectangles, updated only on layout.
 var defeat_left: float = 0.0
 var warning: bool = false
 var walking: bool = false
@@ -75,8 +81,12 @@ func flash() -> void:
 func show_damage(amount: int) -> void:
 	if amount <= 0:
 		return
+	# Two bounded labels retain closely spaced basic/skill hits without spawning nodes.
+	previous_damage_amount = damage_amount
+	previous_damage_left = damage_left
 	damage_amount = amount
-	damage_left = 0.85
+	damage_left = DAMAGE_DURATION
+	impact_left = IMPACT_DURATION
 	flash()
 
 func play_attack(target_offset := Vector2.ZERO) -> void:
@@ -107,6 +117,12 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	if damage_left > 0.0:
 		damage_left = maxf(0.0, damage_left - delta)
+		queue_redraw()
+	if previous_damage_left > 0.0:
+		previous_damage_left = maxf(0.0, previous_damage_left - delta)
+		queue_redraw()
+	if impact_left > 0.0:
+		impact_left = maxf(0.0, impact_left - delta)
 		queue_redraw()
 	if defeat_left > 0.0:
 		defeat_left = maxf(0.0, defeat_left - delta)
@@ -172,7 +188,8 @@ func _draw() -> void:
 					px(mark.x - 2, mark.y - 2, 4, 4, Color("#f7d47c"))
 	var step: float = -2.0 if walking and anim_frame % 2 == 0 else 0.0
 	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
-	var tint := Color("#ffdbc0") if flash_left > 0.0 else Color.WHITE
+	# Values above one brighten the existing sprite; the old <=1 tint darkened it.
+	var tint := Color(2.0, 1.75, 1.35) if flash_left > 0.0 else Color.WHITE
 	if appearance == 0:
 		# Held passing pose uses the approved appearance even when stopped.
 		var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
@@ -186,10 +203,6 @@ func _draw() -> void:
 		px(9, -24 + step, 7, 5, Color("#bd844b"))
 		px(-8, -27 + step, 16, 3, Color("#e5b968"))
 		px(-3, -32 + step, 6, 5, Color("#cf6c48"))
-	if attack_left > 0.0 and appearance == 0:
-		var side: float = -1.0 if attack_direction.x < -0.3 else 1.0
-		px(side * 15.0 - 3.0, -22.0, 5, 31, Color("#fce7a1"))
-		px(side * 20.0 - 3.0, -17.0, 4, 22, LIGHT)
 	if warning:
 		px(-11, -39, 22, 5, Color("#f4b942"))
 		px(-2, -47, 4, 7, Color("#ffe39a"))
@@ -198,14 +211,8 @@ func _draw() -> void:
 			var p := Vector2(-19 + i * 11, -24 + (i % 2) * 26)
 			px(p.x, p.y, 3, 3, Color("#ffe6aa", flash_left / 0.14))
 	if attack_left > 0.0:
-		for i in range(7):
-			var slash := (Vector2.RIGHT.rotated(attack_direction.angle() - 0.9 + i * 0.26) * 27.0).floor()
-			px(slash.x, slash.y, 5, 3, Color("#f7d47c"))
-	if damage_left > 0.0:
-		var float_y := -42.0 - (0.85 - damage_left) * 24.0
-		var number := "-%d" % damage_amount
-		draw_string(ThemeDB.fallback_font, Vector2(-10, float_y + 1), number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color(0.08, 0.12, 0.11, damage_left / 0.85))
-		draw_string(ThemeDB.fallback_font, Vector2(-11, float_y), number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffcf85", damage_left / 0.85))
+		_draw_strike()
+	_draw_hit_feedback()
 	if defeat_left > 0.0:
 		var drift := (0.22 - defeat_left) * 22.0
 		for side in [-1, 1]:
@@ -214,4 +221,64 @@ func _draw() -> void:
 	if appearance != 0:
 		px(-17, -30, 34, 4, LINE)
 		px(-16, -29, 32.0 * hp_ratio, 2, Color("#8ce395"))
+
+func _draw_strike() -> void:
+	var progress := clampf((0.24 - attack_left) / 0.24, 0.0, 1.0)
+	var alpha := clampf(attack_left / 0.12, 0.0, 1.0)
+	var centre := Vector2(0, -10)
+	if appearance == 0:
+		# Rotate the lightweight blade around the target direction, including up/down.
+		var blade := attack_direction.rotated(lerpf(-0.65, 0.35, minf(1.0, progress * 3.0)))
+		draw_line((centre + blade * 14.0).floor(), (centre + blade * 34.0).floor(), Color("#27392d", alpha), 5.0)
+		draw_line((centre + blade * 17.0).floor(), (centre + blade * 33.0).floor(), Color("#fff0b9", alpha), 3.0)
+		var hilt := centre + blade * 15.0
+		draw_line((hilt - blade.orthogonal() * 4.0).floor(), (hilt + blade.orthogonal() * 4.0).floor(), Color("#d9a759", alpha), 3.0)
+	# A brief slash connects the swing to the actual hit distance, not a 27px ring.
+	var distance := maxf(20.0, attack_distance)
+	var tip := centre + attack_direction * distance
+	if appearance == 0 and distance > 35.0 and progress < 0.42:
+		draw_line((centre + attack_direction * 30.0).floor(), tip.floor(), Color(0.96, 0.83, 0.49, alpha * 0.55), 2.0)
+	for i in range(5):
+		var mark := (tip + attack_direction.orthogonal() * (i - 2) * 4.0 - attack_direction * absf(i - 2) * 2.0).floor()
+		px(mark.x, mark.y, 3, 3, Color("#f7d47c", alpha))
+
+func _draw_hit_feedback(base_y := -42.0) -> void:
+	if impact_left > 0.0:
+		var spread := 5.0 + (1.0 - impact_left / IMPACT_DURATION) * 6.0
+		var alpha := impact_left / IMPACT_DURATION
+		for direction in [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]:
+			var start: Vector2 = (Vector2(0, -12) + direction * spread).floor()
+			draw_line(start, (start + direction * 4.0).floor(), Color("#fff0b9", alpha), 2.0)
+		px(-1, -13, 3, 3, Color("#fff6d2", alpha))
+	if previous_damage_left > 0.0:
+		_draw_damage_value(previous_damage_amount, previous_damage_left, Vector2(12, base_y - 17.0), true)
+	if damage_left > 0.0:
+		_draw_damage_value(damage_amount, damage_left, Vector2(0, base_y))
+
+func _draw_damage_value(amount: int, remaining: float, at: Vector2, older := false) -> void:
+	var number := "-%d" % amount
+	var font := ThemeDB.fallback_font
+	var alpha := clampf(remaining / 0.22, 0.0, 1.0)
+	var color := Color("#ffae8b", alpha) if appearance == 0 else Color("#fff0bd", alpha)
+	var width := font.get_string_size(number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
+	at += Vector2(-width * 0.5, -(DAMAGE_DURATION - remaining) * 24.0)
+	var readable := _readable_damage_position(at, width)
+	if older and not readable.is_equal_approx(at):
+		# Labels displaced by the same HUD panel must not collapse onto one line.
+		readable.y += 24.0
+	at = readable
+	draw_string_outline(font, at.floor(), number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 4, Color("#17201c", alpha))
+	draw_string(font, at.floor(), number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, color)
+
+func _readable_damage_position(at: Vector2, width: float) -> Vector2:
+	if damage_occluders.is_empty():
+		return at
+	var canvas := get_global_transform_with_canvas()
+	var bounds: Rect2 = canvas * Rect2(at - Vector2(4, 21), Vector2(width + 8, 26))
+	for blocker: Rect2 in damage_occluders:
+		if bounds.intersects(blocker):
+			var shift := Vector2(0, blocker.end.y + 3.0 - bounds.position.y)
+			at += canvas.affine_inverse().basis_xform(shift)
+			bounds.position += shift
+	return at
 
