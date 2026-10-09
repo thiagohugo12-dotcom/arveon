@@ -50,6 +50,7 @@ func _run() -> void:
 	var main := scene.instantiate()
 	root.add_child(main)
 	await frames()
+	(load("res://tests/explorer_visual_tests.gd") as Script).run(self)
 	var player := main.get_node("Player") as PlayerActor
 	var enemy := main.get_node("Enemy") as EnemyActor
 	var driver := main.get_node("InputDriver") as InputDriver

@@ -3,6 +3,7 @@ extends Node2D
 
 # Small hand-authored frames; visual state is independent of hitboxes/gameplay.
 const ATLAS := preload("res://assets/art/actor_atlas.png")
+const EXPLORER_ATLAS := preload("res://assets/art/explorer_atlas.png")
 @export_enum("Aventureiro", "Javali", "Aranha", "Mandacaru") var appearance: int = 0
 var facing := Vector2.DOWN
 var hp_ratio: float = 1.0
@@ -15,6 +16,9 @@ var warning: bool = false
 var walking: bool = false
 var anim_time: float = 0.0
 var anim_frame: int = 0
+var idle_frame: int = 0
+var walk_distance := 0.0
+var last_visual_position := Vector2.ZERO
 var skill_left := 0.0
 var skill_effect := 0
 var fury := false
@@ -34,6 +38,10 @@ const LINE := Color("#172822")
 const PALE := Color("#f1d5a2")
 const LIGHT := Color("#e7f4d7")
 
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	last_visual_position = global_position
+
 func set_facing(value: Vector2) -> void:
 	if not value.is_zero_approx() and not facing.is_equal_approx(value):
 		facing = value.normalized()
@@ -42,6 +50,12 @@ func set_facing(value: Vector2) -> void:
 func set_moving(value: bool) -> void:
 	if walking != value:
 		walking = value
+		if appearance == 0:
+			anim_frame = 0
+			idle_frame = 0
+			walk_distance = 0.0
+			anim_time = 0.0
+			last_visual_position = global_position
 		queue_redraw()
 
 func set_health(current: int, maximum: int) -> void:
@@ -90,11 +104,32 @@ func _process(delta: float) -> void:
 		defeat_left = maxf(0.0, defeat_left - delta)
 		modulate = Color(1.0, 1.0, 1.0, maxf(0.0, defeat_left / 0.22))
 		queue_redraw()
-	anim_time += delta
-	if anim_time >= (0.14 if walking else 0.55):
-		anim_time = 0.0
-		anim_frame = (anim_frame + 1) % 4
-		queue_redraw()
+	if appearance == 0:
+		if walking:
+			# A planted stride follows travel rather than the display frame rate.
+			walk_distance += minf(global_position.distance_to(last_visual_position), 12.0)
+			if walk_distance >= 6.0:
+				walk_distance = fmod(walk_distance, 6.0)
+				anim_frame = (anim_frame + 1) % 4
+				queue_redraw()
+		else:
+			anim_time += delta
+			if anim_time >= 0.65:
+				anim_time = 0.0
+				idle_frame = 1 - idle_frame
+				queue_redraw()
+		last_visual_position = global_position
+	else:
+		anim_time += delta
+		if anim_time >= (0.14 if walking else 0.55):
+			anim_time = 0.0
+			anim_frame = (anim_frame + 1) % 4
+			queue_redraw()
+
+func _explorer_direction() -> int:
+	if absf(facing.x) > absf(facing.y):
+		return 2 if facing.x < 0.0 else 3
+	return 1 if facing.y < 0.0 else 0
 
 func px(x: float, y: float, w: float, h: float, color: Color) -> void:
 	draw_rect(Rect2(x, y, w, h), color)
@@ -124,8 +159,13 @@ func _draw() -> void:
 					px(mark.x - 2, mark.y - 2, 4, 4, Color("#f7d47c"))
 	var step: float = -2.0 if walking and anim_frame % 2 == 0 else 0.0
 	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
-	var frame := anim_frame if walking else 0
-	draw_texture_rect_region(ATLAS, Rect2(-24, -32 + step, 48, 48), Rect2(frame * 48, appearance * 48, 48, 48), Color("#ffdbc0") if flash_left > 0.0 else Color.WHITE)
+	var tint := Color("#ffdbc0") if flash_left > 0.0 else Color.WHITE
+	if appearance == 0:
+		var column := anim_frame + 2 if walking else idle_frame
+		draw_texture_rect_region(EXPLORER_ATLAS, Rect2(-24, -32, 48, 48), Rect2(column * 48, _explorer_direction() * 48, 48, 48), tint)
+	else:
+		var frame := anim_frame if walking else 0
+		draw_texture_rect_region(ATLAS, Rect2(-24, -32 + step, 48, 48), Rect2(frame * 48, appearance * 48, 48, 48), tint)
 	if elite:
 		# Ochre mantle, bright crest and eye tint distinguish elite enemies at a glance.
 		px(-16, -24 + step, 7, 5, Color("#bd844b"))

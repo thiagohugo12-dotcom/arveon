@@ -5,7 +5,7 @@ extends SceneTree
 var output := ""
 
 func _initialize() -> void:
-	create_timer(20.0).timeout.connect(func(): quit(1))
+	create_timer(30.0).timeout.connect(func(): quit(1))
 	call_deferred("_run")
 
 func _frames() -> void:
@@ -69,6 +69,12 @@ func _run() -> void:
 		main.hud.show_station("Ferreiro", p)
 		await _capture(orientation + "_smith")
 		main.hud.close_station()
+	# The protagonist is also captured in the actual forest at native game scale.
+	root.size = Vector2i(390, 844)
+	root.content_scale_size = Vector2i(390, 844)
+	for index in range(4):
+		main.player.view.set_facing([Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT][index])
+		await _capture("explorer_world_%s" % ["down", "up", "left", "right"][index])
 	# Separate art sheet makes every integrated actor and two walk poses reviewable.
 	root.size = Vector2i(640, 360)
 	root.content_scale_size = Vector2i(640, 360)
@@ -108,6 +114,24 @@ func _run() -> void:
 	boss.telegraph_kind = 0
 	boss.queue_redraw()
 	await _capture("actors_effects")
+	for sample in samples:
+		sample.hide()
+	boss.hide()
+	var explorer_views: Array[ActorView] = []
+	for direction in range(4):
+		var hero := ActorView.new()
+		hero.appearance = 0
+		hero.position = Vector2(100 + direction * 145, 205)
+		gallery.add_child(hero)
+		hero.set_facing([Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT][direction])
+		explorer_views.append(hero)
+	await _capture("explorer_1x_idle")
+	for phase in range(4):
+		for hero in explorer_views:
+			hero.walking = true
+			hero.anim_frame = phase
+			hero.queue_redraw()
+		await _capture("explorer_1x_walk_%d" % phase)
 	gallery.queue_free()
 	main.queue_free()
 	await process_frame
