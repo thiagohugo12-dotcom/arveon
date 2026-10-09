@@ -15,10 +15,16 @@ func _frames() -> void:
 
 func _capture(name: String) -> void:
 	await _frames()
-	var result := root.get_texture().get_image().save_png(output.path_join(name + ".png"))
+	var frame := root.get_texture().get_image()
+	var result := frame.save_png(output.path_join(name + ".png"))
 	if result != OK:
 		push_error("Screenshot failed: " + name)
 		quit(1)
+	if name.begins_with("forest_pass_"):
+		# Small review copy in CI logs when artifact downloads are unavailable.
+		if name == "forest_pass_960x540":
+			frame.resize(640, 360, Image.INTERPOLATE_NEAREST)
+		print("FOREST_REVIEW_%s=%s" % [name, Marshalls.raw_to_base64(frame.save_jpg_to_buffer(0.70))])
 
 func _run() -> void:
 	output = OS.get_environment("QA_RENDER_DIR")
