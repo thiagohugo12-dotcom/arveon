@@ -1,14 +1,12 @@
 class_name FloorView
 extends Node2D
 
-# A static pixel atlas and seeded brush stamps. All geometry is presentation only.
-const ATLAS := preload("res://assets/art/forest_atlas.png")
-const OAK := preload("res://assets/art/forest_oak_v034.png")
-const SPRUCE := preload("res://assets/art/forest_spruce_v034.png")
-const BERRY := preload("res://assets/art/forest_shrub_v034.png")
-const LINDEN := preload("res://assets/art/forest_linden_v034.png")
-const REFUGE := preload("res://assets/art/forest_refuge_v034.png")
-const FOREST_REGION := Rect2(-80, -80, 1360, 1060)
+# Small limited-palette sprites and seeded placement; collisions use the same tree feet.
+const OAK := preload("res://assets/art/forest_oak_v035.png")
+const SPRUCE := preload("res://assets/art/forest_spruce_v035.png")
+const BERRY := preload("res://assets/art/forest_shrub_v035.png")
+const LINDEN := preload("res://assets/art/forest_linden_v035.png")
+const REFUGE := preload("res://assets/art/forest_refuge_v035.png")
 const FOREST := Color("#294c37")
 const FOREST_LIGHT := Color("#244431")
 const TRAIL := Color("#b98955")
@@ -45,31 +43,15 @@ func _hash(x: int, y: int) -> int:
 	var n := x * 74509 + y * 53197 + 19033
 	return absi((n ^ (n >> 11)) * 31337) % 9973
 
-func _forest_weight(at: Vector2) -> float:
-	if not FOREST_REGION.has_point(at):
-		return 0.0
-	var margin: float = minf(minf(at.x - FOREST_REGION.position.x, FOREST_REGION.end.x - at.x),
-		minf(at.y - FOREST_REGION.position.y, FOREST_REGION.end.y - at.y))
-	return clampf(margin / 76.0, 0.0, 1.0)
-
 func _draw_ground() -> void:
 	for y in range(0, 900, 32):
 		for x in range(0, 1200, 32):
-			var blend := _forest_weight(Vector2(x + 16, y + 16))
-			if blend < 1.0:
-				var tile := _hash(x / 32, y / 32) % 4
-				draw_texture_rect_region(ATLAS, Rect2(x, y, 32, 32), Rect2(tile * 32, 0, 32, 32))
-			if blend > 0.0:
-				var patch := _hash(x / 32, y / 32) % 7
-				var tint := Color("#467a43") if patch < 4 else Color("#4a8048") if patch < 6 else Color("#527c40")
-				tint.a = blend
-				draw_rect(Rect2(x, y, 32, 32), tint)
-				for n in range(7):
-					var px := x + _hash(x + n * 23, y) % 30
-					var py := y + _hash(x, y + n * 19) % 30
-					var tone := Color("#609149") if n % 3 else Color("#315f45")
-					tone.a = blend
-					draw_rect(Rect2(px, py, 3 + n % 3, 2), tone)
+			var patch := _hash(x / 32, y / 32) % 7
+			draw_rect(Rect2(x, y, 32, 32), Color("#467a43") if patch < 4 else Color("#4b8048") if patch < 6 else Color("#527c40"))
+			for n in range(2):
+				var px := x + _hash(x + n * 23, y) % 30
+				var py := y + _hash(x, y + n * 19) % 30
+				draw_rect(Rect2(px, py, 3 + n, 2), Color("#609149") if n else Color("#3b6b42"))
 
 func _draw_paths() -> void:
 	# One continuous outline per trail prevents spikes at changes in direction.
@@ -104,11 +86,11 @@ func _draw_paths() -> void:
 		var trail: Array = TRAILS[i]
 		for j in range(trail.size() - 1):
 			var length: float = trail[j].distance_to(trail[j + 1])
-			for n in range(0, int(length), 17):
+			for n in range(0, int(length), 32):
 				var at: Vector2 = trail[j].lerp(trail[j + 1], float(n) / length).floor()
 				at += Vector2(rng.randi_range(-12, 12), rng.randi_range(-9, 9))
 				draw_rect(Rect2(at, Vector2(2 + n % 3, 2)), TRAIL_HIGHLIGHT if n % 3 == 0 else Color("#97734a"))
-				if n % 4 == 0:
+				if n % 5 == 0:
 					_draw_pebble(at + Vector2(6, 4), n)
 				else:
 					draw_rect(Rect2(at + Vector2(-4, 4), Vector2(5 + n % 4, 3)), Color("#9e7449"))
@@ -141,90 +123,56 @@ func _draw_clearing(center: Vector2) -> void:
 func _draw_decoration() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12051
-	# A separate low-cost understorey pass breaks up the empty grass between trees.
-	for i in range(1250):
-		var at := FOREST_REGION.position + Vector2(rng.randf_range(0, FOREST_REGION.size.x), rng.randf_range(0, FOREST_REGION.size.y))
-		if _forest_weight(at) > 0.3 and _free_for_decoration(at):
-			if i % 9 == 0:
+	for i in range(260):
+		var at := Vector2(rng.randi_range(20, 1175), rng.randi_range(20, 875))
+		if _free_for_decoration(at):
+			if i % 11 == 0:
 				_draw_flower(at, i)
-			elif i % 17 == 0:
+			elif i % 19 == 0:
 				_draw_pebble(at, i)
-			elif i % 13 == 0:
+			elif i % 23 == 0:
 				_draw_shrub(at)
 			else:
 				_draw_grass(at, i)
-	rng.seed = 12051
-	var trees: Array[Vector2] = []
-	for i in range(290):
-		var at := Vector2(rng.randi_range(30, 1160), rng.randi_range(30, 865))
-		if not _free_for_decoration(at):
-			continue
-		if i % 3 != 2:
-			var free := true
-			for tree in trees:
-				if at.distance_squared_to(tree) < 46.0 * 46.0:
-					free = false
-					break
-			if free:
-				trees.append(at)
-				# Decoration slots skip every third index, so rotate variants independently.
-				_draw_tree(at, (i / 3) % 3)
-		elif i % 2 == 0:
-			_draw_shrub(at)
-		else:
-			_draw_ground_details(at, i)
-	for i in range(100):
+	for at in tree_positions():
+		_draw_tree(at)
+	rng.seed = 43912
+	for i in range(42):
 		var at := Vector2(rng.randi_range(22, 1175), rng.randi_range(25, 875))
 		if _free_for_decoration(at):
 			_draw_ground_details(at, i)
 
-func _draw_tree(at: Vector2, variant: int) -> void:
-	# Species alternate independently of skipped decoration slots.
-	var blend := _forest_weight(at)
-	if blend > float(_hash(roundi(at.x), roundi(at.y)) % 100) / 100.0:
-		var species := _hash(roundi(at.y), roundi(at.x)) % 5
-		var sprite: Texture2D = SPRUCE if species == 0 else LINDEN if species == 1 or species == 4 else OAK
-		var size := sprite.get_size()
-		draw_texture(sprite, at - Vector2(size.x * 0.5, size.y - 8))
-	else:
-		draw_texture_rect_region(ATLAS, Rect2(at + Vector2(-32, -52), Vector2(64, 64)), Rect2(variant * 64, 64, 64, 64))
+func tree_positions() -> Array[Vector2]:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 12051
+	var trees: Array[Vector2] = []
+	for i in range(155):
+		var at := Vector2(rng.randi_range(30, 1160), rng.randi_range(30, 865))
+		if i % 3 == 2 or not _free_for_decoration(at):
+			continue
+		var free := true
+		for tree in trees:
+			if at.distance_squared_to(tree) < 96.0 * 96.0:
+				free = false
+				break
+		if free:
+			trees.append(at)
+	return trees
+
+func _draw_tree(at: Vector2) -> void:
+	var species := _hash(roundi(at.y), roundi(at.x)) % 5
+	var sprite: Texture2D = SPRUCE if species == 0 else LINDEN if species == 1 or species == 4 else OAK
+	var size := Vector2(68, 96) if species == 0 else Vector2(78, 96) if species == 1 or species == 4 else Vector2(96, 96)
+	draw_texture_rect(sprite, Rect2(at - Vector2(size.x * 0.5, size.y - 8), size), false)
 
 func _draw_shrub(at: Vector2) -> void:
-	if _forest_weight(at) > float(_hash(roundi(at.x), roundi(at.y)) % 100) / 100.0:
-		draw_texture(BERRY, at - Vector2(20, 27))
-		return
-	draw_rect(Rect2(at + Vector2(-10, 3), Vector2(22, 5)), Color("#18392e"))
-	for patch in [Rect2(-10, -1, 9, 6), Rect2(-5, -6, 10, 9), Rect2(3, -3, 9, 9)]:
-		draw_rect(Rect2(at + patch.position, patch.size), Color("#417348"))
-	draw_rect(Rect2(at + Vector2(-4, -5), Vector2(5, 2)), Color("#80a45c"))
-	draw_rect(Rect2(at + Vector2(4, -2), Vector2(3, 2)), Color("#7ca45c"))
+	draw_texture_rect(BERRY, Rect2(at + Vector2(-16, -22), Vector2(32, 26)), false)
 
 func _draw_ground_details(at: Vector2, seed: int) -> void:
-	if FOREST_REGION.has_point(at):
-		match seed % 5:
-			0, 1:
-				_draw_grass(at, seed)
-			2:
-				_draw_flower(at, seed)
-			3:
-				_draw_pebble(at, seed)
-			4:
-				draw_rect(Rect2(at + Vector2(-2, 0), Vector2(5, 2)), Color("#b9864b"))
-		return
-	match seed % 4:
-		0:
-			draw_rect(Rect2(at, Vector2(3, 4)), Color("#72945b"))
-			draw_rect(Rect2(at + Vector2(-3, 1), Vector2(3, 2)), Color("#486b43"))
-		1:
-			draw_rect(Rect2(at, Vector2(6, 3)), Color("#a27652"))
-			draw_rect(Rect2(at + Vector2(2, -1), Vector2(3, 1)), Color("#c39a63"))
-		2:
-			draw_rect(Rect2(at, Vector2(4, 3)), Color("#879381"))
-			draw_rect(Rect2(at + Vector2(1, -1), Vector2(2, 1)), Color("#bac0a2"))
-		3:
-			draw_rect(Rect2(at, Vector2(2, 2)), Color("#efdc92"))
-			draw_rect(Rect2(at + Vector2(-3, 0), Vector2(2, 2)), Color("#caa367"))
-			draw_rect(Rect2(at + Vector2(-1, 2), Vector2(2, 2)), Color("#687f51"))
+	if seed % 3 == 0:
+		_draw_flower(at, seed)
+	else:
+		_draw_grass(at, seed)
 
 func _draw_flower(at: Vector2, seed: int) -> void:
 	draw_rect(Rect2(at + Vector2(0, 0), Vector2(2, 5)), Color("#285e3e"))
@@ -293,7 +241,7 @@ func _draw_camp() -> void:
 		_draw_fence(Vector2(473, y))
 		_draw_fence(Vector2(643, y))
 	# The cabin sits west of the northern trail; its doorstep marks the chest service.
-	draw_texture(REFUGE, Vector2(452, 288))
+	draw_texture_rect(REFUGE, Rect2(452, 288, 96, 96), false)
 	_draw_chest(SafeCamp.STATIONS["Baú"])
 	_draw_camp_stall(SafeCamp.STATIONS["Ferreiro"], 1)
 	_draw_camp_stall(SafeCamp.STATIONS["Vendedor"], 2)

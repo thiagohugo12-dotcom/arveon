@@ -47,6 +47,13 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tests.log; then exit 1; fi
           grep -E '^RESULT: [0-9]+ checks, 0 failures$' /tmp/tests.log
+      - name: Report startup diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://tests/perf_probe.gd 2>&1 | tee /tmp/perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/perf.log; then exit 1; fi
+          grep '^PERF_PROBE:' /tmp/perf.log
       - name: Render mobile layouts in software GL
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         shell: bash
