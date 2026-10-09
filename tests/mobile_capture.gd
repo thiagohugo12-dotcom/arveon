@@ -20,7 +20,7 @@ func _capture(name: String) -> void:
 	if result != OK:
 		push_error("Screenshot failed: " + name)
 		quit(1)
-	if name.begins_with("forest_pass_") or name.ends_with("_world") or name.begins_with("explorer_1x_walk_"):
+	if name.begins_with("forest_pass_") or name.ends_with("_world") or name.begins_with("explorer_1x_walk_") or name.begins_with("camp_services_"):
 		# Small review copy in CI logs when artifact downloads are unavailable.
 		if name == "forest_pass_960x540":
 			frame.resize(640, 360, Image.INTERPOLATE_NEAREST)
@@ -81,6 +81,9 @@ func _run() -> void:
 	for index in range(4):
 		main.player.view.set_facing([Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT][index])
 		await _capture("explorer_world_%s" % ["down", "up", "left", "right"][index])
+	# Native mobile camp view includes both NPC sprites and all service markers.
+	main.player.view.set_facing(Vector2.DOWN)
+	await _capture("camp_services_390x844")
 	# Art direction gate: same playable forest location at mobile and desktop sizes.
 	main.player.position = Vector2(870, 430)
 	main.player.get_node("Camera2D").reset_smoothing()

@@ -251,6 +251,9 @@ func _draw_camp() -> void:
 	_draw_chest(SafeCamp.STATIONS["Baú"])
 	_draw_camp_stall(SafeCamp.STATIONS["Ferreiro"], 1)
 	_draw_camp_stall(SafeCamp.STATIONS["Vendedor"], 2)
+	_draw_service_sign(SafeCamp.STATIONS["Baú"] + Vector2(27, -12), 0)
+	_draw_service_sign(SafeCamp.STATIONS["Ferreiro"] + Vector2(28, -10), 1)
+	_draw_service_sign(SafeCamp.STATIONS["Vendedor"] + Vector2(28, -10), 2)
 	_draw_barrel(Vector2(480, 411))
 	_draw_barrel(Vector2(633, 420))
 	_draw_crate(Vector2(484, 526))
@@ -308,6 +311,26 @@ func _draw_chest(at: Vector2) -> void:
 		draw_rect(Rect2(at + Vector2(x, -9), Vector2(3, 18)), Color("#d1a35a"))
 	draw_rect(Rect2(at + Vector2(-3, -3), Vector2(6, 6)), Color("#4b5147"))
 	draw_rect(Rect2(at + Vector2(-1, -1), Vector2(2, 3)), Color("#f3c86d"))
+
+func _draw_service_sign(at: Vector2, kind: int) -> void:
+	# Small wood pictograms make the three existing services recognisable from
+	# the path without adding a text panel or moving their interaction points.
+	draw_rect(Rect2(at + Vector2(-7, 7), Vector2(14, 3)), Color("#36503a"))
+	draw_rect(Rect2(at + Vector2(-1, 4), Vector2(2, 6)), Color("#574230"))
+	draw_rect(Rect2(at + Vector2(-8, -8), Vector2(16, 14)), Color("#3b3028"))
+	draw_rect(Rect2(at + Vector2(-6, -6), Vector2(12, 10)), Color("#9d7145"))
+	if kind == 0:
+		draw_rect(Rect2(at + Vector2(-4, -3), Vector2(8, 5)), Color("#51382c"))
+		draw_rect(Rect2(at + Vector2(-3, -4), Vector2(6, 2)), Color("#dcab65"))
+		draw_rect(Rect2(at + Vector2(-1, -2), Vector2(2, 3)), Color("#eccb83"))
+	elif kind == 1:
+		draw_rect(Rect2(at + Vector2(-4, -3), Vector2(8, 3)), Color("#b1b3a0"))
+		draw_rect(Rect2(at + Vector2(-2, 0), Vector2(4, 2)), Color("#596866"))
+		draw_rect(Rect2(at + Vector2(-1, 2), Vector2(2, 2)), Color("#434c4a"))
+	else:
+		draw_rect(Rect2(at + Vector2(-4, -2), Vector2(8, 5)), Color("#4b6954"))
+		draw_rect(Rect2(at + Vector2(-2, -4), Vector2(4, 3)), Color("#dec17e"))
+		draw_rect(Rect2(at + Vector2(-1, 0), Vector2(2, 2)), Color("#e9c57c"))
 
 func _draw_lantern(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(-13, -12), Vector2(26, 28)), Color(1.0, 0.69, 0.31, 0.08))
