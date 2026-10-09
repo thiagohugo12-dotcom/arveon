@@ -12,6 +12,7 @@ do cenário de referência. A resolução nativa no jogo é 112×112 (árvore la
 | `forest_linden_v034.png` | copa alta e tronco bifurcado | centro do pé, base da imagem |
 | `forest_spruce_v034.png` | conífera | centro do pé, base da imagem |
 | `forest_shrub_v034.png` | sub-bosque | centro da base |
+| `forest_refuge_v034.png` | construção do refúgio (96×96) | canto superior esquerdo, porta voltada ao Baú |
 
 Não há dependência de shader, luz dinâmica ou quadros de animação. Os ativos
 pequenos ficam independentes para permitir proporções diferentes no mapa. O

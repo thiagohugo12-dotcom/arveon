@@ -7,6 +7,7 @@ const OAK := preload("res://assets/art/forest_oak_v034.png")
 const SPRUCE := preload("res://assets/art/forest_spruce_v034.png")
 const BERRY := preload("res://assets/art/forest_shrub_v034.png")
 const LINDEN := preload("res://assets/art/forest_linden_v034.png")
+const REFUGE := preload("res://assets/art/forest_refuge_v034.png")
 const FOREST_REGION := Rect2(-80, -80, 1360, 1060)
 const FOREST := Color("#294c37")
 const FOREST_LIGHT := Color("#244431")
@@ -291,7 +292,9 @@ func _draw_camp() -> void:
 	for y in [380, 400, 490, 510]:
 		_draw_fence(Vector2(473, y))
 		_draw_fence(Vector2(643, y))
-	_draw_camp_stall(SafeCamp.STATIONS["Baú"], 0)
+	# The cabin sits west of the northern trail; its doorstep marks the chest service.
+	draw_texture(REFUGE, Vector2(452, 288))
+	_draw_chest(SafeCamp.STATIONS["Baú"])
 	_draw_camp_stall(SafeCamp.STATIONS["Ferreiro"], 1)
 	_draw_camp_stall(SafeCamp.STATIONS["Vendedor"], 2)
 	_draw_barrel(Vector2(480, 411))
@@ -343,6 +346,16 @@ func _draw_crate(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(-7, -7), Vector2(14, 14)), Color("#a77642"))
 	draw_line(at + Vector2(-6, -6), at + Vector2(6, 6), Color("#765033"), 2)
 	draw_line(at + Vector2(6, -6), at + Vector2(-6, 6), Color("#765033"), 2)
+
+func _draw_chest(at: Vector2) -> void:
+	draw_rect(Rect2(at + Vector2(-15, 7), Vector2(30, 5)), Color("#31503b"))
+	draw_rect(Rect2(at + Vector2(-14, -10), Vector2(28, 19)), Color("#4d352a"))
+	draw_rect(Rect2(at + Vector2(-11, -8), Vector2(22, 16)), Color("#945c38"))
+	draw_rect(Rect2(at + Vector2(-12, -8), Vector2(24, 5)), Color("#b57a48"))
+	for x in [-9, 7]:
+		draw_rect(Rect2(at + Vector2(x, -9), Vector2(3, 18)), Color("#d1a35a"))
+	draw_rect(Rect2(at + Vector2(-3, -3), Vector2(6, 6)), Color("#4b5147"))
+	draw_rect(Rect2(at + Vector2(-1, -1), Vector2(2, 3)), Color("#f3c86d"))
 
 func _draw_lantern(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(-13, -12), Vector2(26, 28)), Color(1.0, 0.69, 0.31, 0.08))
