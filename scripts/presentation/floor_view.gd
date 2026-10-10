@@ -163,7 +163,8 @@ func tree_positions() -> Array[Vector2]:
 				break
 		if free:
 			trees.append(at)
-	return trees
+	# Filter after generation so clearing the entrance never rerolls other trees.
+	return trees.filter(func(at: Vector2): return not TowerEntrance.BODY.grow(12.0).has_point(at))
 
 func _draw_tree(at: Vector2) -> void:
 	var species := _hash(roundi(at.y), roundi(at.x)) % 5

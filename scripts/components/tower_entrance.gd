@@ -1,10 +1,10 @@
 class_name TowerEntrance
 extends RefCounted
 
-# Beside the north trail; doorway remains reachable from its southern apron.
-const POSITION := Vector2(600, 280)
+# Eastern end of the existing main trail, inside the unchanged 1200x900 map.
+const POSITION := Vector2(1130, 455)
 const INTERACT_RANGE := 58.0
-const BODY := Rect2(568, 204, 64, 58)
+const BODY := Rect2(POSITION + Vector2(-32, -76), Vector2(64, 58))
 const NAME := "Torre de Ascensão"
 
 static func is_near(point: Vector2) -> bool:

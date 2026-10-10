@@ -120,7 +120,7 @@ func _run() -> void:
 	enemy.position = Vector2(805, 630)
 	await frames()
 	check(player.attack.select_target(player) == null, "world obstacle blocks automatic attack")
-	player.position = Vector2(1160, 400)
+	player.position = Vector2(1160, 455) # Existing eastern trail, clear of tower wall.
 	enemy.position = Vector2(100, 800)
 	driver.set_touch_direction(Vector2.RIGHT)
 	driver.request_dash()
