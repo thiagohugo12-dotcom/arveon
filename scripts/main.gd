@@ -2,6 +2,10 @@ extends Node2D
 
 const ARENA_SCENE := preload("res://scenes/world/tower_arena.tscn")
 var trial := TowerTrial.new()
+var tower_guardian: TowerGuardian
+var victory_first := false
+const TOWER_GUARDIAN_SCRIPT = preload("res://scripts/actors/tower_guardian.gd")
+const TOWER_GUARDIAN_VIEW = preload("res://scripts/presentation/tower_guardian_view.gd")
 var arena: Node2D
 var transitioning := false
 var autosave_left := 30.0
@@ -244,10 +248,7 @@ func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 			var restored := player.health.heal(ceili(player.health.maximum * 0.15))
 			hud.show_notice("Horda %d superada! +%d HP · próxima em 4s" % [trial.wave, restored])
 		else:
-			hud.show_notice("Três hordas superadas! Guardião na próxima atualização.")
-			input_driver.reset()
-			input_driver.blocked = true
-			hud.show_station(TowerEntrance.NAME, progress)
+			hud.show_notice("Três hordas superadas! O Guardião desperta em 4s.")
 		_refresh_mission()
 
 func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
@@ -361,7 +362,7 @@ func _interact() -> void:
 func _interaction_target() -> Dictionary:
 	if trial.active():
 		if player.global_position.distance_to(TowerTrial.EXIT) <= 68.0:
-			return {"kind": "arena_exit", "label": "Retornar à Mata" if trial.phase == TowerTrial.Phase.AWAITING_GUARDIAN else "Abandonar Prova"}
+			return {"kind": "arena_exit", "label": "Retornar à Mata" if trial.phase == TowerTrial.Phase.VICTORY else "Abandonar Prova"}
 		return {}
 	if TowerEntrance.is_near(player.global_position):
 		return {"kind": "tower", "label": progress.ascension.summary()}
@@ -623,7 +624,11 @@ func _process_trial(delta: float) -> void:
 		elif node is EnemyProjectile:
 			node.set_physics_process(not paused)
 	if not paused and trial.tick(delta):
-		_spawn_trial_wave()
+		if trial.phase == TowerTrial.Phase.GUARDIAN:
+			_spawn_tower_guardian()
+		else:
+			_spawn_trial_wave()
+	hud.set_boss(tower_guardian if is_instance_valid(tower_guardian) and tower_guardian.health.is_alive() else null)
 	hud.minimap.update_player(player.global_position)
 	var label: String = _interaction_target().get("label", "")
 	if label != station_nearby and not hud.station_panel.visible:
@@ -664,6 +669,8 @@ func _return_from_trial(died: bool = false) -> void:
 	hud._sync_controls()
 	_pause_combat()
 	await hud.fade_transition(true)
+	hud.set_boss(null)
+	tower_guardian = null
 	trial.end() # Invalidate wave callbacks before removing enemies or arena.
 	_clear_combat_actors()
 	remove_child(arena)
@@ -791,3 +798,46 @@ func _open_save_dialog(exporting: bool) -> void:
 			_preview_import(progress._read_file(path))
 	)
 	save_dialog.popup_centered(Vector2i(500, 350))
+
+func _spawn_tower_guardian() -> void:
+	if transitioning or trial.phase != TowerTrial.Phase.GUARDIAN or is_instance_valid(tower_guardian):
+		return
+	var actor := ENEMY_SCENE.instantiate() as EnemyActor
+	var template := actor.stats.duplicate() as ActorData
+	actor.set_script(TOWER_GUARDIAN_SCRIPT)
+	actor.get_node("View").set_script(TOWER_GUARDIAN_VIEW)
+	tower_guardian = actor as TowerGuardian
+	var body := CircleShape2D.new()
+	body.radius = 26.0
+	tower_guardian.get_node("Collision").shape = body
+	tower_guardian.kind = 4
+	tower_guardian.stats = template
+	tower_guardian.stats.max_hp = TowerGuardian.MAX_HP
+	tower_guardian.stats.move_speed = 65.0
+	tower_guardian.target = player
+	tower_guardian.arena_bounds = TowerTrial.BOUNDS
+	tower_guardian.position = trial.spawn_positions(player.position, 1)[0]
+	tower_guardian.set_meta("tower_attempt", trial.attempt_id)
+	tower_guardian.defeated.connect(_on_tower_guardian_defeated.bind(tower_guardian, trial.attempt_id), CONNECT_ONE_SHOT)
+	add_child(tower_guardian)
+	tower_guardian.view.damage_occluders = hud.damage_occluders
+	hud.set_boss(tower_guardian)
+	hud.show_notice("Guardião da Mata · desvie dos avisos no chão")
+
+func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> void:
+	if transitioning or trial.phase != TowerTrial.Phase.GUARDIAN or token != trial.attempt_id or source != tower_guardian or source.get_parent() != self or source.health.is_alive() or source.get_meta("defeat_recorded", false):
+		return
+	source.set_meta("defeat_recorded", true)
+	trial.phase = TowerTrial.Phase.VICTORY
+	victory_first = progress.ascension.complete_forest_trial()
+	if victory_first:
+		earned_xp += AscensionProgress.GUARDIAN_XP
+		earned_gold += AscensionProgress.GUARDIAN_GOLD
+	# Snapshot includes reward and claim together; load/import never grants rewards.
+	_save_progress()
+	hud.set_boss(null)
+	input_driver.reset()
+	input_driver.blocked = true
+	hud.victory_first = victory_first
+	hud.show_station(TowerEntrance.NAME, progress)
+	_refresh_mission()

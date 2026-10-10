@@ -219,8 +219,9 @@ static func run_world(suite) -> void:
 	suite.check(main.trial.wave == 3 and members.size() == 6 and elite_count == 1, "third wave contains five common creatures and exactly one elite")
 	var third_hp := player.health.current
 	_kill_wave(main)
-	suite.check(main.trial.phase == TowerTrial.Phase.AWAITING_GUARDIAN and player.health.current == third_hp and hud.station_panel.visible and hud.tower_action_button.text == "Retornar à Mata", "third-wave completion opens truthful return panel without extra heal or Guardian spawn")
+	suite.check(main.trial.phase == TowerTrial.Phase.AWAITING_GUARDIAN and player.health.current == third_hp and not hud.station_panel.visible and not main.input_driver.blocked, "third-wave completion starts Guardian presentation without extra heal or early spawn")
 	suite.check(p.ascension.completed_trials["1"] == false and p.ascension.unlocked_floors == [1] and p.ascension.defeats["1"] == 50 and not is_instance_valid(main.guardian), "three hordes cannot complete ascension unlock floor 2 or spawn Guardian")
+	main.hud.show_station(TowerEntrance.NAME, p)
 	var bag_after := p.bag.duplicate()
 	var gold_after := p.gold
 	_tap(hud, hud.tower_action_button)

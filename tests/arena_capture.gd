@@ -111,7 +111,8 @@ func _run() -> void:
 				main.hud.set_process(true)
 			else:
 				await _frames()
-				_check(main.hud.station_panel.visible and main.hud.tower_action_button.text == "Retornar à Mata" and main.input_driver.blocked, "third wave has safe return and no unlock")
+				main.hud.show_station(TowerEntrance.NAME, main.progress)
+				_check(main.hud.station_panel.visible and main.hud.tower_action_button.text == "Abandonar Prova", "third wave allows abandoning during Guardian presentation")
 				_check(main.hud.station_panel.get_global_rect().encloses(main.hud.tower_action_button.get_global_rect()), "return button fits actual viewport")
 				await _capture(prefix + "completed")
 		_tap(main.hud, main.hud.tower_action_button)

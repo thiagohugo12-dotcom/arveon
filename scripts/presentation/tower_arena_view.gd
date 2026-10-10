@@ -26,7 +26,7 @@ func _draw() -> void:
 	draw_arc(Vector2(360, 270), 84, 0, TAU, 32, Color("#4b6654"), 2)
 	for offset in [-28, 28]:
 		draw_rect(Rect2(350 + offset, 261, 20, 18), Color("#526c5c"))
-	_draw_gate(Vector2(360, 45), "Guardião — próxima versão", false)
+	_draw_gate(Vector2(360, 45), "Guardião da Mata", false)
 	_draw_gate(Vector2(360, 484), "Saída para a Mata", true)
 
 func _draw_gate(point: Vector2, label: String, open: bool) -> void:

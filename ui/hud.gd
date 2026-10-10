@@ -17,6 +17,9 @@ signal skill_pressed(index: int)
 signal rpg_action(action: String, id: String, expected: int)
 var save_panel: SavePanel
 var record_button: Button
+var boss_name: Label
+var boss_bar: ProgressBar
+var victory_first := false
 var tower_trial: TowerTrial
 var tower_action_button: Button
 var transition_cover: ColorRect
@@ -291,6 +294,17 @@ func _ready() -> void:
 	restart.visible = false
 	restart.pressed.connect(func(): restart_pressed.emit())
 	add_child(restart)
+	boss_name = Label.new()
+	boss_name.add_theme_font_size_override("font_size", 12)
+	boss_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	boss_name.hide()
+	add_child(boss_name)
+	boss_bar = ProgressBar.new()
+	boss_bar.show_percentage = false
+	boss_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	boss_bar.add_theme_stylebox_override("fill", _health_fill(Color("#b4d584")))
+	boss_bar.hide()
+	add_child(boss_bar)
 	resized.connect(_layout)
 	_layout()
 
@@ -333,6 +347,10 @@ func _layout() -> void:
 	mission_label.position = mission_back.position + Vector2(6, 3)
 	mission_label.size = mission_back.size - Vector2(12, 6)
 	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	boss_name.position = mission_label.position
+	boss_name.size = Vector2(mission_width - 12, 30)
+	boss_bar.position = mission_back.position + Vector2(6, 38)
+	boss_bar.size = Vector2(mission_width - 12, 7)
 	loot_label.position = Vector2(margin.x, margin.y + 140)
 	loot_label.size = Vector2(minf(320, size.x - margin.x - right_inset), 42)
 	map_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(400, size.y - margin.y - bottom_inset - 12))
@@ -413,6 +431,9 @@ func show_inventory(progress: GameProgress) -> void:
 func refresh_inventory(progress: GameProgress) -> void:
 	menu_progress = progress
 	inventory_gold.text = "Ouro: %d" % progress.gold
+	if progress.ascension.forest_seal:
+		inventory_gold.text += " · Selo da Mata · Andar 2 liberado"
+		inventory_gold.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for child in inventory_list.get_children():
 		inventory_list.remove_child(child)
 		child.queue_free()
@@ -506,12 +527,12 @@ func refresh_station(progress: GameProgress) -> void:
 	if station_name == TowerEntrance.NAME:
 		station_scroll.scroll_vertical = 0
 		var active := tower_trial != null and tower_trial.active()
-		var cleared := active and tower_trial.phase == TowerTrial.Phase.AWAITING_GUARDIAN
-		_add_description("Três hordas superadas!" if cleared else tower_trial.summary() if active else progress.ascension.summary())
-		_add_description("Guardião será o desafio final." if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova de Ascensão liberada")
-		_add_description("Desafio: três hordas; Guardião da Mata na próxima atualização.")
-		_add_description("Se morrer, a prova recomeça da primeira horda.")
-		_add_description("Ascensão ainda não concluída." if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
+		var cleared := active and tower_trial.phase == TowerTrial.Phase.VICTORY
+		_add_description("Vitória · Guardião da Mata!" if cleared else tower_trial.summary() if active else progress.ascension.summary())
+		_add_description("Selo da Mata conquistado · Ascensão concluída" if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova de Ascensão liberada")
+		_add_description("+180 XP · +40 ouro" if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e Guardião da Mata.")
+		_add_description("Andar 2 desbloqueado · viagem indisponível." if cleared else "Se morrer, a prova recomeça da primeira horda.")
+		_add_description("Retorne à Mata em segurança." if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
 		tower_action_button.text = "Retornar à Mata" if cleared else "Abandonar Prova" if active else "Entrar na Prova"
 		tower_action_button.disabled = not active and not progress.ascension.entrance_unlocked()
 		tower_action_button.show()
@@ -853,3 +874,13 @@ func fade_transition(opaque: bool) -> void:
 	await tween.finished
 	if not opaque:
 		transition_cover.hide()
+
+func set_boss(boss: TowerGuardian) -> void:
+	var active := is_instance_valid(boss)
+	boss_name.visible = active
+	boss_bar.visible = active
+	mission_label.visible = not active
+	if active:
+		boss_name.text = "Guardião da Mata · Fase %d\nHP %d/%d" % [2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
+		boss_bar.max_value = boss.health.maximum
+		boss_bar.value = boss.health.current
