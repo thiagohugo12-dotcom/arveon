@@ -3,6 +3,21 @@ extends SceneTree
 var output := ""
 var failures := 0
 
+class MapEvidence extends Node2D:
+	func _draw() -> void:
+		var gold := Color("#ffe09a")
+		var font := ThemeDB.fallback_font
+		draw_polyline(PackedVector2Array([SafeCamp.RESPAWN, Vector2(720, 445), Vector2(880, 485), TowerEntrance.POSITION]), gold, 3.0)
+		draw_circle(SafeCamp.RESPAWN, 12, gold, false, 3.0)
+		draw_circle(TowerEntrance.POSITION, 13, gold, false, 3.0)
+		draw_circle(Vector2(600, 280), 10, Color("#c7d4cb"), false, 2.0)
+		draw_string(font, Vector2(620, 285), "Posição anterior", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#e2e9e2"))
+		draw_string(font, Vector2(490, 585), "Vila / acampamento", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, gold)
+		draw_string(font, Vector2(925, 338), "Torre — extremidade leste", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gold)
+		draw_rect(Rect2(270, 810, 660, 64), Color("#162b25"))
+		draw_string(font, Vector2(290, 835), "Mapa original: 1200 × 900 — linha amarela: trilha existente", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, gold)
+		draw_string(font, Vector2(290, 860), "Distância direta à vila: antes 180 px / depois 590 px", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, gold)
+
 func _initialize() -> void:
 	create_timer(45.0).timeout.connect(func(): quit(1))
 	call_deferred("_run")
@@ -89,6 +104,26 @@ func _run() -> void:
 		main._process(0.0)
 		_check(not main.hud.station_panel.visible and not main.input_driver.blocked and main.hud.dash_button.enabled, "close resumes existing controls")
 		await _capture(prefix + "closed")
+		if resolution == Vector2i(390, 844):
+			main._toggle_map()
+			_check(main.hud.map_panel.visible and main.input_driver.blocked, "touch map retains eastern player location and menu input lock")
+			await _capture(prefix + "map")
+			main._toggle_map()
+	# QA-only overview: native scene with annotations, never included in gameplay.
+	root.size_changed.disconnect(main._adapt_orientation)
+	root.size = Vector2i(1200, 900)
+	await _frames()
+	root.content_scale_size = Vector2i(1200, 900)
+	main.hud.hide()
+	main.player.position = SafeCamp.RESPAWN
+	var camera := main.player.get_node("Camera2D") as Camera2D
+	camera.zoom = Vector2.ONE
+	camera.position = Vector2(600, 450) - main.player.position
+	camera.reset_smoothing()
+	var evidence := MapEvidence.new()
+	main.add_child(evidence)
+	await _capture("tower_overview")
+	_check(root.content_scale_size == Vector2i(1200, 900), "overview shows entire original map at one pixel per world unit")
 	var file := FileAccess.open(output.path_join("tower-result.txt"), FileAccess.WRITE)
 	file.store_line("TOWER_QA_RESULT: %d failures" % failures)
 	file.close()
