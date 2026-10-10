@@ -173,6 +173,7 @@ static func run_world(suite) -> void:
 		boss.action = TowerGuardian.Action.SPIKES
 		boss._begin_attack()
 		main._process_trial(10)
+		boss._physics_process(0.5) # Modal guards even a physics tick queued before Main pauses it.
 		suite.check(not boss.is_physics_processing() and boss.action_left == 1.0 and not player.use_skill(0), "mobile modal pauses hazards and skills " + str(resolution))
 		TRIAL_TESTS._tap(hud, hud.station_close_button)
 		main._process_trial(0)

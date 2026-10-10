@@ -22,6 +22,10 @@ func _physics_process(delta: float) -> void:
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive():
 		_clear_warning()
 		return
+	# Stop immediately on modal input, before Main pauses the next physics frame.
+	if target.input_driver != null and target.input_driver.blocked:
+		view.set_moving(false)
+		return
 	phase_two = health.current * 2 <= health.maximum
 	view.second_phase = phase_two
 	var offset := target.global_position - global_position
