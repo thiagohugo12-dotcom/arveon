@@ -77,3 +77,21 @@ SavePanel reutiliza o bloqueio modal e abre pela Mochila. Importar substitui
 estado e recarrega no acampamento; nenhum estado TowerTrial entra no payload.
 CI valida exportação real com Chromium/CDP e Node integrado, sem biblioteca
 adicionada ao jogo. As limitações de origem/quota/privacidade seguem documentadas.
+
+## Guardião da Torre v0.5.2
+TowerGuardian estende EnemyActor separadamente de RootGuardian (chefe opcional
+inalterado). State APPROACH/WINDUP/ACTIVE/RECOVERY não usa timers de dano.
+Três centros de espinhos e um flag attack_hit por execução substituem nós extras;
+menus pausam o relógio físico. Golpe frontal usa cone de 90 px e LOS; investida
+usa direção capturada, segmento varrido e move_and_collide, limitada à arena.
+Fase 2 observa Health, preservando avisos e dano. TowerGuardianView reutiliza
+corpo procedural de GuardianView e mantém desenhos separados das hitboxes.
+
+TowerTrial adiciona apresentação/GUARDIAN/VICTORY somente em memória. Main
+guarda ator/token/fase e registra morte uma vez; vitória não passa pelo loot do
+chefe opcional. AscensionProgress.complete_forest_trial marca conclusão, selo e
+[1,2]; Main aplica XP/ouro no mesmo snapshot v6. Loader exige consistência,
+aceita saves antigos sem forest_seal quando incompletos. Nenhuma recompensa
+ocorre em load/import. Selo é permanente e aparece na Mochila, sem comércio ou
+perda na morte. Andar atual permanece 1 e não há ação de viagem.
+HUD usa espaço da missão durante o chefe, sem painel permanente adicional.

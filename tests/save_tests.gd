@@ -48,7 +48,7 @@ static func run(suite) -> void:
 	suite.check(p.preview_backup(JSON.stringify(payload)) == null, "import cannot unlock unimplemented floor 2")
 	payload = JSON.parse_string(p.to_json())
 	payload.ascension.completed_trials["1"] = true
-	suite.check(p.preview_backup(JSON.stringify(payload)) == null, "import cannot complete unavailable ascension")
+	suite.check(p.preview_backup(JSON.stringify(payload)) == null, "import cannot claim an inconsistent ascension")
 	var before := FileAccess.get_file_as_string(p.save_path)
 	suite.check(not p.import_backup(backup, false) and FileAccess.get_file_as_string(p.save_path) == before, "preview without confirmation never replaces save")
 	suite.check(not p.import_backup(broken, true) and FileAccess.get_file_as_string(p.save_path) == before, "confirmation cannot bypass integrity validation")
