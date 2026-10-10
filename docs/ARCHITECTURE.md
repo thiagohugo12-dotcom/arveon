@@ -63,3 +63,17 @@ chamado uma vez no fim das duas primeiras hordas, jamais no fim da terceira.
 Após a terceira fase AWAITING_GUARDIAN guarda lugar para integração futura,
 sem disparar chefe ou gravar conclusão. Retorno automático na morte aplica
 uma perda normal, recuperando HP como o reinício existente; abandono não cura.
+
+## Registro v0.5.1.1
+Schema GameProgress v6 mantido, separando to_json/load_text de IO. Save valida
+snapshot, compara último conteúdo, guarda .bak, verifica .tmp e renomeia.
+Migrações arquivam .vN.original; importações confirmadas retêm original.
+Dados inválidos/futuros bloqueiam autosave; truncamento permite recuperação
+somente de leitura. BrowserSave/JS usa journal localStorage síncrono SHA-256
+com compare-and-swap entre abas, sem retirar IndexedDB IDBFS do Godot.
+Custom user dir Web fixo; busca pastas antigas sem apagar arquivos.
+Main mantém eventos, verifica mudanças a cada 30s e ao ocultar/perder foco.
+SavePanel reutiliza o bloqueio modal e abre pela Mochila. Importar substitui
+estado e recarrega no acampamento; nenhum estado TowerTrial entra no payload.
+CI valida exportação real com Chromium/CDP e Node integrado, sem biblioteca
+adicionada ao jogo. As limitações de origem/quota/privacidade seguem documentadas.

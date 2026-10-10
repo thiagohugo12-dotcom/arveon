@@ -49,6 +49,12 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tests.log; then exit 1; fi
           grep -E '^RESULT: [0-9]+ checks, 0 failures$' /tmp/tests.log
+      - name: Set up Node for save validation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Browser journal contracts
+        run: node --test tests/browser_save_tests.cjs
       - name: Report startup diagnostics
         shell: bash
         run: |
@@ -75,7 +81,10 @@ jobs:
           QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/arena_capture.gd 2>&1 | tee /tmp/arena-render.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/arena-render.log; then exit 1; fi
           grep '^ARENA_QA_RESULT: 0 failures$' build/mobile-qa/arena-result.txt
-          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 128
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/save_capture.gd 2>&1 | tee /tmp/save-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/save-render.log; then exit 1; fi
+          grep '^SAVE_QA_RESULT: 0 failures$' build/mobile-qa/save-result.txt
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 144
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -95,6 +104,12 @@ jobs:
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
+      - name: Verify actual Web persistence in Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 150s node tests/web_save_browser.mjs 2>&1 | tee /tmp/web-save-browser.log
+          grep '^WEB_SAVE_RESULT: [0-9]* checks, 0 failures$' /tmp/web-save-browser.log
       - name: Save Web build (no deployment)
         uses: actions/upload-artifact@v4
         with:
