@@ -69,7 +69,10 @@ jobs:
           QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/combat_capture.gd 2>&1 | tee /tmp/combat-render.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/combat-render.log; then exit 1; fi
           grep '^COMBAT_QA_RESULT: 0 failures$' build/mobile-qa/combat-result.txt
-          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 71
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/tower_capture.gd 2>&1 | tee /tmp/tower-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tower-render.log; then exit 1; fi
+          grep '^TOWER_QA_RESULT: 0 failures$' build/mobile-qa/tower-result.txt
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 91
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -85,7 +88,7 @@ jobs:
           mkdir -p build/web
           godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee /tmp/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/export.log; then exit 1; fi
-          if grep -E 'Storing File: res://build/|Storing File:.*combat_[0-9]+x[0-9]+_' /tmp/export.log; then exit 1; fi
+          if grep -E 'Storing File: res://build/|Storing File:.*(combat|tower)_[0-9]+x[0-9]+_' /tmp/export.log; then exit 1; fi
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
