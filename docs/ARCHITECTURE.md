@@ -38,3 +38,28 @@ TowerEntrance centraliza posição, interação e corpo físico; TowerView desen
 geometria estática. O menu reutiliza station_panel e seu bloqueio de input.
 Só Andar 1 existe; requisitos ficam em FLOORS, conclusão é registrada como falsa.
 Não há arena, seleção, teletransporte nem ação para concluir a prova nesta etapa.
+
+## Torre v0.5.1
+TowerTrial é RefCounted: fases, identificador de tentativa, roster de cada horda,
+conjunto de mortes pendentes e relógio de quatro segundos. Não é serializado.
+Main mantém o mesmo Player, HUD e GameProgress, destacando Andar1 da árvore e
+instanciando a cena tower_arena (720×540) em um espaço físico separado (1600,0).
+Retorno reanexa a Mata e repõe limites originais da câmera; reload libera a cena
+retida e inicia no acampamento. Nada altera o arquivo do mundo ou TowerEntrance.
+
+Inimigos reutilizam a fábrica existente e ficam como filhos do Main para manter
+validação de origem e recompensas. arena_bounds estende perseguição apenas na
+prova, sem sleep/despawn e com quatro paredes; comportamentos dos três tipos e
+do elite são mantidos. Limite local seis, Mata cinco. Projectiles ficam limitados
+à arena e são descartados ao limpar horda/tentativa. Timer da horda não usa
+SceneTreeTimer: só avança em _process_trial, fora de menus. Identificador e
+conjunto pendente rejeitam eventos antigos, vivos ou duplicados.
+
+Entrada/saída bloqueiam comandos e físicos durante fade de 0,16s por metade.
+Menus da prova pausam criaturas, projéteis e relógio. HUD usa station_panel com
+botão de ação de 44px fora do scroll. Minimapa muda para o retângulo da arena;
+Mata conserva WORLD_SIZE 1200×900. Health.heal não revive e limita ao máximo;
+chamado uma vez no fim das duas primeiras hordas, jamais no fim da terceira.
+Após a terceira fase AWAITING_GUARDIAN guarda lugar para integração futura,
+sem disparar chefe ou gravar conclusão. Retorno automático na morte aplica
+uma perda normal, recuperando HP como o reinício existente; abandono não cura.
