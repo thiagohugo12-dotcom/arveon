@@ -6,13 +6,14 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 5
+const SAVE_VERSION := 6
 const ATTRIBUTES := RPGRules.ATTRIBUTES
 const MAX_LEVEL := RPGRules.MAX_LEVEL
 const POINTS_PER_LEVEL := 2
 
 const ADVENTURES := {"explorar": 3, "forjar": 1, "elite": 1, "guardiao": 1}
 var adventures: Dictionary = {"explorar": 0, "forjar": 0, "elite": 0, "guardiao": 0}
+var ascension := AscensionProgress.new()
 
 var save_path: String = "user://andar1_progress.json"
 var bag: Dictionary = {}
@@ -192,7 +193,7 @@ func save() -> bool:
 		"gold": gold, "xp": xp, "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
-		"discovered_pois": discovered_pois, "adventures": adventures, "rpg": {"level": level(), "attributes": attributes,
+		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "rpg": {"level": level(), "attributes": attributes,
 		"skills": skills, "equipment": equipment, "equipped": equipped}}))
 	file.close()
 	return true
@@ -266,7 +267,16 @@ func load_save() -> bool:
 			if not _bounded_integer(amount, 0, ADVENTURES[key]):
 				return false
 			new_adventures[key] = int(amount)
+	var new_ascension := AscensionProgress.new()
+	if loaded_version >= 6:
+		new_ascension = AscensionProgress.from_save(parsed.get("ascension"))
+		if new_ascension == null:
+			return false
+	else:
+		# Every historical kill in v1–5 came from the only existing floor, Mata.
+		new_ascension.defeats["1"] = mini(int(parsed.kills), new_ascension.required_defeats())
 	adventures = new_adventures
+	ascension = new_ascension
 	bag = new_bag
 	chest = new_chest
 	gold = int(parsed.gold)

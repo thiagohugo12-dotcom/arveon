@@ -1,6 +1,13 @@
 # Game Design — fundação v0.1
 Fonte de verdade das decisões conhecidas, baseada no pedido de 07/10/2026. Nome provisório: grande-arvore-rpg.
 
+## v0.5.0 — entrada da Torre, aprovada em 10/10/2026
+Conforme `docs/decisions/TORRE_V050.md`: 50 derrotas reais de criaturas do
+Andar 1 liberam a entrada. Progresso persistente e limitado a 50, preservado
+na morte. A interface apresenta a prova futura de três hordas e Guardião da
+Mata, com reinício na primeira horda após morrer. Nesta etapa não há prova
+jogável, arena, novo chefe, Andar 2, seleção de andares ou teletransporte.
+
 ## Decisões confirmadas e protegidas
 - Godot 4.x, GDScript, 2D, Compatibility, mobile-first, Windows e Web.
 - UI responsiva; orientação livre; foco em celulares modestos.
