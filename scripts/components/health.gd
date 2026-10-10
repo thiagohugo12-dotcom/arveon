@@ -21,3 +21,12 @@ func damage(amount: int) -> void:
 	changed.emit(current, maximum)
 	if current == 0:
 		died.emit()
+
+func heal(amount: int) -> int:
+	if amount <= 0 or not is_alive():
+		return 0
+	var restored := mini(amount, maximum - current)
+	current += restored
+	if restored > 0:
+		changed.emit(current, maximum)
+	return restored

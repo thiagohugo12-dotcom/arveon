@@ -80,3 +80,13 @@ Força +2 dano; Vitalidade +8 HP; Espírito +1 dano e +2 HP; Agilidade
 +2 movimento, +3 dash e até 25% de redução do intervalo básico.
 Receitas e valores novos são provisórios. Save v5 migra v1–4 e preserva
 os atributos de v4. Sem Andar 2 ou mudanças em produção.
+
+## v0.5.1 — hordas da Torre, aprovada em 10/10/2026
+Conforme `docs/decisions/TORRE_V051.md`, após o requisito existente, Entrar na
+Prova leva a uma arena separada com três hordas (4 comuns; 6 comuns; 5 comuns
++ 1 elite). Só derrotas reais avançam. Entre hordas: recuperação única de 15%
+do HP máximo e quatro segundos de preparação com movimento. Morte perde o
+material normal uma vez e volta ao acampamento; abandono não penaliza. Sem
+checkpoints: carregar retorna à Mata; tentativa reinicia na primeira horda.
+Terceira horda superada é provisória, sem cura adicional, selo, conclusão ou
+Andar 2. Guardião da Torre permanece para v0.5.2. Entrada e mapa preservados.
