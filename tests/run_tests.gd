@@ -517,6 +517,7 @@ func _run() -> void:
 	main.queue_free()
 	await frames()
 	await preload("res://tests/combat_feedback_tests.gd").run(self)
+	await preload("res://tests/tower_tests.gd").run_world(self)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
 	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
 	print("RESULT: %d checks, %d failures" % [checks, failures])

@@ -466,7 +466,14 @@ func refresh_station(progress: GameProgress) -> void:
 	for child in station_content.get_children():
 		station_content.remove_child(child)
 		child.queue_free()
-	if station_name == "Ferreiro":
+	if station_name == TowerEntrance.NAME:
+		station_scroll.scroll_vertical = 0
+		_add_description(progress.ascension.summary())
+		_add_description("Prova de Ascensão liberada")
+		_add_description("Desafio futuro: três hordas e o Guardião da Mata.")
+		_add_description("Se morrer, a prova recomeça da primeira horda.")
+		_add_description("Prova disponível em uma próxima atualização")
+	elif station_name == "Ferreiro":
 		_add_description("Ouro %d · fabricar ou aprimorar até +3.\nMateriais usados: somente os da mochila." % progress.gold)
 		for id: String in RPGRules.EQUIPMENT:
 			_add_equipment(id, progress, station_content, false)

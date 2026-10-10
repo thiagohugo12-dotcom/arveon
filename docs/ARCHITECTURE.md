@@ -29,3 +29,12 @@ completa antes de alterar memória. Missões adicionais têm contadores limitado
 recompensa somente na primeira conclusão. RootGuardian estende EnemyActor com
 três ataques avisados. GuardianView desenha pixel art e telegráficos leves;
 nenhuma dependência, mapa adicional, navegação ou partícula foi adicionada.
+
+## Torre v0.5.0
+GameProgress possui AscensionProgress, serializado no save v6. Save v1–5 migra
+derrotas históricas de Mata; validação é atômica antes de trocar estado em memória.
+Main conecta derrotas com origem, marca uma vez por vida e mantém recompensas.
+TowerEntrance centraliza posição, interação e corpo físico; TowerView desenha
+geometria estática. O menu reutiliza station_panel e seu bloqueio de input.
+Só Andar 1 existe; requisitos ficam em FLOORS, conclusão é registrada como falsa.
+Não há arena, seleção, teletransporte nem ação para concluir a prova nesta etapa.

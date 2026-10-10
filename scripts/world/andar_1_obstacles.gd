@@ -5,6 +5,7 @@ extends Node2D
 @onready var walls: StaticBody2D = $Walls
 
 func _ready() -> void:
+	_add_box(TowerEntrance.BODY)
 	for foot in floor_view.tree_positions():
 		_add_circle(foot + Vector2(0, 1), 9.0)
 	# Building, the three service fixtures and wooden props retain their art positions.

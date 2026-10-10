@@ -19,6 +19,7 @@ const ENEMY_POSITIONS := [
 @onready var input_driver: InputDriver = $InputDriver
 @onready var hud: GameHUD = $Interface/HUD
 @onready var exploration_view: ExplorationView = $Andar1/ExploreView
+@onready var tower_view: TowerView = $Andar1/TowerView
 
 var spawn_remaining: float = SPAWN_INTERVAL
 var spawn_count: int = 0
@@ -60,7 +61,7 @@ func _ready() -> void:
 	player.view.damage_occluders = hud.damage_occluders
 	enemy.view.damage_occluders = hud.damage_occluders
 	enemy.target = player
-	enemy.defeated.connect(_on_enemy_defeated)
+	_register_enemy_defeat(enemy)
 	enemy.projectile_requested.connect(_on_enemy_projectile)
 	hud.movement_changed.connect(input_driver.set_touch_direction)
 	hud.dash_pressed.connect(input_driver.request_dash)
@@ -72,6 +73,7 @@ func _ready() -> void:
 	hud.rpg_action.connect(_rpg_action)
 	hud.station_action.connect(_station_action)
 	hud.panel_closed.connect(func():
+		input_driver.reset()
 		input_driver.blocked = false
 		station_nearby = ""
 	)
@@ -86,6 +88,7 @@ func _ready() -> void:
 	hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
 	get_window().size_changed.connect(_adapt_orientation)
 	_adapt_orientation()
+	tower_view.set_state(progress.ascension.entrance_unlocked(), TowerEntrance.is_near(player.global_position))
 
 func _process(delta: float) -> void:
 	hud.set_dash_cooldown(player.dash.cooldown_left)
@@ -111,6 +114,7 @@ func _process(delta: float) -> void:
 			if actor is EnemyActor:
 				actor.update_activity(player.global_position)
 	var near := _interaction_target().get("label", "") as String
+	tower_view.set_state(progress.ascension.entrance_unlocked(), TowerEntrance.is_near(player.global_position))
 	if near != station_nearby and not hud.station_panel.visible:
 		station_nearby = near
 		hud.set_nearby_station(near)
@@ -142,7 +146,7 @@ func _spawn_enemy() -> void:
 			actor.stats.contact_damage = 12
 	actor.position = ENEMY_POSITIONS[spawn_count % ENEMY_POSITIONS.size()]
 	actor.target = player
-	actor.defeated.connect(_on_enemy_defeated)
+	_register_enemy_defeat(actor)
 	actor.projectile_requested.connect(_on_enemy_projectile)
 	add_child(actor)
 	actor.view.damage_occluders = hud.damage_occluders
@@ -154,7 +158,19 @@ func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> v
 	add_child(projectile)
 	projectile.setup(origin, direction, damage, player)
 
-func _on_enemy_defeated(kind: int) -> void:
+func _register_enemy_defeat(actor: EnemyActor) -> void:
+	actor.set_meta("floor_id", 1)
+	actor.defeated.connect(_on_enemy_defeated.bind(actor), CONNECT_ONE_SHOT)
+
+func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
+	if source != null:
+		# A defeat must come from a registered, actually dead creature in this
+		# world. The per-life guard also rejects manual/reentrant duplicate events.
+		if source.get_parent() != self or source.health.is_alive() or source.get_meta("defeat_recorded", false):
+			return
+		source.set_meta("defeat_recorded", true)
+		if progress.ascension.current_floor == 1 and source.get_meta("floor_id", 0) == 1:
+			progress.ascension.record_defeat(1)
 	defeated_count += 1
 	var gained_xp: int = [12, 10, 16, 35, 80][kind]
 	var gained_gold := loot_rng.randi_range(2, 5)
@@ -228,6 +244,14 @@ func _interact() -> void:
 		return
 	var found := _interaction_target()
 	match found.get("kind", ""):
+		"tower":
+			if not progress.ascension.entrance_unlocked():
+				hud.show_notice("A Torre exige 50 criaturas derrotadas. Progresso: %d/50." % progress.ascension.defeats["1"])
+				hud.notice_left = 5.0
+				return
+			input_driver.reset()
+			input_driver.blocked = true
+			hud.show_station(TowerEntrance.NAME, progress)
 		"guardian":
 			_start_guardian()
 		"station":
@@ -267,6 +291,8 @@ func _interact() -> void:
 			station_nearby = ""
 
 func _interaction_target() -> Dictionary:
+	if TowerEntrance.is_near(player.global_position):
+		return {"kind": "tower", "label": progress.ascension.summary()}
 	if player.global_position.distance_to(GUARDIAN_ALTAR) <= 58.0 and progress.adventures.guardiao == 0 and not is_instance_valid(guardian):
 		return {"kind": "guardian", "label": "Desafiar Guardião (opcional)"}
 	var station := SafeCamp.nearest_station(player.global_position)
@@ -429,7 +455,7 @@ func _start_guardian() -> void:
 	guardian.stats.move_speed = 45.0
 	guardian.position = GUARDIAN_ALTAR + Vector2(0, 80)
 	guardian.target = player
-	guardian.defeated.connect(_on_enemy_defeated)
+	_register_enemy_defeat(guardian)
 	guardian.projectile_requested.connect(_on_enemy_projectile)
 	add_child(guardian)
 	guardian.view.damage_occluders = hud.damage_occluders

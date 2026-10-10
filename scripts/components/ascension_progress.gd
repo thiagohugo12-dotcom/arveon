@@ -30,7 +30,7 @@ func to_save() -> Dictionary:
 		"defeats": defeats.duplicate(), "completed_trials": completed_trials.duplicate()}
 
 static func from_save(value: Variant) -> AscensionProgress:
-	if not value is Dictionary or value.get("current_floor") != 1.0 or not value.get("unlocked_floors") is Array:
+	if not value is Dictionary or not value.get("current_floor") is float or value.current_floor != 1.0 or not value.get("unlocked_floors") is Array:
 		return null
 	if value.unlocked_floors != [1.0] or not value.get("defeats") is Dictionary or not value.get("completed_trials") is Dictionary:
 		return null
@@ -42,7 +42,7 @@ static func from_save(value: Variant) -> AscensionProgress:
 		if not count is float or count < 0 or count != floorf(count) or count > 100000000:
 			return null
 		# Trial cannot be completed by this version, nor can floor 2 be unlocked.
-		if value.completed_trials.get(key) != false:
+		if not value.completed_trials.get(key) is bool or value.completed_trials[key] != false:
 			return null
 		result.defeats[key] = mini(int(count), int(FLOORS[key].required_defeats))
 	return result
