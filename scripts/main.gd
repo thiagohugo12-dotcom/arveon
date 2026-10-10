@@ -4,6 +4,9 @@ const ARENA_SCENE := preload("res://scenes/world/tower_arena.tscn")
 var trial := TowerTrial.new()
 var arena: Node2D
 var transitioning := false
+var autosave_left := 30.0
+var pending_import := ""
+var save_dialog: FileDialog
 @onready var world: Node2D = $Andar1
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/actors/enemy.tscn")
@@ -74,6 +77,8 @@ func _ready() -> void:
 	hud.dash_pressed.connect(input_driver.request_dash)
 	hud.interact_pressed.connect(_interact)
 	hud.inventory_toggled.connect(_toggle_inventory)
+	hud.save_requested.connect(_open_record)
+	hud.save_panel.action_requested.connect(_save_action)
 	hud.character_toggled.connect(_toggle_character)
 	hud.map_toggled.connect(_toggle_map)
 	hud.skill_pressed.connect(_use_skill)
@@ -96,8 +101,18 @@ func _ready() -> void:
 	get_window().size_changed.connect(_adapt_orientation)
 	_adapt_orientation()
 	tower_view.set_state(progress.ascension.entrance_unlocked(), TowerEntrance.is_near(player.global_position))
+	_save_progress()
+	if OS.has_feature("web"):
+		progress.browser.watch_hidden(_save_progress)
+	if progress.save_blocked:
+		hud.show_notice(progress.save_status)
+		hud.notice_left = 12.0
 
 func _process(delta: float) -> void:
+	autosave_left -= delta
+	if autosave_left <= 0.0:
+		autosave_left = 30.0
+		_save_progress()
 	if transitioning:
 		return
 	hud.set_dash_cooldown(player.dash.cooldown_left)
@@ -259,6 +274,7 @@ func _save_progress() -> void:
 		hud.refresh_inventory(progress)
 	if not progress.save():
 		push_warning("Não foi possível salvar o progresso local.")
+		hud.show_notice(progress.save_status if not progress.save_status.is_empty() else "Falha no save local. Abra Mochila → Registro e exporte um backup.")
 	hud.set_rpg_status(progress, player)
 
 func _on_player_died() -> void:
@@ -274,7 +290,7 @@ func _on_player_died() -> void:
 		_return_from_trial(true)
 
 func _toggle_inventory() -> void:
-	if transitioning:
+	if transitioning or hud.save_panel.visible:
 		return
 	if hud.inventory_open:
 		hud.close_inventory()
@@ -392,6 +408,12 @@ func _station_action(action: String, item: String) -> void:
 	hud.refresh_station(progress)
 
 func _input(event: InputEvent) -> void:
+	if hud.save_panel.visible:
+		if event.is_action_pressed("ui_cancel"):
+			_save_action("cancel" if not pending_import.is_empty() else "close")
+		if event is InputEventKey:
+			get_viewport().set_input_as_handled()
+		return
 	if transitioning:
 		return
 	if event.is_echo():
@@ -434,13 +456,13 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _use_skill(index: int) -> void:
-	if transitioning:
+	if transitioning or hud.save_panel.visible:
 		return
 	player.use_skill(index)
 	hud.set_rpg_status(progress, player)
 
 func _toggle_character() -> void:
-	if transitioning:
+	if transitioning or hud.save_panel.visible:
 		return
 	if hud.rpg_panel.visible:
 		hud.close_character()
@@ -452,7 +474,7 @@ func _toggle_character() -> void:
 		hud.show_character(progress)
 
 func _toggle_map() -> void:
-	if transitioning:
+	if transitioning or hud.save_panel.visible:
 		return
 	if hud.map_panel.visible:
 		hud.close_map()
@@ -674,6 +696,7 @@ func _return_from_trial(died: bool = false) -> void:
 	hud.show_notice("Retorno à Mata · próxima tentativa começa na Horda 1")
 
 func _exit_tree() -> void:
+	progress.browser.detach()
 	# A reload during a trial discards it; free the temporarily detached Mata.
 	if is_instance_valid(world) and world.get_parent() == null:
 		world.free()
@@ -682,3 +705,89 @@ func _pause_combat() -> void:
 	for node in get_children():
 		if node is EnemyActor or node is EnemyProjectile:
 			node.set_physics_process(false)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_WM_CLOSE_REQUEST:
+		if is_instance_valid(hud) and is_instance_valid(player):
+			_save_progress()
+
+func _open_record() -> void:
+	if transitioning or not player.health.is_alive():
+		return
+	hud.close_inventory()
+	input_driver.reset()
+	input_driver.blocked = true
+	pending_import = ""
+	_save_progress()
+	hud.save_panel.open(progress)
+	hud._sync_controls()
+	hud._layout()
+
+func _save_action(action: String) -> void:
+	if not hud.save_panel.visible or transitioning:
+		return
+	match action:
+		"close":
+			pending_import = ""
+			hud.save_panel.hide()
+			input_driver.reset()
+			input_driver.blocked = false
+			hud._sync_controls()
+		"cancel":
+			pending_import = ""
+			hud.save_panel.open(progress)
+		"export":
+			_save_progress()
+			if OS.has_feature("web"):
+				JavaScriptBridge.download_buffer(progress.export_backup().to_utf8_buffer(), "grande-arvore-rpg-save.json", "application/json")
+				hud.save_panel.description.text = "Backup solicitado ao navegador. Confira Downloads antes de fechar."
+			else:
+				_open_save_dialog(true)
+		"import":
+			if OS.has_feature("web"):
+				progress.browser.pick(_preview_import)
+			else:
+				_open_save_dialog(false)
+		"confirm":
+			if pending_import.is_empty():
+				return
+			if progress.import_backup(pending_import, true):
+				pending_import = ""
+				get_tree().reload_current_scene()
+			else:
+				hud.save_panel.description.text = "Não foi possível substituir. Progresso atual preservado; exporte um backup."
+
+func _preview_import(text: String) -> void:
+	if not is_instance_valid(hud) or not hud.save_panel.visible:
+		return
+	var candidate = progress.preview_backup(text)
+	if candidate == null:
+		pending_import = ""
+		hud.save_panel.confirmation(false)
+		hud.save_panel.description.text = "Arquivo inválido, incompleto ou incompatível. Progresso atual preservado."
+		return
+	pending_import = text
+	hud.save_panel.preview(candidate)
+
+func _open_save_dialog(exporting: bool) -> void:
+	if is_instance_valid(save_dialog):
+		save_dialog.queue_free()
+	save_dialog = FileDialog.new()
+	save_dialog.access = FileDialog.ACCESS_FILESYSTEM
+	save_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE if exporting else FileDialog.FILE_MODE_OPEN_FILE
+	save_dialog.filters = PackedStringArray(["*.json ; Save JSON"])
+	save_dialog.current_file = "grande-arvore-rpg-save.json" if exporting else ""
+	add_child(save_dialog)
+	save_dialog.file_selected.connect(func(path: String):
+		if exporting:
+			var file := FileAccess.open(path, FileAccess.WRITE)
+			if file != null:
+				file.store_string(progress.export_backup())
+				file.close()
+				hud.save_panel.description.text = "Backup exportado."
+			else:
+				hud.save_panel.description.text = "Não foi possível exportar o arquivo."
+		else:
+			_preview_import(progress._read_file(path))
+	)
+	save_dialog.popup_centered(Vector2i(500, 350))

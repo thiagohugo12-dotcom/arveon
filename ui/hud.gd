@@ -3,6 +3,7 @@ extends Control
 
 const ITEM_ICON := preload("res://ui/pixel_item_icon.gd")
 
+signal save_requested
 signal dash_pressed
 signal restart_pressed
 signal movement_changed(value: Vector2)
@@ -14,6 +15,8 @@ signal map_toggled
 signal character_toggled
 signal skill_pressed(index: int)
 signal rpg_action(action: String, id: String, expected: int)
+var save_panel: SavePanel
+var record_button: Button
 var tower_trial: TowerTrial
 var tower_action_button: Button
 var transition_cover: ColorRect
@@ -197,7 +200,16 @@ func _ready() -> void:
 	inventory_close.text = "Fechar"
 	inventory_close.custom_minimum_size.y = 44
 	inventory_close.pressed.connect(func(): inventory_toggled.emit())
-	inventory_column.add_child(inventory_close)
+	var footer := HBoxContainer.new()
+	inventory_column.add_child(footer)
+	record_button = Button.new()
+	record_button.text = "Registro"
+	record_button.custom_minimum_size.y = 44
+	record_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	record_button.pressed.connect(func(): save_requested.emit())
+	footer.add_child(record_button)
+	inventory_close.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	footer.add_child(inventory_close)
 	joystick = VirtualJoystick.new()
 	joystick.size = Vector2(128, 128)
 	joystick.direction_changed.connect(func(value: Vector2): movement_changed.emit(value))
@@ -258,6 +270,9 @@ func _ready() -> void:
 	station_close_button.custom_minimum_size.y = 44
 	station_close_button.pressed.connect(func(): close_station())
 	column.add_child(station_close_button)
+	save_panel = SavePanel.new()
+	save_panel.add_theme_stylebox_override("panel", _panel_style())
+	add_child(save_panel)
 	rpg_panel = RPGPanel.new()
 	rpg_panel.z_index = 10
 	add_child(rpg_panel)
@@ -322,6 +337,8 @@ func _layout() -> void:
 	loot_label.size = Vector2(minf(320, size.x - margin.x - right_inset), 42)
 	map_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(400, size.y - margin.y - bottom_inset - 12))
 	map_panel.position = (size - map_panel.size) * 0.5
+	save_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(350, size.y - margin.y - bottom_inset - 12))
+	save_panel.position = (size - save_panel.size) * 0.5
 	inventory_panel.size = Vector2(minf(300, size.x - margin.x - right_inset - 12), minf(330, size.y - margin.y - bottom_inset - 12))
 	inventory_panel.position = (size - inventory_panel.size) * 0.5
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
@@ -337,7 +354,7 @@ func _layout() -> void:
 	restart.size = Vector2(240, 48)
 	# Existing HUD appearance is unchanged. A shared list keeps world hit numbers readable.
 	damage_occluders.clear()
-	for panel: Control in [info_back, mission_back, minimap, inventory_button, character_button, map_button]:
+	for panel: Control in [save_panel, info_back, mission_back, minimap, inventory_button, character_button, map_button]:
 		damage_occluders.append(panel.get_global_rect())
 
 func set_health(current: int, maximum: int) -> void:
@@ -443,6 +460,7 @@ func close_inventory() -> void:
 	_sync_controls()
 
 func show_death() -> void:
+	save_panel.hide()
 	close_inventory()
 	close_station()
 	joystick.reset()
@@ -595,6 +613,10 @@ func _input(event: InputEvent) -> void:
 		return
 	if not event is InputEventScreenTouch or not event.pressed:
 		return
+	if save_panel.visible:
+		_touch_buttons(save_panel, event.position)
+		get_viewport().set_input_as_handled()
+		return
 	if restart.visible:
 		_activate_touch_button(restart, event.position)
 		return
@@ -668,7 +690,7 @@ func set_dash_cooldown(value: float) -> void:
 func _sync_controls() -> void:
 	scroll_touch = -1
 	touch_scroll = null
-	var blocked := transition_active or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
+	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
 	for button in [inventory_button, character_button, map_button]:
 		button.disabled = blocked
 	joystick.reset()
@@ -699,7 +721,7 @@ func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	gold_label.text = "Ouro %d" % progress.gold
 	character_button.notification = progress.attribute_points_available() > 0
 	expanded_map.update_player(player.global_position)
-	var blocked := transition_active or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
+	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
 	for i in range(3):
 		var left := player.skill_cooldowns[i]
 		actions[i].set_recharge(left, [5.0, 8.0, 35.0][i] * player.cooldown_factor, i == 2 and player.fury_left > 0.0)

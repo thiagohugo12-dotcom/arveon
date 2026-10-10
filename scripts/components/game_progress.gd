@@ -15,6 +15,13 @@ const ADVENTURES := {"explorar": 3, "forjar": 1, "elite": 1, "guardiao": 1}
 var adventures: Dictionary = {"explorar": 0, "forjar": 0, "elite": 0, "guardiao": 0}
 var ascension := AscensionProgress.new()
 
+const MAX_SAVE_BYTES := 262144
+var save_blocked := false
+var save_status := ""
+var last_saved_text := ""
+var disk_writes := 0
+var browser := BrowserSave.new()
+
 var save_path: String = "user://andar1_progress.json"
 var bag: Dictionary = {}
 var chest: Dictionary = {}
@@ -185,26 +192,193 @@ func death_loss() -> String:
 			return item
 	return ""
 
-func save() -> bool:
-	var file := FileAccess.open(save_path, FileAccess.WRITE)
-	if file == null:
-		return false
-	file.store_string(JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
+func to_json() -> String:
+	return JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
 		"gold": gold, "xp": xp, "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
 		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "rpg": {"level": level(), "attributes": attributes,
-		"skills": skills, "equipment": equipment, "equipped": equipped}}))
+		"skills": skills, "equipment": equipment, "equipped": equipped}})
+
+func _web_save() -> bool:
+	return OS.has_feature("web") and save_path == "user://andar1_progress.json"
+
+func _read_file(path: String) -> String:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null or file.get_length() > MAX_SAVE_BYTES:
+		return ""
+	return file.get_as_text()
+
+func _write_file(path: String, text: String) -> bool:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(text)
+	file.flush()
+	var success := file.get_error() == OK
 	file.close()
+	return success and _read_file(path) == text
+
+func _replace_file(path: String, text: String) -> bool:
+	if not _write_file(path + ".tmp", text):
+		return false
+	return DirAccess.rename_absolute(ProjectSettings.globalize_path(path + ".tmp"), ProjectSettings.globalize_path(path)) == OK
+
+func _valid_text(text: String) -> bool:
+	var candidate = get_script().new()
+	return candidate.load_text(text)
+
+func save() -> bool:
+	if save_blocked:
+		return false
+	var text := to_json()
+	if text == last_saved_text:
+		return true
+	if not _valid_text(text):
+		save_status = "Progresso inválido; save anterior preservado."
+		return false
+	var old := _read_file(save_path)
+	if FileAccess.file_exists(save_path) and not _valid_text(old):
+		save_blocked = true
+		save_status = "Save existente inválido ou de versão futura; não foi substituído."
+		return false
+	if not old.is_empty():
+		var old_version := int(_parse_json(old).version)
+		if old_version < SAVE_VERSION and not FileAccess.file_exists(save_path + ".v%d.original" % old_version):
+			if not _replace_file(save_path + ".v%d.original" % old_version, old):
+				return false
+		if not _replace_file(save_path + ".bak", old):
+			return false
+	# Synchronous journal first: it is authoritative if the tab closes before
+	# the asynchronous IndexedDB sync. Compare-and-swap rejects another tab.
+	if _web_save():
+		var result := browser.write(export_backup())
+		if result != "ok":
+			save_blocked = result == "conflict"
+			save_status = "Outra aba alterou o save. Reabra o jogo nesta aba." if save_blocked else "Backup do navegador indisponível; exporte um arquivo."
+			if save_blocked:
+				return false
+	if not _replace_file(save_path, text):
+		save_status = "Falha ao gravar; cópia anterior preservada."
+		return false
+	last_saved_text = text
+	disk_writes += 1
+	if _web_save():
+		JavaScriptBridge.force_fs_sync()
+		if not OS.is_userfs_persistent() or not browser.available():
+			save_status = "Armazenamento limitado neste navegador. Exporte um backup."
+		else:
+			save_status = "Salvo neste navegador."
+	else:
+		save_status = "Salvo localmente."
 	return true
 
 func load_save() -> bool:
-	if not FileAccess.file_exists(save_path):
+	save_blocked = false
+	if _web_save():
+		var journal := browser.read()
+		if not journal.is_empty():
+			var candidate = preview_backup(journal)
+			if candidate != null:
+				load_text(candidate.to_json())
+				save_status = "Progresso recuperado do navegador."
+				return true
+			save_blocked = true
+			save_status = "Registro do navegador inválido; preservado sem sobrescrita."
+	var existing := FileAccess.file_exists(save_path)
+	var text := _read_file(save_path)
+	if existing and load_text(text):
+		last_saved_text = text if int(_parse_json(text).version) == SAVE_VERSION and not _web_save() else ""
+		return true
+	if not existing and _web_save():
+		var legacy := _legacy_web_path()
+		if not legacy.is_empty():
+			text = _read_file(legacy)
+			if load_text(text):
+				save_status = "Save anterior recuperado; arquivo original preservado."
+				return true
+			existing = true
+	if existing:
+		save_blocked = true
+		save_status = "Save inválido ou incompatível; original preservado. Importe um backup para recuperar."
+		# Recovery is read-only until explicit import confirmation.
+		if _parse_json(text) == null and load_text(_read_file(save_path + ".bak")):
+			save_status = "Cópia anterior recuperada. Exporte e importe para confirmar a recuperação."
+			return true
+	return false
+
+func _legacy_web_path() -> String:
+	var directory := DirAccess.open("/userfs/godot/app_userdata")
+	if directory == null:
+		return ""
+	var candidates: Array[String] = []
+	for name: String in directory.get_directories():
+		if name.begins_with("Grande Árvore RPG") and FileAccess.file_exists("/userfs/godot/app_userdata/" + name + "/andar1_progress.json"):
+			candidates.append(name)
+	# Natural version order avoids choosing v0.3 over v0.5; never fall back
+	# past a corrupt most-recent save and silently replace newer progress.
+	candidates.sort_custom(func(a: String, b: String): return a.naturalnocasecmp_to(b) > 0)
+	return "/userfs/godot/app_userdata/" + candidates[0] + "/andar1_progress.json" if not candidates.is_empty() else ""
+
+func export_backup() -> String:
+	var payload := to_json()
+	return JSON.stringify({"format": "grande-arvore-rpg-save", "archive_version": 1, "sha256": payload.sha256_text(), "payload": payload})
+
+func preview_backup(text: String) -> Variant:
+	if text.to_utf8_buffer().size() > MAX_SAVE_BYTES:
+		return null
+	var parsed: Variant = _parse_json(text)
+	if not parsed is Dictionary:
+		return null
+	var payload := text
+	if parsed.has("format"):
+		if parsed.get("format") != "grande-arvore-rpg-save" or parsed.get("archive_version") != 1.0 or not parsed.get("payload") is String or not parsed.get("sha256") is String:
+			return null
+		payload = parsed.payload
+		if payload.sha256_text() != parsed.sha256:
+			return null
+	var candidate = get_script().new()
+	if not candidate.load_text(payload):
+		return null
+	if not parsed.has("format"):
+		candidate.save_status = "Formato antigo: estrutura validada, sem checksum de origem."
+	return candidate
+
+func import_backup(text: String, confirmed: bool) -> bool:
+	var candidate = preview_backup(text)
+	if not confirmed or candidate == null:
 		return false
-	var file := FileAccess.open(save_path, FileAccess.READ)
-	if file == null:
+	var had_original := FileAccess.file_exists(save_path)
+	var preserved := save_path + ".before-import-%d" % Time.get_ticks_usec()
+	if had_original:
+		# Preserve even corrupt/future originals before an explicit replacement.
+		if DirAccess.copy_absolute(ProjectSettings.globalize_path(save_path), ProjectSettings.globalize_path(preserved)) != OK:
+			return false
+	var replacement: String = candidate.to_json()
+	if not _replace_file(save_path, replacement):
 		return false
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	if _web_save() and browser.write(candidate.export_backup(), true) != "ok":
+		# No asynchronous frame has run; roll back the staged filesystem write.
+		if had_original:
+			DirAccess.copy_absolute(ProjectSettings.globalize_path(preserved), ProjectSettings.globalize_path(save_path))
+		else:
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
+		return false
+	load_text(replacement)
+	save_blocked = false
+	last_saved_text = replacement
+	if _web_save():
+		JavaScriptBridge.force_fs_sync()
+	return true
+
+func _parse_json(text: String) -> Variant:
+	var parser := JSON.new()
+	return parser.data if parser.parse(text) == OK else null
+
+func load_text(text: String) -> bool:
+	if text.to_utf8_buffer().size() > MAX_SAVE_BYTES:
+		return false
+	var parsed: Variant = _parse_json(text)
 	if not parsed is Dictionary:
 		return false
 	var version_value: Variant = parsed.get("version")

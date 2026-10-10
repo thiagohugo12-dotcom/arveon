@@ -90,3 +90,9 @@ material normal uma vez e volta ao acampamento; abandono não penaliza. Sem
 checkpoints: carregar retorna à Mata; tentativa reinicia na primeira horda.
 Terceira horda superada é provisória, sem cura adicional, selo, conclusão ou
 Andar 2. Guardião da Torre permanece para v0.5.2. Entrada e mapa preservados.
+
+## v0.5.1.1 — Registro do Aventureiro, aprovada em 10/10/2026
+Conforme SAVE_V0511.md e pedido de Thiago: autosave local protegido, caminho
+Web estável, migração preservando originais e backup exportável/importável
+com confirmação. Save continua v6, sem tentativa/checkpoint da Torre.
+Importar ou recarregar retorna ao acampamento; nenhuma recompensa de carregamento.
