@@ -6,8 +6,8 @@ var deaths: int = 0
 
 func _initialize() -> void:
 	# A runtime error can abort _run before quit; always bound the runner itself.
-	create_timer(15.0).timeout.connect(func():
-		push_error("FAIL: gameplay tests did not finish within 15 seconds")
+	create_timer(30.0).timeout.connect(func():
+		push_error("FAIL: gameplay tests did not finish within 30 seconds")
 		quit(1)
 	)
 	call_deferred("_run")
@@ -29,6 +29,7 @@ func _run() -> void:
 	var test_path := "user://qa_area_segura_%d.json" % Time.get_ticks_usec()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", test_path)
 	preload("res://tests/tower_tests.gd").run_state(self)
+	preload("res://tests/tower_trial_state_tests.gd").run(self)
 	var health := Health.new()
 	root.add_child(health)
 	health.initialize(10)
@@ -518,6 +519,7 @@ func _run() -> void:
 	await frames()
 	await preload("res://tests/combat_feedback_tests.gd").run(self)
 	await preload("res://tests/tower_tests.gd").run_world(self)
+	await preload("res://tests/tower_trial_tests.gd").run_world(self)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
 	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
 	print("RESULT: %d checks, %d failures" % [checks, failures])

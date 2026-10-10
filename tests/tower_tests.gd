@@ -195,7 +195,7 @@ static func run_world(suite) -> void:
 		for node in hud.station_content.get_children():
 			suite.check(not node is Button, "tower offers no nonfunctional start button")
 			texts += (node as Label).text + "\n"
-		suite.check(texts.contains("três hordas") and texts.contains("Guardião da Mata") and texts.contains("Se morrer, a prova recomeça da primeira horda.") and texts.contains("Prova disponível em uma próxima atualização"), "tower describes future trial truthfully %s" % resolution)
+		suite.check(texts.contains("três hordas") and texts.contains("Guardião da Mata") and texts.contains("Se morrer, a prova recomeça da primeira horda.") and texts.contains("Sem checkpoints") and hud.tower_action_button.text == "Entrar na Prova" and hud.tower_action_button.is_visible_in_tree(), "tower offers real entry and describes remaining Guardian truthfully %s" % resolution)
 		var before := player.position
 		var cd := player.attack.cooldown_left
 		player._physics_process(0.02)

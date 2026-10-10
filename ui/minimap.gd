@@ -5,6 +5,7 @@ const MAP_ORIGIN := Vector2(4, 12)
 const MAP_SIZE := Vector2(88, 66)
 const WORLD_SIZE := Vector2(1200, 900)
 
+var arena_bounds := Rect2()
 var progress: GameProgress
 var player_position := SafeCamp.RESPAWN
 
@@ -19,6 +20,9 @@ func update_player(point: Vector2) -> void:
 
 func _map_point(point: Vector2) -> Vector2:
 	var map_size := size - Vector2(8, 8)
+	if arena_bounds.has_area():
+		var local := point - arena_bounds.position
+		return Vector2(4, 4) + Vector2(clampf(local.x, 0, arena_bounds.size.x) * map_size.x / arena_bounds.size.x, clampf(local.y, 0, arena_bounds.size.y) * map_size.y / arena_bounds.size.y)
 	return Vector2(4, 4) + Vector2(clampf(point.x, 0, WORLD_SIZE.x) * map_size.x / WORLD_SIZE.x,
 		clampf(point.y, 0, WORLD_SIZE.y) * map_size.y / WORLD_SIZE.y)
 
@@ -26,6 +30,12 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#162b25"))
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#baa778"), false, 2.0)
 	draw_rect(Rect2(Vector2(4, 4), size - Vector2(8, 8)), Color("#264634"))
+	if arena_bounds.has_area():
+		draw_rect(Rect2(Vector2(4, 4), size - Vector2(8, 8)), Color("#66796b"))
+		for point: Vector2 in [TowerTrial.ORIGIN + Vector2(360, 45), TowerTrial.EXIT]:
+			draw_rect(Rect2(_map_point(point) - Vector2(3, 2), Vector2(6, 4)), Color("#dac080"))
+		draw_rect(Rect2(_map_point(player_position) - Vector2(2, 2), Vector2(5, 5)), Color("#f2f0d6"))
+		return
 	for trail: Array in FloorView.TRAILS:
 		var points := PackedVector2Array()
 		for point: Vector2 in trail:

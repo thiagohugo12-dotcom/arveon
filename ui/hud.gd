@@ -14,6 +14,10 @@ signal map_toggled
 signal character_toggled
 signal skill_pressed(index: int)
 signal rpg_action(action: String, id: String, expected: int)
+var tower_trial: TowerTrial
+var tower_action_button: Button
+var transition_cover: ColorRect
+var transition_active := false
 var rpg_panel: RPGPanel
 var inventory_category := 0
 var inventory_tabs: HBoxContainer
@@ -36,6 +40,8 @@ var map_button: PixelMenuButton
 var map_panel: PanelContainer
 var expanded_map: MiniMap
 var map_close: Button
+var map_title: Label
+var map_legend: Label
 var gold_label: Label
 var info_back: Panel
 var mission_back: Panel
@@ -132,17 +138,17 @@ func _ready() -> void:
 	add_child(map_panel)
 	var map_column := VBoxContainer.new()
 	map_panel.add_child(map_column)
-	var map_title := Label.new()
+	map_title = Label.new()
 	map_title.text = "Mapa · Mata dos Primeiros Passos"
 	map_title.add_theme_font_size_override("font_size", 12)
 	map_column.add_child(map_title)
 	expanded_map = MiniMap.new()
 	expanded_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	map_column.add_child(expanded_map)
-	var legend := Label.new()
-	legend.text = "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
-	legend.add_theme_font_size_override("font_size", 11)
-	map_column.add_child(legend)
+	map_legend = Label.new()
+	map_legend.text = "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
+	map_legend.add_theme_font_size_override("font_size", 11)
+	map_column.add_child(map_legend)
 	map_close = Button.new()
 	map_close.text = "Fechar"
 	map_close.custom_minimum_size.y = 44
@@ -242,6 +248,11 @@ func _ready() -> void:
 	station_content.custom_minimum_size.x = 220
 	station_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	station_scroll.add_child(station_content)
+	tower_action_button = Button.new()
+	tower_action_button.custom_minimum_size.y = 44
+	tower_action_button.hide()
+	tower_action_button.pressed.connect(func(): station_action.emit("Retornar" if tower_trial != null and tower_trial.active() else "Entrar", ""))
+	column.add_child(tower_action_button)
 	station_close_button = Button.new()
 	station_close_button.text = "Fechar"
 	station_close_button.custom_minimum_size.y = 44
@@ -250,6 +261,13 @@ func _ready() -> void:
 	rpg_panel = RPGPanel.new()
 	rpg_panel.z_index = 10
 	add_child(rpg_panel)
+	transition_cover = ColorRect.new()
+	transition_cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	transition_cover.color = Color(0.04, 0.08, 0.07, 0.0)
+	transition_cover.z_index = 30
+	transition_cover.mouse_filter = Control.MOUSE_FILTER_STOP
+	transition_cover.hide()
+	add_child(transition_cover)
 	rpg_panel.closed.connect(func(): character_toggled.emit())
 	rpg_panel.action_requested.connect(func(action: String, id: String, expected: int): rpg_action.emit(action, id, expected))
 	restart = Button.new()
@@ -466,13 +484,19 @@ func refresh_station(progress: GameProgress) -> void:
 	for child in station_content.get_children():
 		station_content.remove_child(child)
 		child.queue_free()
+	tower_action_button.hide()
 	if station_name == TowerEntrance.NAME:
 		station_scroll.scroll_vertical = 0
-		_add_description(progress.ascension.summary())
-		_add_description("Prova de Ascensão liberada")
-		_add_description("Desafio futuro: três hordas e o Guardião da Mata.")
+		var active := tower_trial != null and tower_trial.active()
+		var cleared := active and tower_trial.phase == TowerTrial.Phase.AWAITING_GUARDIAN
+		_add_description("Três hordas superadas!" if cleared else tower_trial.summary() if active else progress.ascension.summary())
+		_add_description("Guardião será o desafio final." if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova de Ascensão liberada")
+		_add_description("Desafio: três hordas; Guardião da Mata na próxima atualização.")
 		_add_description("Se morrer, a prova recomeça da primeira horda.")
-		_add_description("Prova disponível em uma próxima atualização")
+		_add_description("Ascensão ainda não concluída." if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
+		tower_action_button.text = "Retornar à Mata" if cleared else "Abandonar Prova" if active else "Entrar na Prova"
+		tower_action_button.disabled = not active and not progress.ascension.entrance_unlocked()
+		tower_action_button.show()
 	elif station_name == "Ferreiro":
 		_add_description("Ouro %d · fabricar ou aprimorar até +3.\nMateriais usados: somente os da mochila." % progress.gold)
 		for id: String in RPGRules.EQUIPMENT:
@@ -567,6 +591,8 @@ func _input(event: InputEvent) -> void:
 		touch_scroll = null
 		get_viewport().set_input_as_handled()
 		return
+	if transition_active:
+		return
 	if not event is InputEventScreenTouch or not event.pressed:
 		return
 	if restart.visible:
@@ -595,6 +621,8 @@ func _input(event: InputEvent) -> void:
 			if _activate_touch_button(button, event.position):
 				return
 	if not station_panel.visible:
+		return
+	if _activate_touch_button(tower_action_button, event.position):
 		return
 	if station_name == "Ferreiro":
 		if _activate_touch_button(station_close_button, event.position):
@@ -640,7 +668,7 @@ func set_dash_cooldown(value: float) -> void:
 func _sync_controls() -> void:
 	scroll_touch = -1
 	touch_scroll = null
-	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
+	var blocked := transition_active or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
 	for button in [inventory_button, character_button, map_button]:
 		button.disabled = blocked
 	joystick.reset()
@@ -671,7 +699,7 @@ func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	gold_label.text = "Ouro %d" % progress.gold
 	character_button.notification = progress.attribute_points_available() > 0
 	expanded_map.update_player(player.global_position)
-	var blocked := inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
+	var blocked := transition_active or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
 	for i in range(3):
 		var left := player.skill_cooldowns[i]
 		actions[i].set_recharge(left, [5.0, 8.0, 35.0][i] * player.cooldown_factor, i == 2 and player.fury_left > 0.0)
@@ -685,6 +713,9 @@ func show_map(progress: GameProgress) -> void:
 	if inventory_open or station_panel.visible or rpg_panel.visible or restart.visible:
 		return
 	expanded_map.progress = progress
+	expanded_map.arena_bounds = minimap.arena_bounds
+	map_title.text = "Mapa · Arena da Torre" if minimap.arena_bounds.has_area() else "Mapa · Mata dos Primeiros Passos"
+	map_legend.text = "● Você · Dourado: portais\nSaída para a Mata ao sul" if minimap.arena_bounds.has_area() else "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
 	expanded_map.player_position = minimap.player_position
 	expanded_map.queue_redraw()
 	map_panel.show()
@@ -792,3 +823,11 @@ func _begin_scroll(scroll: ScrollContainer, event: InputEventScreenTouch) -> voi
 		scroll_touch = event.index
 		touch_scroll = scroll
 
+
+func fade_transition(opaque: bool) -> void:
+	transition_cover.show()
+	var tween := create_tween()
+	tween.tween_property(transition_cover, "color:a", 1.0 if opaque else 0.0, 0.16)
+	await tween.finished
+	if not opaque:
+		transition_cover.hide()

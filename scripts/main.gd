@@ -1,5 +1,11 @@
 extends Node2D
 
+const ARENA_SCENE := preload("res://scenes/world/tower_arena.tscn")
+var trial := TowerTrial.new()
+var arena: Node2D
+var transitioning := false
+@onready var world: Node2D = $Andar1
+
 const ENEMY_SCENE: PackedScene = preload("res://scenes/actors/enemy.tscn")
 const PROJECTILE_SCRIPT := preload("res://scripts/components/enemy_projectile.gd")
 const GUARDIAN_SCRIPT = preload("res://scripts/actors/root_guardian.gd")
@@ -57,6 +63,7 @@ func _ready() -> void:
 	exploration_view.queue_redraw()
 	mission.completed.connect(_on_mission_completed)
 	loot_rng.randomize()
+	hud.tower_trial = trial
 	player.input_driver = input_driver
 	player.view.damage_occluders = hud.damage_occluders
 	enemy.view.damage_occluders = hud.damage_occluders
@@ -85,18 +92,23 @@ func _ready() -> void:
 	known_level = progress.level()
 	hud.set_health(player.health.current, player.health.maximum)
 	hud.set_progress(earned_xp, earned_gold, defeated_count, "")
-	hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
+	_refresh_mission()
 	get_window().size_changed.connect(_adapt_orientation)
 	_adapt_orientation()
 	tower_view.set_state(progress.ascension.entrance_unlocked(), TowerEntrance.is_near(player.global_position))
 
 func _process(delta: float) -> void:
+	if transitioning:
+		return
 	hud.set_dash_cooldown(player.dash.cooldown_left)
 	rpg_refresh -= delta
 	if rpg_refresh <= 0.0:
 		rpg_refresh = 0.1
 		hud.set_rpg_status(progress, player)
 	if not player.health.is_alive():
+		return
+	if trial.active():
+		_process_trial(delta)
 		return
 	exploration_refresh -= delta
 	if exploration_refresh <= 0.0:
@@ -124,11 +136,9 @@ func _process(delta: float) -> void:
 		if get_tree().get_nodes_in_group("damageable_enemies").size() < MAX_ENEMIES:
 			_spawn_enemy()
 
-func _spawn_enemy() -> void:
+func _make_enemy(kind: int) -> EnemyActor:
 	var actor := ENEMY_SCENE.instantiate() as EnemyActor
-	actor.kind = (spawn_count + 1) % 3
-	if spawn_count % 8 == 7:
-		actor.kind = 3
+	actor.kind = kind
 	# Duplicating the resource ensures variants never mutate the original enemy template.
 	actor.stats = actor.stats.duplicate() as ActorData
 	match actor.kind:
@@ -144,6 +154,12 @@ func _spawn_enemy() -> void:
 			actor.stats.max_hp = 120
 			actor.stats.move_speed = 60.0
 			actor.stats.contact_damage = 12
+	return actor
+
+func _spawn_enemy() -> void:
+	if trial.active() or transitioning:
+		return
+	var actor := _make_enemy(3 if spawn_count % 8 == 7 else (spawn_count + 1) % 3)
 	actor.position = ENEMY_POSITIONS[spawn_count % ENEMY_POSITIONS.size()]
 	actor.target = player
 	_register_enemy_defeat(actor)
@@ -153,20 +169,30 @@ func _spawn_enemy() -> void:
 	spawn_count += 1
 
 func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> void:
+	if transitioning or not player.health.is_alive():
+		return
+	if trial.active() and (input_driver.blocked or not TowerTrial.BOUNDS.has_point(origin)):
+		return
 	var projectile := Area2D.new()
 	projectile.set_script(PROJECTILE_SCRIPT)
 	add_child(projectile)
 	projectile.setup(origin, direction, damage, player)
+	if trial.active():
+		projectile.arena_bounds = TowerTrial.BOUNDS
 
 func _register_enemy_defeat(actor: EnemyActor) -> void:
 	actor.set_meta("floor_id", 1)
 	actor.defeated.connect(_on_enemy_defeated.bind(actor), CONNECT_ONE_SHOT)
 
 func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
+	if transitioning:
+		return
 	if source != null:
 		# A defeat must come from a registered, actually dead creature in this
 		# world. The per-life guard also rejects manual/reentrant duplicate events.
 		if source.get_parent() != self or source.health.is_alive() or source.get_meta("defeat_recorded", false):
+			return
+		if trial.active() and source.get_meta("tower_attempt", -1) != trial.attempt_id:
 			return
 		source.set_meta("defeat_recorded", true)
 		if progress.ascension.current_floor == 1 and source.get_meta("floor_id", 0) == 1:
@@ -192,8 +218,22 @@ func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 		drop_text += " · " + mission_reward_message
 		mission_reward_message = ""
 	hud.set_progress(earned_xp, earned_gold, defeated_count, drop_text)
-	hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
+	_refresh_mission()
 	_save_progress()
+	if source != null and trial.active() and trial.record_defeat(source.get_instance_id(), not source.health.is_alive(), int(source.get_meta("tower_attempt", -1))):
+		for node in get_children():
+			if node is EnemyProjectile:
+				node.set_physics_process(false)
+				node.queue_free()
+		if trial.phase == TowerTrial.Phase.INTERVAL:
+			var restored := player.health.heal(ceili(player.health.maximum * 0.15))
+			hud.show_notice("Horda %d superada! +%d HP · próxima em 4s" % [trial.wave, restored])
+		else:
+			hud.show_notice("Três hordas superadas! Guardião na próxima atualização.")
+			input_driver.reset()
+			input_driver.blocked = true
+			hud.show_station(TowerEntrance.NAME, progress)
+		_refresh_mission()
 
 func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
 	earned_xp += xp_reward
@@ -210,7 +250,7 @@ func _save_progress() -> void:
 	progress.mission_index = mission.mission_index
 	progress.mission_progress = mission.progress
 	progress.mission_completed = mission.completed_count
-	hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
+	_refresh_mission()
 	if progress.level() > known_level:
 		known_level = progress.level()
 		hud.show_notice("Level Up! Nível %d · %d pontos de atributo · %d de habilidade" % [known_level, progress.attribute_points(), progress.skill_points()])
@@ -222,14 +262,20 @@ func _save_progress() -> void:
 	hud.set_rpg_status(progress, player)
 
 func _on_player_died() -> void:
+	if player.health.is_alive() or transitioning:
+		return
 	input_driver.reset()
 	input_driver.blocked = false
 	var lost := progress.death_loss()
 	hud.set_progress(earned_xp, earned_gold, defeated_count,
 		"Perdeu 1 " + lost + " da mochila; baú protegido" if not lost.is_empty() else "Baú protegido · sem material na mochila")
 	_save_progress()
+	if trial.active():
+		_return_from_trial(true)
 
 func _toggle_inventory() -> void:
+	if transitioning:
+		return
 	if hud.inventory_open:
 		hud.close_inventory()
 		input_driver.blocked = false
@@ -240,10 +286,16 @@ func _toggle_inventory() -> void:
 		hud.show_inventory(progress)
 
 func _interact() -> void:
+	if transitioning:
+		return
 	if not player.health.is_alive() or hud.station_panel.visible or hud.inventory_open or hud.rpg_panel.visible or hud.map_panel.visible:
 		return
 	var found := _interaction_target()
 	match found.get("kind", ""):
+		"arena_exit":
+			input_driver.reset()
+			input_driver.blocked = true
+			hud.show_station(TowerEntrance.NAME, progress)
 		"tower":
 			if not progress.ascension.entrance_unlocked():
 				hud.show_notice("A Torre exige 50 criaturas derrotadas. Progresso: %d/50." % progress.ascension.defeats["1"])
@@ -270,7 +322,7 @@ func _interact() -> void:
 				mission_reward_message = ""
 			_save_progress()
 			hud.set_progress(earned_xp, earned_gold, defeated_count, resource_text)
-			hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
+			_refresh_mission()
 			exploration_view.queue_redraw()
 			station_nearby = ""
 		"cache":
@@ -286,11 +338,15 @@ func _interact() -> void:
 			_save_progress()
 			hud.minimap.queue_redraw()
 			hud.set_progress(earned_xp, earned_gold, defeated_count, cache_text)
-			hud.set_mission(mission.summary() + "\n" + progress.adventure_summary())
+			_refresh_mission()
 			exploration_view.queue_redraw()
 			station_nearby = ""
 
 func _interaction_target() -> Dictionary:
+	if trial.active():
+		if player.global_position.distance_to(TowerTrial.EXIT) <= 68.0:
+			return {"kind": "arena_exit", "label": "Retornar à Mata" if trial.phase == TowerTrial.Phase.AWAITING_GUARDIAN else "Abandonar Prova"}
+		return {}
 	if TowerEntrance.is_near(player.global_position):
 		return {"kind": "tower", "label": progress.ascension.summary()}
 	if player.global_position.distance_to(GUARDIAN_ALTAR) <= 58.0 and progress.adventures.guardiao == 0 and not is_instance_valid(guardian):
@@ -308,6 +364,14 @@ func _interaction_target() -> Dictionary:
 	return {}
 
 func _station_action(action: String, item: String) -> void:
+	if transitioning:
+		return
+	if hud.station_name == TowerEntrance.NAME and hud.station_panel.visible:
+		if action == "Entrar" and not trial.active() and TowerEntrance.is_near(player.global_position):
+			_enter_trial()
+		elif action == "Retornar" and trial.active():
+			_return_from_trial(false)
+		return
 	if not player.health.is_alive() or hud.station_panel.visible == false:
 		return
 	var success := false
@@ -328,6 +392,8 @@ func _station_action(action: String, item: String) -> void:
 	hud.refresh_station(progress)
 
 func _input(event: InputEvent) -> void:
+	if transitioning:
+		return
 	if event.is_echo():
 		return
 	if event is InputEventKey and event.pressed and event.physical_keycode == KEY_M:
@@ -368,10 +434,14 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _use_skill(index: int) -> void:
+	if transitioning:
+		return
 	player.use_skill(index)
 	hud.set_rpg_status(progress, player)
 
 func _toggle_character() -> void:
+	if transitioning:
+		return
 	if hud.rpg_panel.visible:
 		hud.close_character()
 		input_driver.blocked = false
@@ -382,6 +452,8 @@ func _toggle_character() -> void:
 		hud.show_character(progress)
 
 func _toggle_map() -> void:
+	if transitioning:
+		return
 	if hud.map_panel.visible:
 		hud.close_map()
 		input_driver.blocked = false
@@ -440,6 +512,8 @@ func _record_adventure(id: String) -> void:
 		hud.show_notice("Desafio concluído! +%d XP · +%d ouro" % [reward.xp, reward.gold])
 
 func _start_guardian() -> void:
+	if trial.active() or transitioning:
+		return
 	if is_instance_valid(guardian) or progress.adventures.guardiao > 0:
 		return
 	if get_tree().get_nodes_in_group("damageable_enemies").size() >= MAX_ENEMIES:
@@ -460,3 +534,151 @@ func _start_guardian() -> void:
 	add_child(guardian)
 	guardian.view.damage_occluders = hud.damage_occluders
 	hud.show_notice("Guardião: evite as áreas douradas. Desafio opcional!")
+
+func _refresh_mission() -> void:
+	hud.set_mission(trial.summary() if trial.active() else mission.summary() + "\n" + progress.adventure_summary())
+
+func _clear_combat_actors() -> void:
+	for node in get_children():
+		if node is EnemyActor or node is EnemyProjectile:
+			if node is EnemyActor:
+				node.remove_from_group("damageable_enemies")
+				node.collision_layer = 0
+				node.collision_mask = 0
+			node.set_physics_process(false)
+			node.queue_free()
+
+func _camera_bounds(bounds: Rect2) -> void:
+	var camera := player.get_node("Camera2D") as Camera2D
+	camera.limit_left = roundi(bounds.position.x)
+	camera.limit_top = roundi(bounds.position.y)
+	camera.limit_right = roundi(bounds.end.x)
+	camera.limit_bottom = roundi(bounds.end.y)
+	camera.reset_smoothing()
+	camera.force_update_scroll()
+
+func _enter_trial() -> void:
+	if transitioning or trial.active() or not player.health.is_alive() or not progress.ascension.entrance_unlocked():
+		return
+	transitioning = true
+	hud.close_station()
+	input_driver.reset()
+	input_driver.blocked = true
+	hud.transition_active = true
+	hud._sync_controls()
+	_pause_combat()
+	await hud.fade_transition(true)
+	_clear_combat_actors()
+	remove_child(world) # Remove Mata physics, retain its unchanged scene and resources.
+	arena = ARENA_SCENE.instantiate()
+	add_child(arena)
+	move_child(arena, 0) # Floor stays behind the existing protagonist and creatures.
+	player.global_position = TowerTrial.ENTRY
+	player.velocity = Vector2.ZERO
+	player.charge_left = 0.0
+	player.dash.time_left = 0.0
+	trial.start()
+	hud.heading.text = "Torre · Andar 1"
+	hud.minimap.arena_bounds = TowerTrial.BOUNDS
+	hud.minimap.update_player(player.global_position)
+	_camera_bounds(TowerTrial.BOUNDS)
+	_refresh_mission()
+	_save_progress() # Saves only existing permanent progression, no attempt checkpoint.
+	await hud.fade_transition(false)
+	transitioning = false
+	hud.transition_active = false
+	input_driver.reset()
+	input_driver.blocked = false
+	hud._sync_controls()
+
+func _process_trial(delta: float) -> void:
+	var paused := input_driver.blocked
+	for node in get_children():
+		if node is EnemyActor and node.health.is_alive():
+			node.set_physics_process(not paused)
+			if paused:
+				node.view.set_moving(false)
+		elif node is EnemyProjectile:
+			node.set_physics_process(not paused)
+	if not paused and trial.tick(delta):
+		_spawn_trial_wave()
+	hud.minimap.update_player(player.global_position)
+	var label: String = _interaction_target().get("label", "")
+	if label != station_nearby and not hud.station_panel.visible:
+		station_nearby = label
+		hud.set_nearby_station(label)
+	_refresh_mission()
+
+func _spawn_trial_wave() -> void:
+	if not trial.active() or trial.phase != TowerTrial.Phase.FIGHTING or not trial.pending.is_empty():
+		return
+	var kinds: Array = TowerTrial.WAVES[trial.wave - 1]
+	var positions := trial.spawn_positions(player.global_position, kinds.size())
+	assert(positions.size() == kinds.size(), "Arena must always provide separated spawn points")
+	for i in range(kinds.size()):
+		var actor := _make_enemy(kinds[i])
+		actor.position = positions[i]
+		actor.target = player
+		actor.arena_bounds = TowerTrial.BOUNDS
+		actor.set_meta("tower_attempt", trial.attempt_id)
+		_register_enemy_defeat(actor)
+		actor.projectile_requested.connect(_on_enemy_projectile)
+		add_child(actor)
+		actor.view.damage_occluders = hud.damage_occluders
+		trial.register(actor.get_instance_id())
+	hud.show_notice("Horda %d/3 — %s" % [trial.wave, ["Iniciação", "Resistência", "Sobrevivência"][trial.wave - 1]])
+
+func _return_from_trial(died: bool = false) -> void:
+	if transitioning or not trial.active():
+		return
+	transitioning = true
+	hud.close_station()
+	hud.close_inventory()
+	hud.close_character()
+	hud.close_map()
+	input_driver.reset()
+	input_driver.blocked = true
+	hud.transition_active = true
+	hud._sync_controls()
+	_pause_combat()
+	await hud.fade_transition(true)
+	trial.end() # Invalidate wave callbacks before removing enemies or arena.
+	_clear_combat_actors()
+	remove_child(arena)
+	arena.queue_free()
+	arena = null
+	add_child(world)
+	move_child(world, 0)
+	player.global_position = SafeCamp.RESPAWN
+	player.velocity = Vector2.ZERO
+	player.charge_left = 0.0
+	player.dash.time_left = 0.0
+	if died:
+		player.health.initialize(player.stats.max_hp) # Same HP recovery as normal restart.
+	hud.restart.hide()
+	hud.heading.text = "Mata · Andar 1"
+	hud.minimap.arena_bounds = Rect2()
+	hud.minimap.update_player(player.global_position)
+	_camera_bounds(Rect2(Vector2.ZERO, MiniMap.WORLD_SIZE))
+	spawn_remaining = SPAWN_INTERVAL
+	station_nearby = ""
+	hud.set_nearby_station("")
+	_refresh_mission()
+	_save_progress()
+	await hud.fade_transition(false)
+	transitioning = false
+	hud.transition_active = false
+	input_driver.reset()
+	input_driver.blocked = false
+	hud._sync_controls()
+	hud.show_notice("Retorno à Mata · próxima tentativa começa na Horda 1")
+
+func _exit_tree() -> void:
+	# A reload during a trial discards it; free the temporarily detached Mata.
+	if is_instance_valid(world) and world.get_parent() == null:
+		world.free()
+
+func _pause_combat() -> void:
+	for node in get_children():
+		if node is EnemyActor or node is EnemyProjectile:
+			node.set_physics_process(false)

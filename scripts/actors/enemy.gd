@@ -8,6 +8,7 @@ signal projectile_requested(origin: Vector2, direction: Vector2, damage: int)
 @export_range(0, 4, 1) var kind: int = 0  # 0 Javali, 1 Aranha, 2 Mandacaru
 @onready var health: Health = $Health
 @onready var view: ActorView = $View
+var arena_bounds := Rect2()
 var target: PlayerActor
 var contact_left := 0.0
 var special_left := 0.0
@@ -38,6 +39,8 @@ func _ready() -> void:
 func update_activity(player_position: Vector2) -> void:
 	if not health.is_alive():
 		return
+	if arena_bounds.has_area():
+		return # Arena members stay awake and cannot despawn by distance.
 	var distance_squared := global_position.distance_squared_to(player_position)
 	if awake and distance_squared > SLEEP_ENTER * SLEEP_ENTER:
 		awake = false
@@ -59,7 +62,9 @@ func _physics_process(delta: float) -> void:
 	var offset := target.global_position - global_position
 	var distance := offset.length()
 	var home_distance := target.global_position.distance_to(home_position)
-	if chasing:
+	if arena_bounds.has_area():
+		chasing = true
+	elif chasing:
 		if distance > AGGRO_EXIT or home_distance > MAX_CHASE_FROM_HOME or SafeCamp.in_clearance(target.global_position):
 			chasing = false
 			charge_windup = 0.0
@@ -77,7 +82,7 @@ func _physics_process(delta: float) -> void:
 		2: _cactus_behavior(offset, distance)
 	var before := global_position
 	move_and_slide()
-	if SafeCamp.in_clearance(global_position) or global_position.distance_to(home_position) > MAX_CHASE_FROM_HOME:
+	if SafeCamp.in_clearance(global_position) or (not arena_bounds.has_area() and global_position.distance_to(home_position) > MAX_CHASE_FROM_HOME):
 		global_position = before
 		velocity = Vector2.ZERO
 		chasing = false
@@ -154,7 +159,7 @@ func _fire_cactus_spine() -> void:
 	if not is_targetable() or not chasing or not is_instance_valid(target) or not target.health.is_alive():
 		view.set_warning(false)
 		return
-	if SafeCamp.in_clearance(target.global_position) or target.global_position.distance_to(home_position) > MAX_CHASE_FROM_HOME:
+	if SafeCamp.in_clearance(target.global_position) or (not arena_bounds.has_area() and target.global_position.distance_to(home_position) > MAX_CHASE_FROM_HOME):
 		view.set_warning(false)
 		return
 	var direction := global_position.direction_to(target.global_position)
