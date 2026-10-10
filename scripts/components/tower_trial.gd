@@ -2,7 +2,7 @@ class_name TowerTrial
 extends RefCounted
 
 # Attempt state never enters GameProgress or the save. Only the entrance is permanent.
-enum Phase { IDLE, PREPARING, FIGHTING, INTERVAL, AWAITING_GUARDIAN }
+enum Phase { IDLE, PREPARING, FIGHTING, INTERVAL, AWAITING_GUARDIAN, GUARDIAN, VICTORY }
 const WAVES := [[0, 1, 2, 0], [0, 1, 2, 0, 1, 2], [0, 1, 2, 0, 1, 3]]
 const PREPARATION_SECONDS := 4.0
 const ORIGIN := Vector2(1600, 0)
@@ -35,6 +35,12 @@ func start() -> bool:
 	return true
 
 func tick(delta: float) -> bool:
+	if phase == Phase.AWAITING_GUARDIAN:
+		preparation_left = maxf(0.0, preparation_left - maxf(0.0, delta))
+		if preparation_left > 0.0:
+			return false
+		phase = Phase.GUARDIAN
+		return true
 	if phase != Phase.PREPARING and phase != Phase.INTERVAL:
 		return false
 	preparation_left = maxf(0.0, preparation_left - maxf(0.0, delta))
@@ -57,7 +63,7 @@ func record_defeat(actor_id: int, dead: bool, token: int) -> bool:
 		return false
 	cleared_waves += 1
 	phase = Phase.AWAITING_GUARDIAN if wave == WAVES.size() else Phase.INTERVAL
-	preparation_left = PREPARATION_SECONDS if phase == Phase.INTERVAL else 0.0
+	preparation_left = PREPARATION_SECONDS if phase == Phase.INTERVAL else PREPARATION_SECONDS
 	return true # One completion notification and at most one heal per interval.
 
 func end() -> void:
@@ -80,7 +86,11 @@ func spawn_positions(player_position: Vector2, count: int) -> Array[Vector2]:
 
 func summary() -> String:
 	if phase == Phase.AWAITING_GUARDIAN:
-		return "Horda 3/3 · Superada\nGuardião na próxima atualização"
+		return "Três hordas superadas\nGuardião em %ds" % ceili(preparation_left)
+	if phase == Phase.GUARDIAN:
+		return "Guardião da Mata\nDesvie dos ataques avisados"
+	if phase == Phase.VICTORY:
+		return "Ascensão conquistada\nSelo da Mata"
 	var name: String = ["Iniciação", "Resistência", "Sobrevivência"][maxi(0, wave - 1)]
 	if phase == Phase.PREPARING or phase == Phase.INTERVAL:
 		return "Horda %d/3 · Preparação %ds\nPróxima: %s" % [wave + (1 if phase == Phase.INTERVAL else 0), ceili(preparation_left), ["Iniciação", "Resistência", "Sobrevivência"][mini(2, wave if phase == Phase.INTERVAL else wave - 1)]]

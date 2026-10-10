@@ -17,6 +17,10 @@ func _draw() -> void:
 			2:
 				for angle in [-0.35, 0.0, 0.35]:
 					draw_line(Vector2.ZERO, telegraph_direction.rotated(angle) * 200.0, Color("#ffc570"), 3.0)
+	_draw_body()
+	_draw_caption("Guardião das Raízes")
+
+func _draw_body() -> void:
 	# Root feet, knotted trunk and offset crown give the guardian its own silhouette.
 	draw_rect(Rect2(-32, 23, 64, 6), Color("#14291e"))
 	for side in [-1, 1]:
@@ -49,7 +53,9 @@ func _draw() -> void:
 		draw_rect(Rect2(p + Vector2(4, -2), Vector2(6, 3)), Color("#73935b"))
 	draw_rect(Rect2(-22, -47, 5, 3), Color("#a5a66b"))
 	draw_rect(Rect2(21, -42, 4, 3), Color("#9baa65"))
+
+func _draw_caption(title: String) -> void:
 	draw_rect(Rect2(-34, -57, 68, 5), Color("#1a241e"))
 	draw_rect(Rect2(-34, -57, 68 * hp_ratio, 5), Color("#97c273"))
-	draw_string(ThemeDB.fallback_font, Vector2(-48, -64), "Guardião das Raízes", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#e7cf8a"))
+	draw_string(ThemeDB.fallback_font, Vector2(-48, -64), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#e7cf8a"))
 	_draw_hit_feedback(-78.0)

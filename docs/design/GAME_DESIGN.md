@@ -96,3 +96,10 @@ Conforme SAVE_V0511.md e pedido de Thiago: autosave local protegido, caminho
 Web estável, migração preservando originais e backup exportável/importável
 com confirmação. Save continua v6, sem tentativa/checkpoint da Torre.
 Importar ou recarregar retorna ao acampamento; nenhuma recompensa de carregamento.
+
+## v0.5.2 — Guardião da Mata, aprovada em 10/10/2026
+Conforme GUARDIAO_V052.md e pedido explícito de Thiago: chefe após terceira
+horda na mesma arena, três ataques avisados e segunda fase a 50% HP. Morte,
+abandono e fechamento continuam sem checkpoints. Vitória única registra
+ascensão, Selo da Mata e Andar 2 nos dados, sem mapa ou viagem. Arte existente
+reutilizada; valores provisórios documentados no ADR. Sem v0.5.3.
