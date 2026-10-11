@@ -29,8 +29,10 @@ var layout: FloorView
 func sprite(atlas: Texture2D, region: Rect2, at: Vector2) -> void:
 	layout.draw_texture_rect_region(atlas,Rect2(at-Vector2(region.size.x*0.5,region.size.y),region.size),region)
 
-func prop(region: Rect2, at: Vector2) -> void:
-	sprite(PROPS,region,at)
+func prop(region: Rect2, at: Vector2, scale: float = 1.0) -> void:
+	# Props need a stronger silhouette than background vegetation on a phone screen.
+	var size := region.size * scale
+	layout.draw_texture_rect_region(PROPS,Rect2(at-Vector2(size.x*0.5,size.y),size),region)
 
 func shadow(at: Vector2, width: float, height: float) -> void:
 	for i in range(6):
@@ -57,7 +59,7 @@ func paint() -> void:
 		var at := Vector2(rng.randi_range(20,1175),rng.randi_range(20,875))
 		if layout._free_for_decoration(at):
 			if i%19 == 0:
-				prop(PEBBLES_PROP,at+Vector2(0,8))
+				prop(PEBBLES_PROP,at+Vector2(0,8),1.15)
 			else:
 				sprite(NATURE,FLOWERS if i%11==0 else BUSH if i%23==0 else GRASS,at)
 	# A separate sparse pass makes bushes visible without competing with trees.
@@ -99,17 +101,22 @@ func _camp() -> void:
 	# Compact buildings retain the established service anchors and footprints.
 	for n in range(18):
 		layout._draw_flagstone(Vector2(556+layout._hash(n,71)%21-10,369+n*10),n)
+	# The fence segments mark the hub without enclosing it or filling the scene.
 	for at in [Vector2(496,352),Vector2(610,352),Vector2(496,548),Vector2(610,548)]:
-		prop(FENCE_PROP,at)
+		prop(FENCE_PROP,at,1.4)
 	# Draw replacements inside the original footprints, not new buildings.
 	layout.draw_texture_rect_region(CAMP,Rect2(452,288,96,96),CABIN)
 	sprite(CAMP,FORGE,SafeCamp.STATIONS["Ferreiro"]+Vector2(0,14))
 	sprite(CAMP,MARKET,SafeCamp.STATIONS["Vendedor"]+Vector2(0,14))
 	layout._draw_chest(SafeCamp.STATIONS["Baú"])
+	# Service markers remain sparse, but are deliberately legible at gameplay scale.
 	for name: String in ["Baú","Ferreiro","Vendedor"]:
-		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(28,-4))
-	for point: Vector2 in [Vector2(480,411),Vector2(633,420)]: prop(BARREL_PROP,point)
-	for point: Vector2 in [Vector2(484,526),Vector2(631,535)]: prop(CRATE_PROP,point)
-	for point: Vector2 in [Vector2(479,374),Vector2(638,474)]: prop(LANTERN_PROP,point)
-	prop(BENCH_PROP,Vector2(548,544))
-	prop(FIRE_PROP,Vector2(516,492))
+		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(28,-4),1.35)
+	for point: Vector2 in [Vector2(480,411),Vector2(633,420)]:
+		prop(BARREL_PROP,point,1.3)
+	for point: Vector2 in [Vector2(484,526),Vector2(631,535)]:
+		prop(CRATE_PROP,point,1.3)
+	for point: Vector2 in [Vector2(479,374),Vector2(638,474)]:
+		prop(LANTERN_PROP,point,1.35)
+	prop(BENCH_PROP,Vector2(548,544),1.3)
+	prop(FIRE_PROP,Vector2(516,492),1.3)
