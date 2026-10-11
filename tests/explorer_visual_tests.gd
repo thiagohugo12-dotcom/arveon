@@ -14,6 +14,18 @@ static func run(suite: SceneTree) -> void:
 		suite.check(idle.get_data() == breath.get_data(), "approved explorer holds its idle pose without synthetic redraw (%d)" % direction)
 		suite.check(left_step.get_data() != right_step.get_data(), "explorer opposite strides differ (%d)" % direction)
 		suite.check(passing_a.get_data() != passing_b.get_data(), "explorer passing strides differ (%d)" % direction)
+	# The three silhouettes from the approved screenshot must actually be imported.
+	var monster_image := (load("res://assets/art/monsters_approved.png") as Texture2D).get_image()
+	suite.check(monster_image.get_size() == Vector2i(192, 64), "approved monster atlas has three 64x64 cells")
+	for kind in range(3):
+		var cell := monster_image.get_region(Rect2i(kind * 64, 0, 64, 64))
+		var opaque := 0
+		for yy in range(64):
+			for xx in range(64):
+				if cell.get_pixel(xx, yy).a > 0.5:
+					opaque += 1
+		suite.check(opaque > 150, "approved monster cell %d contains a sprite" % kind)
+		suite.check(cell.get_pixel(0, 0).a < 0.01, "approved monster cell %d has transparent border" % kind)
 	var view := ActorView.new()
 	suite.root.add_child(view)
 	view.appearance = 0

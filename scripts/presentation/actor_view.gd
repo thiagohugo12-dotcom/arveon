@@ -4,6 +4,8 @@ extends Node2D
 # Small hand-authored frames; visual state is independent of hitboxes/gameplay.
 const ATLAS := preload("res://assets/art/actor_atlas.png")
 const EXPLORER_ATLAS := preload("res://assets/art/explorer_atlas.png")
+# Approved image assets, not replacement geometry drawn procedurally.
+const MONSTERS_APPROVED := preload("res://assets/art/monsters_approved.png")
 const WALK_PIXELS_PER_FRAME := 16.0 # 11.25 frames/s at the unchanged 180 px/s.
 @export_enum("Aventureiro", "Javali", "Aranha", "Mandacaru") var appearance: int = 0
 var facing := Vector2.DOWN
@@ -239,11 +241,15 @@ func _monster_poly(points: Array[Vector2], value: String, step: float) -> void:
 		shifted.append(point + Vector2(0,step))
 	draw_colored_polygon(shifted,_monster_tone(value))
 
-func _draw_monster(frame: int, step: float) -> void:
-	match appearance:
-		1: _draw_boar(frame,step)
-		2: _draw_spider(frame,step)
-		3: _draw_cactus(frame,step)
+func _draw_monster(_frame: int, step: float) -> void:
+	# Sprite index 0=boar, 1=spider, 2=mandacaru. Feet remain at actor origin.
+	var sprite_index := appearance - 1
+	if sprite_index < 0 or sprite_index >= 3:
+		return
+	var source := Rect2(sprite_index * 64, 0, 64, 64)
+	var destination := Rect2(-32, -48 + step, 64, 64)
+	var hit_tint := Color(1.8, 1.8, 1.35) if flash_left > 0.0 else Color.WHITE
+	draw_texture_rect_region(MONSTERS_APPROVED, destination, source, hit_tint)
 
 func _draw_boar(frame: int, step: float) -> void:
 	# Low body, large snout and paired tusks read immediately as a boar.
