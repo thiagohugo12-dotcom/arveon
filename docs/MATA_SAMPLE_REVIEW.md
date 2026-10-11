@@ -61,3 +61,12 @@ the original path center lines and widths.
 Não medimos FPS em celular físico. Capturas mobile são em viewports reais
 renderizados por software GL; aparência e desempenho no aparelho devem ser
 aprovados pela direção. A migração do mapa NÃO foi realizada. PARAR aqui.
+
+## Referência oficial V2 recebida durante a validação
+`image(20261011-044056).png` foi inspecionada integralmente: copas arredondadas
+com massas largas de luz/sombra, troncos curtos, chão amarelo-verde, areia
+quente, vegetação orgânica e protagonista compacto. Registrada em
+`design/ART_DIRECTION_V2.md`. A amostra converge na paleta quente, contraste,
+profundidade e pixel nítido; suas folhas são mais recortadas/angulosas e seus
+troncos mais altos que a V2. Isso deve ser avaliado artisticamente antes de
+qualquer aplicação. A nova direção não significa aprovação desta amostra.

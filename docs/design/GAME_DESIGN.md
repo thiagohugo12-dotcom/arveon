@@ -131,3 +131,10 @@ O visual do rework anterior foi rejeitado. MATA_AMOSTRA_ARTISTICA.md autoriza
 somente demonstração separada com pixel art orgânica, grama viva e areia
 contrastante. A aplicação aos cinco andares depende de nova aprovação.
 Não modificar a Mata publicada nesta etapa. Parar após apresentar capturas.
+
+## Direção Artística Oficial V2 — vigente em 11/10/2026
+ART_DIRECTION_V2.md registra a nova referência oficial enviada pela direção:
+pixel art orgânica, vibrante e acolhedora, acabamento profissional com recursos
+reutilizáveis. Substitui a direção visual anterior; não aprova automaticamente
+a amostra nem autoriza a migração integral. Aguardar avaliação da demonstração.
+Preservar funcionalidades e os cinco andares existentes; sem mapas novos.
