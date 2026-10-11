@@ -14,7 +14,7 @@ var heading: Label
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	DisplayServer.window_set_title("Mata — amostra artística")
+	get_tree().root.title = "Mata — amostra artística"
 	RenderingServer.set_default_clear_color(Color("#b5ce61"))
 	var ground := Sprite2D.new()
 	ground.texture = FLOOR
