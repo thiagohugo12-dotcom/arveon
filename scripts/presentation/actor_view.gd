@@ -165,8 +165,9 @@ func px(x: float, y: float, w: float, h: float, color: Color) -> void:
 
 func _draw() -> void:
 	if elite:
-		draw_rect(Rect2(-22, -36, 44, 3), Color("#e5b968"))
-		draw_string(ThemeDB.fallback_font, Vector2(-15, -42), "ELITE", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("#e5b968"))
+		var elite_y := -54.0 if appearance == 3 else -45.0 if appearance != 0 else -36.0
+		draw_rect(Rect2(-22,elite_y,44,3),Color("#e5b968"))
+		draw_string(ThemeDB.fallback_font,Vector2(-15,elite_y-6),"ELITE",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("#e5b968"))
 	if fury:
 		for i in range(8):
 			var mote := (Vector2.RIGHT.rotated((i + anim_frame * 0.15) * TAU / 8.0) * 24.0).floor()
@@ -204,8 +205,9 @@ func _draw() -> void:
 		px(-8, -27 + step, 16, 3, Color("#e5b968"))
 		px(-3, -32 + step, 6, 5, Color("#cf6c48"))
 	if warning:
-		px(-11, -39, 22, 5, Color("#f4b942"))
-		px(-2, -47, 4, 7, Color("#ffe39a"))
+		var warning_y := -57.0 if appearance == 3 else -48.0 if appearance != 0 else -39.0
+		px(-11,warning_y,22,5,Color("#f4b942"))
+		px(-2,warning_y-8,4,7,Color("#ffe39a"))
 	if flash_left > 0.0:
 		for i in range(4):
 			var p := Vector2(-19 + i * 11, -24 + (i % 2) * 26)
@@ -219,8 +221,9 @@ func _draw() -> void:
 			px(side * (10 + drift), -13 - drift, 6, 6, Color("#d0aa71"))
 			px(side * (8 + drift), 3 + drift, 4, 4, Color("#685641"))
 	if appearance != 0:
-		px(-17, -30, 34, 4, LINE)
-		px(-16, -29, 32.0 * hp_ratio, 2, Color("#8ce395"))
+		var bar_y := -46.0 if appearance == 3 else -37.0
+		px(-17,bar_y,34,4,LINE)
+		px(-16,bar_y+1,32.0*hp_ratio,2,Color("#8ce395"))
 
 
 func _monster_tone(value: String) -> Color:
