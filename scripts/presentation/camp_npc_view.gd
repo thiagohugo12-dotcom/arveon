@@ -15,9 +15,8 @@ func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 func _draw() -> void:
-	# V2 has a stable pose. Its duplicated frames preserve the existing atlas
-	# contract while avoiding movement that reads as the NPC sliding sideways.
+	# The refreshed NPCs use the explorer scale and a stable pose.
 	if visual_v2:
-		draw_texture_rect_region(V2_ATLAS, Rect2(-20, -27, 40, 48), Rect2(0, kind * 48, 40, 48))
+		draw_texture_rect_region(V2_ATLAS,Rect2(-16,-23,32,40),Rect2(0,kind*48,40,48))
 	else:
 		draw_texture_rect_region(ATLAS, Rect2(-16, -22, 32, 40), Rect2(phase * 32, kind * 40, 32, 40))

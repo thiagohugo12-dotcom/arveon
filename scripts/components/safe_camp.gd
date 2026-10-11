@@ -7,8 +7,8 @@ const RESPAWN := Vector2(540, 450)
 const INTERACT_RANGE := 56.0
 # Original anchors remain valid so saved movement and interaction contracts keep working.
 const STATIONS := {"Baú": Vector2(505, 391), "Ferreiro": Vector2(608, 391), "Vendedor": Vector2(608, 514)}
-# These are the visible service locations in the expanded village.
-const DISPLAY_STATIONS := {"Baú": Vector2(455, 535), "Ferreiro": Vector2(670, 390), "Vendedor": Vector2(695, 545)}
+# The refreshed art stays on the original service anchors and gameplay layout.
+const DISPLAY_STATIONS := {"Baú": Vector2(505, 391), "Ferreiro": Vector2(608, 391), "Vendedor": Vector2(608, 514)}
 
 static func contains(point: Vector2) -> bool:
 	return AREA.has_point(point)
