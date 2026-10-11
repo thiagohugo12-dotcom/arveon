@@ -11,7 +11,7 @@ O arquivo `assets/art/monsters_approved.png` é um atlas PNG transparente (192×
 A rota antiga de desenho geométrico foi preservada no arquivo como código legado não chamado para comparação temporária, não é mais a apresentação ativa.
 
 ## Limitações
-- Cada monstro tem apenas UM quadro visual aprovado na imagem fornecida. Durante o movimento permanece a pequena variação vertical antiga. Animações completas exigirão artes adicionais fornecidas/aprovadas posteriormente.
+- Cada monstro tem apenas UM quadro visual aprovado na imagem fornecida. Os três permanecem estáticos durante o movimento; animações completas exigirão artes adicionais fornecidas/aprovadas posteriormente.
 - O atlas foi recortado de imagem em fundo escuro e não substitui um PNG fonte com transparência original. Aprovação visual em escala de jogo é necessária.
 - NÃO declarar validação Godot/Web nem publicar em TESTE até importação, testes e captura real. Nenhuma modificação à main ou PRODUÇÃO.
 

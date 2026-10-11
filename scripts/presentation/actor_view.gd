@@ -189,7 +189,9 @@ func _draw() -> void:
 				for i in range(8):
 					var mark := (Vector2.RIGHT.rotated(i * TAU / 8) * (30 + (0.28 - skill_left) * 50)).floor()
 					px(mark.x - 2, mark.y - 2, 4, 4, Color("#f7d47c"))
-	var step: float = -2.0 if walking and anim_frame % 2 == 0 else 0.0
+	# Supplied monsters are single approved poses. Keep them static until their
+	# dedicated animation frames are produced.
+	var step := 0.0
 	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
 	# Values above one brighten the existing sprite; the old <=1 tint darkened it.
 	var tint := Color(2.0, 1.75, 1.35) if flash_left > 0.0 else Color.WHITE
@@ -198,8 +200,7 @@ func _draw() -> void:
 		var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
 		draw_texture_rect_region(EXPLORER_ATLAS, Rect2(-24, -32, 48, 48), Rect2(column * 48, _explorer_direction() * 48, 48, 48), tint)
 	else:
-		var frame := anim_frame if walking else 0
-		_draw_monster(frame, step)
+		_draw_monster()
 	if elite:
 		# Ochre mantle, bright crest and eye tint distinguish elite enemies at a glance.
 		px(-16, -24 + step, 7, 5, Color("#bd844b"))
@@ -241,13 +242,13 @@ func _monster_poly(points: Array[Vector2], value: String, step: float) -> void:
 		shifted.append(point + Vector2(0,step))
 	draw_colored_polygon(shifted,_monster_tone(value))
 
-func _draw_monster(_frame: int, step: float) -> void:
+func _draw_monster() -> void:
 	# Sprite index 0=boar, 1=spider, 2=mandacaru. Feet remain at actor origin.
 	var sprite_index := appearance - 1
 	if sprite_index < 0 or sprite_index >= 3:
 		return
 	var source := Rect2(sprite_index * 64, 0, 64, 64)
-	var destination := Rect2(-32, -48 + step, 64, 64)
+	var destination := Rect2(-32, -48, 64, 64)
 	var hit_tint := Color(1.8, 1.8, 1.35) if flash_left > 0.0 else Color.WHITE
 	draw_texture_rect_region(MONSTERS_APPROVED, destination, source, hit_tint)
 
