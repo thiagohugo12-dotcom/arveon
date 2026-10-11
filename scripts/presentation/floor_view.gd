@@ -41,7 +41,7 @@ func _ready() -> void:
 func _npc_position(station: String, use_v2: bool) -> Vector2:
 	# V2 places people at the fronts of their expanded visual service zones.
 	if use_v2:
-		return SafeCamp.DISPLAY_STATIONS[station] + (Vector2(0,32) if station == "Ferreiro" else Vector2(-2,-39))
+		return SafeCamp.DISPLAY_STATIONS[station] + (Vector2(0,32) if station == "Ferreiro" else Vector2(0,12))
 	return Vector2(606, 423 if station == "Ferreiro" else 475)
 
 func set_visual_v2(enabled: bool) -> void:
