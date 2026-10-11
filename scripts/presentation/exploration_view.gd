@@ -1,6 +1,7 @@
 class_name ExplorationView
 extends Node2D
 
+var visual_v2 := false
 var progress: GameProgress
 var current_time := 0
 
@@ -19,6 +20,11 @@ func _draw() -> void:
 		_draw_cache(cache.position, progress.opened_caches.has(cache.id))
 
 func _draw_resource(at: Vector2, item: String) -> void:
+	if visual_v2 and item in ["Ervas","Pedras"]:
+		var region: Rect2 = FloorV2View.BUSH if item == "Ervas" else FloorV2View.STONE
+		var size := Vector2(30,22)
+		draw_texture_rect_region(FloorV2View.NATURE,Rect2(at-Vector2(15,16),size),region)
+		return
 	draw_rect(Rect2(at + Vector2(-13, 9), Vector2(26, 4)), Color("#172b23"))
 	match item:
 		"Ervas":

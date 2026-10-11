@@ -3,6 +3,8 @@ extends Node2D
 
 # Minimal shared pixel atlas; physical trunks use the same deterministic feet.
 var atlas: Texture2D
+var visual_v2 := false
+var v2_view: FloorV2View
 const BERRY := preload("res://assets/art/forest_shrub_v035.png") # Existing arena keeps its art.
 const REMOVED_SECONDARY := [Vector2(705,392),Vector2(738,498),Vector2(475,633),Vector2(969,638),Vector2(196,786),Vector2(1092,91)]
 const REFUGE := preload("res://assets/art/forest_refuge_v035.png")
@@ -35,7 +37,19 @@ func _ready() -> void:
 		npc.position = Vector2(606, 423 if station == "Ferreiro" else 475)
 		add_child(npc)
 
+func set_visual_v2(enabled: bool) -> void:
+	if visual_v2 == enabled:
+		return
+	visual_v2 = enabled
+	if enabled and v2_view == null:
+		v2_view = FloorV2View.new()
+		v2_view.layout = self
+	queue_redraw()
+
 func _draw() -> void:
+	if visual_v2:
+		v2_view.paint()
+		return
 	_draw_ground()
 	_draw_paths()
 	for center: Vector2 in [Vector2(175, 215), Vector2(260, 685), Vector2(900, 175), Vector2(980, 715)]:

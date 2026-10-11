@@ -1,6 +1,7 @@
 class_name TowerView
 extends Node2D
 
+var visual_v2 := false
 var unlocked := false
 var nearby := false
 
@@ -15,6 +16,17 @@ func set_state(available: bool, close: bool) -> void:
 		queue_redraw()
 
 func _draw() -> void:
+	if visual_v2:
+		draw_texture_rect_region(FloorV2View.CAMP,Rect2(-42,-88,84,100),FloorV2View.PORTAL)
+		var glow := Color("#52d2ad") if unlocked else Color("#304847")
+		draw_rect(Rect2(-12,-45,24,38),glow)
+		if unlocked:
+			draw_rect(Rect2(-7,-25,14,6),Color("#9df0c1"))
+		else:
+			draw_rect(Rect2(-4,-29,8,10),Color("#dab16a"))
+		draw_string(ThemeDB.fallback_font,Vector2(-52,-98),"Torre de Ascensão",HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("#344d3d"))
+		if nearby: draw_rect(Rect2(-3,16,6,6),glow)
+		return
 	# Static geometry in the existing forest palette. No textures, particles,
 	# per-frame animation or new gameplay effects.
 	draw_rect(Rect2(-40, -5, 80, 18), Color("#819255"))

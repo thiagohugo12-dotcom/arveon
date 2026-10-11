@@ -869,6 +869,12 @@ func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> 
 	_refresh_mission()
 
 func _update_floor_identity() -> void:
+	var theme_v2 := progress.ascension.current_floor == 1
+	(world.get_node("FloorView") as FloorView).set_visual_v2(theme_v2)
+	tower_view.visual_v2 = theme_v2
+	tower_view.queue_redraw()
+	exploration_view.visual_v2 = theme_v2
+	exploration_view.queue_redraw()
 	hud.heading.text = "Mata · Andar %d" % progress.ascension.current_floor
 	hud.minimap.queue_redraw()
 
