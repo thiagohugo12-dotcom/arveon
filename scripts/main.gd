@@ -608,6 +608,7 @@ func _enter_trial() -> void:
 	if transitioning or trial.active() or not player.health.is_alive() or not progress.ascension.entrance_unlocked():
 		return
 	transitioning = true
+	RenderingServer.set_default_clear_color(Color("#101c16"))
 	hud.close_station()
 	input_driver.reset()
 	input_driver.blocked = true
@@ -870,6 +871,7 @@ func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> 
 
 func _update_floor_identity() -> void:
 	var theme_v2 := progress.ascension.current_floor == 1
+	RenderingServer.set_default_clear_color(Color("#b9cf55") if theme_v2 else Color("#101c16"))
 	(world.get_node("FloorView") as FloorView).set_visual_v2(theme_v2)
 	tower_view.visual_v2 = theme_v2
 	tower_view.queue_redraw()

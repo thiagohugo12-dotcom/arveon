@@ -192,7 +192,9 @@ func _draw() -> void:
 	# Supplied monsters are single approved poses. Keep them static until their
 	# dedicated animation frames are produced.
 	var step := 0.0
-	px(-15, 13, 30, 5, Color(0.02, 0.08, 0.06, 0.40))
+	px(-15, 13, 30, 2, Color("#66863f70"))
+	px(-12, 11, 24, 2, Color("#66863f70"))
+	px(-8, 9, 16, 2, Color("#66863f70"))
 	# Values above one brighten the existing sprite; the old <=1 tint darkened it.
 	var tint := Color(2.0, 1.75, 1.35) if flash_left > 0.0 else Color.WHITE
 	if appearance == 0:

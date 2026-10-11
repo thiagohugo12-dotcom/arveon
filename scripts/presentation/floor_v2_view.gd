@@ -4,6 +4,7 @@ extends RefCounted
 const NATURE := preload("res://assets/art/mata_v2/nature.png")
 const PATHS := preload("res://assets/art/mata_v2/paths.png")
 const CAMP := preload("res://assets/art/mata_v2/camp.png")
+const CAMP_HOUSE := preload("res://assets/art/mata_v2/camp_simple.png")
 const PROPS := preload("res://assets/art/mata_v2/camp_props.png")
 const GREEN := Rect2(0,0,88,96)
 const ORANGE := Rect2(96,0,88,96)
@@ -55,6 +56,7 @@ func paint() -> void:
 			layout.draw_rect(Rect2(at+Vector2(2,-2),Vector2(2,2)),tone)
 	# One cached authored path texture, rather than thousands of stamp commands.
 	layout.draw_texture_rect(PATHS,Rect2(0,0,1200,900),false)
+	_path_edges()
 	# Identical decorative anchors / safety exclusions as the existing layout.
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12051
@@ -79,6 +81,26 @@ func paint() -> void:
 		# Cover the existing collision footprint with a recognisable stone mass.
 		layout.draw_texture_rect_region(NATURE,rock.grow(4),STONE)
 	_camp()
+
+func _path_edges() -> void:
+	# Sparse authored-looking tufts break the perfect path boundary without
+	# changing its geometry or adding collision.
+	for trail_index in range(FloorView.TRAILS.size()):
+		var trail: Array = FloorView.TRAILS[trail_index]
+		for segment_index in range(trail.size() - 1):
+			var start: Vector2 = trail[segment_index]
+			var finish: Vector2 = trail[segment_index + 1]
+			var distance := start.distance_to(finish)
+			var count := maxi(1, floori(distance / 92.0))
+			var normal := (finish - start).normalized().orthogonal()
+			for n in range(count):
+				var t := float(n + 1) / float(count + 1)
+				var seed := layout._hash(trail_index * 31 + segment_index, n * 17 + 9)
+				var side := -1.0 if seed % 2 == 0 else 1.0
+				var width: float = FloorView.TRAIL_WIDTHS[trail_index] * 0.5 + 7.0
+				var at := (start.lerp(finish,t) + normal * side * width).snapped(Vector2(2,2))
+				if not SafeCamp.AREA.grow(20.0).has_point(at):
+					sprite(NATURE,FLOWERS if seed % 9 == 0 else GRASS,at)
 
 func bush_positions() -> Array[Vector2]:
 	var positions: Array[Vector2] = []
@@ -110,7 +132,7 @@ func _camp() -> void:
 	for at in [Vector2(414,454),Vector2(514,454),Vector2(616,330),Vector2(748,430),Vector2(438,590),Vector2(720,600)]:
 		prop(FENCE_PROP,at,1.95)
 	# Home, workshop, vendor and chest each occupy their own clear area.
-	layout.draw_texture_rect_region(CAMP,Rect2(355,245,192,192),CABIN)
+	layout.draw_texture_rect_region(CAMP_HOUSE,Rect2(355,245,192,192),CABIN)
 	sprite_scaled(CAMP,FORGE,SafeCamp.DISPLAY_STATIONS["Ferreiro"]+Vector2(0,24),1.85)
 	sprite_scaled(CAMP,MARKET,SafeCamp.DISPLAY_STATIONS["Vendedor"]+Vector2(0,24),1.85)
 	layout._draw_chest(SafeCamp.DISPLAY_STATIONS["Baú"])
@@ -124,3 +146,5 @@ func _camp() -> void:
 		prop(LANTERN_PROP,point,1.9)
 	prop(BENCH_PROP,Vector2(536,548),1.75)
 	prop(FIRE_PROP,Vector2(570,474),1.75)
+	for point: Vector2 in [Vector2(390,438),Vector2(505,332),Vector2(646,341),Vector2(754,478),Vector2(652,586)]:
+		sprite(NATURE,FLOWERS,point)
