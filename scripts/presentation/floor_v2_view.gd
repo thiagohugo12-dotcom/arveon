@@ -71,7 +71,9 @@ func paint() -> void:
 		sprite(NATURE,BUSH,at)
 	for feet in layout.tree_positions():
 		shadow(feet+Vector2(6,2),62,18)
-		sprite(NATURE,ORANGE if layout._hash(roundi(feet.y),roundi(feet.x))%8==0 else GREEN,feet+Vector2(0,6))
+		# A restrained warm quarter echoes the approved village reference while
+		# preserving the Mata's dominant green identity.
+		sprite(NATURE,ORANGE if layout._hash(roundi(feet.y),roundi(feet.x))%4==0 else GREEN,feet+Vector2(0,6))
 	for rock: Rect2 in FloorView.ROCKS:
 		shadow(rock.get_center()+Vector2(0,rock.size.y*0.4),rock.size.x,18)
 		# Cover the existing collision footprint with a recognisable stone mass.
