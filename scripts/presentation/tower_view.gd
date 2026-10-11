@@ -17,21 +17,22 @@ func set_state(available: bool, close: bool) -> void:
 func _draw() -> void:
 	# Static geometry in the existing forest palette. No textures, particles,
 	# per-frame animation or new gameplay effects.
-	draw_rect(Rect2(-40, -5, 80, 18), Color("#284333"))
-	draw_rect(Rect2(-38, -78, 76, 65), Color("#26382e"))
-	draw_rect(Rect2(-32, -74, 64, 59), Color("#68735a"))
-	for y in [-70, -56, -42, -28]:
-		draw_rect(Rect2(-30, y, 60, 2), Color("#465441"))
-		for x in [-22, 0, 22]:
-			draw_rect(Rect2(x + (6 if y == -56 or y == -28 else 0), y - 11, 2, 10), Color("#4d5c46"))
+	draw_rect(Rect2(-40, -5, 80, 18), Color("#819255"))
+	draw_rect(Rect2(-38, -78, 76, 65), Color("#4b6254"))
+	draw_rect(Rect2(-32, -74, 64, 59), Color("#939b83"))
+	draw_rect(Rect2(-32,-74,64,7),Color("#bfc0a3"))
+	for y in [-56,-28]:
+		draw_rect(Rect2(-30,y,60,2),Color("#7e8971"))
 	for x in [-34, -12, 10, 26]:
-		draw_rect(Rect2(x, -87, 12, 13), Color("#839071"))
+		draw_rect(Rect2(x, -87, 12, 13), Color("#b1b79a"))
 	draw_rect(Rect2(-16, -49, 32, 42), Color("#26382e"))
 	draw_rect(Rect2(-20, -53, 40, 5), Color("#ab9d6d"))
 	for x in [-20, 16]:
 		draw_rect(Rect2(x, -49, 4, 43), Color("#928960"))
-	draw_rect(Rect2(-12, -45, 24, 38), Color("#365344") if unlocked else Color("#182d24"))
-	var rune := Color("#e4c87f") if unlocked else Color("#7a8a6d")
+	draw_rect(Rect2(-12, -45, 24, 38), Color("#3f9d83") if unlocked else Color("#243e34"))
+	if unlocked:
+		draw_rect(Rect2(-9,-12,18,5),Color("#78d5a8"))
+	var rune := Color("#a1e3b2") if unlocked else Color("#8a9274")
 	draw_rect(Rect2(-3, -66, 6, 9), rune)
 	draw_rect(Rect2(-8, -63, 16, 3), rune)
 	if not unlocked:
@@ -45,6 +46,6 @@ func _draw() -> void:
 		draw_rect(Rect2(32 * side - 6, -4, 12, 5), Color("#9a784a"))
 	var font := ThemeDB.fallback_font
 	var title := "Torre de Ascensão"
-	draw_string(font, Vector2(-font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x * 0.5, -96), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#f1dfaa"))
+	draw_string(font, Vector2(-font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x * 0.5, -96), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#344d3d"))
 	if nearby:
 		draw_rect(Rect2(-3, 16, 6, 6), rune)

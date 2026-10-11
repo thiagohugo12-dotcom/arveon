@@ -64,6 +64,7 @@ func _run() -> void:
 	enemy.set_physics_process(false)
 	enemy.target = null
 	player.set_physics_process(false)
+	preload("res://tests/mata_visual_tests.gd").run(self, main)
 	var world := main.get_node("Andar1")
 	var tree_feet := (world.get_node("FloorView") as FloorView).tree_positions()
 	check(tree_feet.size() > 15 and tree_feet.size() < 42, "sparse deterministic trees preserve open space")
