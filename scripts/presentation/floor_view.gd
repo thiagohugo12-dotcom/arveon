@@ -5,6 +5,7 @@ extends Node2D
 var atlas: Texture2D
 var visual_v2 := false
 var v2_view: FloorV2View
+var depth_scenery: Node2D
 const BERRY := preload("res://assets/art/forest_shrub_v035.png") # Existing arena keeps its art.
 const REMOVED_SECONDARY := [Vector2(705,392),Vector2(738,498),Vector2(475,633),Vector2(969,638),Vector2(196,786),Vector2(1092,91)]
 const REFUGE := preload("res://assets/art/forest_refuge_v035.png")
@@ -41,21 +42,47 @@ func _ready() -> void:
 func _npc_position(station: String, use_v2: bool) -> Vector2:
 	# V2 places people at the fronts of their expanded visual service zones.
 	if use_v2:
-		return SafeCamp.DISPLAY_STATIONS[station] + (Vector2(0,32) if station == "Ferreiro" else Vector2(0,12))
+		return SafeCamp.DISPLAY_STATIONS[station] - Vector2(0,21)
 	return Vector2(606, 423 if station == "Ferreiro" else 475)
 
 func set_visual_v2(enabled: bool) -> void:
 	if visual_v2 == enabled:
 		return
 	visual_v2 = enabled
+	if depth_scenery != null: depth_scenery.visible = enabled
+	if is_inside_tree() and get_parent().has_method("set_village_solids"):
+		get_parent().set_village_solids(enabled)
 	for child in get_children():
 		if child is CampNpcView:
 			child.visual_v2 = enabled
 			child.position = _npc_position("Ferreiro" if child.kind == 0 else "Vendedor",enabled)
+			child.z_as_relative = false
+			child.z_index = roundi(child.position.y+21)+100 if enabled else 0
 	if enabled and v2_view == null:
 		v2_view = FloorV2View.new()
 		v2_view.layout = self
 	queue_redraw()
+
+func _build_depth_scenery(commands: Array) -> void:
+	if depth_scenery != null: return
+	depth_scenery = Node2D.new()
+	depth_scenery.name = "VillageDepth"
+	depth_scenery.visible = visual_v2
+	add_child(depth_scenery)
+	for command: Array in commands:
+		var piece := Sprite2D.new()
+		var region: Rect2 = command[1]
+		var feet: Vector2 = command[2]
+		piece.texture = command[0]
+		piece.region_enabled = true
+		piece.region_rect = region
+		piece.centered = false
+		piece.offset = Vector2(-region.size.x*0.5,-region.size.y)
+		piece.position = feet.round()
+		piece.scale = Vector2.ONE*command[3]
+		piece.z_as_relative = false
+		piece.z_index = roundi(feet.y)+100
+		depth_scenery.add_child(piece)
 
 func _draw() -> void:
 	if visual_v2:

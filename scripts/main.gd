@@ -389,7 +389,7 @@ func _interaction_target() -> Dictionary:
 		return {"kind": "tower", "label": progress.ascension.summary()}
 	if player.global_position.distance_to(GUARDIAN_ALTAR) <= 58.0 and not progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated and not is_instance_valid(guardian):
 		return {"kind": "guardian", "label": "Desafiar Guardião (opcional)"}
-	var station := SafeCamp.nearest_station(player.global_position)
+	var station := SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1)
 	if not station.is_empty():
 		return {"kind": "station", "id": station, "label": station}
 	var now := int(Time.get_unix_time_from_system())
@@ -546,6 +546,13 @@ func _adapt_orientation() -> void:
 	if window.content_scale_size != desired:
 		window.content_scale_size = desired
 	hud.call_deferred("_layout")
+	# Cap tall embedded views to the world height instead of showing blank land.
+	var camera := player.get_node("Camera2D") as Camera2D
+	var visible_height := float(desired.x)*window.size.y/window.size.x if window.size.y > window.size.x else float(desired.y)
+	var village := progress != null and progress.ascension.current_floor == 1 and not trial.active()
+	var landscape_village := village and window.size.x >= window.size.y
+	camera.zoom = Vector2.ONE * (0.75 if landscape_village else maxf(1.0,visible_height/850.0) if village else 1.0)
+	camera.offset = Vector2(0,-35) if landscape_village else Vector2.ZERO
 
 
 func _record_adventure(id: String) -> void:
@@ -601,6 +608,7 @@ func _camera_bounds(bounds: Rect2) -> void:
 	camera.limit_top = roundi(bounds.position.y)
 	camera.limit_right = roundi(bounds.end.x)
 	camera.limit_bottom = roundi(bounds.end.y)
+	_adapt_orientation()
 	camera.reset_smoothing()
 	camera.force_update_scroll()
 
@@ -871,6 +879,7 @@ func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> 
 
 func _update_floor_identity() -> void:
 	var theme_v2 := progress.ascension.current_floor == 1
+	_adapt_orientation()
 	RenderingServer.set_default_clear_color(Color("#b9cf55") if theme_v2 else Color("#101c16"))
 	(world.get_node("FloorView") as FloorView).set_visual_v2(theme_v2)
 	tower_view.visual_v2 = theme_v2

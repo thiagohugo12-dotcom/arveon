@@ -1,150 +1,111 @@
 class_name FloorV2View
 extends RefCounted
 
+# Original alpha, proportional rectangles and integer 2x art grid.
+const VILLAGE := preload("res://assets/art/hub_v3/village.png")
+const PROPS := preload("res://assets/art/hub_v3/props.png")
+const GROUND := preload("res://assets/art/hub_v3/ground.png")
 const NATURE := preload("res://assets/art/mata_v2/nature.png")
-const PATHS := preload("res://assets/art/mata_v2/paths.png")
-const CAMP := preload("res://assets/art/mata_v2/camp.png")
-const CAMP_HOUSE := preload("res://assets/art/mata_v2/camp_simple.png")
-const PROPS := preload("res://assets/art/mata_v2/camp_props.png")
-const GREEN := Rect2(0,0,88,96)
-const ORANGE := Rect2(96,0,88,96)
 const STONE := Rect2(192,0,48,36)
-const BUSH := Rect2(192,40,36,24)
 const GRASS := Rect2(192,72,16,12)
 const FLOWERS := Rect2(216,72,16,16)
-const CABIN := Rect2(0,0,96,96)
-const MARKET := Rect2(104,0,56,56)
-const FORGE := Rect2(168,0,56,56)
-const PORTAL := Rect2(104,64,84,100)
-const FENCE_PROP := Rect2(0,0,32,16)
-const SIGN_PROP := Rect2(32,0,20,28)
-const BARREL_PROP := Rect2(52,0,20,24)
-const CRATE_PROP := Rect2(76,0,20,24)
-const FIRE_PROP := Rect2(0,32,32,32)
-const LANTERN_PROP := Rect2(32,32,24,32)
-const BENCH_PROP := Rect2(64,32,32,32)
-const PEBBLES_PROP := Rect2(96,32,32,24)
+const HOUSE := Rect2(0,0,96,96)
+const FORGE := Rect2(104,0,96,80)
+const MARKET := Rect2(208,0,80,72)
+const ORANGE := Rect2(0,104,56,64)
+const GREEN := Rect2(64,104,56,64)
+const BUSH := Rect2(128,104,28,24)
+const FENCE := Rect2(0,0,32,24)
+const SIGN := Rect2(32,0,32,48)
+const BARREL := Rect2(64,0,24,32)
+const CRATE := Rect2(96,0,28,28)
+const FIRE := Rect2(0,64,32,40)
+const LANTERN := Rect2(32,64,32,56)
+const BENCH := Rect2(64,64,32,24)
+const PEBBLES := Rect2(96,64,28,20)
+const BUILDING_BASES := [Rect2(600,340,160,30),Rect2(356,378,166,24),Rect2(610,566,140,26)]
 var layout: FloorView
+var depth_commands: Array = []
 
+static func canopy_conflicts(feet: Vector2) -> bool:
+	return Rect2(340,250,196,196).has_point(feet) or Rect2(584,180,196,212).has_point(feet) or Rect2(594,450,196,194).has_point(feet)
 
-func sprite(atlas: Texture2D, region: Rect2, at: Vector2) -> void:
-	layout.draw_texture_rect_region(atlas,Rect2(at-Vector2(region.size.x*0.5,region.size.y),region.size),region)
+func visible_tree_positions() -> Array[Vector2]:
+	return layout.tree_positions().filter(func(feet: Vector2): return not canopy_conflicts(feet))
 
-func sprite_scaled(atlas: Texture2D, region: Rect2, at: Vector2, scale: float) -> void:
+func sprite(atlas: Texture2D, region: Rect2, feet: Vector2, scale: int = 2) -> void:
+	if atlas == VILLAGE or (atlas == PROPS and region != PEBBLES):
+		if layout.depth_scenery == null:
+			depth_commands.append([atlas,region,feet,scale])
+		return
 	var size := region.size * scale
-	layout.draw_texture_rect_region(atlas,Rect2(at-Vector2(size.x*0.5,size.y),size),region)
-
-func prop(region: Rect2, at: Vector2, scale: float = 1.0) -> void:
-	# Props keep their intended physical size instead of being compressed into the hub.
-	sprite_scaled(PROPS,region,at,scale)
+	layout.draw_texture_rect_region(atlas,Rect2((feet-Vector2(size.x*0.5,size.y)).round(),size),region)
 
 func shadow(at: Vector2, width: float, height: float) -> void:
 	for i in range(6):
 		var extent: float = width * [0.5,0.8,1.0,0.95,0.8,0.5][i]
-		layout.draw_rect(Rect2(at+Vector2(-extent*0.5,-height*0.5+i*height/6),Vector2(extent,height/6)),Color("#718f3f80"))
+		layout.draw_rect(Rect2((at+Vector2(-extent*0.5,-height*0.5+i*height/6)).snapped(Vector2(2,2)),Vector2(extent,height/6).snapped(Vector2(2,2))),Color("#718f3f80"))
 
 func paint() -> void:
-	if layout == null:
-		return
-	layout.draw_rect(Rect2(0,0,1200,900),Color("#b9cf55"))
-	# Sparse tiny colour clusters; no dense repeated texture.
-	for i in range(190):
-		var at := Vector2(18+layout._hash(i,27)%1164,18+layout._hash(i,82)%864).snapped(Vector2(2,2))
-		var tone := Color("#c7d86a") if i%3 else Color("#abc64b")
-		layout.draw_rect(Rect2(at,Vector2(4,2)),tone)
-		if i%4 == 0:
-			layout.draw_rect(Rect2(at+Vector2(2,-2),Vector2(2,2)),tone)
-	# One cached authored path texture, rather than thousands of stamp commands.
-	layout.draw_texture_rect(PATHS,Rect2(0,0,1200,900),false)
-	_path_edges()
-	# Identical decorative anchors / safety exclusions as the existing layout.
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 12051
-	for i in range(56):
-		var at := Vector2(rng.randi_range(20,1175),rng.randi_range(20,875))
-		if layout._free_for_decoration(at):
-			if i%19 == 0:
-				prop(PEBBLES_PROP,at+Vector2(0,8),1.15)
-			else:
-				sprite(NATURE,FLOWERS if i%11==0 else BUSH if i%23==0 else GRASS,at)
-	# A separate sparse pass makes bushes visible without competing with trees.
+	if layout == null: return
+	depth_commands.clear()
+	layout.draw_texture_rect(GROUND,Rect2(0,0,1200,900),false)
+	for i in range(150):
+		var at := Vector2(24+layout._hash(i,27)%1152,24+layout._hash(i,82)%852).snapped(Vector2(2,2))
+		if layout._free_for_decoration(at) and not Rect2(330,210,470,440).has_point(at):
+			sprite(NATURE,FLOWERS if i%13 == 0 else GRASS,at,1)
 	for at in bush_positions():
-		shadow(at+Vector2(2,1),30,8)
-		sprite(NATURE,BUSH,at)
-	for feet in layout.tree_positions():
-		shadow(feet+Vector2(6,2),62,18)
-		# A restrained warm quarter echoes the approved village reference while
-		# preserving the Mata's dominant green identity.
-		sprite(NATURE,ORANGE if layout._hash(roundi(feet.y),roundi(feet.x))%4==0 else GREEN,feet+Vector2(0,6))
+		shadow(at+Vector2(8,2),52,14)
+		sprite(VILLAGE,BUSH,at)
+	for feet in visible_tree_positions():
+		shadow(feet+Vector2(14,4),90,24)
+		sprite(VILLAGE,ORANGE if layout._hash(roundi(feet.y),roundi(feet.x))%3 != 0 else GREEN,feet+Vector2(0,6))
 	for rock: Rect2 in FloorView.ROCKS:
-		shadow(rock.get_center()+Vector2(0,rock.size.y*0.4),rock.size.x,18)
-		# Cover the existing collision footprint with a recognisable stone mass.
+		# Western rock remains physical beneath the workshop's stone back.
+		if rock.position.x < 500: continue
+		shadow(rock.get_center()+Vector2(10,rock.size.y*0.4),rock.size.x,18)
 		layout.draw_texture_rect_region(NATURE,rock.grow(4),STONE)
 	_camp()
-
-func _path_edges() -> void:
-	# Sparse authored-looking tufts break the perfect path boundary without
-	# changing its geometry or adding collision.
-	for trail_index in range(FloorView.TRAILS.size()):
-		var trail: Array = FloorView.TRAILS[trail_index]
-		for segment_index in range(trail.size() - 1):
-			var start: Vector2 = trail[segment_index]
-			var finish: Vector2 = trail[segment_index + 1]
-			var distance := start.distance_to(finish)
-			var count := maxi(1, floori(distance / 92.0))
-			var normal := (finish - start).normalized().orthogonal()
-			for n in range(count):
-				var t := float(n + 1) / float(count + 1)
-				var seed := layout._hash(trail_index * 31 + segment_index, n * 17 + 9)
-				var side := -1.0 if seed % 2 == 0 else 1.0
-				var width: float = FloorView.TRAIL_WIDTHS[trail_index] * 0.5 + 7.0
-				var at := (start.lerp(finish,t) + normal * side * width).snapped(Vector2(2,2))
-				if not SafeCamp.AREA.grow(20.0).has_point(at):
-					sprite(NATURE,FLOWERS if seed % 9 == 0 else GRASS,at)
+	if layout.depth_scenery == null:
+		layout.call_deferred("_build_depth_scenery",depth_commands.duplicate())
 
 func bush_positions() -> Array[Vector2]:
-	var positions: Array[Vector2] = []
+	var positions: Array[Vector2] = [Vector2(332,416),Vector2(776,376),Vector2(386,622),Vector2(730,674)]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 28031
 	var trees := layout.tree_positions()
 	for i in range(240):
 		var at := Vector2(rng.randi_range(40,1160),rng.randi_range(40,860)).snapped(Vector2(2,2))
-		if not layout._free_for_decoration(at):
-			continue
+		if not layout._free_for_decoration(at) or Rect2(320,200,480,470).has_point(at): continue
 		var clear := true
 		for feet in trees:
-			if Rect2(feet-Vector2(58,108),Vector2(116,126)).has_point(at):
-				clear = false
+			if Rect2(feet-Vector2(68,140),Vector2(136,156)).has_point(at): clear = false
 		for other in positions:
-			if at.distance_squared_to(other) < 64.0*64.0:
-				clear = false
-		if clear:
-			positions.append(at)
-		if positions.size() == 18:
-			break
+			if at.distance_squared_to(other) < 80.0*80.0: clear = false
+		if clear: positions.append(at)
+		if positions.size() == 18: break
 	return positions
 
 func _camp() -> void:
-	# Separate service zones give every building its natural footprint.
-	for n in range(28):
-		layout._draw_flagstone(Vector2(548+layout._hash(n,71)%31-15,370+n*9),n)
-	# A few open fence anchors frame the village without turning it into a square.
-	for at in [Vector2(414,454),Vector2(514,454),Vector2(616,330),Vector2(748,430),Vector2(438,590),Vector2(720,600)]:
-		prop(FENCE_PROP,at,1.95)
-	# Home, workshop, vendor and chest each occupy their own clear area.
-	layout.draw_texture_rect_region(CAMP_HOUSE,Rect2(355,245,192,192),CABIN)
-	sprite_scaled(CAMP,FORGE,SafeCamp.DISPLAY_STATIONS["Ferreiro"]+Vector2(0,24),1.85)
-	sprite_scaled(CAMP,MARKET,SafeCamp.DISPLAY_STATIONS["Vendedor"]+Vector2(0,24),1.85)
-	layout._draw_chest(SafeCamp.DISPLAY_STATIONS["Baú"])
-	for name: String in ["Baú","Ferreiro","Vendedor"]:
-		prop(SIGN_PROP,SafeCamp.DISPLAY_STATIONS[name]+Vector2(36,-6),1.9)
-	for point: Vector2 in [Vector2(520,434),Vector2(742,418)]:
-		prop(BARREL_PROP,point,1.75)
-	for point: Vector2 in [Vector2(414,562),Vector2(756,575)]:
-		prop(CRATE_PROP,point,1.75)
-	for point: Vector2 in [Vector2(568,414),Vector2(620,504)]:
-		prop(LANTERN_PROP,point,1.9)
-	prop(BENCH_PROP,Vector2(536,548),1.75)
-	prop(FIRE_PROP,Vector2(570,474),1.75)
-	for point: Vector2 in [Vector2(390,438),Vector2(505,332),Vector2(646,341),Vector2(754,478),Vector2(652,586)]:
-		sprite(NATURE,FLOWERS,point)
+	# Separate service clearings, with an open central circulation route.
+	for feet: Vector2 in [Vector2(346,462),Vector2(444,610),Vector2(714,420),Vector2(714,662)]:
+		shadow(feet+Vector2(6,0),64,12)
+		sprite(PROPS,FENCE,feet)
+	shadow(Vector2(688,371),180,26)
+	sprite(VILLAGE,HOUSE,Vector2(680,376))
+	shadow(Vector2(448,404),180,24)
+	sprite(VILLAGE,FORGE,Vector2(440,408))
+	shadow(Vector2(688,591),150,22)
+	sprite(VILLAGE,MARKET,Vector2(680,596))
+	sprite(PROPS,SIGN,Vector2(546,390))
+	sprite(PROPS,BARREL,Vector2(592,380))
+	sprite(PROPS,CRATE,Vector2(348,396))
+	sprite(PROPS,CRATE,Vector2(762,620))
+	sprite(PROPS,LANTERN,Vector2(602,526))
+	sprite(PROPS,BENCH,Vector2(440,540))
+	sprite(PROPS,FIRE,Vector2(534,570))
+	layout._draw_chest(Vector2(500,528))
+	for at: Vector2 in [Vector2(328,476),Vector2(558,326),Vector2(764,422),Vector2(400,614),Vector2(620,652),Vector2(750,676)]:
+		sprite(NATURE,FLOWERS,at,1)
+	for at: Vector2 in [Vector2(584,432),Vector2(574,608),Vector2(340,530)]:
+		sprite(PROPS,PEBBLES,at,1)

@@ -273,7 +273,7 @@ static func _interface(suite, main) -> void:
 	hud._input(swipe)
 	suite.check(hud.scroll_touch == -1, "scroll gesture releases touch ownership")
 	main._toggle_inventory()
-	player.position = SafeCamp.STATIONS["Ferreiro"]
+	player.position = SafeCamp.DISPLAY_STATIONS["Ferreiro"]
 	p.gold = 100
 	main.earned_gold = 100
 	p.add_item("Madeira", 3)

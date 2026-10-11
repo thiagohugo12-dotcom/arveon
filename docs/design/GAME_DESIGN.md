@@ -1,4 +1,11 @@
 # Game Design — fundação v0.1
+## Hub V3 — reconstrução aprovada em 11/10/2026
+Conforme HUB_RECONSTRUCAO_V3.md e pedido “faça então”: redistribuir a vila do
+Andar 1, substituir suas artes e ajustar NPCs/interações às posições visíveis.
+Pequenas bases de construções podem bloquear movimento, mantendo vias abertas.
+A autorização substitui a composição fixa anterior apenas no Andar 1.
+Proteção, respawn, monstros aprovados, combate, saves e Andares 2–5 preservados.
+
 Fonte de verdade das decisões conhecidas, baseada no pedido de 07/10/2026. Nome provisório: grande-arvore-rpg.
 
 ## v0.5.0 — entrada da Torre, aprovada em 10/10/2026

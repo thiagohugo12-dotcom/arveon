@@ -1,4 +1,15 @@
 # Arquitetura
+## Hub V3 (Andar 1)
+FloorV2View usa ground.png estático e atlas hub_v3, nearest 2x proporcional.
+Sprites estáticos são criados uma vez com z derivado dos pés. ActorView usa
+o mesmo z: copas e telhados encobrem personagens atrás, sem redesenhar artes.
+SafeCamp.nearest_station recebe o tema para escolher âncoras visíveis sem
+interações fantasmas. NPCs alinham os pés às mesmas âncoras. Andar1Obstacles
+mantém shapes de ambos os temas, alternando disabled sem recriar paredes.
+Somente bases bloqueiam; área segura/clearance, rochas e mundo iguais. Pés de
+árvores fora das construções preservados; árvores encobertas e seus shapes
+ficam desativados apenas no tema do Andar 1.
+
 - `scenes/`: composição Godot. Main injeta HUD/InputDriver no Player; mapa isolado em world.
 - `scripts/actors/`: Player e Enemy, movimentação e coordenação de componentes.
 - `scripts/components/`: Health, AutoAttack e DashMotor. Sem dependência da arte/HUD.

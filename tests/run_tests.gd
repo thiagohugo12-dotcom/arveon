@@ -64,9 +64,16 @@ func _run() -> void:
 	enemy.set_physics_process(false)
 	enemy.target = null
 	player.set_physics_process(false)
+	# Legacy floors retain their original tree/rock/camp contract.
+	var floor_view: FloorView = main.get_node("Andar1/FloorView")
+	floor_view.set_visual_v2(false)
+	await frames()
 	preload("res://tests/mata_visual_tests.gd").run(self, main)
+	floor_view.set_visual_v2(true)
+	await frames()
+	preload("res://tests/hub_v3_tests.gd").run(self,main)
 	var world := main.get_node("Andar1")
-	var tree_feet := (world.get_node("FloorView") as FloorView).tree_positions()
+	var tree_feet := floor_view.v2_view.visible_tree_positions()
 	check(tree_feet.size() > 15 and tree_feet.size() < 42, "sparse deterministic trees preserve open space")
 	var foot: Vector2 = tree_feet[0]
 	for candidate: Vector2 in tree_feet:
@@ -79,15 +86,18 @@ func _run() -> void:
 	enemy.position = foot + Vector2(42, 1)
 	var enemy_tree_hit := enemy.move_and_collide(Vector2(-50, 0))
 	check(enemy_tree_hit != null and enemy_tree_hit.get_position().distance_to(foot) < 15.0, "enemy respects tree trunk")
-	player.position = Vector2(600, 326)
+	player.position = Vector2(346,426)
 	var fence_hit := player.move_and_collide(Vector2(0, 32))
-	check(fence_hit != null and fence_hit.get_position().y < 359.0, "north camp fence blocks crossing")
-	for target: Vector2 in [Vector2(540, 410), Vector2(608, 435), Vector2(560, 514)]:
+	check(fence_hit != null and fence_hit.get_position().y < 463.0, "visible western village fence blocks crossing")
+	for target: Vector2 in SafeCamp.DISPLAY_STATIONS.values():
 		player.position = target
 		check(not player.test_move(player.transform, Vector2(1, 0)), "service approach remains walkable %s" % target)
 	check(SafeCamp.nearest_station(Vector2(540, 410)) == "Baú" and
 		SafeCamp.nearest_station(Vector2(608, 435)) == "Ferreiro" and
 		SafeCamp.nearest_station(Vector2(560, 514)) == "Vendedor", "all three services remain reachable")
+	for service: String in SafeCamp.DISPLAY_STATIONS:
+		check(SafeCamp.nearest_station(SafeCamp.DISPLAY_STATIONS[service],true) == service,"visible village interaction matches " + service)
+	check(SafeCamp.nearest_station(Vector2(608,391),true).is_empty(),"old smith has no phantom interaction in village")
 	player.position = SafeCamp.RESPAWN
 	check(player.move_and_collide(Vector2(10, -120)) == null, "north camp opening leads to forest trail")
 	Input.action_press("move_up")
@@ -182,7 +192,7 @@ func _run() -> void:
 	check(main.progress.buy("Couro") and main.earned_gold == 22 and main.progress.gold == 17, "vendor spends existing gold wallet")
 	main._station_action("Comprar", "Couro") # Closed panel must never trade.
 	check(main.progress.gold == 17, "shop refuses action outside station")
-	player.position = SafeCamp.STATIONS["Vendedor"] + Vector2(-30, 0)
+	player.position = SafeCamp.DISPLAY_STATIONS["Vendedor"] + Vector2(-30, 0)
 	main._process(0.0)
 	var open_touch := InputEventScreenTouch.new()
 	open_touch.index = 5
@@ -217,7 +227,7 @@ func _run() -> void:
 	hud._input(shop_touch)
 	check(not hud.station_panel.visible and not driver.blocked, "close button releases movement and closes shop")
 	main.progress.add_item("Essência", 2)
-	player.position = SafeCamp.STATIONS["Baú"] + Vector2(28, 0)
+	player.position = SafeCamp.DISPLAY_STATIONS["Baú"] + Vector2(28, 0)
 	main._interact()
 	main._station_action("Guardar", "Essência")
 	check(main.progress.bag.get("Essência", 0) == 2 and main.progress.chest.get("Essência", 0) == 1, "chest transfer preserves total")
@@ -354,7 +364,7 @@ func _run() -> void:
 	var cached := GameProgress.new()
 	cached.save_path = test_path
 	check(cached.load_save() and cached.opened_caches.has("west_roots") and cached.open_exploration_chest("west_roots").is_empty(), "opened cache remains claimed after reload")
-	player.position = SafeCamp.STATIONS["Baú"] + Vector2(28, 0)
+	player.position = SafeCamp.DISPLAY_STATIONS["Baú"] + Vector2(28, 0)
 	main._interact()
 	await frames()
 	var next_page := hud.station_content.get_child(4).get_child(2) as Button
@@ -370,7 +380,7 @@ func _run() -> void:
 	check(main.progress.chest.get("Ervas", 0) == 1 and main.progress.bag.get("Ervas", 0) == herbs_before, "gathered resource transfers into protected chest")
 	hud.close_station()
 	main.progress.add_item("Ervas")
-	player.position = SafeCamp.STATIONS["Vendedor"] + Vector2(-30, 0)
+	player.position = SafeCamp.DISPLAY_STATIONS["Vendedor"] + Vector2(-30, 0)
 	main._interact()
 	await frames()
 	check(hud.station_content.get_child(2).get_child(0).text.contains("Ervas"), "vendor displays owned gathered resources on the first page")

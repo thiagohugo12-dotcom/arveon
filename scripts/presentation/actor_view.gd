@@ -108,6 +108,10 @@ func set_warning(value: bool) -> void:
 		queue_redraw()
 
 func _process(delta: float) -> void:
+	# Match the village's grounded sprites: walking behind a roof or canopy
+	# never places a character on top of it. Legacy scenery remains at z=0.
+	z_as_relative = false
+	z_index = clampi(roundi(global_position.y)+100,-4096,4096)
 	if skill_left > 0.0:
 		skill_left = maxf(0.0, skill_left - delta)
 		queue_redraw()
