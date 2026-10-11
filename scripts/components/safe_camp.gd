@@ -1,9 +1,9 @@
 class_name SafeCamp
 extends RefCounted
 
-const AREA := Rect2(365, 245, 430, 365)
+const AREA := Rect2(470, 355, 180, 200)
 const CLEARANCE := 130.0 # Greater than the starter weapon's 120 px reach.
-const RESPAWN := Vector2(555, 445)
+const RESPAWN := Vector2(540, 450)
 const INTERACT_RANGE := 56.0
 const STATIONS := {"Baú": Vector2(455, 535), "Ferreiro": Vector2(670, 390), "Vendedor": Vector2(695, 545)}
 
