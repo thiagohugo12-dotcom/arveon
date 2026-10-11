@@ -29,6 +29,9 @@ var transition_cover: ColorRect
 var transition_active := false
 var rpg_panel: RPGPanel
 var inventory_category := 0
+var inventory_selected := ""
+var inventory_compare := false
+var equipment_bag: EquipmentBag
 var inventory_tabs: HBoxContainer
 var menu_progress: GameProgress
 var skill_available: Array[bool] = [true, true, true]
@@ -182,12 +185,14 @@ func _ready() -> void:
 	inventory_column.add_child(inventory_tabs)
 	for i in range(3):
 		var tab := Button.new()
-		tab.text = ["Materiais", "Equip.", "Consumo"][i]
+		tab.text = ["Materiais", "Equipamentos", "Consumo"][i]
 		tab.custom_minimum_size.y = 44
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tab.add_theme_font_size_override("font_size", 12)
 		tab.pressed.connect(func():
 			inventory_category = i
+			inventory_selected = ""
+			inventory_compare = false
 			inventory_scroll.scroll_vertical = 0
 			refresh_inventory(menu_progress)
 		)
@@ -365,7 +370,7 @@ func _layout() -> void:
 	map_panel.position = (size - map_panel.size) * 0.5
 	save_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(350, size.y - margin.y - bottom_inset - 12))
 	save_panel.position = (size - save_panel.size) * 0.5
-	inventory_panel.size = Vector2(minf(300, size.x - margin.x - right_inset - 12), minf(330, size.y - margin.y - bottom_inset - 12))
+	inventory_panel.size = Vector2(minf(440, size.x - margin.x - right_inset - 12), minf(560, size.y - margin.y - bottom_inset - 12))
 	inventory_panel.position = (size - inventory_panel.size) * 0.5
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for slot in range(4):
@@ -425,6 +430,8 @@ func show_inventory(progress: GameProgress) -> void:
 		return
 	inventory_open = true
 	inventory_category = 0
+	inventory_selected = ""
+	inventory_compare = false
 	inventory_panel.show()
 	inventory_button.disabled = true
 	interact_button.visible = false
@@ -445,9 +452,21 @@ func refresh_inventory(progress: GameProgress) -> void:
 	for child in inventory_list.get_children():
 		inventory_list.remove_child(child)
 		child.queue_free()
+	equipment_bag = null
 	if inventory_category == 1:
-		for id: String in progress.equipment:
-			_add_equipment(id, progress, inventory_list, true)
+		equipment_bag = EquipmentBag.new(progress,inventory_selected,inventory_compare)
+		inventory_list.add_child(equipment_bag)
+		equipment_bag.selected.connect(func(id: String):
+			inventory_selected = id
+			inventory_compare = false
+			inventory_scroll.scroll_vertical = 0
+			refresh_inventory(progress)
+		)
+		equipment_bag.action_requested.connect(func(action: String, id: String): rpg_action.emit(action,id,0))
+		equipment_bag.compare_requested.connect(func():
+			inventory_compare = not inventory_compare
+			refresh_inventory(progress)
+		)
 		return
 	if inventory_category == 2:
 		var empty := Label.new()
@@ -840,7 +859,7 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 	card.add_child(box)
 	var header := HBoxContainer.new()
 	box.add_child(header)
-	header.add_child(ITEM_ICON.new(item.slot))
+	header.add_child(ITEM_ICON.new(ArsenalRules.metadata(id).icon))
 	var label := Label.new()
 	label.text = "%s  +%d\n%s%s" % [item.name, upgrade, item.slot.to_upper(), "  ·  EQUIPADO" if progress.equipped[item.slot] == id else ""]
 	label.add_theme_font_size_override("font_size", 13)

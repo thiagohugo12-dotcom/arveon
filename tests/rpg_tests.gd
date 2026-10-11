@@ -223,8 +223,12 @@ static func _interface(suite, main) -> void:
 		touch.position = tab.global_position + tab.size * 0.5
 		hud._input(touch)
 		await suite.frames()
-		suite.check(hud.inventory_category == 1 and hud.inventory_list.get_child_count() == 2, "touch backpack equipment category displays owned gear %s" % size)
-		var equip_button := _button_with_text(hud.inventory_list.get_child(0), "Desequipar")
+		suite.check(hud.inventory_category == 1 and hud.equipment_bag.cards.size() == 2, "touch backpack equipment category displays owned gear %s" % size)
+		var card: Button = hud.equipment_bag.cards.espada
+		touch.position = card.get_global_rect().get_center()
+		hud._input(touch)
+		await suite.frames()
+		var equip_button: Button = hud.equipment_bag.equip_button
 		hud.inventory_scroll.scroll_vertical += maxi(0, roundi(equip_button.global_position.y - hud.inventory_scroll.global_position.y - 32))
 		await suite.frames()
 		touch.position = equip_button.global_position + equip_button.size * 0.5
