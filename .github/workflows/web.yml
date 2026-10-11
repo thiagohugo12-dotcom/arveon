@@ -99,7 +99,10 @@ jobs:
           QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_sample_capture.gd 2>&1 | tee /tmp/sample-render.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/sample-render.log; then exit 1; fi
           grep '^SAMPLE_RESULT: 19 checks, 0 failures$' /tmp/sample-render.log
-          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 217
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_v2_capture.gd 2>&1 | tee /tmp/mata-v2-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/mata-v2-render.log; then exit 1; fi
+          grep '^MATA_V2_RESULT: 34 checks, 0 failures$' /tmp/mata-v2-render.log
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 233
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4

@@ -162,3 +162,10 @@ alteração ao mundo 1200×900, paredes/rochas/serviços ou corpo/posição da T
 TowerView apenas simplifica pedra e runa, observando os mesmos sinais.
 Preview usa no-store no HTML/loader/PCK; após publicar, CI compara SHA-256 do
 HTML/PCK servido pelo alias TESTE com o export testado, sem alterar produção.
+
+## Mata V2 — apenas Andar 1
+FloorV2View registra apresentação substituível dentro do _draw do FloorView,
+sem novos nós/processos/colisões. Main escolhe o flag pelo current_floor == 1;
+TowerView/ExplorationView acompanham o tema. PNGs autorais pequenos, atlas e
+caminhos preparados offline, filtro nearest. Todos os andares mantêm a mesma
+geometria; 2–5 usam integralmente o renderer anterior. Tema não entra no save.
