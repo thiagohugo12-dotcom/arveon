@@ -15,6 +15,7 @@ func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 func _draw() -> void:
+	draw_rect(Rect2(-11, 15, 22, 4), Color("#718f3f80"))
 	# V2 has a stable pose. Its duplicated frames preserve the existing atlas
 	# contract while avoiding movement that reads as the NPC sliding sideways.
 	if visual_v2:

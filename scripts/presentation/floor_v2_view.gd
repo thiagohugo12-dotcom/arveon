@@ -1,9 +1,9 @@
 class_name FloorV2View
 extends RefCounted
 
-const NATURE := preload("res://assets/art/mata_v2/nature_simple.png")
+const NATURE := preload("res://assets/art/mata_v2/nature.png")
 const PATHS := preload("res://assets/art/mata_v2/paths.png")
-const CAMP := preload("res://assets/art/mata_v2/camp_simple.png")
+const CAMP := preload("res://assets/art/mata_v2/camp.png")
 const PROPS := preload("res://assets/art/mata_v2/camp_props.png")
 const GREEN := Rect2(0,0,88,96)
 const ORANGE := Rect2(96,0,88,96)
@@ -40,16 +40,16 @@ func prop(region: Rect2, at: Vector2, scale: float = 1.0) -> void:
 func shadow(at: Vector2, width: float, height: float) -> void:
 	for i in range(6):
 		var extent: float = width * [0.5,0.8,1.0,0.95,0.8,0.5][i]
-		layout.draw_rect(Rect2(at+Vector2(-extent*0.5,-height*0.5+i*height/6),Vector2(extent,height/6)),Color("#9ab94f"))
+		layout.draw_rect(Rect2(at+Vector2(-extent*0.5,-height*0.5+i*height/6),Vector2(extent,height/6)),Color("#718f3f80"))
 
 func paint() -> void:
 	if layout == null:
 		return
-	layout.draw_rect(Rect2(0,0,1200,900),Color("#b9cc59"))
+	layout.draw_rect(Rect2(0,0,1200,900),Color("#b9cf55"))
 	# Sparse tiny colour clusters; no dense repeated texture.
 	for i in range(190):
 		var at := Vector2(18+layout._hash(i,27)%1164,18+layout._hash(i,82)%864).snapped(Vector2(2,2))
-		var tone := Color("#c2d46b") if i%3 else Color("#aec44f")
+		var tone := Color("#c7d86a") if i%3 else Color("#abc64b")
 		layout.draw_rect(Rect2(at,Vector2(4,2)),tone)
 		if i%4 == 0:
 			layout.draw_rect(Rect2(at+Vector2(2,-2),Vector2(2,2)),tone)
