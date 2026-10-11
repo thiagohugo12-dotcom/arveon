@@ -109,11 +109,11 @@ func _camp() -> void:
 		prop(FENCE_PROP,at,1.95)
 	# Home, workshop, vendor and chest each occupy their own clear area.
 	layout.draw_texture_rect_region(CAMP,Rect2(355,245,192,192),CABIN)
-	sprite_scaled(CAMP,FORGE,SafeCamp.STATIONS["Ferreiro"]+Vector2(0,24),1.85)
-	sprite_scaled(CAMP,MARKET,SafeCamp.STATIONS["Vendedor"]+Vector2(0,24),1.85)
-	layout._draw_chest(SafeCamp.STATIONS["Baú"])
+	sprite_scaled(CAMP,FORGE,SafeCamp.DISPLAY_STATIONS["Ferreiro"]+Vector2(0,24),1.85)
+	sprite_scaled(CAMP,MARKET,SafeCamp.DISPLAY_STATIONS["Vendedor"]+Vector2(0,24),1.85)
+	layout._draw_chest(SafeCamp.DISPLAY_STATIONS["Baú"])
 	for name: String in ["Baú","Ferreiro","Vendedor"]:
-		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(36,-6),1.9)
+		prop(SIGN_PROP,SafeCamp.DISPLAY_STATIONS[name]+Vector2(36,-6),1.9)
 	for point: Vector2 in [Vector2(520,434),Vector2(742,418)]:
 		prop(BARREL_PROP,point,1.75)
 	for point: Vector2 in [Vector2(414,562),Vector2(756,575)]:
