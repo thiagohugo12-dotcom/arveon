@@ -93,7 +93,10 @@ jobs:
           QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/arsenal_capture.gd 2>&1 | tee /tmp/arsenal-render.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/arsenal-render.log; then exit 1; fi
           grep '^ARSENAL_QA_RESULT: 0 failures$' build/mobile-qa/arsenal-result.txt
-          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 200
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_capture.gd 2>&1 | tee /tmp/mata-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/mata-render.log; then exit 1; fi
+          grep '^MATA_QA_RESULT: 0 failures$' build/mobile-qa/mata-result.txt
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 213
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -109,7 +112,7 @@ jobs:
           mkdir -p build/web
           godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee /tmp/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/export.log; then exit 1; fi
-          if grep -E 'Storing File: res://build/|Storing File:.*(combat|tower|arena|guardian|campaign|arsenal)_[0-9]+x[0-9]+_' /tmp/export.log; then exit 1; fi
+          if grep -E 'Storing File: res://build/|Storing File:.*(combat|tower|arena|guardian|campaign|arsenal|mata)_[0-9]+x[0-9]+_|Storing File: res://assets/art/forest_(oak|linden|spruce)_v035.png' /tmp/export.log; then exit 1; fi
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
@@ -217,6 +220,7 @@ jobs:
             console.log(result.deployment.url);
           ')"
           PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+          node ../source/tools/verify-test-build.mjs
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
           echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"

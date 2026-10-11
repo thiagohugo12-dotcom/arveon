@@ -3,7 +3,7 @@
 - `scripts/actors/`: Player e Enemy, movimentação e coordenação de componentes.
 - `scripts/components/`: Health, AutoAttack e DashMotor. Sem dependência da arte/HUD.
 - `scripts/input/`: converte teclado/touch em direção e pedido de dash; não move atores.
-- `scripts/presentation/`: FloorView usa chão/trilhas proceduralmente estáticos e cinco sprites compactos da floresta; ActorView usa atlas de quadros por ator. GuardianView desenha o chefe. Hitboxes são independentes do desenho.
+- `scripts/presentation/`: FloorView usa chão/trilhas estáticos e um atlas compacto da Mata; a cabana existente é preservada. ActorView usa atlas de quadros por ator. GuardianView desenha o chefe. Hitboxes são independentes do desenho.
 - `ui/`: joystick e ações touch, HP e morte. Só emite comandos e observa estado.
 - `data/`: Resources tipados `.tres` para atores/arma. Balanceamento desacoplado.
 - `assets/art/`: sprites pequenos em paleta limitada e atlas dos atores; `audio/` reservado.
@@ -146,3 +146,19 @@ equipment_meta validado pelo catálogo. Ausência de metadados em saves antigos
 é aceita sem apagar/adicionar itens; próximo save incorpora metadados. Dados
 forjados são rejeitados antes da substituição, inclusive em backups. Journal,
 autosave, inventário, campanhas e tentativas sem checkpoint permanecem iguais.
+
+## Rework visual da Mata
+MataArt gera um atlas pixel art 128×48 com três copas simples e um arbusto.
+tools/generate_mata_atlas.gd reproduz o PNG com o próprio Godot; em runtime
+somente a textura importada é usada e compartilhada. Sem geração de imagens
+por quadro ou na abertura, novos nós, shaders, luzes ou partículas. Os três
+PNGs antigos de copa ficam no Git para histórico, excluídos do pacote Web.
+BERRY é conservado para a arena, que não faz parte do rework.
+FloorView mantém trilhas/clareiras/rochas e NPCs; piso sem textura repetitiva,
+decoração reduzida e seis árvores secundárias removidas após a geração antiga.
+Os 28 pés restantes não mudam. Andar1Obstacles consome a mesma lista, portanto
+os seis círculos físicos também desaparecem sem colisores órfãos. Nenhuma
+alteração ao mundo 1200×900, paredes/rochas/serviços ou corpo/posição da Torre.
+TowerView apenas simplifica pedra e runa, observando os mesmos sinais.
+Preview usa no-store no HTML/loader/PCK; após publicar, CI compara SHA-256 do
+HTML/PCK servido pelo alias TESTE com o export testado, sem alterar produção.

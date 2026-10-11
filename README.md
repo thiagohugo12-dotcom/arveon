@@ -1,6 +1,9 @@
 # Grande Árvore RPG
 Fundação Godot 4.5.1 + GDScript, 2D Compatibility. **v0.7.0 — Arsenal, Etapa 1:** cinco categorias de armas funcionais e Mochila visual. Os cinco andares reutilizam a Mata dos Primeiros Passos com dificuldade configurável.
 
+Mata com visual simplificado: chão limpo, trilhas claras, atlas pixel art pequeno,
+28 árvores e Torre destacada. Layout, serviços e cinco andares preservados.
+
 ## Abrir no Windows
 1. Instale/extraia **Godot 4.5.1 Standard** (não .NET): https://godotengine.org/download/archive/4.5.1-stable/.
 2. Clone o repositório ou extraia este projeto em `C:\Projetos\grande-arvore-rpg`.
