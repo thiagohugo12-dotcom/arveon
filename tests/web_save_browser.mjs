@@ -12,6 +12,8 @@ const fixture = JSON.parse(archive);
 const payload = JSON.parse(fixture.payload);
 const campaignArchive = await readFile('build/campaign-save-fixture.json', 'utf8');
 const campaignPayload = JSON.parse(JSON.parse(campaignArchive).payload);
+const arsenalArchive = await readFile('build/arsenal-save-fixture.json', 'utf8');
+const arsenalPayload = JSON.parse(JSON.parse(arsenalArchive).payload);
 const guardianArchive = await readFile('build/guardian-save-fixture.json', 'utf8');
 const guardianPayload = JSON.parse(JSON.parse(guardianArchive).payload);
 const helper = await readFile('scripts/platform/browser_save.js', 'utf8');
@@ -138,6 +140,15 @@ try {
   const campaignReload = await snapshot();
   check(campaignReload.xp===campaignPayload.xp && campaignReload.gold===campaignPayload.gold && !('trial' in campaignReload),'five-floor reload retains exact rewards without checkpoints or duplicate grants');
   check(JSON.stringify(campaignReload.floor_states)===JSON.stringify(campaignPayload.floor_states) && !campaignReload.ascension.unlocked_floors.includes(6),'actual engine retains independent exploration without a sixth floor');
+  await seed();
+  await evaluate(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(arsenalArchive)})`);
+  await game();
+  const arsenal = await snapshot();
+  check(['espada','machado','lanca','arco','cajado'].every(id=>arsenal.rpg.equipment_meta[id].category===id),'actual exported engine accepts five stable weapon categories');
+  check(arsenal.rpg.equipped.Arma==='cajado' && arsenal.rpg.equipment.cajado===2 && arsenal.rpg.equipment.arco===3 && arsenal.rpg.equipment.espada===0,'mobile exported engine preserves ranged upgrades and legacy equipment');
+  await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
+  const arsenalReload = await snapshot();
+  check(JSON.stringify(arsenalReload.rpg.equipment)===JSON.stringify(arsenalPayload.rpg.equipment) && JSON.stringify(arsenalReload.rpg.equipment_meta)===JSON.stringify(arsenalPayload.rpg.equipment_meta) && arsenalReload.rpg.equipped.Arma==='cajado','five weapon reload preserves rarity independently of enhancement without duplicate items');
   check(!errors.some(e=>/SCRIPT ERROR|Parse Error|Invalid call/.test(e)),'actual exported runtime has no GDScript errors');
   console.log(`WEB_SAVE_RESULT: ${checks} checks, 0 failures`);
 } finally {await stop();server.close();}

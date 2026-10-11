@@ -124,3 +124,25 @@ andares compartilham as hordas e o Guardião, com recuperação entre hordas
 e morte/abandono sem checkpoints. Viagem é proibida durante tentativas.
 Inimigos vivos não são snapshots persistentes: retornos repovoam a Mata;
 a exploração e os marcos permanentes permanecem independentes e salvos.
+
+## Arsenal v0.7.0 — Etapa 1
+ArsenalRules centraliza categorias, alcance, intervalo, tipo/velocidade de
+projétil, raridades e metadados estáveis. RPGRules conserva os sete IDs/receitas
+e upgrades anteriores; acrescenta apenas arco/cajado. O Ferreiro existente
+continua produzindo e melhorando itens. Raridade não depende da melhoria.
+PlayerActor aplica o perfil ao WeaponData privado, preservando o cálculo de
+dano e as três habilidades. AutoAttack conserva seleção e World/LOS; melee
+atinge uma vez, ranged solicita PlayerProjectile com dano/alvo capturados.
+Flecha usa direção fixa, orbe tem correção limitada sem trocar alvo. Raycast
+varrido por passo impede atravessar obstáculos; o primeiro alvo válido recebe
+um único impacto. Limite global de quatro projéteis, removidos em transições,
+sem colisores/partículas adicionais, pausados pelos menus existentes.
+EquipmentBag apresenta cartões ou um detalhe com ações/comparação efetiva
+somente de leitura. GameHUD mantém cabeçalho/abas/fechamento fora do scroll;
+toque em cartão só seleciona ao soltar, distinguindo arrasto de toque.
+PixelItemIcon desenha os cinco ícones localmente de forma determinística.
+Save v6 mantém equipment (ID → melhoria) e equipped (slot → ID), acrescentando
+equipment_meta validado pelo catálogo. Ausência de metadados em saves antigos
+é aceita sem apagar/adicionar itens; próximo save incorpora metadados. Dados
+forjados são rejeitados antes da substituição, inclusive em backups. Journal,
+autosave, inventário, campanhas e tentativas sem checkpoint permanecem iguais.

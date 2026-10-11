@@ -227,6 +227,9 @@ static func _interface(suite, main) -> void:
 		var card: Button = hud.equipment_bag.cards.espada
 		touch.position = card.get_global_rect().get_center()
 		hud._input(touch)
+		touch.pressed = false
+		hud._input(touch)
+		touch.pressed = true
 		await suite.frames()
 		var equip_button: Button = hud.equipment_bag.equip_button
 		hud.inventory_scroll.scroll_vertical += maxi(0, roundi(equip_button.global_position.y - hud.inventory_scroll.global_position.y - 32))

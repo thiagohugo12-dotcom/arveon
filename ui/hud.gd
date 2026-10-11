@@ -36,6 +36,9 @@ var inventory_tabs: HBoxContainer
 var menu_progress: GameProgress
 var skill_available: Array[bool] = [true, true, true]
 var scroll_touch := -1
+var inventory_touch_card: Button
+var inventory_touch_origin := Vector2.ZERO
+var inventory_touch_dragged := false
 var touch_scroll: ScrollContainer
 var joystick: VirtualJoystick
 var dash_button: TouchActionButton
@@ -664,12 +667,19 @@ func _add_row(item: String, count: String, left: String, right: String, can_left
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenDrag and event.index == scroll_touch and is_instance_valid(touch_scroll):
+		if event.position.distance_to(inventory_touch_origin) > 8.0:
+			inventory_touch_dragged = true
 		touch_scroll.scroll_vertical -= roundi(event.relative.y)
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventScreenTouch and not event.pressed and event.index == scroll_touch:
+		var tapped_card := inventory_touch_card
+		var activate: bool = not inventory_touch_dragged and is_instance_valid(tapped_card) and event.position.distance_to(inventory_touch_origin) <= 8.0
+		inventory_touch_card = null
 		scroll_touch = -1
 		touch_scroll = null
+		if activate:
+			tapped_card.pressed.emit()
 		get_viewport().set_input_as_handled()
 		return
 	if transition_active:
@@ -696,6 +706,18 @@ func _input(event: InputEvent) -> void:
 		return
 	if inventory_open:
 		if _activate_touch_button(inventory_close, event.position):
+			return
+		# Delay card activation until release so a swipe can scroll over the cards.
+		if inventory_category == 1 and inventory_selected.is_empty() and inventory_scroll.get_global_rect().has_point(event.position):
+			inventory_touch_card = null
+			inventory_touch_origin = event.position
+			inventory_touch_dragged = false
+			for card: Button in equipment_bag.cards.values():
+				if card.get_global_rect().has_point(event.position):
+					inventory_touch_card = card
+					break
+			_begin_scroll(inventory_scroll,event)
+			get_viewport().set_input_as_handled()
 			return
 		if not _touch_buttons(inventory_panel, event.position):
 			_begin_scroll(inventory_scroll, event)
@@ -758,6 +780,8 @@ func set_dash_cooldown(value: float) -> void:
 		dash_button.set_recharge(value, 1.2)
 
 func _sync_controls() -> void:
+	inventory_touch_card = null
+	inventory_touch_dragged = false
 	scroll_touch = -1
 	touch_scroll = null
 	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
