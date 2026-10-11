@@ -29,10 +29,13 @@ var layout: FloorView
 func sprite(atlas: Texture2D, region: Rect2, at: Vector2) -> void:
 	layout.draw_texture_rect_region(atlas,Rect2(at-Vector2(region.size.x*0.5,region.size.y),region.size),region)
 
-func prop(region: Rect2, at: Vector2, scale: float = 1.0) -> void:
-	# Props need a stronger silhouette than background vegetation on a phone screen.
+func sprite_scaled(atlas: Texture2D, region: Rect2, at: Vector2, scale: float) -> void:
 	var size := region.size * scale
-	layout.draw_texture_rect_region(PROPS,Rect2(at-Vector2(size.x*0.5,size.y),size),region)
+	layout.draw_texture_rect_region(atlas,Rect2(at-Vector2(size.x*0.5,size.y),size),region)
+
+func prop(region: Rect2, at: Vector2, scale: float = 1.0) -> void:
+	# Props keep their intended physical size instead of being compressed into the hub.
+	sprite_scaled(PROPS,region,at,scale)
 
 func shadow(at: Vector2, width: float, height: float) -> void:
 	for i in range(6):
@@ -98,25 +101,25 @@ func bush_positions() -> Array[Vector2]:
 	return positions
 
 func _camp() -> void:
-	# Compact buildings retain the established service anchors and footprints.
+	# The camp uses a full environmental scale; interaction points remain unchanged.
 	for n in range(18):
 		layout._draw_flagstone(Vector2(556+layout._hash(n,71)%21-10,369+n*10),n)
 	# The fence segments mark the hub without enclosing it or filling the scene.
 	for at in [Vector2(496,352),Vector2(610,352),Vector2(496,548),Vector2(610,548)]:
-		prop(FENCE_PROP,at,1.4)
-	# Draw replacements inside the original footprints, not new buildings.
-	layout.draw_texture_rect_region(CAMP,Rect2(452,288,96,96),CABIN)
-	sprite(CAMP,FORGE,SafeCamp.STATIONS["Ferreiro"]+Vector2(0,14))
-	sprite(CAMP,MARKET,SafeCamp.STATIONS["Vendedor"]+Vector2(0,14))
+		prop(FENCE_PROP,at,1.65)
+	# Buildings deliberately occupy a larger footprint, matching the world scale.
+	layout.draw_texture_rect_region(CAMP,Rect2(428,245,144,144),CABIN)
+	sprite_scaled(CAMP,FORGE,SafeCamp.STATIONS["Ferreiro"]+Vector2(0,18),1.45)
+	sprite_scaled(CAMP,MARKET,SafeCamp.STATIONS["Vendedor"]+Vector2(0,18),1.45)
 	layout._draw_chest(SafeCamp.STATIONS["Baú"])
 	# Service markers remain sparse, but are deliberately legible at gameplay scale.
 	for name: String in ["Baú","Ferreiro","Vendedor"]:
-		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(28,-4),1.35)
+		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(28,-4),1.6)
 	for point: Vector2 in [Vector2(480,411),Vector2(633,420)]:
-		prop(BARREL_PROP,point,1.3)
+		prop(BARREL_PROP,point,1.5)
 	for point: Vector2 in [Vector2(484,526),Vector2(631,535)]:
-		prop(CRATE_PROP,point,1.3)
+		prop(CRATE_PROP,point,1.5)
 	for point: Vector2 in [Vector2(479,374),Vector2(638,474)]:
-		prop(LANTERN_PROP,point,1.35)
-	prop(BENCH_PROP,Vector2(548,544),1.3)
-	prop(FIRE_PROP,Vector2(516,492),1.3)
+		prop(LANTERN_PROP,point,1.6)
+	prop(BENCH_PROP,Vector2(548,544),1.5)
+	prop(FIRE_PROP,Vector2(516,492),1.5)
