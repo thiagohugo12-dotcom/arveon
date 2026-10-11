@@ -1,7 +1,7 @@
 class_name FloorV2View
 extends RefCounted
 
-const NATURE := preload("res://assets/art/mata_v2/nature.png")
+const NATURE := preload("res://assets/art/mata_v2/nature_simple.png")
 const PATHS := preload("res://assets/art/mata_v2/paths.png")
 const CAMP := preload("res://assets/art/mata_v2/camp.png")
 const GREEN := Rect2(0,0,88,96)
