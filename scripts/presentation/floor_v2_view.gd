@@ -3,7 +3,7 @@ extends RefCounted
 
 const NATURE := preload("res://assets/art/mata_v2/nature_simple.png")
 const PATHS := preload("res://assets/art/mata_v2/paths.png")
-const CAMP := preload("res://assets/art/mata_v2/camp.png")
+const CAMP := preload("res://assets/art/mata_v2/camp_simple.png")
 const GREEN := Rect2(0,0,88,96)
 const ORANGE := Rect2(96,0,88,96)
 const STONE := Rect2(192,0,48,36)
@@ -45,6 +45,10 @@ func paint() -> void:
 		var at := Vector2(rng.randi_range(20,1175),rng.randi_range(20,875))
 		if layout._free_for_decoration(at):
 			sprite(NATURE,FLOWERS if i%11==0 else STONE if i%19==0 else BUSH if i%23==0 else GRASS,at)
+	# A separate sparse pass makes bushes visible without competing with trees.
+	for at in bush_positions():
+		shadow(at+Vector2(2,1),30,8)
+		sprite(NATURE,BUSH,at)
 	for feet in layout.tree_positions():
 		shadow(feet+Vector2(6,2),62,18)
 		sprite(NATURE,ORANGE if layout._hash(roundi(feet.y),roundi(feet.x))%8==0 else GREEN,feet+Vector2(0,6))
@@ -54,8 +58,30 @@ func paint() -> void:
 		layout.draw_texture_rect_region(NATURE,rock.grow(4),STONE)
 	_camp()
 
+func bush_positions() -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 28031
+	var trees := layout.tree_positions()
+	for i in range(240):
+		var at := Vector2(rng.randi_range(40,1160),rng.randi_range(40,860)).snapped(Vector2(2,2))
+		if not layout._free_for_decoration(at):
+			continue
+		var clear := true
+		for feet in trees:
+			if Rect2(feet-Vector2(58,108),Vector2(116,126)).has_point(at):
+				clear = false
+		for other in positions:
+			if at.distance_squared_to(other) < 64.0*64.0:
+				clear = false
+		if clear:
+			positions.append(at)
+		if positions.size() == 18:
+			break
+	return positions
+
 func _camp() -> void:
-	# Keep every cabin, stall, fence and decoration at its established anchor.
+	# Compact buildings retain the established service anchors and footprints.
 	for n in range(18):
 		layout._draw_flagstone(Vector2(556+layout._hash(n,71)%21-10,369+n*10),n)
 	for segment: Vector2 in [Vector2(478,515),Vector2(583,641)]:
