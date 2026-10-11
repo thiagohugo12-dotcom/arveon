@@ -138,3 +138,9 @@ pixel art orgânica, vibrante e acolhedora, acabamento profissional com recursos
 reutilizáveis. Substitui a direção visual anterior; não aprova automaticamente
 a amostra nem autoriza a migração integral. Aguardar avaliação da demonstração.
 Preservar funcionalidades e os cinco andares existentes; sem mapas novos.
+
+## Mata V2 — aplicação ao Andar 1 autorizada em 11/10/2026
+MATA_V2_ANDAR1.md registra o pedido explícito para modificar apenas aparência
+no Andar 1, mantendo posições e todo o restante. A autorização supera a pausa
+na demonstração para esse andar. Andares 2–5 continuam com seu tema anterior.
+Não alterar main/PRODUÇÃO, mecânicas, mapas, personagens ou persistência.
