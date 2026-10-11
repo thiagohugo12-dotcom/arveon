@@ -22,6 +22,9 @@ var boss_bar: ProgressBar
 var victory_first := false
 var tower_trial: TowerTrial
 var tower_action_button: Button
+var travel_button: Button
+var selected_floor := 1
+var floor_buttons: Array[Button] = []
 var transition_cover: ColorRect
 var transition_active := false
 var rpg_panel: RPGPanel
@@ -268,6 +271,11 @@ func _ready() -> void:
 	tower_action_button.hide()
 	tower_action_button.pressed.connect(func(): station_action.emit("Retornar" if tower_trial != null and tower_trial.active() else "Entrar", ""))
 	column.add_child(tower_action_button)
+	travel_button = Button.new()
+	travel_button.custom_minimum_size.y = 44
+	travel_button.hide()
+	travel_button.pressed.connect(func(): station_action.emit("Viajar", str(selected_floor)))
+	column.add_child(travel_button)
 	station_close_button = Button.new()
 	station_close_button.text = "Fechar"
 	station_close_button.custom_minimum_size.y = 44
@@ -500,6 +508,7 @@ func set_nearby_station(name: String) -> void:
 
 func show_station(name: String, progress: GameProgress) -> void:
 	station_name = name
+	selected_floor = progress.ascension.current_floor
 	station_page = 0
 	close_inventory()
 	station_panel.show()
@@ -524,18 +533,32 @@ func refresh_station(progress: GameProgress) -> void:
 		station_content.remove_child(child)
 		child.queue_free()
 	tower_action_button.hide()
+	travel_button.hide()
+	floor_buttons.clear()
 	if station_name == TowerEntrance.NAME:
 		station_scroll.scroll_vertical = 0
 		var active := tower_trial != null and tower_trial.active()
 		var cleared := active and tower_trial.phase == TowerTrial.Phase.VICTORY
-		_add_description("Vitória · Guardião da Mata!" if cleared else tower_trial.summary() if active else progress.ascension.summary())
-		_add_description("Selo da Mata conquistado · Ascensão concluída" if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova de Ascensão liberada")
+		_add_description("Vitória · Guardião da Mata!" if cleared else tower_trial.summary() if active else "Andar %d · Torre: %d/50 criaturas" % [selected_floor, progress.ascension.defeats[str(selected_floor)]])
+		_add_description("Selo da Mata conquistado · Ascensão concluída" if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova concluída" if progress.ascension.completed_trials[str(selected_floor)] else "Prova de Ascensão liberada" if progress.ascension.entrance_unlocked(selected_floor) else "Prova bloqueada: derrote 50 criaturas neste andar.")
 		_add_description("+180 XP · +40 ouro" if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e Guardião da Mata.")
 		_add_description("Andar 2 desbloqueado · viagem indisponível." if cleared else "Se morrer, a prova recomeça da primeira horda.")
 		_add_description("Retorne à Mata em segurança." if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
 		tower_action_button.text = "Retornar à Mata" if cleared else "Abandonar Prova" if active else "Entrar na Prova"
 		tower_action_button.disabled = not active and not progress.ascension.entrance_unlocked()
 		tower_action_button.show()
+		if not active:
+			for id in range(1,6):
+				var button := Button.new()
+				button.custom_minimum_size.y = 44
+				button.text = "Andar %d · %s%s" % [id, "Atual" if id == progress.ascension.current_floor else "Disponível" if progress.ascension.can_travel(id) else "Bloqueado", " ✓" if id == selected_floor else ""]
+				button.pressed.connect(func(): selected_floor = id; refresh_station(progress))
+				station_content.add_child(button)
+				floor_buttons.append(button)
+			station_title.text = "Torre · Andar %d" % progress.ascension.current_floor
+			travel_button.text = "Viajar ao Andar %d" % selected_floor
+			travel_button.disabled = selected_floor == progress.ascension.current_floor or not progress.ascension.can_travel(selected_floor)
+			travel_button.show()
 	elif station_name == "Ferreiro":
 		_add_description("Ouro %d · fabricar ou aprimorar até +3.\nMateriais usados: somente os da mochila." % progress.gold)
 		for id: String in RPGRules.EQUIPMENT:
@@ -665,7 +688,14 @@ func _input(event: InputEvent) -> void:
 				return
 	if not station_panel.visible:
 		return
-	if _activate_touch_button(tower_action_button, event.position):
+	if _activate_touch_button(travel_button, event.position) or _activate_touch_button(tower_action_button, event.position):
+		return
+	if station_name == TowerEntrance.NAME:
+		if _activate_touch_button(station_close_button, event.position):
+			return
+		if not _touch_buttons(station_content, event.position):
+			_begin_scroll(station_scroll, event)
+		get_viewport().set_input_as_handled()
 		return
 	if station_name == "Ferreiro":
 		if _activate_touch_button(station_close_button, event.position):
@@ -757,7 +787,7 @@ func show_map(progress: GameProgress) -> void:
 		return
 	expanded_map.progress = progress
 	expanded_map.arena_bounds = minimap.arena_bounds
-	map_title.text = "Mapa · Arena da Torre" if minimap.arena_bounds.has_area() else "Mapa · Mata dos Primeiros Passos"
+	map_title.text = "Mapa · Arena da Torre" if minimap.arena_bounds.has_area() else "Mapa · Mata · Andar %d" % progress.ascension.current_floor
 	map_legend.text = "● Você · Dourado: portais\nSaída para a Mata ao sul" if minimap.arena_bounds.has_area() else "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
 	expanded_map.player_position = minimap.player_position
 	expanded_map.queue_redraw()

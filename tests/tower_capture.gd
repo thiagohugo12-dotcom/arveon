@@ -79,18 +79,19 @@ func _run() -> void:
 			main.progress.ascension.defeats["1"] = count
 			main._process(0.0)
 			_tap(main.hud.interact_button)
-			_check(not main.hud.station_panel.visible and main.hud.loot_label.text.contains("%d/50" % count), "locked touch shows current progress")
+			_check(main.hud.station_panel.visible and main.hud.tower_action_button.disabled and main.hud.loot_label.text.contains("%d/50" % count), "locked touch shows current progress")
 			# Keep transient notice visible only for evidence capture.
 			main.hud.set_process(false)
 			await _capture(prefix + "locked%d" % count)
 			main.hud.set_process(true)
+			main.hud.close_station()
 		main.progress.ascension.defeats["1"] = 50
 		main._process(0.0)
 		main.hud.loot_label.hide()
 		_tap(main.hud.interact_button)
 		await _frames()
 		_check(main.hud.station_panel.visible and main.input_driver.blocked, "touch opens unlocked tower")
-		_check(main.hud.station_content.get_child_count() == 5 and main.hud.tower_action_button.text == "Entrar na Prova", "tower describes trial and offers working entry")
+		_check(main.hud.station_content.get_child_count() == 10 and main.hud.tower_action_button.text == "Entrar na Prova", "tower describes trial and offers working entry")
 		_check(main.hud.station_panel.get_global_rect().encloses(main.hud.tower_action_button.get_global_rect()) and main.hud.tower_action_button.size.y >= 44, "entry target stays accessible outside scrolling content at " + str(resolution))
 		_check(main.hud.station_panel.get_global_rect().encloses(main.hud.station_close_button.get_global_rect()), "close target stays inside panel")
 		await _capture(prefix + "unlocked")

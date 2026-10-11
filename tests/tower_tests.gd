@@ -168,7 +168,8 @@ static func run_world(suite) -> void:
 		p.ascension.defeats["1"] = floor_count
 		player.position = TowerEntrance.POSITION + Vector2(-30, 15)
 		main._interact()
-		suite.check(not hud.station_panel.visible and not main.input_driver.blocked and hud.loot_label.text.contains("Progresso: %d/50." % floor_count), "tower blocked and truthful notice at %d defeats" % floor_count)
+		suite.check(hud.station_panel.visible and main.input_driver.blocked and hud.tower_action_button.disabled and hud.loot_label.text.contains("Progresso: %d/50." % floor_count), "trial blocked while travel panel shows truthful progress at %d defeats" % floor_count)
+		hud.close_station()
 	p.ascension.defeats["1"] = 50
 	var checks_before: int = suite.checks
 	for resolution: Vector2i in [Vector2i(360, 640), Vector2i(390, 844), Vector2i(640, 360), Vector2i(960, 540)]:
@@ -187,14 +188,14 @@ static func run_world(suite) -> void:
 		touch.pressed = false
 		hud.interact_button._input(touch)
 		await suite.frames()
-		suite.check(hud.station_panel.visible and hud.station_title.text == TowerEntrance.NAME and main.input_driver.blocked, "touch opens unlocked tower menu %s" % resolution)
+		suite.check(hud.station_panel.visible and hud.station_title.text == "Torre · Andar 1" and main.input_driver.blocked, "touch opens unlocked tower menu %s" % resolution)
 		suite.check(main.input_driver.touch_direction.is_zero_approx() and not main.input_driver.dash_requested and not hud.joystick.is_processing_input(), "tower resets held joystick/dash %s" % resolution)
 		var panel_rect := hud.station_panel.get_global_rect()
 		suite.check(Rect2(Vector2.ZERO, hud.size).encloses(panel_rect) and panel_rect.encloses(hud.station_close_button.get_global_rect()) and hud.station_close_button.size.y >= 44, "tower panel and 44px close fit viewport %s" % resolution)
 		var texts := ""
 		for node in hud.station_content.get_children():
-			suite.check(not node is Button, "tower offers no nonfunctional start button")
-			texts += (node as Label).text + "\n"
+			if node is Label:
+				texts += node.text + "\n"
 		suite.check(texts.contains("três hordas") and texts.contains("Guardião da Mata") and texts.contains("Se morrer, a prova recomeça da primeira horda.") and texts.contains("Sem checkpoints") and hud.tower_action_button.text == "Entrar na Prova" and hud.tower_action_button.is_visible_in_tree(), "tower offers real entry and describes remaining Guardian truthfully %s" % resolution)
 		var before := player.position
 		var cd := player.attack.cooldown_left
