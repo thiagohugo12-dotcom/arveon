@@ -4,6 +4,7 @@ extends RefCounted
 const NATURE := preload("res://assets/art/mata_v2/nature_simple.png")
 const PATHS := preload("res://assets/art/mata_v2/paths.png")
 const CAMP := preload("res://assets/art/mata_v2/camp_simple.png")
+const PROPS := preload("res://assets/art/mata_v2/camp_props.png")
 const GREEN := Rect2(0,0,88,96)
 const ORANGE := Rect2(96,0,88,96)
 const STONE := Rect2(192,0,48,36)
@@ -14,11 +15,22 @@ const CABIN := Rect2(0,0,96,96)
 const MARKET := Rect2(104,0,56,56)
 const FORGE := Rect2(168,0,56,56)
 const PORTAL := Rect2(104,64,84,100)
+const FENCE_PROP := Rect2(0,0,32,16)
+const SIGN_PROP := Rect2(32,0,20,28)
+const BARREL_PROP := Rect2(52,0,20,24)
+const CRATE_PROP := Rect2(76,0,20,24)
+const FIRE_PROP := Rect2(0,32,32,32)
+const LANTERN_PROP := Rect2(32,32,24,32)
+const BENCH_PROP := Rect2(64,32,32,32)
+const PEBBLES_PROP := Rect2(96,32,32,24)
 var layout: FloorView
 
 
 func sprite(atlas: Texture2D, region: Rect2, at: Vector2) -> void:
 	layout.draw_texture_rect_region(atlas,Rect2(at-Vector2(region.size.x*0.5,region.size.y),region.size),region)
+
+func prop(region: Rect2, at: Vector2) -> void:
+	sprite(PROPS,region,at)
 
 func shadow(at: Vector2, width: float, height: float) -> void:
 	for i in range(6):
@@ -44,7 +56,10 @@ func paint() -> void:
 	for i in range(56):
 		var at := Vector2(rng.randi_range(20,1175),rng.randi_range(20,875))
 		if layout._free_for_decoration(at):
-			sprite(NATURE,FLOWERS if i%11==0 else STONE if i%19==0 else BUSH if i%23==0 else GRASS,at)
+			if i%19 == 0:
+				prop(PEBBLES_PROP,at+Vector2(0,8))
+			else:
+				sprite(NATURE,FLOWERS if i%11==0 else BUSH if i%23==0 else GRASS,at)
 	# A separate sparse pass makes bushes visible without competing with trees.
 	for at in bush_positions():
 		shadow(at+Vector2(2,1),30,8)
@@ -84,21 +99,17 @@ func _camp() -> void:
 	# Compact buildings retain the established service anchors and footprints.
 	for n in range(18):
 		layout._draw_flagstone(Vector2(556+layout._hash(n,71)%21-10,369+n*10),n)
-	for segment: Vector2 in [Vector2(478,515),Vector2(583,641)]:
-		layout._draw_rail(Vector2(segment.x,352),segment.y-segment.x)
-		layout._draw_rail(Vector2(segment.x,548),segment.y-segment.x)
-	for y in [380,400,490,510]:
-		layout._draw_fence(Vector2(473,y))
-		layout._draw_fence(Vector2(643,y))
+	for at in [Vector2(496,352),Vector2(610,352),Vector2(496,548),Vector2(610,548)]:
+		prop(FENCE_PROP,at)
 	# Draw replacements inside the original footprints, not new buildings.
 	layout.draw_texture_rect_region(CAMP,Rect2(452,288,96,96),CABIN)
 	sprite(CAMP,FORGE,SafeCamp.STATIONS["Ferreiro"]+Vector2(0,14))
 	sprite(CAMP,MARKET,SafeCamp.STATIONS["Vendedor"]+Vector2(0,14))
 	layout._draw_chest(SafeCamp.STATIONS["Baú"])
-	for i in range(3):
-		var name: String = ["Baú","Ferreiro","Vendedor"][i]
-		layout._draw_service_sign(SafeCamp.STATIONS[name]+Vector2(28,-10),i)
-	for point: Vector2 in [Vector2(480,411),Vector2(633,420)]: layout._draw_barrel(point)
-	for point: Vector2 in [Vector2(484,526),Vector2(631,535)]: layout._draw_crate(point)
-	for point: Vector2 in [Vector2(479,374),Vector2(638,474)]: layout._draw_lantern(point)
-	layout._draw_fire(Vector2(516,492))
+	for name: String in ["Baú","Ferreiro","Vendedor"]:
+		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(28,-4))
+	for point: Vector2 in [Vector2(480,411),Vector2(633,420)]: prop(BARREL_PROP,point)
+	for point: Vector2 in [Vector2(484,526),Vector2(631,535)]: prop(CRATE_PROP,point)
+	for point: Vector2 in [Vector2(479,374),Vector2(638,474)]: prop(LANTERN_PROP,point)
+	prop(BENCH_PROP,Vector2(548,544))
+	prop(FIRE_PROP,Vector2(516,492))
