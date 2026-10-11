@@ -156,11 +156,20 @@ func _process(delta: float) -> void:
 				queue_redraw()
 		last_visual_position = global_position
 	else:
-		anim_time += delta
-		if anim_time >= (0.14 if walking else 0.55):
-			anim_time = 0.0
-			anim_frame = (anim_frame + 1) % 4
-			queue_redraw()
+		if village_scale:
+			if walking:
+				walk_distance += minf(global_position.distance_to(last_visual_position),24.0)
+				if walk_distance >= 12.0:
+					anim_frame = (anim_frame+int(walk_distance/12.0))%4
+					walk_distance = fmod(walk_distance,12.0)
+					queue_redraw()
+			last_visual_position = global_position
+		else:
+			anim_time += delta
+			if anim_time >= (0.14 if walking else 0.55):
+				anim_time = 0.0
+				anim_frame = (anim_frame + 1) % 4
+				queue_redraw()
 
 func _explorer_direction() -> int:
 	if absf(facing.x) > absf(facing.y):
@@ -172,7 +181,7 @@ func px(x: float, y: float, w: float, h: float, color: Color) -> void:
 
 func _draw() -> void:
 	if elite:
-		var elite_y := -54.0 if appearance == 3 else -45.0 if appearance != 0 else -36.0
+		var elite_y := -60.0 if village_scale else -54.0 if appearance == 3 else -45.0 if appearance != 0 else -36.0
 		draw_rect(Rect2(-22,elite_y,44,3),Color("#e5b968"))
 		draw_string(ThemeDB.fallback_font,Vector2(-15,elite_y-6),"ELITE",HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("#e5b968"))
 	if fury:
@@ -205,18 +214,20 @@ func _draw() -> void:
 	if appearance == 0:
 		# Held passing pose uses the approved appearance even when stopped.
 		var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
-		var destination := Rect2(-30,-42,60,60) if village_scale else Rect2(-24,-32,48,48)
-		draw_texture_rect_region(EXPLORER_ATLAS, destination, Rect2(column * 48, _explorer_direction() * 48, 48, 48), tint)
+		if village_scale:
+			VillageActorArt.person(self,_explorer_direction(),anim_frame if walking or settle_left > 0.0 else 0,Vector2.ZERO,tint)
+		else:
+			draw_texture_rect_region(EXPLORER_ATLAS,Rect2(-24,-32,48,48),Rect2(column*48,_explorer_direction()*48,48,48),tint)
 	else:
 		_draw_monster()
-	if elite:
+	if elite and not village_scale:
 		# Ochre mantle, bright crest and eye tint distinguish elite enemies at a glance.
 		px(-16, -24 + step, 7, 5, Color("#bd844b"))
 		px(9, -24 + step, 7, 5, Color("#bd844b"))
 		px(-8, -27 + step, 16, 3, Color("#e5b968"))
 		px(-3, -32 + step, 6, 5, Color("#cf6c48"))
 	if warning:
-		var warning_y := -57.0 if appearance == 3 else -48.0 if appearance != 0 else -39.0
+		var warning_y := -64.0 if village_scale else -57.0 if appearance == 3 else -48.0 if appearance != 0 else -39.0
 		px(-11,warning_y,22,5,Color("#f4b942"))
 		px(-2,warning_y-8,4,7,Color("#ffe39a"))
 	if flash_left > 0.0:
@@ -232,7 +243,7 @@ func _draw() -> void:
 			px(side * (10 + drift), -13 - drift, 6, 6, Color("#d0aa71"))
 			px(side * (8 + drift), 3 + drift, 4, 4, Color("#685641"))
 	if appearance != 0:
-		var bar_y := -46.0 if appearance == 3 else -37.0
+		var bar_y := -52.0 if village_scale else -46.0 if appearance == 3 else -37.0
 		px(-17,bar_y,34,4,LINE)
 		px(-16,bar_y+1,32.0*hp_ratio,2,Color("#8ce395"))
 
@@ -258,7 +269,12 @@ func _draw_monster() -> void:
 	var source := Rect2(sprite_index * 64, 0, 64, 64)
 	var destination := Rect2(-32, -48, 64, 64)
 	var hit_tint := Color(1.8, 1.8, 1.35) if flash_left > 0.0 else Color.WHITE
-	draw_texture_rect_region(MONSTERS_APPROVED, destination, source, hit_tint)
+	if village_scale:
+		var frame := anim_frame if walking else 0
+		if attack_left > 0.0: frame = 1 if attack_left > 0.12 else 2
+		VillageActorArt.monster(self,sprite_index,frame,hit_tint)
+	else:
+		draw_texture_rect_region(MONSTERS_APPROVED, destination, source, hit_tint)
 
 func _draw_boar(frame: int, step: float) -> void:
 	# Low body, large snout and paired tusks read immediately as a boar.

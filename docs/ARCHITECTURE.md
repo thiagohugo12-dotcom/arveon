@@ -1,4 +1,17 @@
 # Arquitetura
+## Atores da vila V4 — Andar 1
+VillageActorArt compartilha três atlas pequenos nearest 2x, preparados offline
+com alpha original e crop comum entre quadros. ActorView escolhe quatro poses
+e direções do explorador e passos dos três monstros. Deslocamento real dirige
+a passada; não anima caminhada ao bater numa parede. NPCs fazem ações curtas
+sem mudar transform, âncora ou corpo físico. VillageChestView observa a
+abertura do menu Baú. ExplorationView observa os dados existentes para
+transições de 0.22/0.24 s ao coletar/abrir; animações não escrevem progresso.
+As onze peças de exploração são criadas uma vez, com z pelos pés para
+respeitar a profundidade das árvores; sem criação de nós por quadro, luzes,
+partículas, shaders ou geração runtime. Sprites só redesenham quando a pose
+ou alpha muda. Atlas antigos e temas dos Andares 2–5 permanecem disponíveis.
+
 ## Hub V3 (Andar 1)
 Polimento: ground.png mantém as rotas e recebe franjas preparadas offline.
 Arbustos têm posições autorais sem colisões novas. Flores e tufos usam poucos

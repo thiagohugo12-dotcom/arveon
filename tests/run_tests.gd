@@ -72,6 +72,7 @@ func _run() -> void:
 	floor_view.set_visual_v2(true)
 	await frames()
 	preload("res://tests/hub_v3_tests.gd").run(self,main)
+	preload("res://tests/village_actor_tests.gd").run(self,main)
 	var world := main.get_node("Andar1")
 	var tree_feet := floor_view.v2_view.visible_tree_positions()
 	check(tree_feet.size() > 15 and tree_feet.size() < 42, "sparse deterministic trees preserve open space")

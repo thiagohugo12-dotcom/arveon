@@ -6,6 +6,10 @@ var atlas: Texture2D
 var visual_v2 := false
 var v2_view: FloorV2View
 var depth_scenery: Node2D
+var chest_view: Node2D
+
+func set_chest_open(opened: bool) -> void:
+	if is_instance_valid(chest_view): chest_view.set_open(opened)
 const BERRY := preload("res://assets/art/forest_shrub_v035.png") # Existing arena keeps its art.
 const REMOVED_SECONDARY := [Vector2(705,392),Vector2(738,498),Vector2(475,633),Vector2(969,638),Vector2(196,786),Vector2(1092,91)]
 const REFUGE := preload("res://assets/art/forest_refuge_v035.png")
@@ -89,6 +93,12 @@ func _build_depth_scenery(commands: Array) -> void:
 	fire.z_as_relative = false
 	fire.z_index = 670
 	depth_scenery.add_child(fire)
+	chest_view = Node2D.new()
+	chest_view.set_script(preload("res://scripts/presentation/village_chest_view.gd"))
+	chest_view.position = Vector2(500,528)
+	chest_view.z_as_relative = false
+	chest_view.z_index = 656
+	depth_scenery.add_child(chest_view)
 
 func _draw() -> void:
 	if visual_v2:

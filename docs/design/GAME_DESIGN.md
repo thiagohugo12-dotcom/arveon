@@ -1,5 +1,8 @@
 # Game Design — fundação v0.1
 ## Hub V3 — reconstrução aprovada em 11/10/2026
+ATORES_VILA_V4.md autoriza substituir as artes de personagens, monstros e
+coletas no Andar 1 por sprites simples e animados. A aprovação supera a
+preservação anterior das artes dos monstros, mantendo suas regras e física.
 Polimento adicional autorizado conforme HUB_V3_POLIMENTO.md. A versão
 544ddae fica preservada na tag baseline-hub-v3-aprovado-2026-10-11.
 Conforme HUB_RECONSTRUCAO_V3.md e pedido “faça então”: redistribuir a vila do

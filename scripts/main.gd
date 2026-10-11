@@ -92,6 +92,7 @@ func _ready() -> void:
 	hud.rpg_action.connect(_rpg_action)
 	hud.station_action.connect(_station_action)
 	hud.panel_closed.connect(func():
+		(world.get_node("FloorView") as FloorView).set_chest_open(false)
 		input_driver.reset()
 		input_driver.blocked = false
 		station_nearby = ""
@@ -219,6 +220,7 @@ func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> v
 		projectile.arena_bounds = TowerTrial.BOUNDS
 
 func _register_enemy_defeat(actor: EnemyActor) -> void:
+	(actor.get_node("View") as ActorView).village_scale = progress.ascension.current_floor == 1
 	actor.set_meta("floor_id", progress.ascension.current_floor)
 	actor.set_meta("floor_epoch", floor_epoch)
 	actor.defeated.connect(_on_enemy_defeated.bind(actor), CONNECT_ONE_SHOT)
@@ -345,6 +347,7 @@ func _interact() -> void:
 		"guardian":
 			_start_guardian()
 		"station":
+			(world.get_node("FloorView") as FloorView).set_chest_open(found.id == "Baú")
 			input_driver.reset()
 			input_driver.blocked = true
 			hud.show_station(found.id, progress)

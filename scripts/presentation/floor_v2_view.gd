@@ -109,7 +109,6 @@ func _camp() -> void:
 	sprite(PROPS,LANTERN,Vector2(602,526))
 	sprite(PROPS,BENCH,Vector2(440,540))
 	sprite(PROPS,FIRE,Vector2(534,570))
-	layout._draw_chest(Vector2(500,528))
 	for at: Vector2 in [Vector2(328,476),Vector2(558,326),Vector2(764,422),Vector2(400,614),Vector2(620,652),Vector2(750,676)]:
 		flowers(at)
 	for at: Vector2 in [Vector2(584,432),Vector2(574,608),Vector2(340,530)]:

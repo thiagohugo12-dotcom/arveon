@@ -4,6 +4,58 @@ extends Node2D
 var visual_v2 := false
 var progress: GameProgress
 var current_time := 0
+var motion_time := 0.0
+var resource_available: Dictionary = {}
+var resource_fades: Dictionary = {}
+var cache_opened: Dictionary = {}
+var cache_motion: Dictionary = {}
+var pieces: Dictionary = {}
+
+func _piece(id: String, at: Vector2) -> Node2D:
+	if not pieces.has(id):
+		var node := Node2D.new()
+		node.set_script(preload("res://scripts/presentation/village_pickup_view.gd"))
+		node.position = at
+		node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		node.z_as_relative = false
+		node.z_index = roundi(at.y)+100
+		add_child(node)
+		pieces[id] = node
+	return pieces[id]
+
+func _process(delta: float) -> void:
+	if not visual_v2 or progress == null:
+		for node: Node2D in pieces.values(): node.hide()
+		return
+	motion_time += delta
+	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+		var available := int(progress.harvested_until.get(spot.id,0)) <= current_time
+		if resource_available.get(spot.id,available) and not available:
+			resource_fades[spot.id] = 0.22
+		resource_available[spot.id] = available
+		if resource_fades.has(spot.id):
+			resource_fades[spot.id] = maxf(0.0,resource_fades[spot.id]-delta)
+			if resource_fades[spot.id] == 0.0: resource_fades.erase(spot.id)
+		var node := _piece(spot.id,spot.position)
+		node.visible = available or resource_fades.has(spot.id)
+		var pose := 8 if spot.item == "Pedras" else 3 if spot.item == "Ervas" else 6 if spot.item == "Madeira" else (4 if int(motion_time*2.0+spot.position.x)%8 != 0 else 5)
+		var tint := Color.WHITE
+		if resource_fades.has(spot.id):
+			var remaining: float = resource_fades[spot.id]
+			tint.a = remaining/0.22
+			if spot.item == "Madeira": pose = 7
+			elif spot.item == "Cogumelos": pose = 5
+		node.set_pose(pose,tint)
+	for cache: Dictionary in Exploration.HIDDEN_CHESTS:
+		var opened := progress.opened_caches.has(cache.id)
+		if opened and not cache_opened.get(cache.id,opened): cache_motion[cache.id] = 0.24
+		cache_opened[cache.id] = opened
+		if cache_motion.has(cache.id):
+			cache_motion[cache.id] = maxf(0.0,cache_motion[cache.id]-delta)
+			if cache_motion[cache.id] == 0.0: cache_motion.erase(cache.id)
+		var node := _piece(cache.id,cache.position)
+		node.show()
+		node.set_pose(1 if cache_motion.get(cache.id,0.0) > 0.12 else 2 if opened else 0)
 
 func _draw() -> void:
 	if progress == null:
@@ -12,6 +64,7 @@ func _draw() -> void:
 	draw_rect(Rect2(altar - Vector2(24, 20), Vector2(48, 40)), Color("#4b5740"))
 	draw_rect(Rect2(altar - Vector2(10, 30), Vector2(20, 44)), Color("#8a7854"))
 	draw_string(ThemeDB.fallback_font, altar + Vector2(-54, -38), "Guardião · opcional", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#decb91"))
+	if visual_v2: return # V4 pieces share actor/tree depth, created once above.
 	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
 		if int(progress.harvested_until.get(spot.id, 0)) > current_time:
 			continue
@@ -20,11 +73,6 @@ func _draw() -> void:
 		_draw_cache(cache.position, progress.opened_caches.has(cache.id))
 
 func _draw_resource(at: Vector2, item: String) -> void:
-	if visual_v2 and item in ["Ervas","Pedras"]:
-		var region: Rect2 = FloorV2View.BUSH if item == "Ervas" else FloorV2View.STONE
-		var size := Vector2(30,22)
-		draw_texture_rect_region(FloorV2View.NATURE,Rect2(at-Vector2(15,16),size),region)
-		return
 	draw_rect(Rect2(at + Vector2(-13, 9), Vector2(26, 4)), Color("#172b23"))
 	match item:
 		"Ervas":
