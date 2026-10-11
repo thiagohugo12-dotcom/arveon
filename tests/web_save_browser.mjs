@@ -10,6 +10,8 @@ const profile = await mkdtemp(join(tmpdir(), 'grande-arvore-web-save-'));
 const archive = await readFile('build/web-save-fixture.json', 'utf8');
 const fixture = JSON.parse(archive);
 const payload = JSON.parse(fixture.payload);
+const campaignArchive = await readFile('build/campaign-save-fixture.json', 'utf8');
+const campaignPayload = JSON.parse(JSON.parse(campaignArchive).payload);
 const guardianArchive = await readFile('build/guardian-save-fixture.json', 'utf8');
 const guardianPayload = JSON.parse(JSON.parse(guardianArchive).payload);
 const helper = await readFile('scripts/platform/browser_save.js', 'utf8');
@@ -127,6 +129,15 @@ try {
   await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
   check((await snapshot()).ascension.forest_seal && (await snapshot()).gold===guardianPayload.gold,'mobile orientation preserves Guardian seal and rewards');
+  await seed();
+  await evaluate(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(campaignArchive)})`);
+  await game();
+  const campaign = await snapshot();
+  check(campaign.ascension.current_floor===5 && campaign.ascension.campaign_completed && JSON.stringify(campaign.ascension.unlocked_floors)==='[1,2,3,4,5]','actual exported mobile engine loads completed five-floor campaign');
+  await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
+  const campaignReload = await snapshot();
+  check(campaignReload.xp===campaignPayload.xp && campaignReload.gold===campaignPayload.gold && !('trial' in campaignReload),'five-floor reload retains exact rewards without checkpoints or duplicate grants');
+  check(JSON.stringify(campaignReload.floor_states)===JSON.stringify(campaignPayload.floor_states) && !campaignReload.ascension.unlocked_floors.includes(6),'actual engine retains independent exploration without a sixth floor');
   check(!errors.some(e=>/SCRIPT ERROR|Parse Error|Invalid call/.test(e)),'actual exported runtime has no GDScript errors');
   console.log(`WEB_SAVE_RESULT: ${checks} checks, 0 failures`);
 } finally {await stop();server.close();}

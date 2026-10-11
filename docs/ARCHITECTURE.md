@@ -95,3 +95,32 @@ aceita saves antigos sem forest_seal quando incompletos. Nenhuma recompensa
 ocorre em load/import. Selo é permanente e aparece na Mochila, sem comércio ou
 perda na morte. Andar atual permanece 1 e não há ação de viagem.
 HUD usa espaço da missão durante o chefe, sem painel permanente adicional.
+
+## Campanha v0.6.0
+FloorConfig centraliza os cinco identificadores/configurações, requisito 50,
+HP/dano e XP/ouro, e referências às mesmas cenas da Mata/arena/Torre.
+AscensionProgress guarda andar atual, contadores próprios, cadeia de
+conquistas/desbloqueios, selo e campanha inicial. Valida exclusivamente
+prefixos conquistados consistentes, sem aceitar saltos ou Andar 6.
+
+GameProgress.floor_states possui coletas, caches, descobertas e altar opcional
+por andar. Os campos de exploração anteriores representam o andar atual e
+são sincronizados ao salvar/trocar, mantendo as views existentes. Personagem,
+missões, inventário, equipamentos, baú de serviço e economia são globais.
+Save v6 anterior sem floor_states migra sua exploração para o Andar 1;
+conquista anterior conserva selo/desbloqueio do 2. Importação é validada
+completamente antes da substituição. Journal, backups e autosave mantidos.
+
+Main._travel_floor descarta atores/projéteis e a Mata atual, instancia a mesma
+cena e chega em SafeCamp.RESPAWN com HP/dados globais preservados. Somente
+um cenário explorável está carregado. floor_epoch rejeita eventos atrasados;
+estatísticas privadas são escaladas uma vez por ator. Velocidade, IA, arte,
+limites e ataques são os originais. Ranged/raízes/investida usam a mesma escala
+de dano, sem alterar janelas, alcance, fases ou feedback.
+
+TowerTrial captura floor_id somente em RAM. Vitória registra a conquista e
+a recompensa única juntas; load/import nunca concede recompensas. Os cinco
+andares compartilham as hordas e o Guardião, com recuperação entre hordas
+e morte/abandono sem checkpoints. Viagem é proibida durante tentativas.
+Inimigos vivos não são snapshots persistentes: retornos repovoam a Mata;
+a exploração e os marcos permanentes permanecem independentes e salvos.

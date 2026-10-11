@@ -1,5 +1,5 @@
 # Grande Árvore RPG
-Fundação Godot 4.5.1 + GDScript, 2D Compatibility. Apenas **Andar 1 — Mata dos Primeiros Passos**.
+Fundação Godot 4.5.1 + GDScript, 2D Compatibility. **v0.6.0: cinco andares jogáveis reutilizando a Mata dos Primeiros Passos**, com dificuldade configurável.
 
 ## Abrir no Windows
 1. Instale/extraia **Godot 4.5.1 Standard** (não .NET): https://godotengine.org/download/archive/4.5.1-stable/.
@@ -40,7 +40,7 @@ repetir recompensas. Save v5 migra v1–4, preservando os atributos existentes.
 Poção e proficiência ainda não estão implementadas. Valores são provisórios.
 
 ## CI e ambientes
-Actions importa, executa testes, renderiza 31 capturas de QA e exporta Web. O PR da branch
+Actions importa, executa testes, renderiza 182 capturas de QA e exporta Web. O PR da branch
 `feat/andar1-v020-primeiro-passe` publica o build validado em Preview e atualiza
 TESTE: https://grande-arvore-rpg-teste.vercel.app/.
 PRODUÇÃO: https://grande-arvore-rpg.vercel.app/ — não alterada por esta versão.
@@ -48,7 +48,7 @@ Não fazer merge em main ou publicar em produção sem autorização de Thiago.
 
 ## Contratos
 `AGENTS.md`, `docs/design/GAME_DESIGN.md`, `docs/ARCHITECTURE.md`, `docs/QA_CHECKLIST.md` e `docs/VALIDATION.md`.
-Corte, Investida e Fúria estão ativos; poção permanece desabilitada. IA simples sem desvio de obstáculos. Nenhum Andar 2.
+Corte, Investida e Fúria estão ativos; poção permanece desabilitada. IA simples sem desvio de obstáculos. Os cinco andares usam o mesmo cenário e mantêm progresso próprio.
 
 ## v0.3.2 — Renovação Visual
 Atlas pixel art autorais para solo, árvores e quatro atores, gerados de forma
@@ -58,3 +58,17 @@ Ferreiro usam cartões e ícones; combate ganhou efeitos curtos de pixels. A câ
 regras, receitas e saves v5 permanecem compatíveis. Veja
 `docs/iterations/V0.3.2_RENOVACAO_VISUAL.md` para evidências e limites.
 
+
+## v0.6.0 — A Ascensão dos Cinco Andares
+Torre no extremo leste, (1130,455): E/Interagir abre a seleção mesmo antes
+dos 50 abates. Viaje aos destinos disponíveis; os bloqueados mostram seu estado.
+Cada andar exige 50 derrotas próprias antes de Entrar na Prova. Complete as
+hordas 4/6/6 e o Guardião existente para desbloquear o seguinte. Morreu,
+abandonou ou fechou o jogo: tentativa encerrada, sem checkpoints. A quinta
+vitória registra a campanha inicial, sem Andar 6 ou declaração de versão 1.0.
+
+HP/dano: 1,00/1,20/1,40/1,60/1,80; XP/ouro: 1,00/1,10/1,20/1,30/1,40.
+Uma única Mata ativa, mesmas dimensões, Torre, arte e serviços. Save v6
+preserva personagem global, exploração por andar e migra a vitória antiga
+com seu Selo da Mata e Andar 2 liberado. Backup na Mochila → Registro.
+Veja `docs/iterations/V0.6.0_CINCO_ANDARES.md` para validação e limitações.
