@@ -34,6 +34,7 @@ func _ready() -> void:
 	for station: String in ["Ferreiro", "Vendedor"]:
 		var npc := NPC_VIEW.new()
 		npc.kind = 0 if station == "Ferreiro" else 1
+		npc.visual_v2 = visual_v2
 		npc.position = Vector2(606, 423 if station == "Ferreiro" else 475)
 		add_child(npc)
 
@@ -41,6 +42,9 @@ func set_visual_v2(enabled: bool) -> void:
 	if visual_v2 == enabled:
 		return
 	visual_v2 = enabled
+	for child in get_children():
+		if child is CampNpcView:
+			child.visual_v2 = enabled
 	if enabled and v2_view == null:
 		v2_view = FloorV2View.new()
 		v2_view.layout = self
