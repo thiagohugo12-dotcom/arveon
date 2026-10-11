@@ -238,8 +238,8 @@ func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 		if source.get_meta("floor_id", 0) == progress.ascension.current_floor:
 			progress.ascension.record_defeat(progress.ascension.current_floor)
 	defeated_count += 1
-	var gained_xp: int = [12, 10, 16, 35, 80][kind]
-	var gained_gold := loot_rng.randi_range(2, 5)
+	var gained_xp := FloorConfig.reward([12, 10, 16, 35, 80][kind], progress.ascension.current_floor)
+	var gained_gold := FloorConfig.reward(loot_rng.randi_range(2, 5), progress.ascension.current_floor)
 	earned_xp += gained_xp
 	earned_gold += gained_gold
 	var material: String = ["Couro", "Seda", "Essência", "Couro", "Essência"][kind]
@@ -623,8 +623,8 @@ func _enter_trial() -> void:
 	player.velocity = Vector2.ZERO
 	player.charge_left = 0.0
 	player.dash.time_left = 0.0
-	trial.start()
-	hud.heading.text = "Torre · Andar 1"
+	trial.start(progress.ascension.current_floor)
+	hud.heading.text = "Torre · Andar %d" % trial.floor_id
 	hud.minimap.arena_bounds = TowerTrial.BOUNDS
 	hud.minimap.update_player(player.global_position)
 	_camera_bounds(TowerTrial.BOUNDS)
@@ -838,6 +838,8 @@ func _spawn_tower_guardian() -> void:
 	tower_guardian.stats.max_hp = TowerGuardian.MAX_HP
 	tower_guardian.stats.move_speed = 65.0
 	tower_guardian.target = player
+	_apply_floor_stats(tower_guardian)
+	tower_guardian.set_meta("floor_id", trial.floor_id)
 	tower_guardian.arena_bounds = TowerTrial.BOUNDS
 	tower_guardian.position = trial.spawn_positions(player.position, 1)[0]
 	tower_guardian.set_meta("tower_attempt", trial.attempt_id)
@@ -848,14 +850,14 @@ func _spawn_tower_guardian() -> void:
 	hud.show_notice("Guardião da Mata · desvie dos avisos no chão")
 
 func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> void:
-	if transitioning or trial.phase != TowerTrial.Phase.GUARDIAN or token != trial.attempt_id or source != tower_guardian or source.get_parent() != self or source.health.is_alive() or source.get_meta("defeat_recorded", false):
+	if transitioning or trial.phase != TowerTrial.Phase.GUARDIAN or token != trial.attempt_id or trial.floor_id != progress.ascension.current_floor or source.get_meta("floor_id", 0) != trial.floor_id or source != tower_guardian or source.get_parent() != self or source.health.is_alive() or source.get_meta("defeat_recorded", false):
 		return
 	source.set_meta("defeat_recorded", true)
 	trial.phase = TowerTrial.Phase.VICTORY
 	victory_first = progress.ascension.complete_forest_trial()
 	if victory_first:
-		earned_xp += AscensionProgress.GUARDIAN_XP
-		earned_gold += AscensionProgress.GUARDIAN_GOLD
+		earned_xp += FloorConfig.reward(AscensionProgress.GUARDIAN_XP, trial.floor_id)
+		earned_gold += FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, trial.floor_id)
 	# Snapshot includes reward and claim together; load/import never grants rewards.
 	_save_progress()
 	hud.set_boss(null)

@@ -14,6 +14,7 @@ const SPAWN_POINTS := [Vector2(100, 100), Vector2(260, 100), Vector2(460, 100),
 	Vector2(620, 100), Vector2(100, 270), Vector2(620, 270), Vector2(100, 440),
 	Vector2(260, 440), Vector2(460, 440), Vector2(620, 440), Vector2(360, 270)]
 var phase := Phase.IDLE
+var floor_id := 1
 var wave := 0
 var attempt_id := 0
 var preparation_left := 0.0
@@ -23,9 +24,10 @@ var cleared_waves := 0
 func active() -> bool:
 	return phase != Phase.IDLE
 
-func start() -> bool:
-	if active():
+func start(id: int = 1) -> bool:
+	if active() or not FloorConfig.valid(id):
 		return false
+	floor_id = id
 	attempt_id += 1
 	wave = 1
 	cleared_waves = 0
@@ -90,7 +92,7 @@ func summary() -> String:
 	if phase == Phase.GUARDIAN:
 		return "Guardião da Mata\nDesvie dos ataques avisados"
 	if phase == Phase.VICTORY:
-		return "Ascensão conquistada\nSelo da Mata"
+		return "Ascensão conquistada\nAndar %d" % floor_id
 	var name: String = ["Iniciação", "Resistência", "Sobrevivência"][maxi(0, wave - 1)]
 	if phase == Phase.PREPARING or phase == Phase.INTERVAL:
 		return "Horda %d/3 · Preparação %ds\nPróxima: %s" % [wave + (1 if phase == Phase.INTERVAL else 0), ceili(preparation_left), ["Iniciação", "Resistência", "Sobrevivência"][mini(2, wave if phase == Phase.INTERVAL else wave - 1)]]

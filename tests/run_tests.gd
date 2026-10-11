@@ -6,8 +6,8 @@ var deaths: int = 0
 
 func _initialize() -> void:
 	# A runtime error can abort _run before quit; always bound the runner itself.
-	create_timer(30.0).timeout.connect(func():
-		push_error("FAIL: gameplay tests did not finish within 30 seconds")
+	create_timer(60.0).timeout.connect(func():
+		push_error("FAIL: gameplay tests did not finish within 60 seconds")
 		quit(1)
 	)
 	call_deferred("_run")
@@ -526,6 +526,7 @@ func _run() -> void:
 	await preload("res://tests/tower_tests.gd").run_world(self)
 	await preload("res://tests/tower_trial_tests.gd").run_world(self)
 	await preload("res://tests/tower_guardian_tests.gd").run_world(self)
+	await preload("res://tests/campaign_tests.gd").run_world(self)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
 	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
 	print("RESULT: %d checks, %d failures" % [checks, failures])

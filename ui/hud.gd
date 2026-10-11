@@ -440,7 +440,7 @@ func refresh_inventory(progress: GameProgress) -> void:
 	menu_progress = progress
 	inventory_gold.text = "Ouro: %d" % progress.gold
 	if progress.ascension.forest_seal:
-		inventory_gold.text += " · Selo da Mata · Andar 2 liberado"
+		inventory_gold.text += " · Selo da Mata · %d andares" % progress.ascension.unlocked_floors.size()
 		inventory_gold.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for child in inventory_list.get_children():
 		inventory_list.remove_child(child)
@@ -540,9 +540,9 @@ func refresh_station(progress: GameProgress) -> void:
 		var active := tower_trial != null and tower_trial.active()
 		var cleared := active and tower_trial.phase == TowerTrial.Phase.VICTORY
 		_add_description("Vitória · Guardião da Mata!" if cleared else tower_trial.summary() if active else "Andar %d · Torre: %d/50 criaturas" % [selected_floor, progress.ascension.defeats[str(selected_floor)]])
-		_add_description("Selo da Mata conquistado · Ascensão concluída" if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova concluída" if progress.ascension.completed_trials[str(selected_floor)] else "Prova de Ascensão liberada" if progress.ascension.entrance_unlocked(selected_floor) else "Prova bloqueada: derrote 50 criaturas neste andar.")
-		_add_description("+180 XP · +40 ouro" if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e Guardião da Mata.")
-		_add_description("Andar 2 desbloqueado · viagem indisponível." if cleared else "Se morrer, a prova recomeça da primeira horda.")
+		_add_description("Ascensão do Andar %d concluída%s" % [progress.ascension.current_floor, " · Selo da Mata" if progress.ascension.current_floor == 1 else ""] if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova concluída" if progress.ascension.completed_trials[str(selected_floor)] else "Prova de Ascensão liberada" if progress.ascension.entrance_unlocked(selected_floor) else "Prova bloqueada: derrote 50 criaturas neste andar.")
+		_add_description("+%d XP · +%d ouro" % [FloorConfig.reward(AscensionProgress.GUARDIAN_XP, progress.ascension.current_floor), FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, progress.ascension.current_floor)] if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e Guardião da Mata.")
+		_add_description(("Campanha inicial conquistada! Cinco andares superados." if progress.ascension.current_floor == 5 else "Andar %d desbloqueado · viaje pela Torre na Mata." % (progress.ascension.current_floor + 1)) if cleared else "Se morrer, a prova recomeça da primeira horda.")
 		_add_description("Retorne à Mata em segurança." if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
 		tower_action_button.text = "Retornar à Mata" if cleared else "Abandonar Prova" if active else "Entrar na Prova"
 		tower_action_button.disabled = not active and not progress.ascension.entrance_unlocked()
@@ -693,7 +693,7 @@ func _input(event: InputEvent) -> void:
 	if station_name == TowerEntrance.NAME:
 		if _activate_touch_button(station_close_button, event.position):
 			return
-		if not _touch_buttons(station_content, event.position):
+		if station_scroll.get_global_rect().has_point(event.position) and not _touch_buttons(station_content, event.position):
 			_begin_scroll(station_scroll, event)
 		get_viewport().set_input_as_handled()
 		return
