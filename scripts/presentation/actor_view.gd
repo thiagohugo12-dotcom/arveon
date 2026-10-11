@@ -196,7 +196,7 @@ func _draw() -> void:
 		draw_texture_rect_region(EXPLORER_ATLAS, Rect2(-24, -32, 48, 48), Rect2(column * 48, _explorer_direction() * 48, 48, 48), tint)
 	else:
 		var frame := anim_frame if walking else 0
-		draw_texture_rect_region(ATLAS, Rect2(-24, -32 + step, 48, 48), Rect2(frame * 48, appearance * 48, 48, 48), tint)
+		_draw_monster(frame, step)
 	if elite:
 		# Ochre mantle, bright crest and eye tint distinguish elite enemies at a glance.
 		px(-16, -24 + step, 7, 5, Color("#bd844b"))
@@ -221,6 +221,82 @@ func _draw() -> void:
 	if appearance != 0:
 		px(-17, -30, 34, 4, LINE)
 		px(-16, -29, 32.0 * hp_ratio, 2, Color("#8ce395"))
+
+
+func _monster_tone(value: String) -> Color:
+	var color := Color(value)
+	return color.lightened(0.52) if flash_left > 0.0 else color
+
+func _monster_rect(area: Rect2, value: String, step: float) -> void:
+	draw_rect(Rect2(area.position + Vector2(0,step),area.size),_monster_tone(value))
+
+func _monster_poly(points: Array[Vector2], value: String, step: float) -> void:
+	var shifted := PackedVector2Array()
+	for point in points:
+		shifted.append(point + Vector2(0,step))
+	draw_colored_polygon(shifted,_monster_tone(value))
+
+func _draw_monster(frame: int, step: float) -> void:
+	match appearance:
+		1: _draw_boar(frame,step)
+		2: _draw_spider(frame,step)
+		3: _draw_cactus(frame,step)
+
+func _draw_boar(frame: int, step: float) -> void:
+	# Low body, large snout and paired tusks read immediately as a boar.
+	var hoof_shift := 2.0 if frame % 2 else 0.0
+	_monster_rect(Rect2(-16,2+hoof_shift,7,9),"#352a25",step)
+	_monster_rect(Rect2(9,2+(0.0 if hoof_shift else 2.0),7,9),"#352a25",step)
+	_monster_poly([Vector2(-20,-12),Vector2(-17,-23),Vector2(-9,-28),Vector2(7,-28),Vector2(17,-21),Vector2(21,-9),Vector2(18,2),Vector2(12,8),Vector2(-12,8),Vector2(-19,2)],"#332820",step)
+	_monster_poly([Vector2(-17,-12),Vector2(-13,-21),Vector2(-6,-24),Vector2(8,-23),Vector2(15,-17),Vector2(17,-6),Vector2(13,2),Vector2(-12,3),Vector2(-16,-4)],"#8f4f2f",step)
+	_monster_poly([Vector2(-13,-18),Vector2(-7,-24),Vector2(8,-22),Vector2(13,-16),Vector2(10,-12),Vector2(-9,-12)],"#bd7440",step)
+	_monster_poly([Vector2(-16,-21),Vector2(-19,-28),Vector2(-9,-25),Vector2(-8,-19)],"#5f3728",step)
+	_monster_poly([Vector2(9,-21),Vector2(18,-27),Vector2(17,-18),Vector2(12,-16)],"#5f3728",step)
+	_monster_rect(Rect2(-13,-10,26,14),"#d08a53",step)
+	_monster_rect(Rect2(-9,-5,18,10),"#a85f43",step)
+	_monster_rect(Rect2(-3,0,6,3),"#3a2927",step)
+	_monster_rect(Rect2(-10,-15,4,3),"#211f1d",step)
+	_monster_rect(Rect2(6,-15,4,3),"#211f1d",step)
+	_monster_poly([Vector2(-13,-8),Vector2(-18,-3),Vector2(-15,3),Vector2(-10,-2)],"#f2dc9f",step)
+	_monster_poly([Vector2(13,-8),Vector2(18,-3),Vector2(15,3),Vector2(10,-2)],"#f2dc9f",step)
+
+func _draw_spider(frame: int, step: float) -> void:
+	# Three grouped legs per side keep the silhouette wide without visual noise.
+	var reach := 2.0 if frame % 2 else 0.0
+	var leg_dark := _monster_tone("#39283f")
+	var leg_mid := _monster_tone("#68405d")
+	for side in [-1.0,1.0]:
+		for row in range(3):
+			var root := Vector2(11.0*side,-13.0+row*8.0+step)
+			var knee := Vector2((19.0+reach+row)*side,-18.0+row*10.0+step)
+			var foot := Vector2((23.0+reach)*side,-14.0+row*11.0+step)
+			draw_line(root,knee,leg_dark,5.0)
+			draw_line(knee,foot,leg_mid,4.0)
+	_monster_poly([Vector2(-14,-24),Vector2(-7,-30),Vector2(8,-30),Vector2(15,-23),Vector2(14,-11),Vector2(8,-6),Vector2(-9,-6),Vector2(-15,-12)],"#34273b",step)
+	_monster_poly([Vector2(-10,-23),Vector2(-5,-27),Vector2(7,-27),Vector2(11,-21),Vector2(9,-12),Vector2(-8,-12)],"#74445f",step)
+	_monster_poly([Vector2(-11,-10),Vector2(-7,-16),Vector2(8,-16),Vector2(13,-9),Vector2(9,3),Vector2(-8,3)],"#4a2e4b",step)
+	_monster_rect(Rect2(-7,-11,14,10),"#8f5067",step)
+	for eye in [Vector2(-5,-8),Vector2(3,-8),Vector2(-2,-4)]:
+		_monster_rect(Rect2(eye,Vector2(3,3)),"#ef765c",step)
+	_monster_rect(Rect2(-3,-1,6,3),"#d39a73",step)
+
+func _draw_cactus(frame: int, step: float) -> void:
+	# One tall trunk, two arms and broad feet give the mandacaru a clean icon.
+	var sway := 1.0 if frame == 1 else -1.0 if frame == 3 else 0.0
+	_monster_rect(Rect2(-12+sway,3,9,8),"#314334",step)
+	_monster_rect(Rect2(4+sway,3,9,8),"#314334",step)
+	_monster_poly([Vector2(-11+sway,-25),Vector2(-7+sway,-31),Vector2(7+sway,-31),Vector2(11+sway,-25),Vector2(11+sway,4),Vector2(6+sway,9),Vector2(-6+sway,9),Vector2(-11+sway,4)],"#294c36",step)
+	_monster_rect(Rect2(-7+sway,-27,14,31),"#4f8a50",step)
+	_monster_rect(Rect2(-4+sway,-25,4,26),"#82ad59",step)
+	_monster_poly([Vector2(-9+sway,-14),Vector2(-17+sway,-19),Vector2(-21+sway,-16),Vector2(-21+sway,-3),Vector2(-17+sway,1),Vector2(-11+sway,-2)],"#315d3d",step)
+	_monster_rect(Rect2(-19+sway,-15,5,11),"#5c9852",step)
+	_monster_poly([Vector2(9+sway,-19),Vector2(16+sway,-24),Vector2(21+sway,-21),Vector2(21+sway,-7),Vector2(17+sway,-3),Vector2(11+sway,-7)],"#315d3d",step)
+	_monster_rect(Rect2(15+sway,-20,5,12),"#5c9852",step)
+	_monster_rect(Rect2(-7+sway,-36,14,8),"#3d713f",step)
+	_monster_rect(Rect2(-3+sway,-39,6,7),"#d7b954",step)
+	_monster_rect(Rect2(-5+sway,-17,3,4),"#20382d",step)
+	_monster_rect(Rect2(3+sway,-17,3,4),"#20382d",step)
+	_monster_rect(Rect2(-3+sway,-8,6,3),"#335d3b",step)
 
 func _draw_strike() -> void:
 	var progress := clampf((0.24 - attack_left) / 0.24, 0.0, 1.0)
