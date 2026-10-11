@@ -9,6 +9,8 @@ const EQUIPMENT := {
 	"espada": {"name": "Espada inicial", "slot": "Arma", "damage": 0, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "gold": 0, "materials": {}},
 	"machado": {"name": "Machado de pedra", "slot": "Arma", "damage": 4, "hp": 0, "speed": -4, "spirit": 0, "armor": 0, "gold": 35, "materials": {"Madeira": 3, "Pedras": 4}},
 	"lanca": {"name": "Lança da mata", "slot": "Arma", "damage": 2, "hp": 0, "speed": 6, "spirit": 1, "armor": 0, "gold": 40, "materials": {"Madeira": 4, "Seda": 2}},
+	"arco": {"name": "Arco da floresta", "slot": "Arma", "damage": 0, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "gold": 30, "materials": {"Madeira": 3, "Seda": 2}},
+	"cajado": {"name": "Cajado de raízes", "slot": "Arma", "damage": 0, "hp": 0, "speed": 0, "spirit": 2, "armor": 0, "gold": 35, "materials": {"Madeira": 3, "Essência": 2}},
 	"couro": {"name": "Colete de couro", "slot": "Armadura", "damage": 0, "hp": 12, "speed": 0, "spirit": 0, "armor": 1, "gold": 25, "materials": {"Couro": 4, "Madeira": 1}},
 	"trama": {"name": "Trama de seda", "slot": "Armadura", "damage": 0, "hp": 6, "speed": 4, "spirit": 2, "armor": 0, "gold": 30, "materials": {"Seda": 4, "Ervas": 2}},
 	"pedra": {"name": "Amuleto de pedra", "slot": "Acessório", "damage": 1, "hp": 6, "speed": 0, "spirit": 0, "armor": 0, "gold": 20, "materials": {"Pedras": 3, "Essência": 1}},

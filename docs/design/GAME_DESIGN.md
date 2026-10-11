@@ -111,3 +111,11 @@ substitui a restrição anterior de não iniciar Andar 2 para este recorte.
 Progressão sequencial, 50 abates próprios, exploração independente e viagens
 seguras pela Torre. Quinta vitória conclui campanha inicial, sem declarar 1.0.
 Personagem e serviços globais preservados. Sem Andar 6, nova arte ou polimento.
+
+## v0.7.0 — Arsenal, Etapa 1, aprovada em 11/10/2026
+Conforme ARSENAL_V070.md: cinco categorias funcionais (espada, machado,
+lança, arco, cajado), raridades independentes de melhoria, Mochila compacta
+com ícones e detalhes/comparação sob seleção. IDs antigos preservados;
+arco/cajado entram no Ferreiro existente. Projéteis físicos/mágicos têm
+comportamentos distintos e respeitam World, menus e limites. Sem novas
+habilidades, talentos, maestrias, mapas, chefes ou balanceamento global.

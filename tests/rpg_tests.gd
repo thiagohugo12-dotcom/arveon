@@ -42,9 +42,9 @@ static func run(suite, main) -> void:
 	for id: String in RPGRules.EQUIPMENT:
 		if not p.equipment.has(id):
 			p.forge(id, -1)
-	suite.check(p.equipment.size() == 7, "three weapons two armors and two accessories have actual recipes")
+	suite.check(p.equipment.size() == 9, "five weapons two armors and two accessories have actual recipes")
 	suite.check(p.equip("machado") and p.equip("couro") and p.equip("semente") and not p.equip("machado"), "each slot equips one owned item and repeat equip is inert")
-	suite.check(p.equipment.has("espada") and p.equipment.size() == 7 and p.combat_stats().damage == 21, "old weapon stays owned and equipment bonuses apply")
+	suite.check(p.equipment.has("espada") and p.equipment.size() == 9 and p.combat_stats().damage == 21, "old weapon stays owned and equipment bonuses apply")
 	suite.check(not p.equip("inexistente") and p.unequip("Arma") and p.equipment.has("machado") and not p.unequip("Arma"), "unequip retains inventory and rejects empty slot")
 	p.equip("machado")
 	var path := "user://qa_rpg_%d.json" % Time.get_ticks_usec()
