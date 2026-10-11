@@ -1,17 +1,16 @@
 class_name FloorView
 extends Node2D
 
-# Small limited-palette sprites and seeded placement; collisions use the same tree feet.
-const OAK := preload("res://assets/art/forest_oak_v035.png")
-const SPRUCE := preload("res://assets/art/forest_spruce_v035.png")
-const BERRY := preload("res://assets/art/forest_shrub_v035.png")
-const LINDEN := preload("res://assets/art/forest_linden_v035.png")
+# Minimal shared pixel atlas; physical trunks use the same deterministic feet.
+var atlas: Texture2D
+const BERRY := preload("res://assets/art/forest_shrub_v035.png") # Existing arena keeps its art.
+const REMOVED_SECONDARY := [Vector2(705,392),Vector2(738,498),Vector2(475,633),Vector2(969,638),Vector2(196,786),Vector2(1092,91)]
 const REFUGE := preload("res://assets/art/forest_refuge_v035.png")
 const NPC_VIEW := preload("res://scripts/presentation/camp_npc_view.gd")
 const FOREST := Color("#294c37")
 const FOREST_LIGHT := Color("#244431")
-const TRAIL := Color("#b98955")
-const TRAIL_HIGHLIGHT := Color("#d1a06c")
+const TRAIL := Color("#d5ba7d")
+const TRAIL_HIGHLIGHT := Color("#e3cf9a")
 const ROCK := Color("#45554d")
 const ROCKS := [Rect2(340, 300, 130, 50), Rect2(760, 520, 90, 110)]
 const TRAILS := [
@@ -28,6 +27,7 @@ const RESERVED := [Vector2(850, 400), Vector2(930, 440), Vector2(610, 750),
 	Vector2(180, 460), Vector2(630, 135), Vector2(955, 665)]
 
 func _ready() -> void:
+	atlas = MataArt.texture()
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	for station: String in ["Ferreiro", "Vendedor"]:
 		var npc := NPC_VIEW.new()
@@ -50,14 +50,8 @@ func _hash(x: int, y: int) -> int:
 	return absi((n ^ (n >> 11)) * 31337) % 9973
 
 func _draw_ground() -> void:
-	for y in range(0, 900, 32):
-		for x in range(0, 1200, 32):
-			var patch := _hash(x / 32, y / 32) % 7
-			draw_rect(Rect2(x, y, 32, 32), Color("#467a43") if patch < 4 else Color("#4b8048") if patch < 6 else Color("#527c40"))
-			for n in range(2):
-				var px := x + _hash(x + n * 23, y) % 30
-				var py := y + _hash(x, y + n * 19) % 30
-				draw_rect(Rect2(px, py, 3 + n, 2), Color("#609149") if n else Color("#3b6b42"))
+	# Quiet flat ground; sparse vegetation supplies variation without tiled noise.
+	draw_rect(Rect2(0,0,1200,900),Color("#98a765"))
 
 func _draw_paths() -> void:
 	# One continuous outline per trail prevents spikes at changes in direction.
@@ -67,47 +61,34 @@ func _draw_paths() -> void:
 		for j in range(trail.size() - 1):
 			var start: Vector2 = trail[j]
 			var finish: Vector2 = trail[j + 1]
-			var steps := ceili(start.distance_to(finish) / 8.0)
+			var steps := ceili(start.distance_to(finish) / 12.0)
 			for n in range(0 if j == 0 else 1, steps + 1):
 				var t := float(n) / steps
 				var bend := sin(t * PI) * (5.0 * sin(t * 5.0 + i * 2.3) + 3.0 * sin(t * 9.0 + j * 1.8))
 				centers.append(start.lerp(finish, t) + (finish - start).normalized().orthogonal() * bend)
-		for border in [7.0, 0.0]:
+		for border in [4.0, 0.0]:
 			var left := PackedVector2Array()
 			var right := PackedVector2Array()
 			for n in range(centers.size()):
 				var prev: Vector2 = centers[maxi(0, n - 1)]
 				var next: Vector2 = centers[mini(n + 1, centers.size() - 1)]
 				var normal := (next - prev).normalized().orthogonal()
-				var waviness := sin(float(n) * 0.17 + i) * 2.8 + sin(float(n) * 0.49 + i * 3) * 1.5 + float(_hash(n / 5, i * 19) % 3 - 1)
+				var waviness := sin(float(n) * 0.17 + i) * 1.5
 				var width: float = TRAIL_WIDTHS[i] * 0.5 + border + waviness
 				left.append((centers[n] + normal * width).floor())
 				right.append((centers[n] - normal * width).floor())
 			for n in range(right.size() - 1, -1, -1):
 				left.append(right[n])
-			draw_colored_polygon(left, Color("#55743e") if border > 0.0 else TRAIL)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 33042
-	for i in range(TRAILS.size()):
-		var trail: Array = TRAILS[i]
-		for j in range(trail.size() - 1):
-			var length: float = trail[j].distance_to(trail[j + 1])
-			for n in range(0, int(length), 32):
-				var at: Vector2 = trail[j].lerp(trail[j + 1], float(n) / length).floor()
-				at += Vector2(rng.randi_range(-12, 12), rng.randi_range(-9, 9))
-				draw_rect(Rect2(at, Vector2(2 + n % 3, 2)), TRAIL_HIGHLIGHT if n % 3 == 0 else Color("#97734a"))
-				if n % 5 == 0:
-					_draw_pebble(at + Vector2(6, 4), n)
-				else:
-					draw_rect(Rect2(at + Vector2(-4, 4), Vector2(5 + n % 4, 3)), Color("#9e7449"))
-				if n % 3 == 0:
-					var direction: Vector2 = (trail[j + 1] - trail[j]).normalized().orthogonal()
-					var side := -1 if n % 2 else 1
-					_draw_grass(at + direction * side * (TRAIL_WIDTHS[i] * 0.5 + 6), n)
+			draw_colored_polygon(left, Color("#899853") if border > 0.0 else TRAIL)
+	# Rare worn marks; the routes stay legible at phone scale.
+	for trail: Array in TRAILS:
+		for j in range(trail.size()-1):
+			var center: Vector2 = trail[j].lerp(trail[j+1],0.5).floor()
+			draw_rect(Rect2(center,Vector2(5,2)),TRAIL_HIGHLIGHT)
 
 func _draw_grass(at: Vector2, seed: int) -> void:
-	var dark := Color("#366a3d")
-	var light := Color("#79a949") if seed % 4 else Color("#a3bb52")
+	var dark := Color("#74884d")
+	var light := Color("#aabb68")
 	draw_colored_polygon(PackedVector2Array([at + Vector2(-5, 3), at + Vector2(-3, -5), at, at + Vector2(1, -8), at + Vector2(3, 0), at + Vector2(6, -4), at + Vector2(5, 4)]), dark)
 	draw_rect(Rect2(at + Vector2(-2, -3), Vector2(2, 5)), light)
 	draw_rect(Rect2(at + Vector2(3, -1), Vector2(2, 4)), light)
@@ -117,19 +98,12 @@ func _draw_pebble(at: Vector2, seed: int) -> void:
 	draw_rect(Rect2(at + Vector2(-1, -2), Vector2(3, 1)), Color("#c7b795") if seed % 2 else Color("#b2ab8a"))
 
 func _draw_clearing(center: Vector2) -> void:
-	for y in range(-28, 29, 6):
-		var span := roundi(39.0 * sqrt(maxf(0.0, 1.0 - pow(y / 33.0, 2))))
-		span += _hash(roundi(center.x), y) % 5 - 2
-		draw_rect(Rect2(center + Vector2(-span, y), Vector2(span * 2, 6)), Color("#556246"))
-	for n in range(11):
-		var x := _hash(n, roundi(center.x)) % 61 - 30
-		var y := _hash(n, roundi(center.y)) % 37 - 18
-		draw_rect(Rect2(center + Vector2(x, y), Vector2(3, 2)), Color("#aa9363"))
+	draw_colored_polygon(PackedVector2Array([center+Vector2(-32,-18),center+Vector2(22,-18),center+Vector2(38,-6),center+Vector2(38,16),center+Vector2(20,26),center+Vector2(-28,26),center+Vector2(-38,12),center+Vector2(-38,-6)]),Color("#a5af70"))
 
 func _draw_decoration() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12051
-	for i in range(260):
+	for i in range(56):
 		var at := Vector2(rng.randi_range(20, 1175), rng.randi_range(20, 875))
 		if _free_for_decoration(at):
 			if i % 11 == 0:
@@ -142,11 +116,6 @@ func _draw_decoration() -> void:
 				_draw_grass(at, i)
 	for at in tree_positions():
 		_draw_tree(at)
-	rng.seed = 43912
-	for i in range(42):
-		var at := Vector2(rng.randi_range(22, 1175), rng.randi_range(25, 875))
-		if _free_for_decoration(at):
-			_draw_ground_details(at, i)
 
 func tree_positions() -> Array[Vector2]:
 	var rng := RandomNumberGenerator.new()
@@ -164,16 +133,17 @@ func tree_positions() -> Array[Vector2]:
 		if free:
 			trees.append(at)
 	# Filter after generation so clearing the entrance never rerolls other trees.
-	return trees.filter(func(at: Vector2): return not TowerEntrance.BODY.grow(12.0).has_point(at))
+	return trees.filter(func(at: Vector2): return not REMOVED_SECONDARY.has(at) and not TowerEntrance.BODY.grow(12.0).has_point(at))
 
 func _draw_tree(at: Vector2) -> void:
-	var species := _hash(roundi(at.y), roundi(at.x)) % 5
-	var sprite: Texture2D = SPRUCE if species == 0 else LINDEN if species == 1 or species == 4 else OAK
-	var size := Vector2(68, 96) if species == 0 else Vector2(78, 96) if species == 1 or species == 4 else Vector2(96, 96)
-	draw_texture_rect(sprite, Rect2(at - Vector2(size.x * 0.5, size.y - 8), size), false)
+	var species := _hash(roundi(at.y),roundi(at.x)) % 8
+	var kind := 2 if species == 0 else 1 if species < 3 else 0
+	# Smaller canopies and a visible root silhouette leave combat/navigation clear.
+	draw_colored_polygon(PackedVector2Array([at+Vector2(-23,3),at+Vector2(-18,-7),at+Vector2(20,-7),at+Vector2(29,2),at+Vector2(24,10),at+Vector2(-16,10)]),Color("#819255"))
+	draw_texture_rect_region(atlas,Rect2(at-Vector2(32,72),Vector2(64,80)),MataArt.TREE_REGIONS[kind])
 
 func _draw_shrub(at: Vector2) -> void:
-	draw_texture_rect(BERRY, Rect2(at + Vector2(-16, -22), Vector2(32, 26)), false)
+	draw_texture_rect_region(atlas,Rect2(at+Vector2(-16,-24),Vector2(32,32)),MataArt.SHRUB_REGION)
 
 func _draw_ground_details(at: Vector2, seed: int) -> void:
 	if seed % 3 == 0:
@@ -219,7 +189,7 @@ func _draw_camp() -> void:
 		for n in range(3):
 			var at := Vector2(center + _hash(y, n) % (extent * 2) - extent, y + _hash(n, y) % 6)
 			draw_rect(Rect2(at, Vector2(3, 2)), Color("#cf9c62") if n == 0 else Color("#906e47"))
-	for n in range(50):
+	for n in range(10):
 		var at := area.position + Vector2(8 + _hash(n, 115) % 165, 8 + _hash(n, 116) % 183)
 		if absf(at.x - 557.0) > 29.0:
 			if n % 6 == 0:
@@ -388,37 +358,15 @@ func _draw_fire(at: Vector2) -> void:
 	draw_rect(Rect2(at + Vector2(-2, -10), Vector2(5, 11)), Color("#ffe09a"))
 
 func _draw_stone(area: Rect2) -> void:
-	# An irregular silhouette fills the existing collision footprint without a box edge.
+	# Broad stepped boulder silhouette, three quiet planes, no surface speckle.
 	var p := area.position
-	var w := area.size.x
-	var h := area.size.y
-	draw_colored_polygon(PackedVector2Array([
-		p + Vector2(0, h * 0.32), p + Vector2(w * 0.14, h * 0.12),
-		p + Vector2(w * 0.34, 0), p + Vector2(w * 0.69, h * 0.06),
-		p + Vector2(w * 0.92, h * 0.18), p + Vector2(w, h * 0.40),
-		p + Vector2(w * 0.96, h * 0.78), p + Vector2(w * 0.79, h),
-		p + Vector2(w * 0.19, h * 0.97), p + Vector2(w * 0.02, h * 0.79)
-	]), Color("#2e5948"))
-	var outline := PackedVector2Array([
-		p + Vector2(3, h * 0.41), p + Vector2(w * 0.16, h * 0.16),
-		p + Vector2(w * 0.36, 3), p + Vector2(w * 0.65, h * 0.09),
-		p + Vector2(w * 0.87, h * 0.21), p + Vector2(w - 3, h * 0.46),
-		p + Vector2(w * 0.88, h * 0.83), p + Vector2(w * 0.75, h - 2),
-		p + Vector2(w * 0.23, h - 3), p + Vector2(w * 0.07, h * 0.76)
-	])
-	draw_colored_polygon(outline, Color("#3b5851"))
-	var top := PackedVector2Array([
-		p + Vector2(w * 0.13, h * 0.40), p + Vector2(w * 0.24, h * 0.17),
-		p + Vector2(w * 0.40, h * 0.09), p + Vector2(w * 0.64, h * 0.16),
-		p + Vector2(w * 0.78, h * 0.28), p + Vector2(w * 0.85, h * 0.54),
-		p + Vector2(w * 0.68, h * 0.76), p + Vector2(w * 0.27, h * 0.78)
-	])
-	draw_colored_polygon(top, Color("#79877b"))
-	draw_colored_polygon(PackedVector2Array([
-		p + Vector2(w * 0.24, h * 0.26), p + Vector2(w * 0.41, h * 0.12),
-		p + Vector2(w * 0.62, h * 0.18), p + Vector2(w * 0.49, h * 0.46),
-		p + Vector2(w * 0.20, h * 0.53)
-	]), Color("#a8ad93"))
-	for i in range(13):
-		var at := p + Vector2(10 + _hash(i, 52) % maxi(1, int(w) - 20), 9 + _hash(i, 53) % maxi(1, int(h) - 18))
-		draw_rect(Rect2(at, Vector2(3 + i % 3, 2)), Color("#b1b9a1") if i % 4 == 0 else Color("#4c685d"))
+	var size := area.size
+	var outline := PackedVector2Array()
+	for point: Vector2 in [Vector2(0,0.25),Vector2(0.1,0.25),Vector2(0.1,0.1),Vector2(0.25,0.1),Vector2(0.25,0),Vector2(0.75,0),Vector2(0.75,0.1),Vector2(0.9,0.1),Vector2(0.9,0.25),Vector2(1,0.25),Vector2(1,0.75),Vector2(0.9,0.75),Vector2(0.9,0.9),Vector2(0.75,0.9),Vector2(0.75,1),Vector2(0.25,1),Vector2(0.25,0.9),Vector2(0.1,0.9),Vector2(0.1,0.75),Vector2(0,0.75)]:
+		outline.append(p+(point*size).snapped(Vector2(2,2)))
+	draw_colored_polygon(outline,Color("#687361"))
+	var top := PackedVector2Array()
+	for point: Vector2 in [Vector2(0.12,0.24),Vector2(0.25,0.24),Vector2(0.25,0.08),Vector2(0.68,0.08),Vector2(0.68,0.16),Vector2(0.86,0.16),Vector2(0.86,0.38),Vector2(0.92,0.38),Vector2(0.92,0.65),Vector2(0.77,0.65),Vector2(0.77,0.78),Vector2(0.25,0.78),Vector2(0.25,0.66),Vector2(0.08,0.66),Vector2(0.08,0.38),Vector2(0.12,0.38)]:
+		top.append(p+(point*size).snapped(Vector2(2,2)))
+	draw_colored_polygon(top,Color("#a3a78b"))
+	draw_rect(Rect2(p+Vector2(size.x*0.26,size.y*0.12).snapped(Vector2(2,2)),Vector2(size.x*0.3,4).snapped(Vector2(2,2))),Color("#c0bea0"))

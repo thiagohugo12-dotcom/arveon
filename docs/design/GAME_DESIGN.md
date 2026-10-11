@@ -119,3 +119,9 @@ com ícones e detalhes/comparação sob seleção. IDs antigos preservados;
 arco/cajado entram no Ferreiro existente. Projéteis físicos/mágicos têm
 comportamentos distintos e respeitam World, menus e limites. Sem novas
 habilidades, talentos, maestrias, mapas, chefes ou balanceamento global.
+
+## Mata — rework visual, aprovado em 11/10/2026
+Conforme MATA_VISUAL_LIMPA.md: formas/paleta simples inspiradas na referência,
+piso limpo, trilhas legíveis, menos detalhes e árvores secundárias. Apenas
+apresentação da Mata reutilizada nos cinco andares; dimensões, caminhos,
+serviços, Torre, progressão, combate, menus e saves permanecem protegidos.
