@@ -120,7 +120,7 @@ func forge(id: String, expected_upgrade: int) -> bool:
 	return true
 
 func equip(id: String) -> bool:
-	if not equipment.has(id):
+	if not equipment.has(id) or not RPGRules.EQUIPMENT.has(id) or level() < int(ArsenalRules.metadata(id).level):
 		return false
 	var slot: String = RPGRules.EQUIPMENT[id].slot
 	if equipped[slot] == id:
@@ -227,7 +227,7 @@ func to_json() -> String:
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
 		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "floor_states": floor_states, "rpg": {"level": level(), "attributes": attributes,
-		"skills": skills, "equipment": equipment, "equipped": equipped}})
+		"skills": skills, "equipment": equipment, "equipped": equipped, "equipment_meta": equipment_metadata()}})
 
 func _web_save() -> bool:
 	return OS.has_feature("web") and save_path == "user://andar1_progress.json"
@@ -523,6 +523,12 @@ func load_text(text: String) -> bool:
 	equipped = new_rpg.equipped
 	return true
 
+func equipment_metadata() -> Dictionary:
+	var result := {}
+	for id: String in equipment:
+		result[id] = ArsenalRules.metadata(id)
+	return result
+
 func _valid_rpg(value: Variant, total_xp: int) -> Variant:
 	if not value is Dictionary or value.get("level") != RPGRules.level_for_xp(total_xp):
 		return null
@@ -553,6 +559,17 @@ func _valid_rpg(value: Variant, total_xp: int) -> Variant:
 		if not RPGRules.EQUIPMENT.has(id) or not _bounded_integer(value.equipment[id], 0, 3):
 			return null
 		result.equipment[id] = int(value.equipment[id])
+	if value.has("equipment_meta"):
+		if not value.equipment_meta is Dictionary or value.equipment_meta.size() != value.equipment.size():
+			return null
+		for id: String in value.equipment:
+			var meta: Variant = value.equipment_meta.get(id)
+			var canonical := ArsenalRules.metadata(id)
+			if not meta is Dictionary or meta.size() != canonical.size():
+				return null
+			for field: String in canonical:
+				if meta.get(field) != canonical[field]:
+					return null
 	for slot: String in RPGRules.SLOTS:
 		var id: Variant = value.equipped.get(slot)
 		if not id is String:
