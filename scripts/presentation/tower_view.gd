@@ -17,16 +17,64 @@ func set_state(available: bool, close: bool) -> void:
 
 func _draw() -> void:
 	if visual_v2:
-		draw_texture_rect_region(FloorV2View.CAMP,Rect2(-42,-88,84,100),FloorV2View.PORTAL)
-		var glow := Color("#52d2ad") if unlocked else Color("#304847")
-		draw_rect(Rect2(-12,-45,24,38),glow)
-		if unlocked:
-			draw_rect(Rect2(-7,-25,14,6),Color("#9df0c1"))
-		else:
-			draw_rect(Rect2(-4,-29,8,10),Color("#dab16a"))
-		draw_string(ThemeDB.fallback_font,Vector2(-52,-98),"Torre de Ascensão",HORIZONTAL_ALIGNMENT_LEFT,-1,12,Color("#344d3d"))
-		if nearby: draw_rect(Rect2(-3,16,6,6),glow)
+		_draw_v2()
 		return
+
+func _draw_v2() -> void:
+	# Broad, quiet shapes keep the landmark readable at phone scale.
+	var outline := Color("#35473f")
+	var stone_dark := Color("#53665a")
+	var stone := Color("#75806a")
+	var stone_light := Color("#a7aa8b")
+	var moss := Color("#71834d")
+	var portal := Color("#3fc59f") if unlocked else Color("#253f39")
+	var portal_light := Color("#a7ecc2") if unlocked else Color("#415b50")
+
+	# One soft footprint and three generous steps anchor the structure to the path.
+	draw_rect(Rect2(-46,2,92,12),Color("#94ad50"))
+	draw_rect(Rect2(-38,-5,76,8),outline)
+	draw_rect(Rect2(-34,-9,68,7),stone_dark)
+	draw_rect(Rect2(-28,-13,56,6),stone)
+
+	# The portal glow stays contained inside the arch.
+	if unlocked:
+		draw_rect(Rect2(-23,-65,46,56),Color("#52d2ad26"))
+		draw_rect(Rect2(-19,-61,38,52),Color("#52d2ad38"))
+
+	# Two simple pillars and a stepped lintel create a strong landmark silhouette.
+	for side in [-1,1]:
+		var x: float = 20.0 * side - (16.0 if side < 0 else 0.0)
+		draw_rect(Rect2(x,-64,16,55),outline)
+		draw_rect(Rect2(x+3,-61,10,49),stone)
+		draw_rect(Rect2(x+3,-59,3,43),stone_light)
+	draw_rect(Rect2(-40,-76,80,15),outline)
+	draw_rect(Rect2(-35,-80,70,15),stone_dark)
+	draw_rect(Rect2(-28,-85,56,12),stone)
+	draw_rect(Rect2(-20,-88,40,6),stone_light)
+
+	# A dark inner frame makes the portal readable in both locked states.
+	draw_rect(Rect2(-20,-64,40,55),outline)
+	draw_rect(Rect2(-15,-59,30,50),portal)
+	draw_rect(Rect2(-10,-55,20,42),portal.darkened(0.16))
+	if unlocked:
+		draw_rect(Rect2(-7,-51,5,34),portal_light)
+		draw_rect(Rect2(2,-45,5,25),portal_light)
+		draw_rect(Rect2(-5,-18,10,4),Color("#d4f4cf"))
+	else:
+		# One warm seal communicates that the entrance is closed.
+		draw_rect(Rect2(-5,-37,10,12),Color("#6e583a"))
+		draw_rect(Rect2(-3,-39,6,7),Color("#d5ad61"))
+		draw_rect(Rect2(-1,-34,2,5),Color("#f0cf7b"))
+
+	# A single crest and two moss blocks add identity without surface noise.
+	draw_rect(Rect2(-8,-77,16,4),outline)
+	draw_rect(Rect2(-3,-81,6,8),portal_light if unlocked else Color("#b79555"))
+	draw_rect(Rect2(-34,-58,7,5),moss)
+	draw_rect(Rect2(27,-28,7,5),moss)
+	if nearby:
+		draw_rect(Rect2(-5,8,10,4),portal_light)
+		draw_rect(Rect2(-2,5,4,3),portal_light)
+
 	# Static geometry in the existing forest palette. No textures, particles,
 	# per-frame animation or new gameplay effects.
 	draw_rect(Rect2(-40, -5, 80, 18), Color("#819255"))
