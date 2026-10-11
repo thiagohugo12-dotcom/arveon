@@ -103,3 +103,11 @@ horda na mesma arena, três ataques avisados e segunda fase a 50% HP. Morte,
 abandono e fechamento continuam sem checkpoints. Vitória única registra
 ascensão, Selo da Mata e Andar 2 nos dados, sem mapa ou viagem. Arte existente
 reutilizada; valores provisórios documentados no ADR. Sem v0.5.3.
+
+## v0.6.0 — Cinco Andares, aprovada em 10/10/2026
+O pedido explícito registrado em CINCO_ANDARES_V060.md autoriza os Andares 1–5
+com a mesma Mata, NPCs, Torre, hordas e Guardião existente. Essa autorização
+substitui a restrição anterior de não iniciar Andar 2 para este recorte.
+Progressão sequencial, 50 abates próprios, exploração independente e viagens
+seguras pela Torre. Quinta vitória conclui campanha inicial, sem declarar 1.0.
+Personagem e serviços globais preservados. Sem Andar 6, nova arte ou polimento.

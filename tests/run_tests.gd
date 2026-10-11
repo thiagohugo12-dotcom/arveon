@@ -28,6 +28,7 @@ func frames(count: int = 2) -> void:
 func _run() -> void:
 	var test_path := "user://qa_area_segura_%d.json" % Time.get_ticks_usec()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", test_path)
+	preload("res://tests/campaign_state_tests.gd").run(self)
 	preload("res://tests/tower_tests.gd").run_state(self)
 	preload("res://tests/tower_trial_state_tests.gd").run(self)
 	preload("res://tests/save_tests.gd").run(self)

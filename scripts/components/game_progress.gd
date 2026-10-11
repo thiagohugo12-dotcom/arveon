@@ -14,6 +14,34 @@ const POINTS_PER_LEVEL := 2
 const ADVENTURES := {"explorar": 3, "forjar": 1, "elite": 1, "guardiao": 1}
 var adventures: Dictionary = {"explorar": 0, "forjar": 0, "elite": 0, "guardiao": 0}
 var ascension := AscensionProgress.new()
+var floor_states: Dictionary = {}
+
+func _init() -> void:
+	for id in range(1,6):
+		floor_states[str(id)] = _empty_floor()
+
+static func _empty_floor() -> Dictionary:
+	return {"harvested_until": {}, "opened_caches": {}, "discovered_pois": {}, "guardian_defeated": false}
+
+func _store_floor() -> void:
+	var state: Dictionary = floor_states[str(ascension.current_floor)]
+	state.harvested_until = harvested_until
+	state.opened_caches = opened_caches
+	state.discovered_pois = discovered_pois
+
+func switch_floor(id: int) -> bool:
+	if not ascension.can_travel(id):
+		return false
+	_store_floor()
+	ascension.current_floor = id
+	_bind_floor()
+	return true
+
+func _bind_floor() -> void:
+	var state: Dictionary = floor_states[str(ascension.current_floor)]
+	harvested_until = state.harvested_until
+	opened_caches = state.opened_caches
+	discovered_pois = state.discovered_pois
 
 const MAX_SAVE_BYTES := 262144
 var save_blocked := false
@@ -193,11 +221,12 @@ func death_loss() -> String:
 	return ""
 
 func to_json() -> String:
+	_store_floor()
 	return JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
 		"gold": gold, "xp": xp, "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
-		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "rpg": {"level": level(), "attributes": attributes,
+		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "floor_states": floor_states, "rpg": {"level": level(), "attributes": attributes,
 		"skills": skills, "equipment": equipment, "equipped": equipped}})
 
 func _web_save() -> bool:
@@ -449,6 +478,32 @@ func load_text(text: String) -> bool:
 	else:
 		# Every historical kill in v1–5 came from the only existing floor, Mata.
 		new_ascension.defeats["1"] = mini(int(parsed.kills), new_ascension.required_defeats())
+	var new_floors: Dictionary = {}
+	for id in range(1,6):
+		new_floors[str(id)] = _empty_floor()
+	if loaded_version >= 6 and parsed.has("floor_states"):
+		if not parsed.floor_states is Dictionary or parsed.floor_states.size() != 5:
+			return false
+		for key: String in new_floors:
+			var state: Variant = parsed.floor_states.get(key)
+			if not state is Dictionary or state.size() != 4 or not state.get("guardian_defeated") is bool:
+				return false
+			var harvested: Variant = _valid_exploration(state.get("harvested_until"), false)
+			var opened: Variant = _valid_exploration(state.get("opened_caches"), true)
+			var discovered: Variant = _valid_discoveries(state.get("discovered_pois"))
+			if harvested == null or opened == null or discovered == null:
+				return false
+			if not new_ascension.can_travel(int(key)) and (not harvested.is_empty() or not opened.is_empty() or not discovered.is_empty() or state.guardian_defeated):
+				return false
+			new_floors[key] = {"harvested_until": harvested, "opened_caches": opened, "discovered_pois": discovered, "guardian_defeated": state.guardian_defeated}
+		var active: Dictionary = new_floors[str(new_ascension.current_floor)]
+		if active.harvested_until != new_harvested or active.opened_caches != new_opened or active.discovered_pois != new_discovered:
+			return false
+	else:
+		if new_ascension.current_floor != 1:
+			return false
+		new_floors["1"] = {"harvested_until": new_harvested, "opened_caches": new_opened, "discovered_pois": new_discovered, "guardian_defeated": new_adventures.guardiao > 0}
+	floor_states = new_floors
 	adventures = new_adventures
 	ascension = new_ascension
 	bag = new_bag
