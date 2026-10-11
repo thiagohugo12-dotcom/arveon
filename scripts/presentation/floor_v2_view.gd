@@ -106,20 +106,20 @@ func _camp() -> void:
 		layout._draw_flagstone(Vector2(556+layout._hash(n,71)%21-10,369+n*10),n)
 	# The fence segments mark the hub without enclosing it or filling the scene.
 	for at in [Vector2(496,352),Vector2(610,352),Vector2(496,548),Vector2(610,548)]:
-		prop(FENCE_PROP,at,1.65)
+		prop(FENCE_PROP,at,1.95)
 	# Buildings deliberately occupy a larger footprint, matching the world scale.
-	layout.draw_texture_rect_region(CAMP,Rect2(428,245,144,144),CABIN)
-	sprite_scaled(CAMP,FORGE,SafeCamp.STATIONS["Ferreiro"]+Vector2(0,18),1.45)
+	layout.draw_texture_rect_region(CAMP,Rect2(404,197,192,192),CABIN)
+	sprite_scaled(CAMP,FORGE,SafeCamp.STATIONS["Ferreiro"]+Vector2(0,24),1.85)
 	sprite_scaled(CAMP,MARKET,SafeCamp.STATIONS["Vendedor"]+Vector2(0,18),1.45)
 	layout._draw_chest(SafeCamp.STATIONS["Baú"])
 	# Service markers remain sparse, but are deliberately legible at gameplay scale.
 	for name: String in ["Baú","Ferreiro","Vendedor"]:
-		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(28,-4),1.6)
+		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(28,-4),1.9)
 	for point: Vector2 in [Vector2(480,411),Vector2(633,420)]:
-		prop(BARREL_PROP,point,1.5)
+		prop(BARREL_PROP,point,1.75)
 	for point: Vector2 in [Vector2(484,526),Vector2(631,535)]:
-		prop(CRATE_PROP,point,1.5)
+		prop(CRATE_PROP,point,1.75)
 	for point: Vector2 in [Vector2(479,374),Vector2(638,474)]:
-		prop(LANTERN_PROP,point,1.6)
-	prop(BENCH_PROP,Vector2(548,544),1.5)
-	prop(FIRE_PROP,Vector2(516,492),1.5)
+		prop(LANTERN_PROP,point,1.9)
+	prop(BENCH_PROP,Vector2(548,544),1.75)
+	prop(FIRE_PROP,Vector2(516,492),1.75)
