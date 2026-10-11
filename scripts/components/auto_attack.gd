@@ -2,6 +2,7 @@ class_name AutoAttack
 extends Node
 
 signal attacked(target: Node2D)
+signal projectile_requested(origin: Node2D, target: Node2D, specification: Dictionary)
 @export var weapon: WeaponData
 var cooldown_left: float = 0.0
 var damage_scale := 1.0
@@ -20,11 +21,18 @@ func tick(delta: float, origin: Node2D) -> void:
 	if target == null:
 		search_left = EMPTY_SEARCH_INTERVAL
 		return
+	if not weapon.projectile_kind.is_empty() and get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE:
+		search_left = EMPTY_SEARCH_INTERVAL
+		return
 	# Set before callbacks: re-entrant ticks cannot apply the same swing twice.
 	cooldown_left = weapon.interval
 	search_left = 0.0
 	attacked.emit(target)
-	target.receive_damage(roundi(weapon.damage * damage_scale))
+	var hit_damage := roundi(weapon.damage * damage_scale)
+	if weapon.projectile_kind.is_empty():
+		target.receive_damage(hit_damage)
+	else:
+		projectile_requested.emit(origin, target, {"damage": hit_damage, "kind": weapon.projectile_kind, "speed": weapon.projectile_speed, "reach": weapon.reach})
 
 func select_target(origin: Node2D) -> Node2D:
 	if weapon == null:

@@ -73,6 +73,7 @@ func _ready() -> void:
 	loot_rng.randomize()
 	hud.tower_trial = trial
 	player.input_driver = input_driver
+	player.attack.projectile_requested.connect(_on_player_projectile)
 	player.view.damage_occluders = hud.damage_occluders
 	enemy.view.damage_occluders = hud.damage_occluders
 	enemy.target = player
@@ -586,7 +587,7 @@ func _refresh_mission() -> void:
 
 func _clear_combat_actors() -> void:
 	for node in get_children():
-		if node is EnemyActor or node is EnemyProjectile:
+		if node is EnemyActor or node is EnemyProjectile or node is PlayerProjectile:
 			if node is EnemyActor:
 				node.remove_from_group("damageable_enemies")
 				node.collision_layer = 0
@@ -644,7 +645,7 @@ func _process_trial(delta: float) -> void:
 			node.set_physics_process(not paused)
 			if paused:
 				node.view.set_moving(false)
-		elif node is EnemyProjectile:
+		elif node is EnemyProjectile or node is PlayerProjectile:
 			node.set_physics_process(not paused)
 	if not paused and trial.tick(delta):
 		if trial.phase == TowerTrial.Phase.GUARDIAN:
@@ -733,7 +734,7 @@ func _exit_tree() -> void:
 
 func _pause_combat() -> void:
 	for node in get_children():
-		if node is EnemyActor or node is EnemyProjectile:
+		if node is EnemyActor or node is EnemyProjectile or node is PlayerProjectile:
 			node.set_physics_process(false)
 
 func _notification(what: int) -> void:
@@ -921,3 +922,12 @@ func _travel_floor(destination: int) -> void:
 	input_driver.blocked = false
 	hud._sync_controls()
 	hud.show_notice("Chegada segura · Andar %d" % destination)
+
+func _on_player_projectile(origin: Node2D, target: Node2D, specification: Dictionary) -> void:
+	if origin != player or transitioning or input_driver.blocked or not player.health.is_alive():
+		return
+	if get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE:
+		return
+	var shot := PlayerProjectile.new()
+	add_child(shot)
+	shot.setup(player, target, specification, TowerTrial.BOUNDS if trial.active() else Rect2(Vector2.ZERO, MiniMap.WORLD_SIZE))
