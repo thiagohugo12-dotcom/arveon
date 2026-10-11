@@ -1,5 +1,7 @@
 # Game Design — fundação v0.1
 ## Hub V3 — reconstrução aprovada em 11/10/2026
+Polimento adicional autorizado conforme HUB_V3_POLIMENTO.md. A versão
+544ddae fica preservada na tag baseline-hub-v3-aprovado-2026-10-11.
 Conforme HUB_RECONSTRUCAO_V3.md e pedido “faça então”: redistribuir a vila do
 Andar 1, substituir suas artes e ajustar NPCs/interações às posições visíveis.
 Pequenas bases de construções podem bloquear movimento, mantendo vias abertas.

@@ -7,7 +7,7 @@ func _initialize() -> void:
 	image.fill(Color("#b5c953"))
 	for y in range(450):
 		for x in range(600):
-			var patch := sin(x*0.031+y*0.009)+sin(y*0.045-x*0.012)+sin(x*0.071+y*0.053)*0.14
+			var patch := sin(x*0.031+y*0.009)+sin(y*0.045-x*0.012)+sin(x*0.071+y*0.053)*0.14 + float(hash_at(x/3,y/3)%9-4)*0.026
 			if patch > 1.05: image.set_pixel(x,y,Color("#a9c04d"))
 			elif patch < -1.3: image.set_pixel(x,y,Color("#bdce5d"))
 	# These routes connect the same world destinations, with smooth junctions.
@@ -42,11 +42,23 @@ func _initialize() -> void:
 			if image.get_pixel(x,y) == Color("#f4ce7e"):
 				var cell := hash_at(x/4,y/3)
 				if cell%31 == 0 and (x%4+y%3)>1: image.set_pixel(x,y,Color("#edc374"))
+	# Inspect a frozen mask: each bank gets a narrow, irregular grass fringe.
+	# Interior paths and all destination anchors remain unchanged.
+	var mask := image.duplicate() as Image
+	for y in range(3,447):
+		for x in range(3,597):
+			if mask.get_pixel(x,y) != Color("#f4ce7e") and mask.get_pixel(x,y) != Color("#edc374"): continue
+			var bank := false
+			for offset: Vector2i in [Vector2i(-2,0),Vector2i(2,0),Vector2i(0,-2),Vector2i(0,2)]:
+				var neighbor := mask.get_pixel(x+offset.x,y+offset.y)
+				if neighbor != Color("#f4ce7e") and neighbor != Color("#edc374"): bank = true
+			if bank and hash_at(x/2,y/2)%5 < 2:
+				image.set_pixel(x,y,Color("#a2b94d") if hash_at(x,y)%3 else Color("#c2ce61"))
 	image.save_png("res://assets/art/hub_v3/ground.png")
 	quit()
 func stamp(center: Vector2, radius: Vector2) -> void:
 	for y in range(maxi(0,int(center.y-radius.y-2)),mini(450,int(center.y+radius.y+3))):
 		for x in range(maxi(0,int(center.x-radius.x-2)),mini(600,int(center.x+radius.x+3))):
 			var p := (Vector2(x,y)-center)/radius
-			var edge := 1.0+float(hash_at(x/2,y/2)%7-3)*0.013
+			var edge := 1.0+float(hash_at(x/3,y/3)%7-3)*0.027
 			if p.length_squared() < edge: image.set_pixel(x,y,Color("#f4ce7e"))

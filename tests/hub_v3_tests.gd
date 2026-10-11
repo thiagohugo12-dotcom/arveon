@@ -15,6 +15,10 @@ static func run(suite, main) -> void:
 		if npc is CampNpcView:
 			var service := "Ferreiro" if npc.kind == 0 else "Vendedor"
 			suite.check(npc.position+Vector2(0,21) == SafeCamp.DISPLAY_STATIONS[service],"NPC feet align to "+service)
+			var planted: Vector2 = npc.position
+			for i in range(100): npc._process(0.1)
+			suite.check(npc.position == planted,"idle animation never slides NPC or changes service anchor "+service)
+	suite.check(player.view.village_scale,"floor-one explorer uses village presentation without scaling physics")
 	for name: String in SafeCamp.DISPLAY_STATIONS:
 		var anchor: Vector2 = SafeCamp.DISPLAY_STATIONS[name]
 		player.position = anchor+Vector2(24,0)

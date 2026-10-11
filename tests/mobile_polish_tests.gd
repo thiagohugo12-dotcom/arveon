@@ -48,6 +48,8 @@ static func run(suite, main) -> void:
 		suite.check(passive_safe and hud.info_back.mouse_filter == Control.MOUSE_FILTER_IGNORE and hud.mission_back.mouse_filter == Control.MOUSE_FILTER_IGNORE, "HUD avoids control hitboxes and ignores touches %s" % resolution)
 		var text_fits := hud.mission_label.get_line_count() * hud.mission_label.get_line_height() <= hud.mission_label.size.y
 		suite.check(text_fits and hud.progress_label.get_theme_font("font").get_string_size(hud.progress_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x <= hud.progress_label.size.x, "mission and XP text fit compact panels %s" % resolution)
+		if resolution.x >= 600 and resolution.x > resolution.y:
+			suite.check(hud.info_back.position.y == hud.mission_back.position.y and not hud.info_back.get_rect().intersects(hud.mission_back.get_rect()),"landscape HUD frees workshop without overlapping readable panels %s" % resolution)
 		for menu in ["bag", "character", "map"]:
 			var button: Button = {"bag": hud.inventory_button, "character": hud.character_button, "map": hud.map_button}[menu]
 			tap(hud, button)

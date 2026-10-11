@@ -1,5 +1,11 @@
 # Arquitetura
 ## Hub V3 (Andar 1)
+Polimento: ground.png mantém as rotas e recebe franjas preparadas offline.
+Arbustos têm posições autorais sem colisões novas. Flores e tufos usam poucos
+retângulos estáticos na mesma grade de 2 px. Explorador desenha 60x60 apenas
+no tema V3, sem escalar ActorView/Player ou seu corpo físico. NPCs piscam sem
+alterar transform; fogueira usa um overlay de poucos retângulos a 8 Hz. Sem
+partículas, luzes ou shaders. HUD horizontal distribui os painéis no topo.
 FloorV2View usa ground.png estático e atlas hub_v3, nearest 2x proporcional.
 Sprites estáticos são criados uma vez com z derivado dos pés. ActorView usa
 o mesmo z: copas e telhados encobrem personagens atrás, sem redesenhar artes.

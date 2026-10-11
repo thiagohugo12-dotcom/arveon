@@ -879,6 +879,8 @@ func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> 
 
 func _update_floor_identity() -> void:
 	var theme_v2 := progress.ascension.current_floor == 1
+	player.view.village_scale = theme_v2
+	player.view.queue_redraw()
 	_adapt_orientation()
 	RenderingServer.set_default_clear_color(Color("#b9cf55") if theme_v2 else Color("#101c16"))
 	(world.get_node("FloorView") as FloorView).set_visual_v2(theme_v2)

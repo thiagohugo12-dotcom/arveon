@@ -35,6 +35,7 @@ var skill_left := 0.0
 var skill_effect := 0
 var fury := false
 var elite := false
+var village_scale := false
 
 func play_skill(index: int) -> void:
 	skill_effect = index
@@ -204,7 +205,8 @@ func _draw() -> void:
 	if appearance == 0:
 		# Held passing pose uses the approved appearance even when stopped.
 		var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
-		draw_texture_rect_region(EXPLORER_ATLAS, Rect2(-24, -32, 48, 48), Rect2(column * 48, _explorer_direction() * 48, 48, 48), tint)
+		var destination := Rect2(-30,-42,60,60) if village_scale else Rect2(-24,-32,48,48)
+		draw_texture_rect_region(EXPLORER_ATLAS, destination, Rect2(column * 48, _explorer_direction() * 48, 48, 48), tint)
 	else:
 		_draw_monster()
 	if elite:

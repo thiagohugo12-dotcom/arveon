@@ -360,6 +360,12 @@ func _layout() -> void:
 	var mission_width := minf(232, minimap.position.x - margin.x - 8)
 	mission_back.position = margin + Vector2(0, 80)
 	mission_back.size = Vector2(mission_width, 56)
+	# Landscape places the two readable panels in one top strip, leaving the
+	# workshop visible below. Portrait retains its separate, full-width rows.
+	if size.x >= 600 and size.x > size.y:
+		mission_back.position = margin + Vector2(information_width+8,0)
+		mission_back.size.x = minf(232,menu_x-mission_back.position.x-8)
+		mission_width = mission_back.size.x
 	mission_label.position = mission_back.position + Vector2(6, 3)
 	mission_label.size = mission_back.size - Vector2(12, 6)
 	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -368,6 +374,8 @@ func _layout() -> void:
 	boss_bar.position = mission_back.position + Vector2(6, 38)
 	boss_bar.size = Vector2(mission_width - 12, 7)
 	loot_label.position = Vector2(margin.x, margin.y + 140)
+	if size.x >= 600 and size.x > size.y:
+		loot_label.position.y = margin.y+80
 	loot_label.size = Vector2(minf(320, size.x - margin.x - right_inset), 42)
 	map_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(400, size.y - margin.y - bottom_inset - 12))
 	map_panel.position = (size - map_panel.size) * 0.5

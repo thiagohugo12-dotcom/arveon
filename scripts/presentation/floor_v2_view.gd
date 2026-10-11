@@ -50,10 +50,11 @@ func paint() -> void:
 	if layout == null: return
 	depth_commands.clear()
 	layout.draw_texture_rect(GROUND,Rect2(0,0,1200,900),false)
-	for i in range(150):
+	for i in range(75):
 		var at := Vector2(24+layout._hash(i,27)%1152,24+layout._hash(i,82)%852).snapped(Vector2(2,2))
 		if layout._free_for_decoration(at) and not Rect2(330,210,470,440).has_point(at):
-			sprite(NATURE,FLOWERS if i%13 == 0 else GRASS,at,1)
+			if i%13 == 0: flowers(at)
+			else: grass(at,i)
 	for at in bush_positions():
 		shadow(at+Vector2(8,2),52,14)
 		sprite(VILLAGE,BUSH,at)
@@ -70,21 +71,25 @@ func paint() -> void:
 		layout.call_deferred("_build_depth_scenery",depth_commands.duplicate())
 
 func bush_positions() -> Array[Vector2]:
-	var positions: Array[Vector2] = [Vector2(332,416),Vector2(776,376),Vector2(386,622),Vector2(730,674)]
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 28031
-	var trees := layout.tree_positions()
-	for i in range(240):
-		var at := Vector2(rng.randi_range(40,1160),rng.randi_range(40,860)).snapped(Vector2(2,2))
-		if not layout._free_for_decoration(at) or Rect2(320,200,480,470).has_point(at): continue
-		var clear := true
-		for feet in trees:
-			if Rect2(feet-Vector2(68,140),Vector2(136,156)).has_point(at): clear = false
-		for other in positions:
-			if at.distance_squared_to(other) < 80.0*80.0: clear = false
-		if clear: positions.append(at)
-		if positions.size() == 18: break
-	return positions
+	# Authored groups frame the service areas; the center and approaches stay open.
+	return [Vector2(332,416),Vector2(776,376),Vector2(386,622),Vector2(730,674),
+		Vector2(84,280),Vector2(252,180),Vector2(862,230),Vector2(1080,230),
+		Vector2(1090,580),Vector2(906,752),Vector2(664,822),Vector2(342,776),
+		Vector2(132,620),Vector2(430,144)]
+
+func grass(at: Vector2, variant: int) -> void:
+	var tone := Color("#7f9d43") if variant%3 else Color("#d5d86b")
+	for blade: Rect2 in [Rect2(-6,-6,2,4),Rect2(-4,-4,2,4),Rect2(0,-10,2,10),Rect2(4,-6,2,6)]:
+		layout.draw_rect(Rect2(at+blade.position,blade.size),tone)
+
+func flowers(at: Vector2) -> void:
+	for offset: Vector2 in [Vector2(-8,0),Vector2(2,-8),Vector2(10,2)]:
+		var center := at+offset
+		layout.draw_rect(Rect2(center+Vector2(0,2),Vector2(2,6)),Color("#749942"))
+		layout.draw_rect(Rect2(center+Vector2(-2,-4),Vector2(6,2)),Color("#fff2c6"))
+		layout.draw_rect(Rect2(center+Vector2(-4,-2),Vector2(10,2)),Color("#fff2c6"))
+		layout.draw_rect(Rect2(center+Vector2(-2,0),Vector2(6,2)),Color("#fff2c6"))
+		layout.draw_rect(Rect2(center+Vector2(0,-2),Vector2(2,2)),Color("#e9bd58"))
 
 func _camp() -> void:
 	# Separate service clearings, with an open central circulation route.
@@ -106,6 +111,6 @@ func _camp() -> void:
 	sprite(PROPS,FIRE,Vector2(534,570))
 	layout._draw_chest(Vector2(500,528))
 	for at: Vector2 in [Vector2(328,476),Vector2(558,326),Vector2(764,422),Vector2(400,614),Vector2(620,652),Vector2(750,676)]:
-		sprite(NATURE,FLOWERS,at,1)
+		flowers(at)
 	for at: Vector2 in [Vector2(584,432),Vector2(574,608),Vector2(340,530)]:
 		sprite(PROPS,PEBBLES,at,1)

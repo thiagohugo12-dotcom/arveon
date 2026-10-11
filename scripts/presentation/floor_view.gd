@@ -83,6 +83,12 @@ func _build_depth_scenery(commands: Array) -> void:
 		piece.z_as_relative = false
 		piece.z_index = roundi(feet.y)+100
 		depth_scenery.add_child(piece)
+	var fire := Node2D.new()
+	fire.set_script(preload("res://scripts/presentation/village_fire_view.gd"))
+	fire.position = Vector2(534,570)
+	fire.z_as_relative = false
+	fire.z_index = 670
+	depth_scenery.add_child(fire)
 
 func _draw() -> void:
 	if visual_v2:
