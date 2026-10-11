@@ -28,11 +28,14 @@ func shadow(at: Vector2, width: float, height: float) -> void:
 func paint() -> void:
 	if layout == null:
 		return
-	layout.draw_rect(Rect2(0,0,1200,900),Color("#b7ce60"))
+	layout.draw_rect(Rect2(0,0,1200,900),Color("#b9cc59"))
 	# Sparse tiny colour clusters; no dense repeated texture.
-	for i in range(250):
+	for i in range(190):
 		var at := Vector2(18+layout._hash(i,27)%1164,18+layout._hash(i,82)%864).snapped(Vector2(2,2))
-		layout.draw_rect(Rect2(at,Vector2(4,2)),Color("#c0d66b") if i%3 else Color("#afc75a"))
+		var tone := Color("#c2d46b") if i%3 else Color("#aec44f")
+		layout.draw_rect(Rect2(at,Vector2(4,2)),tone)
+		if i%4 == 0:
+			layout.draw_rect(Rect2(at+Vector2(2,-2),Vector2(2,2)),tone)
 	# One cached authored path texture, rather than thousands of stamp commands.
 	layout.draw_texture_rect(PATHS,Rect2(0,0,1200,900),false)
 	# Identical decorative anchors / safety exclusions as the existing layout.
