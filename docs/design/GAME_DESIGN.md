@@ -125,3 +125,9 @@ Conforme MATA_VISUAL_LIMPA.md: formas/paleta simples inspiradas na referência,
 piso limpo, trilhas legíveis, menos detalhes e árvores secundárias. Apenas
 apresentação da Mata reutilizada nos cinco andares; dimensões, caminhos,
 serviços, Torre, progressão, combate, menus e saves permanecem protegidos.
+
+## Mata — correção artística, amostra autorizada em 11/10/2026
+O visual do rework anterior foi rejeitado. MATA_AMOSTRA_ARTISTICA.md autoriza
+somente demonstração separada com pixel art orgânica, grama viva e areia
+contrastante. A aplicação aos cinco andares depende de nova aprovação.
+Não modificar a Mata publicada nesta etapa. Parar após apresentar capturas.
