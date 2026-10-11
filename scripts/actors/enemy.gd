@@ -9,6 +9,8 @@ signal projectile_requested(origin: Vector2, direction: Vector2, damage: int)
 @onready var health: Health = $Health
 @onready var view: ActorView = $View
 var arena_bounds := Rect2()
+var damage_scale := 1.0
+var projectile_damage_override := 0
 var target: PlayerActor
 var contact_left := 0.0
 var special_left := 0.0
@@ -163,7 +165,7 @@ func _fire_cactus_spine() -> void:
 		view.set_warning(false)
 		return
 	var direction := global_position.direction_to(target.global_position)
-	projectile_requested.emit(global_position, direction, max(4, stats.contact_damage - 2))
+	projectile_requested.emit(global_position, direction, projectile_damage_override if projectile_damage_override > 0 else max(4, stats.contact_damage - 2))
 	view.set_warning(false)
 	view.play_attack()
 

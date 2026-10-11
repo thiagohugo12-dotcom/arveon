@@ -76,6 +76,7 @@ func _ready() -> void:
 	player.view.damage_occluders = hud.damage_occluders
 	enemy.view.damage_occluders = hud.damage_occluders
 	enemy.target = player
+	_apply_floor_stats(enemy)
 	_register_enemy_defeat(enemy)
 	enemy.projectile_requested.connect(_on_enemy_projectile)
 	hud.movement_changed.connect(input_driver.set_touch_direction)
@@ -175,7 +176,22 @@ func _make_enemy(kind: int) -> EnemyActor:
 			actor.stats.max_hp = 120
 			actor.stats.move_speed = 60.0
 			actor.stats.contact_damage = 12
+	_apply_floor_stats(actor)
 	return actor
+
+func _apply_floor_stats(actor: EnemyActor) -> void:
+	if actor.has_meta("scaled_floor"):
+		return
+	actor.stats = actor.stats.duplicate() as ActorData
+	var multiplier := FloorConfig.difficulty(progress.ascension.current_floor)
+	var base_contact := actor.stats.contact_damage
+	actor.stats.max_hp = roundi(actor.stats.max_hp * multiplier)
+	actor.stats.contact_damage = roundi(base_contact * multiplier)
+	actor.damage_scale = multiplier
+	actor.projectile_damage_override = roundi(maxi(4, base_contact - 2) * multiplier)
+	actor.set_meta("scaled_floor", progress.ascension.current_floor)
+	if actor.is_node_ready():
+		actor.health.initialize(actor.stats.max_hp)
 
 func _spawn_enemy() -> void:
 	if trial.active() or transitioning:
@@ -232,6 +248,7 @@ func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 	if kind == 3:
 		_record_adventure("elite")
 	elif kind == 4:
+		progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated = true
 		_record_adventure("guardiao")
 	mission.record_defeat()
 	mission.record_material()
@@ -369,7 +386,7 @@ func _interaction_target() -> Dictionary:
 		return {}
 	if TowerEntrance.is_near(player.global_position):
 		return {"kind": "tower", "label": progress.ascension.summary()}
-	if player.global_position.distance_to(GUARDIAN_ALTAR) <= 58.0 and progress.adventures.guardiao == 0 and not is_instance_valid(guardian):
+	if player.global_position.distance_to(GUARDIAN_ALTAR) <= 58.0 and not progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated and not is_instance_valid(guardian):
 		return {"kind": "guardian", "label": "Desafiar Guardião (opcional)"}
 	var station := SafeCamp.nearest_station(player.global_position)
 	if not station.is_empty():
@@ -542,7 +559,7 @@ func _record_adventure(id: String) -> void:
 func _start_guardian() -> void:
 	if trial.active() or transitioning:
 		return
-	if is_instance_valid(guardian) or progress.adventures.guardiao > 0:
+	if is_instance_valid(guardian) or progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated:
 		return
 	if get_tree().get_nodes_in_group("damageable_enemies").size() >= MAX_ENEMIES:
 		hud.show_notice("Elimine uma criatura antes de desafiar o Guardião")
@@ -557,6 +574,7 @@ func _start_guardian() -> void:
 	guardian.stats.move_speed = 45.0
 	guardian.position = GUARDIAN_ALTAR + Vector2(0, 80)
 	guardian.target = player
+	_apply_floor_stats(guardian)
 	_register_enemy_defeat(guardian)
 	guardian.projectile_requested.connect(_on_enemy_projectile)
 	add_child(guardian)

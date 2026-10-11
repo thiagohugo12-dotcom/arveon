@@ -56,9 +56,9 @@ func _resolve_attack() -> void:
 		1: hit = offset.dot(aim) > 0.0 and offset.dot(aim) <= 200.0 and absf(offset.cross(aim)) < 28.0
 		2:
 			for angle in [-0.35, 0.0, 0.35]:
-				projectile_requested.emit(global_position, aim.rotated(angle), 13)
+				projectile_requested.emit(global_position, aim.rotated(angle), roundi(13 * damage_scale))
 	if hit:
 		var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
 		if get_world_2d().direct_space_state.intersect_ray(query).is_empty():
-			target.receive_damage(18)
+			target.receive_damage(roundi(18 * damage_scale))
 	view.play_attack()

@@ -53,6 +53,7 @@ func _run() -> void:
 	var scene := load("res://scenes/main.tscn") as PackedScene
 	var main := scene.instantiate()
 	root.add_child(main)
+	preload("res://tests/campaign_scaling_tests.gd").run(self, main)
 	await frames()
 	(load("res://tests/explorer_visual_tests.gd") as Script).run(self)
 	var player := main.get_node("Player") as PlayerActor
