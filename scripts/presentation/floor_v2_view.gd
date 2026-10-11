@@ -101,25 +101,24 @@ func bush_positions() -> Array[Vector2]:
 	return positions
 
 func _camp() -> void:
-	# The camp uses a full environmental scale; interaction points remain unchanged.
-	for n in range(18):
-		layout._draw_flagstone(Vector2(556+layout._hash(n,71)%21-10,369+n*10),n)
-	# The fence segments mark the hub without enclosing it or filling the scene.
-	for at in [Vector2(496,352),Vector2(610,352),Vector2(496,548),Vector2(610,548)]:
+	# Separate service zones give every building its natural footprint.
+	for n in range(28):
+		layout._draw_flagstone(Vector2(548+layout._hash(n,71)%31-15,370+n*9),n)
+	# A few open fence anchors frame the village without turning it into a square.
+	for at in [Vector2(414,454),Vector2(514,454),Vector2(616,330),Vector2(748,430),Vector2(438,590),Vector2(720,600)]:
 		prop(FENCE_PROP,at,1.95)
-	# Buildings deliberately occupy a larger footprint, matching the world scale.
-	layout.draw_texture_rect_region(CAMP,Rect2(404,197,192,192),CABIN)
+	# Home, workshop, vendor and chest each occupy their own clear area.
+	layout.draw_texture_rect_region(CAMP,Rect2(355,245,192,192),CABIN)
 	sprite_scaled(CAMP,FORGE,SafeCamp.STATIONS["Ferreiro"]+Vector2(0,24),1.85)
-	sprite_scaled(CAMP,MARKET,SafeCamp.STATIONS["Vendedor"]+Vector2(0,18),1.45)
+	sprite_scaled(CAMP,MARKET,SafeCamp.STATIONS["Vendedor"]+Vector2(0,24),1.85)
 	layout._draw_chest(SafeCamp.STATIONS["Baú"])
-	# Service markers remain sparse, but are deliberately legible at gameplay scale.
 	for name: String in ["Baú","Ferreiro","Vendedor"]:
-		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(28,-4),1.9)
-	for point: Vector2 in [Vector2(480,411),Vector2(633,420)]:
+		prop(SIGN_PROP,SafeCamp.STATIONS[name]+Vector2(36,-6),1.9)
+	for point: Vector2 in [Vector2(520,434),Vector2(742,418)]:
 		prop(BARREL_PROP,point,1.75)
-	for point: Vector2 in [Vector2(484,526),Vector2(631,535)]:
+	for point: Vector2 in [Vector2(414,562),Vector2(756,575)]:
 		prop(CRATE_PROP,point,1.75)
-	for point: Vector2 in [Vector2(479,374),Vector2(638,474)]:
+	for point: Vector2 in [Vector2(568,414),Vector2(620,504)]:
 		prop(LANTERN_PROP,point,1.9)
-	prop(BENCH_PROP,Vector2(548,544),1.75)
-	prop(FIRE_PROP,Vector2(516,492),1.75)
+	prop(BENCH_PROP,Vector2(536,548),1.75)
+	prop(FIRE_PROP,Vector2(570,474),1.75)
