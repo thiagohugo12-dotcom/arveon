@@ -35,8 +35,13 @@ func _ready() -> void:
 		var npc := NPC_VIEW.new()
 		npc.kind = 0 if station == "Ferreiro" else 1
 		npc.visual_v2 = visual_v2
-		npc.position = Vector2(606, 423 if station == "Ferreiro" else 475)
+		npc.position = _npc_position(station,visual_v2)
 		add_child(npc)
+
+func _npc_position(station: String, use_v2: bool) -> Vector2:
+	if use_v2:
+		return SafeCamp.DISPLAY_STATIONS[station] + (Vector2(0,32) if station == "Ferreiro" else Vector2(-2,-39))
+	return Vector2(606, 423 if station == "Ferreiro" else 475)
 
 func set_visual_v2(enabled: bool) -> void:
 	if visual_v2 == enabled:
@@ -45,6 +50,7 @@ func set_visual_v2(enabled: bool) -> void:
 	for child in get_children():
 		if child is CampNpcView:
 			child.visual_v2 = enabled
+			child.position = _npc_position("Ferreiro" if child.kind == 0 else "Vendedor",enabled)
 	if enabled and v2_view == null:
 		v2_view = FloorV2View.new()
 		v2_view.layout = self
