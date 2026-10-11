@@ -96,7 +96,10 @@ jobs:
           QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_capture.gd 2>&1 | tee /tmp/mata-render.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/mata-render.log; then exit 1; fi
           grep '^MATA_QA_RESULT: 0 failures$' build/mobile-qa/mata-result.txt
-          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 213
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_sample_capture.gd 2>&1 | tee /tmp/sample-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/sample-render.log; then exit 1; fi
+          grep '^SAMPLE_RESULT: 19 checks, 0 failures$' /tmp/sample-render.log
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 217
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -116,6 +119,8 @@ jobs:
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
+      - name: Prepare isolated art sample entry
+        run: node tools/build-art-sample.mjs
       - name: Verify actual Web persistence in Chromium
         shell: bash
         run: |

@@ -149,6 +149,15 @@ try {
   await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
   const arsenalReload = await snapshot();
   check(JSON.stringify(arsenalReload.rpg.equipment)===JSON.stringify(arsenalPayload.rpg.equipment) && JSON.stringify(arsenalReload.rpg.equipment_meta)===JSON.stringify(arsenalPayload.rpg.equipment_meta) && arsenalReload.rpg.equipped.Arma==='cajado','five weapon reload preserves rarity independently of enhancement without duplicate items');
+  const preservedJournal=await evaluate(`localStorage.getItem(${JSON.stringify(KEY)})`);
+  await call('Page.navigate',{url:origin+'/amostra-mata/index.html'});
+  await until('document.documentElement.dataset.mataSample === "ready"',45000);
+  check(await evaluate('document.title === "Mata — amostra artística"'),'separate exported art scene starts instead of Main');
+  await delay(1500);
+  check(await evaluate(`localStorage.getItem(${JSON.stringify(KEY)})`)==preservedJournal,'art sample does not modify the player save');
+  await call('Emulation.setDeviceMetricsOverride',{width:640,height:360,deviceScaleFactor:1,mobile:true});
+  await delay(500);
+  check(await evaluate('document.documentElement.dataset.mataSample === "ready" && !window.GrandeArvoreSave'),'landscape sample remains isolated from save platform');
   check(!errors.some(e=>/SCRIPT ERROR|Parse Error|Invalid call/.test(e)),'actual exported runtime has no GDScript errors');
   console.log(`WEB_SAVE_RESULT: ${checks} checks, 0 failures`);
 } finally {await stop();server.close();}
