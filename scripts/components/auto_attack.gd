@@ -2,19 +2,45 @@ class_name AutoAttack
 extends Node
 
 signal attacked(target: Node2D)
+signal projectile_requested(origin: Node2D, target: Node2D, specification: Dictionary)
 @export var weapon: WeaponData
 var cooldown_left: float = 0.0
+var damage_scale := 1.0
+var damage_base := -1.0
+var basic_bonus := 1.0
+var critical_chance := 0.05
+var critical_multiplier := 1.5
+var damage_type := "physical"
+const EMPTY_SEARCH_INTERVAL := 0.08
+var search_left := 0.0
 
 func tick(delta: float, origin: Node2D) -> void:
-	cooldown_left = maxf(0.0, cooldown_left - delta)
-	if cooldown_left > 0.0 or weapon == null:
+	if SafeCamp.in_clearance(origin.global_position):
 		return
-	# Limit searches even when no target is available.
-	cooldown_left = weapon.interval
+	cooldown_left = maxf(0.0, cooldown_left - delta)
+	search_left = maxf(0.0, search_left - delta)
+	if cooldown_left > 0.000001 or search_left > 0.000001 or weapon == null:
+		return
+	# An empty search is not a swing. Bound retries without spending hit cooldown.
 	var target: Node2D = select_target(origin)
-	if target != null:
-		target.receive_damage(weapon.damage)
-		attacked.emit(target)
+	if target == null:
+		search_left = EMPTY_SEARCH_INTERVAL
+		return
+	if not weapon.projectile_kind.is_empty() and get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE:
+		search_left = EMPTY_SEARCH_INTERVAL
+		return
+	# Set before callbacks: re-entrant ticks cannot apply the same swing twice.
+	cooldown_left = weapon.interval
+	search_left = 0.0
+	attacked.emit(target)
+	var hit := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale,critical_chance,critical_multiplier,CombatRules.roll())
+	var hit_damage: int = hit.damage
+	var event := CombatRules.next_event()
+	if weapon.projectile_kind.is_empty():
+		if target is EnemyActor: target.receive_damage(hit_damage,weapon.category,event,damage_type,hit.critical)
+		else: target.receive_damage(hit_damage)
+	else:
+		projectile_requested.emit(origin, target, {"damage": hit_damage, "kind": weapon.projectile_kind, "speed": weapon.projectile_speed, "reach": weapon.reach, "category":weapon.category,"event":event,"damage_type":damage_type,"critical":hit.critical})
 
 func select_target(origin: Node2D) -> Node2D:
 	if weapon == null:

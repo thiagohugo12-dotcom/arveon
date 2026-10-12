@@ -1,0 +1,63 @@
+extends RefCounted
+
+static func run(suite: SceneTree) -> void:
+	var image := (load("res://assets/art/explorer_atlas.png") as Texture2D).get_image()
+	suite.check(image.get_size() == Vector2i(288, 192), "explorer atlas has four directions and six aligned frames")
+	for direction in range(4):
+		var idle := image.get_region(Rect2i(0, direction * 48, 48, 48))
+		var breath := image.get_region(Rect2i(48, direction * 48, 48, 48))
+		var left_step := image.get_region(Rect2i(96, direction * 48, 48, 48))
+		var passing_a := image.get_region(Rect2i(144, direction * 48, 48, 48))
+		var right_step := image.get_region(Rect2i(192, direction * 48, 48, 48))
+		var passing_b := image.get_region(Rect2i(240, direction * 48, 48, 48))
+		suite.check(idle.get_pixel(0, 0).a == 0.0 and idle.get_pixel(47, 47).a == 0.0, "explorer frame keeps transparent margins (%d)" % direction)
+		suite.check(idle.get_data() == breath.get_data(), "approved explorer holds its idle pose without synthetic redraw (%d)" % direction)
+		suite.check(left_step.get_data() != right_step.get_data(), "explorer opposite strides differ (%d)" % direction)
+		suite.check(passing_a.get_data() != passing_b.get_data(), "explorer passing strides differ (%d)" % direction)
+	# The three silhouettes from the approved screenshot must actually be imported.
+	var monster_image := (load("res://assets/art/monsters_approved.png") as Texture2D).get_image()
+	suite.check(monster_image.get_size() == Vector2i(192, 64), "approved monster atlas has three 64x64 cells")
+	for kind in range(3):
+		var cell := monster_image.get_region(Rect2i(kind * 64, 0, 64, 64))
+		var opaque := 0
+		for yy in range(64):
+			for xx in range(64):
+				if cell.get_pixel(xx, yy).a > 0.5:
+					opaque += 1
+		suite.check(opaque > 150, "approved monster cell %d contains a sprite" % kind)
+		suite.check(cell.get_pixel(0, 0).a < 0.01, "approved monster cell %d has transparent border" % kind)
+	var view := ActorView.new()
+	suite.root.add_child(view)
+	view.appearance = 0
+	for direction in [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT]:
+		view.set_facing(direction)
+		suite.check(view._explorer_direction() == [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT].find(direction), "explorer picks cardinal facing %s" % direction)
+	view.set_moving(true)
+	view.global_position += Vector2(ActorView.WALK_PIXELS_PER_FRAME, 0)
+	view._process(1.0 / 60.0)
+	suite.check(view.anim_frame == 1, "explorer stride advances after actual travel")
+	view._process(1.0)
+	suite.check(view.anim_frame == 1, "explorer does not walk in place without travel")
+	for phase in [2, 3, 0]:
+		view.global_position += Vector2(ActorView.WALK_PIXELS_PER_FRAME, 0)
+		view._process(1.0 / 60.0)
+		suite.check(view.anim_frame == phase, "explorer completes alternating contact and passing poses %d" % phase)
+	view.set_moving(false)
+	suite.check(view.settle_left > 0.0, "explorer plants a foot before idle")
+	view._process(0.10)
+	suite.check(view.settle_left == 0.0 and view.anim_frame == 0, "explorer settles into idle when stopped")
+	view.queue_free()
+	var npc_atlas := (load("res://assets/art/camp_npcs.png") as Texture2D).get_image()
+	suite.check(npc_atlas.get_size() == Vector2i(64, 80), "camp NPC atlas uses two compact idle frames per inhabitant")
+	for kind in range(2):
+		var first := npc_atlas.get_region(Rect2i(0, kind * 40, 32, 40))
+		var second := npc_atlas.get_region(Rect2i(32, kind * 40, 32, 40))
+		suite.check(first.get_data() != second.get_data(), "camp inhabitant has a distinct idle pose (%d)" % kind)
+	var camp := FloorView.new()
+	suite.root.add_child(camp)
+	var inhabitants := camp.get_children().filter(func(child: Node): return child is CampNpcView)
+	suite.check(inhabitants.size() == 2, "existing smith and vendor each have one integrated sprite")
+	if inhabitants.size() == 2:
+		suite.check(inhabitants[0].kind == 0 and inhabitants[1].kind == 1, "camp inhabitants keep their service identity")
+		suite.check(inhabitants[0].position == Vector2(606, 423) and inhabitants[1].position == Vector2(606, 475), "service NPC positions are unchanged")
+	camp.queue_free()

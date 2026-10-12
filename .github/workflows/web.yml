@@ -38,14 +38,89 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p build
+          touch build/.gdignore
           godot --headless --path . --editor --import 2>&1 | tee /tmp/import.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/import.log; then exit 1; fi
       - name: Gameplay contract tests
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tests.log; then exit 1; fi
+          grep -E '^RESULT: [0-9]+ checks, 0 failures$' /tmp/tests.log
+      - name: Set up Node for save validation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Browser journal contracts
+        run: node --test tests/browser_save_tests.cjs
+      - name: Report startup diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://tests/perf_probe.gd 2>&1 | tee /tmp/perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/perf.log; then exit 1; fi
+          grep '^PERF_PROBE:' /tmp/perf.log
+      - name: Render mobile layouts in software GL
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          mkdir -p build/mobile-qa
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mobile_capture.gd 2>&1 | tee /tmp/render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/render.log; then exit 1; fi
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/combat_capture.gd 2>&1 | tee /tmp/combat-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/combat-render.log; then exit 1; fi
+          grep '^COMBAT_QA_RESULT: 0 failures$' build/mobile-qa/combat-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/tower_capture.gd 2>&1 | tee /tmp/tower-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tower-render.log; then exit 1; fi
+          grep '^TOWER_QA_RESULT: 0 failures$' build/mobile-qa/tower-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/arena_capture.gd 2>&1 | tee /tmp/arena-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/arena-render.log; then exit 1; fi
+          grep '^ARENA_QA_RESULT: 0 failures$' build/mobile-qa/arena-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/save_capture.gd 2>&1 | tee /tmp/save-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/save-render.log; then exit 1; fi
+          grep '^SAVE_QA_RESULT: 0 failures$' build/mobile-qa/save-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/guardian_capture.gd 2>&1 | tee /tmp/guardian-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/guardian-render.log; then exit 1; fi
+          grep '^GUARDIAN_QA_RESULT: 0 failures$' build/mobile-qa/guardian-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/campaign_capture.gd 2>&1 | tee /tmp/campaign-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/campaign-render.log; then exit 1; fi
+          grep '^CAMPAIGN_QA_RESULT: 0 failures$' build/mobile-qa/campaign-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/arsenal_capture.gd 2>&1 | tee /tmp/arsenal-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/arsenal-render.log; then exit 1; fi
+          grep '^ARSENAL_QA_RESULT: 0 failures$' build/mobile-qa/arsenal-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_capture.gd 2>&1 | tee /tmp/mata-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/mata-render.log; then exit 1; fi
+          grep '^MATA_QA_RESULT: 0 failures$' build/mobile-qa/mata-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_sample_capture.gd 2>&1 | tee /tmp/sample-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/sample-render.log; then exit 1; fi
+          grep '^SAMPLE_RESULT: 19 checks, 0 failures$' /tmp/sample-render.log
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_v2_capture.gd 2>&1 | tee /tmp/mata-v2-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/mata-v2-render.log; then exit 1; fi
+          grep '^MATA_V2_RESULT: 34 checks, 0 failures$' /tmp/mata-v2-render.log
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 233
+          QA_RENDER_DIR="$PWD/build/diary-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/diary_capture.gd 2>&1 | tee /tmp/diary-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/diary-render.log; then exit 1; fi
+          test "$(find build/diary-qa -name '*.png' | wc -l)" -eq 24
+          QA_RENDER_DIR="$PWD/build/progression-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/progression_capture.gd 2>&1 | tee /tmp/progression-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/progression-render.log; then exit 1; fi
+          grep '^PROGRESSION_QA_RESULT: 0 failures$' /tmp/progression-render.log
+          test "$(find build/progression-qa -name '*.png' | wc -l)" -eq 20
+      - name: Save rendered layout evidence
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-layout-qa
+          path: |
+            build/mobile-qa/
+            build/diary-qa/
+            build/progression-qa/
+          if-no-files-found: error
+          retention-days: 14
       - name: Export Web
         shell: bash
         run: |
@@ -53,9 +128,18 @@ jobs:
           mkdir -p build/web
           godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee /tmp/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/export.log; then exit 1; fi
+          if grep -E 'Storing File: res://build/|Storing File:.*(combat|tower|arena|guardian|campaign|arsenal|mata)_[0-9]+x[0-9]+_|Storing File: res://assets/art/forest_(oak|linden|spruce)_v035.png' /tmp/export.log; then exit 1; fi
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
+      - name: Prepare isolated art sample entry
+        run: node tools/build-art-sample.mjs
+      - name: Verify actual Web persistence in Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 150s node tests/web_save_browser.mjs 2>&1 | tee /tmp/web-save-browser.log
+          grep '^WEB_SAVE_RESULT: [0-9]* checks, 0 failures$' /tmp/web-save-browser.log
       - name: Save Web build (no deployment)
         uses: actions/upload-artifact@v4
         with:
@@ -98,4 +182,65 @@ jobs:
           mkdir -p web/.vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
           cd web
-          npx --yes vercel@62.7.0 deploy --prod --yes --token "$VERCEL_TOKEN"
+          npx --yes vercel@62.7.0 deploy --prod --yes
+
+  preview:
+    name: Preview proposed Godot Web changes
+    needs: web
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/andar1-v020-primeiro-passe') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: grande-arvore-rpg-fixed-test-preview
+      cancel-in-progress: true
+    steps:
+      - name: Download tested Web export
+        uses: actions/download-artifact@v4
+        with:
+          name: andar-1-web
+          path: web
+      - name: Checkout reviewed Preview helper
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          path: source
+      - name: Prepare Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Publish preview
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_6XRzZ5HN4AOw2hWyIpf8McMU
+          VERCEL_PROJECT_ID: prj_gYKlx91MiswTmwj2PLiN5liQD0B7
+          TEST_ALIAS: grande-arvore-rpg-teste.vercel.app
+          PREVIEW_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PREVIEW_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo '::error title=Vercel token missing::Create the VERCEL_TOKEN repository secret.'
+            exit 1
+          fi
+          test -s web/index.html && test -s web/index.wasm && test -s web/index.pck
+          mkdir -p web/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
+          cd web
+          cp ../source/tools/preview-vercel.json vercel.json
+          npx --yes vercel@62.7.0 deploy --yes --non-interactive --meta "githubCommitSha=$PREVIEW_COMMIT_SHA" --meta "githubCommitRef=$PREVIEW_BRANCH" > /tmp/grande-arvore-deploy.json
+          preview_url="$(node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const result = JSON.parse(readFileSync("/tmp/grande-arvore-deploy.json", "utf8"));
+            if (result.status !== "ok" || result.deployment.readyState !== "READY" || result.deployment.target === "production") process.exit(1);
+            console.log(result.deployment.url);
+          ')"
+          PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+          node ../source/tools/verify-test-build.mjs
+          echo "Preview URL: $preview_url"
+          echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
+          echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
+          echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+
