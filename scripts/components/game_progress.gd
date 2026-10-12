@@ -6,7 +6,7 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 7
+const SAVE_VERSION := 8
 const ATTRIBUTES := RPGRules.ATTRIBUTES
 const MAX_LEVEL := RPGRules.MAX_LEVEL
 const POINTS_PER_LEVEL := 2
@@ -63,7 +63,7 @@ var mission_completed: int = 0
 var harvested_until: Dictionary = {}
 var opened_caches: Dictionary = {}
 var discovered_pois: Dictionary = {}
-var attributes: Dictionary = {"Força": 0, "Vitalidade": 0, "Agilidade": 0, "Espírito": 0}
+var attributes: Dictionary = RPGRules.empty_attributes()
 var skills: Dictionary = {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral": 1}
 # Recipe IDs are unique inventory identities; equipping never removes ownership.
 var equipment: Dictionary = {"espada": 0}
@@ -147,18 +147,28 @@ func unequip(slot: String) -> bool:
 	return true
 
 func combat_stats() -> Dictionary:
-	var result := {"damage": 12 + int(attributes["Força"]) * 2 + int(attributes["Espírito"]), "hp": 100 + int(attributes["Vitalidade"]) * 8 + int(attributes["Espírito"]) * 2,
-		"speed": 180 + int(attributes["Agilidade"]) * 2, "spirit": int(attributes["Espírito"]), "armor": 0,
-		"cooldown": 1.0 - minf(0.2, float(attributes["Agilidade"]) * 0.01)}
+	var result := {"physical": 12 + int(attributes["Força"]) * 2, "magical": 12 + int(attributes["Espírito"]) * 2,
+		"hp": 100 + int(attributes["Vitalidade"]) * 8, "speed": 180.0,
+		"spirit": int(attributes["Espírito"]), "armor": 0, "cooldown": 1.0,
+		"resistance": minf(0.25, int(attributes["Resistência"]) * 0.005),
+		"basic_interval_factor": 1.0-minf(0.15, int(attributes["Destreza"]) * 0.0075),
+		"accuracy": 100 + int(attributes["Destreza"])}
 	for slot: String in RPGRules.SLOTS:
 		var id: String = equipped[slot]
 		if id.is_empty():
 			continue
 		var bonus := RPGRules.bonuses(id, int(equipment[id]))
-		for key: String in bonus:
-			result[key] += bonus[key]
+		result.physical += int(bonus.damage)
+		result.magical += int(bonus.damage) + int(bonus.spirit) * 2
+		for key: String in ["hp","speed","spirit","armor"]: result[key] += bonus[key]
 	var passive := talents.bonuses(equipped.Arma)
-	for key: String in passive: result[key] += int(passive[key])
+	result.physical += int(passive.damage)
+	result.magical += int(passive.damage)
+	result.hp += int(passive.hp)
+	result.armor += int(passive.armor)
+	result.speed *= 1.0+minf(0.2,int(attributes["Mobilidade"])*0.01)
+	result.damage_type = "magical" if equipped.Arma == "cajado" else "physical"
+	result.damage = result[result.damage_type]
 	return result
 
 func discover_nearby(point: Vector2) -> bool:
@@ -454,7 +464,7 @@ func load_text(text: String) -> bool:
 		if discovered_value == null:
 			return false
 		new_discovered = discovered_value
-	var new_rpg: Dictionary = {"attributes": {"Força": 0, "Vitalidade": 0, "Agilidade": 0, "Espírito": 0},
+	var new_rpg: Dictionary = {"attributes": RPGRules.empty_attributes(),
 		"skills": {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral": 1},
 		"equipment": {"espada": 0}, "equipped": {"Arma": "espada", "Armadura": "", "Acessório": ""}}
 	if loaded_version == 4:
@@ -462,16 +472,16 @@ func load_text(text: String) -> bool:
 		if not legacy_attributes is Dictionary or legacy_attributes.size() != 4:
 			return false
 		var spent := 0
-		for name: String in ATTRIBUTES:
+		for name: String in RPGRules.LEGACY_ATTRIBUTES:
 			var amount: Variant = legacy_attributes.get(name)
 			if not _bounded_integer(amount, 0, 198):
 				return false
 			spent += int(amount)
-			new_rpg.attributes[name] = int(amount)
+			if name != "Agilidade": new_rpg.attributes[name] = int(amount)
 		if spent > (RPGRules.level_for_xp(int(parsed.xp)) - 1) * 2:
 			return false
 	if loaded_version >= 5:
-		var rpg_value: Variant = _valid_rpg(parsed.get("rpg"), int(parsed.xp))
+		var rpg_value: Variant = _valid_rpg(parsed.get("rpg"), int(parsed.xp), loaded_version)
 		if rpg_value == null:
 			return false
 		new_rpg = rpg_value
@@ -551,23 +561,24 @@ func equipment_metadata() -> Dictionary:
 		result[id] = ArsenalRules.metadata(id)
 	return result
 
-func _valid_rpg(value: Variant, total_xp: int) -> Variant:
+func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 	if not value is Dictionary or value.get("level") != RPGRules.level_for_xp(total_xp):
 		return null
 	for field: String in ["attributes", "skills", "equipment", "equipped"]:
 		if not value.get(field) is Dictionary:
 			return null
-	if value.attributes.size() != 4 or value.skills.size() != 3 or value.equipped.size() != 3:
+	var attribute_names: Array = RPGRules.LEGACY_ATTRIBUTES if version < 8 else RPGRules.ATTRIBUTES
+	if value.attributes.size() != attribute_names.size() or value.skills.size() != 3 or value.equipped.size() != 3:
 		return null
 	var attribute_spent := 0
 	var skill_spent := 0
-	var result := {"attributes": {}, "skills": {}, "equipment": {}, "equipped": value.equipped.duplicate()}
-	for name: String in RPGRules.ATTRIBUTES:
+	var result := {"attributes": RPGRules.empty_attributes(), "skills": {}, "equipment": {}, "equipped": value.equipped.duplicate()}
+	for name: String in attribute_names:
 		var amount: Variant = value.attributes.get(name)
 		if not _bounded_integer(amount, 0, 198):
 			return null
 		attribute_spent += int(amount)
-		result.attributes[name] = int(amount)
+		if name != "Agilidade": result.attributes[name] = int(amount)
 	for name: String in RPGRules.SKILLS:
 		var amount: Variant = value.skills.get(name)
 		if not _bounded_integer(amount, 1, 3):

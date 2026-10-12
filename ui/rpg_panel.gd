@@ -83,7 +83,7 @@ func refresh(value: GameProgress) -> void:
 			var row := HBoxContainer.new()
 			card.add_child(row)
 			var label := Label.new()
-			label.text = "%s\n%d / 198" % [name, progress.attributes[name]]
+			label.text = "%s · %d" % [name, progress.attributes[name]]
 			label.add_theme_font_size_override("font_size", 13)
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			row.add_child(label)
@@ -93,10 +93,10 @@ func refresh(value: GameProgress) -> void:
 			button.disabled = progress.attribute_points() < 1 or int(progress.attributes[name]) >= 198
 			button.pressed.connect(func(): action_requested.emit("attribute", name, 0))
 			row.add_child(button)
+			_label(RPGRules.ATTRIBUTE_HELP[name],card)
 		var values := progress.combat_stats()
 		_heading("COMBATE")
-		_label("Dano %d  ·  HP %d  ·  Vel %d\nEspírito %d  ·  Defesa %d" % [values.damage, values.hp, values.speed, values.spirit, values.armor], _card())
-		_label("Força +2 dano  ·  Vitalidade +8 HP\nAgilidade: movimento e recarga (até −20%)\nEspírito: dano, HP e habilidades")
+		_label("Físico %d · Mágico %d · HP %d\nMovimento %.1f · Armadura %d\nResistência %.1f%% · Intervalo −%.1f%%" % [values.physical,values.magical,values.hp,values.speed,values.armor,values.resistance*100,(1.0-values.basic_interval_factor)*100], _card())
 	elif tab == 1:
 		_heading("SUA CONFIGURAÇÃO DE COMBATE")
 		_label("Dash fixo + 3 habilidades. Ataque básico automático conforme a arma.")

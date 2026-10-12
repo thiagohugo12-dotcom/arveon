@@ -28,6 +28,7 @@ static func run(suite: SceneTree) -> void:
 	suite.check(restored.load_text(saved) and restored.to_json() == saved,"v7 preserves proficiency trees equipment and old skills")
 	var payload: Dictionary = JSON.parse_string(saved)
 	payload.version = 6
+	payload.rpg.attributes = preload("res://tests/progression_tests.gd").legacy_attributes(p.attributes)
 	payload.erase("talents")
 	suite.check(restored.load_text(JSON.stringify(payload)) and restored.talents.spent() == 0 and restored.skills == p.skills and restored.equipment == p.equipment,"v6 migrates without losing any acquired skill or gear")
 	restored.load_text(saved)

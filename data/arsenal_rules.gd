@@ -40,5 +40,5 @@ static func effective(progress: GameProgress, id: String) -> Dictionary:
 	var weapon_id: String = candidate.equipped.Arma
 	var configuration := profile(weapon_id)
 	values.reach = configuration.reach
-	values.interval = maxf(0.25, configuration.interval * (1.0 - minf(0.25, int(progress.attributes.Agilidade) * 0.01)))
+	values.interval = configuration.interval * float(values.basic_interval_factor)
 	return values

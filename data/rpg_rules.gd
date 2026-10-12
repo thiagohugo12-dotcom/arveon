@@ -2,7 +2,25 @@ class_name RPGRules
 extends RefCounted
 
 const MAX_LEVEL := 100
-const ATTRIBUTES := ["Força", "Vitalidade", "Agilidade", "Espírito"]
+const LEGACY_ATTRIBUTES := ["Força", "Vitalidade", "Agilidade", "Espírito"]
+const ATTRIBUTES := ["Força", "Vitalidade", "Resistência", "Mobilidade", "Destreza", "Espírito"]
+const ATTRIBUTE_HELP := {
+	"Força": "+2 de dano físico por ponto.",
+	"Vitalidade": "+8 de HP máximo por ponto.",
+	"Resistência": "+0,5% de redução física e mágica · limite 25%.",
+	"Mobilidade": "+1% de movimento normal · limite 20%. Dash fixo.",
+	"Destreza": "−0,75% no intervalo básico · limite 15%. Sem erros aleatórios.",
+	"Espírito": "+2 de dano mágico por ponto."}
+
+static func empty_attributes() -> Dictionary:
+	var result := {}
+	for attribute: String in ATTRIBUTES: result[attribute] = 0
+	return result
+
+static func received_damage(amount: int, damage_type: String, armor: int, resistance: float, fury: float = 0.0) -> int:
+	if amount <= 0 or damage_type not in ["physical", "magical"]: return 0
+	var after_armor := maxi(1, amount - armor) if damage_type == "physical" else amount
+	return maxi(1, ceili(after_armor * (1.0-clampf(resistance,0,0.25)) * (1.0-clampf(fury,0,0.4))))
 const SKILLS := ["Corte Circular", "Investida", "Fúria Ancestral"]
 const SLOTS := ["Arma", "Armadura", "Acessório"]
 const EQUIPMENT := {

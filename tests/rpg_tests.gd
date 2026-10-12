@@ -23,8 +23,8 @@ static func run(suite, main) -> void:
 	suite.check(p.level() == 3 and p.attribute_points() == 2 and p.skill_points() == 1, "XP curve increases transition cost")
 	p.xp = 100000000
 	for i in range(196):
-		p.allocate_attribute("Agilidade")
-	suite.check(p.level() == 100 and not p.allocate_attribute("Agilidade") and is_equal_approx(float(p.combat_stats().cooldown), 0.8), "level attribute and agility cooldown caps hold with huge XP")
+		p.allocate_attribute("Destreza")
+	suite.check(p.level() == 100 and not p.allocate_attribute("Destreza") and is_equal_approx(float(p.combat_stats().basic_interval_factor), 0.85), "level attribute and dexterity interval caps hold with huge XP")
 	for i in range(5):
 		p.improve_skill("Corte Circular")
 	suite.check(p.skills["Corte Circular"] == 3 and not p.improve_skill("Corte Circular"), "skill ranks capped at three")
@@ -74,12 +74,12 @@ static func run(suite, main) -> void:
 		suite.check(migrated.load_save() and migrated.attribute_points() == 8 and migrated.equipment.size() == 1, "migrated v%d reload cannot duplicate points or starter gear" % version)
 	var v4 := saved.duplicate(true)
 	v4.version = 4
-	v4.attributes = p.attributes.duplicate()
+	v4.attributes = preload("res://tests/progression_tests.gd").legacy_attributes(p.attributes)
 	v4.erase("rpg")
 	_write(path, v4)
 	var v4_loaded := GameProgress.new()
 	v4_loaded.save_path = path
-	suite.check(v4_loaded.load_save() and v4_loaded.attributes == p.attributes and v4_loaded.xp == p.xp, "existing b14b641 v4 preserves attributes and XP")
+	suite.check(v4_loaded.load_save() and v4_loaded.attributes["Força"] == p.attributes["Força"] and v4_loaded.attributes["Destreza"] == 0 and v4_loaded.attribute_points() == 196 and v4_loaded.xp == p.xp, "existing b14b641 v4 preserves attributes XP and refunds Agility")
 	var invalid := saved.duplicate(true)
 	invalid.xp = 80
 	invalid.rpg.level = 2

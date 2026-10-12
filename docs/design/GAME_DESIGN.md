@@ -1,4 +1,13 @@
 # Game Design — fundação v0.1
+## Progressão — Etapa 1, aprovada em 12/10/2026
+Conforme PROGRESSAO_ETAPA1.md e pedido completo de Thiago: seis atributos,
+classes por categoria equipada, proficiência 1–30 por dano efetivo, domínio
+independente e migração dos investimentos antigos. Substitui Agilidade e o
+bônus genérico de Espírito. Nível geral continua 1–100 e concede 2 atributos
+e 1 ponto compartilhado entre talentos/habilidades. Preservar efeitos/nós
+atuais; três skills + Dash, poção separada. Valores são provisórios; futuras
+especializações, skills equipáveis e duas passivas aguardam detalhamento.
+
 ## Diário e HUD — aprovação em 11/10/2026
 Conforme DIARIO_HUD_V1.md, adotar diário creme/madeira/verde, mochila em grade
 e menus responsivos. Direção atual: dash + habilidade da arma + duas técnicas

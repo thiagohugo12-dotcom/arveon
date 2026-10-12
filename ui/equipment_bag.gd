@@ -234,7 +234,7 @@ func _details(id: String, comparing: bool) -> void:
 	var before := progress.combat_stats()
 	var config := ArsenalRules.profile(progress.equipped.Arma)
 	before.reach = config.reach
-	before.interval = maxf(0.25,config.interval * (1.0 - minf(0.25,int(progress.attributes.Agilidade)*0.01)))
+	before.interval = config.interval * float(before.basic_interval_factor)
 	for key: String in ["damage","interval","reach","hp","armor","speed","spirit"]:
 		var difference := float(candidate[key]) - float(before[key])
 		var good := difference < 0 if key == "interval" else difference > 0

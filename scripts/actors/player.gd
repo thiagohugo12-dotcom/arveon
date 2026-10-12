@@ -15,6 +15,8 @@ var skill_ranks: Array[int] = [1, 1, 1]
 var cooldown_factor := 1.0
 var spirit := 0
 var armor := 0
+var resistance := 0.0
+var physical_damage := 12
 var fury_left := 0.0
 var charge_left := 0.0
 var charge_direction := Vector2.DOWN
@@ -66,12 +68,11 @@ func _physics_process(delta: float) -> void:
 	view.set_moving(velocity.length_squared() > 1.0)
 	attack.tick(delta, self)
 
-func receive_damage(amount: int) -> void:
+func receive_damage(amount: int, damage_type: String = "physical") -> void:
 	if SafeCamp.in_clearance(global_position) or not health.is_alive() or amount <= 0:
 		return
-	var reduced := maxi(1, amount - armor)
-	if fury_left > 0.0:
-		reduced = maxi(1, ceili(reduced * (0.75 - 0.05 * (skill_ranks[2] - 1))))
+	var fury := 0.25 + 0.05 * (skill_ranks[2] - 1) if fury_left > 0.0 else 0.0
+	var reduced := RPGRules.received_damage(amount,damage_type,armor,resistance,fury)
 	var before := health.current
 	health.damage(reduced)
 	view.show_damage(before - health.current)
@@ -81,13 +82,15 @@ func apply_progression(progress: GameProgress, initial: bool = false) -> void:
 	stats.max_hp = int(values.hp)
 	stats.move_speed = float(values.speed)
 	attack.weapon.damage = int(values.damage)
-	stats.dash_speed = 620.0 + int(progress.attributes["Agilidade"]) * 3.0
+	stats.dash_speed = 620.0
+	physical_damage = int(values.physical)
+	resistance = float(values.resistance)
 	var configuration := ArsenalRules.profile(progress.equipped.Arma)
 	attack.weapon.category = progress.equipped.Arma if ArsenalRules.CATEGORIES.has(progress.equipped.Arma) else "espada"
 	attack.weapon.reach = configuration.reach
 	attack.weapon.projectile_kind = configuration.projectile
 	attack.weapon.projectile_speed = configuration.speed
-	attack.weapon.interval = maxf(0.25, configuration.interval * (1.0 - minf(0.25, int(progress.attributes["Agilidade"]) * 0.01)))
+	attack.weapon.interval = configuration.interval * float(values.basic_interval_factor)
 	spirit = int(values.spirit)
 	armor = int(values.armor)
 	cooldown_factor = float(values.cooldown)
@@ -140,7 +143,7 @@ func _hit_skill(radius: float, multiplier: float, hits: Dictionary) -> void:
 		if not get_world_2d().direct_space_state.intersect_ray(query).is_empty():
 			continue
 		hits[id] = true
-		candidate.receive_damage(roundi((attack.weapon.damage * multiplier + spirit) * attack.damage_scale),attack.weapon.category)
+		candidate.receive_damage(roundi(physical_damage * multiplier * attack.damage_scale),attack.weapon.category)
 
 func _on_attack(target: Node2D) -> void:
 	# Snapshot the selected target, independently of movement/dash facing.

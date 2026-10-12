@@ -27,13 +27,15 @@ static func run_state(suite) -> void:
 	for version in range(1, 6):
 		var legacy := saved.duplicate(true)
 		legacy.version = version
+		legacy.rpg.attributes = preload("res://tests/progression_tests.gd").legacy_attributes(progress.attributes)
 		legacy.erase("ascension")
 		if version == 4:
-			legacy.attributes = progress.attributes.duplicate()
+			legacy.attributes = preload("res://tests/progression_tests.gd").legacy_attributes(progress.attributes)
 		_write(progress.save_path, legacy)
 		suite.check(loaded.load_save() and loaded.ascension.defeats["1"] == 23 and loaded.gold == 17 and loaded.kills == 23, "v%d migration credits previous real Mata kills without changing rewards" % version)
 	var old_many := saved.duplicate(true)
 	old_many.version = 5
+	old_many.rpg.attributes = preload("res://tests/progression_tests.gd").legacy_attributes(progress.attributes)
 	old_many.kills = 99
 	old_many.erase("ascension")
 	_write(progress.save_path, old_many)
