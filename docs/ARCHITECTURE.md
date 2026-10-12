@@ -1,4 +1,37 @@
 # Arquitetura
+## Progressão — Etapa 1 (save v9)
+RPGRules centraliza seis atributos e redução recebida física/mágica. GameProgress
+mantém dois pontos de atributos e um ponto compartilhado de talento por nível;
+classes são derivadas da categoria equipada. v1–7 validam quatro atributos antes
+de remover Agilidade; o saldo derivado devolve o investimento exatamente uma vez.
+v8 tem seis atributos e curva antiga; v9 possui curva nova, domínio e resto de XP.
+TalentProgress converte XP antigo por 0,4, preservando nível/fração e nós válidos.
+O journal Web mantém sua chave v6 intencionalmente. Importação, checksum, backup,
+arquivo original e validação atômica permanecem no mesmo caminho.
+
+EnemyActor aceita IDs de evento por vida, limita crédito à vida real removida e
+ao orçamento original de HP (não reposto por cura). Recibo de uso único emitido
+antes do callback letal garante autosave do último impacto. Main valida origem,
+época do andar e tentativa antes de consumir o recibo. TalentProgress converte
+dez HP em um XP, mantendo o resto 0–9 salvo por categoria. Talentos e domínio
+possuem orçamentos separados. Projéteis capturam dano resolvido, crítico, tipo,
+categoria e ID; impactos não consultam a arma atualmente equipada.
+
+CombatRules concentra sorteio injetável para QA e cálculo final com um único
+arredondamento. Bônus de domínio/proficiência são aditivos no mesmo fator;
+crítico é o último multiplicador. Corte/Investida conservam dano físico e Fúria
+seu efeito/duração; cajado possui básico mágico. Feedback crítico reutiliza os
+dois números existentes, sem nós/partículas adicionais. Mobilidade não muda Dash;
+Destreza só muda intervalo básico. Armadura física plana precede Resistência;
+Resistência afeta também dano mágico, seguida da redução atual de Fúria.
+
+RPGPanel oferece seis atributos e páginas Domínio/Talentos por categoria, com
+grade de duas colunas quando há largura e rolagem em telas menores. Main valida
+compras com valor esperado para evitar toque duplicado e autoriza redistribuição
+dos nós apenas na área segura, fora de provas. Trocar arma não apaga investimentos
+e apply_progression continua sem curar. Configuração livre de skills/passivas e
+especializações definitivas ficam reservadas à próxima etapa.
+
 ## Diário e HUD
 V3: peças 96×96 preparadas offline, com nove fatias para madeira, papel,
 botões e slots; fonte Cormorant Garamond incorporada sob OFL. A mochila

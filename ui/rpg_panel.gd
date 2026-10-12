@@ -169,12 +169,13 @@ func _talent_page() -> void:
 		number.position = Vector2(3,37)
 		number.size = Vector2(44,14)
 		number.autowrap_mode = TextServer.AUTOWRAP_OFF
+		number.add_theme_color_override("font_color",Color("#fff0cf") if id == talent_weapon else DiaryTheme.INK)
 		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(number)
 		DiaryTheme.select(button,id == talent_weapon)
 	var level := progress.talents.level(talent_weapon)
 	_heading("%s · PROFICIÊNCIA %d / 30" % [ArsenalRules.category_name(talent_weapon).to_upper(),level])
-	_label("%s%s" % [TalentRules.CLASSES[talent_weapon]," · classe ativa" if progress.equipped.Arma == talent_weapon else " · bônus guardados até equipar"])
+	_label("%s%s" % [TalentRules.CLASSES[talent_weapon]," · classe ativa" if progress.active_category() == talent_weapon else " · bônus guardados até equipar"])
 	var bar := ProgressBar.new()
 	bar.custom_minimum_size.y = 8
 	bar.show_percentage = false

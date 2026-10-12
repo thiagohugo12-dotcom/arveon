@@ -21,7 +21,10 @@ static func metadata(id: String) -> Dictionary:
 		return {}
 	return {"category": id if CATEGORIES.has(id) else item.slot, "rarity": "incomum" if id in ["lanca","cajado","trama","semente"] else "comum", "icon": id if CATEGORIES.has(id) else item.slot, "level": 1}
 static func profile(id: String) -> Dictionary:
-	return CATEGORIES.get(id, CATEGORIES.espada).duplicate()
+	return CATEGORIES.get(weapon_category(id), CATEGORIES.espada).duplicate()
+static func weapon_category(id: String) -> String:
+	var category: String = metadata(id).get("category","")
+	return category if CATEGORIES.has(category) else ""
 static func rarity(id: String) -> Dictionary:
 	return RARITIES[metadata(id).rarity]
 static func category_name(id: String) -> String:

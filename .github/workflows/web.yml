@@ -106,6 +106,10 @@ jobs:
           QA_RENDER_DIR="$PWD/build/diary-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/diary_capture.gd 2>&1 | tee /tmp/diary-render.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/diary-render.log; then exit 1; fi
           test "$(find build/diary-qa -name '*.png' | wc -l)" -eq 24
+          QA_RENDER_DIR="$PWD/build/progression-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/progression_capture.gd 2>&1 | tee /tmp/progression-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/progression-render.log; then exit 1; fi
+          grep '^PROGRESSION_QA_RESULT: 0 failures$' /tmp/progression-render.log
+          test "$(find build/progression-qa -name '*.png' | wc -l)" -eq 20
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -114,6 +118,7 @@ jobs:
           path: |
             build/mobile-qa/
             build/diary-qa/
+            build/progression-qa/
           if-no-files-found: error
           retention-days: 14
       - name: Export Web

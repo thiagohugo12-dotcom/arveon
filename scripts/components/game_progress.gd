@@ -88,11 +88,14 @@ func learn_talent(weapon: String, node: String) -> bool:
 	return talents.learn(weapon,node,skill_points())
 
 func active_class() -> String:
-	return TalentRules.CLASSES.get(equipped.Arma,"Aventureiro")
+	return TalentRules.CLASSES.get(active_category(),"Aventureiro")
+
+func active_category() -> String:
+	return ArsenalRules.weapon_category(equipped.Arma)
 
 func skill_rank(index: int) -> int:
 	var rank := int(skills[RPGRules.SKILLS[index]])
-	var weapon: String = equipped.Arma
+	var weapon := active_category()
 	for node: String in talents.learned.get(weapon,[]):
 		if int(TalentRules.NODES[node].skill) == index: rank += 1
 	# A tree adds one extra rank beyond the old three-rank progression.
@@ -164,14 +167,14 @@ func combat_stats() -> Dictionary:
 		result.physical += int(bonus.damage)
 		result.magical += int(bonus.damage) + int(bonus.spirit) * 2
 		for key: String in ["hp","speed","spirit","armor"]: result[key] += bonus[key]
-	var passive := talents.bonuses(equipped.Arma)
+	var passive := talents.bonuses(active_category())
 	result.physical += int(passive.damage)
 	result.magical += int(passive.damage)
 	result.hp += int(passive.hp)
 	result.armor += int(passive.armor)
 	result.speed *= 1.0+minf(0.2,int(attributes["Mobilidade"])*0.01)
-	result.damage_type = "magical" if equipped.Arma == "cajado" else "physical"
-	result.merge(talents.mastery_bonuses(equipped.Arma))
+	result.damage_type = "magical" if active_category() == "cajado" else "physical"
+	result.merge(talents.mastery_bonuses(active_category()))
 	result.damage = roundi(float(result[result.damage_type]) * (1.0+result.automatic+result.basic))
 	return result
 

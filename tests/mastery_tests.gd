@@ -116,6 +116,47 @@ static func run_world(suite: SceneTree) -> void:
 	main.progress.attributes["Destreza"] = 20
 	main.player.apply_progression(main.progress)
 	suite.check(main.player.stats.dash_speed == 620 and main.player.stats.move_speed == 216 and is_equal_approx(main.player.attack.weapon.interval,0.65*0.85),"actual player Mobility and Dexterity never change Dash")
+	for actor in suite.get_nodes_in_group("damageable_enemies"): actor.queue_free()
+	await suite.frames()
+	var target: EnemyActor = main._make_enemy(0)
+	target.position = Vector2(870,475)
+	main._register_enemy_defeat(target)
+	main.add_child(target)
+	target.health.initialize(1000)
+	target.set_physics_process(false)
+	main.player.position = Vector2(810,475)
+	main.progress.attributes["Força"] = 3
+	main.progress.attributes["Espírito"] = 5
+	CombatRules.random_roll_source = func(): return 0.0
+	for category: String in ArsenalRules.CATEGORIES:
+		main.progress.equipment[category] = 0
+		main.progress.equip(category)
+		main.player.apply_progression(main.progress)
+		var attack: AutoAttack = main.player.attack
+		attack.cooldown_left = 0
+		attack.search_left = 0
+		var before := target.health.current
+		var expected := CombatRules.resolve(attack.damage_base,attack.basic_bonus,1,attack.critical_chance,attack.critical_multiplier,0)
+		attack.tick(0,main.player)
+		for shot: PlayerProjectile in preload("res://tests/arsenal_combat_tests.gd").shots(main):
+			suite.check(shot.critical and shot.damage_type == ("magical" if category == "cajado" else "physical"),"projectile snapshots critical and damage type "+category)
+			shot._physics_process(0.3)
+		suite.check(target.health.current == before-int(expected.damage) and target.view.damage_critical,"actual basic critical damage and feedback "+category)
+		await suite.frames()
+	CombatRules.random_roll_source = func(): return 0.99
+	# Current techniques retain physical scaling, even with the magical staff.
+	main.progress.talents.xp.cajado = TalentRules.xp_floor(18)
+	main.progress.talents.mastery.cajado["Dano Especial"] = 12
+	main.player.apply_progression(main.progress)
+	var base_stats: Dictionary = main.progress.combat_stats()
+	var hp_before := target.health.current
+	main.player.skill_cooldowns[0] = 0
+	main.player.use_skill(0)
+	var expected_skill := CombatRules.resolve(base_stats.physical,1+base_stats.automatic+base_stats.special,1.4,base_stats.critical_chance,base_stats.critical_multiplier,0.99)
+	suite.check(target.health.current == hp_before-int(expected_skill.damage),"staff keeps existing physical technique, with special mastery but no Spirit leakage")
+	main.player.skill_cooldowns[2] = 0
+	main.player.use_skill(2)
+	suite.check(main.player.fury_left == 6 and main.player.attack.damage_scale == 1.3,"special mastery does not increase Fury duration or its buff magnitude")
 	main.queue_free()
 	await suite.frames()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)

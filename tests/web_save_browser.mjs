@@ -14,6 +14,8 @@ const campaignArchive = await readFile('build/campaign-save-fixture.json', 'utf8
 const campaignPayload = JSON.parse(JSON.parse(campaignArchive).payload);
 const arsenalArchive = await readFile('build/arsenal-save-fixture.json', 'utf8');
 const arsenalPayload = JSON.parse(JSON.parse(arsenalArchive).payload);
+const progressionArchive = await readFile('build/progression-save-fixture.json', 'utf8');
+const progressionPayload = JSON.parse(JSON.parse(progressionArchive).payload);
 const guardianArchive = await readFile('build/guardian-save-fixture.json', 'utf8');
 const guardianPayload = JSON.parse(JSON.parse(guardianArchive).payload);
 const helper = await readFile('scripts/platform/browser_save.js', 'utf8');
@@ -149,6 +151,18 @@ try {
   await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
   const arsenalReload = await snapshot();
   check(JSON.stringify(arsenalReload.rpg.equipment)===JSON.stringify(arsenalPayload.rpg.equipment) && JSON.stringify(arsenalReload.rpg.equipment_meta)===JSON.stringify(arsenalPayload.rpg.equipment_meta) && arsenalReload.rpg.equipped.Arma==='cajado','five weapon reload preserves rarity independently of enhancement without duplicate items');
+  await seed();
+  await evaluate(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(progressionArchive)})`);
+  await game();
+  await until(`JSON.parse(JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).payload).version === 9`);
+  const progression = await snapshot();
+  check(progression.version===9 && Object.keys(progression.rpg.attributes).length===6 && !('Agilidade' in progression.rpg.attributes) && progression.rpg.attributes.Mobilidade===0 && progression.rpg.attributes.Destreza===0,'actual Web migrates old Agility into unspent six-attribute budget');
+  check(progression.xp===progressionPayload.xp && progression.gold===777 && progression.rpg.attributes['Força']===3 && progression.rpg.skills['Corte Circular']===3 && progression.rpg.equipment.cajado===2,'actual Web preserves level wallet investments skills and gear during v7 migration');
+  check(progression.talents.xp.espada===1240 && progression.talents.xp.cajado===3480 && progression.talents.learned.espada.length===6 && progression.talents.mastery.espada.Dano===0,'actual Web migrates proficiency curve and learned tree without spending mastery');
+  check(progression.ascension.campaign_completed && JSON.stringify(progression.floor_states)===JSON.stringify(progressionPayload.floor_states),'actual Web migration preserves all five conquered floors and exploration');
+  await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
+  const progressionReload = await snapshot();
+  check(JSON.stringify(progressionReload.rpg)===JSON.stringify(progression.rpg) && JSON.stringify(progressionReload.talents)===JSON.stringify(progression.talents) && progressionReload.xp===progression.xp,'actual Web reload cannot duplicate Agility refunds mastery or talent progress');
   const preservedJournal=await evaluate(`localStorage.getItem(${JSON.stringify(KEY)})`);
   await call('Page.navigate',{url:origin+'/amostra-mata/index.html'});
   await until('document.documentElement.dataset.mataSample === "ready"',45000);

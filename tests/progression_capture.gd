@@ -29,6 +29,7 @@ func _run() -> void:
 	main.progress.learn_talent("espada","corte")
 	main.progress.learn_talent("espada","vigor")
 	main.player.apply_progression(main.progress)
+	main.hud.set_rpg_status(main.progress,main.player)
 	var panel: RPGPanel = main.hud.rpg_panel
 	for resolution: Vector2i in [Vector2i(960,540),Vector2i(390,844),Vector2i(640,360),Vector2i(360,640)]:
 		root.size = resolution
