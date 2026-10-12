@@ -3,18 +3,49 @@ extends RefCounted
 
 var xp: Dictionary = {}
 var learned: Dictionary = {}
+var mastery: Dictionary = {}
+var damage_remainder: Dictionary = {}
 
 func _init() -> void:
 	for weapon: String in ArsenalRules.CATEGORIES:
 		xp[weapon] = 0
+		damage_remainder[weapon] = 0
 		learned[weapon] = []
+		mastery[weapon] = {"Dano":0,"Dano Especial":0,"Crítico":0,"Dano Crítico":0}
 
 func level(weapon: String) -> int:
 	return TalentRules.level_for_xp(int(xp.get(weapon,0)))
 
-func record_hit(weapon: String) -> bool:
-	if not xp.has(weapon) or int(xp[weapon]) >= TalentRules.xp_floor(30): return false
-	xp[weapon] = int(xp[weapon])+1
+func record_damage(weapon: String, effective: int) -> bool:
+	if not xp.has(weapon) or effective <= 0 or int(xp[weapon]) >= TalentRules.xp_floor(30): return false
+	var damage_units := int(damage_remainder[weapon])+effective
+	@warning_ignore("integer_division")
+	xp[weapon] = mini(TalentRules.xp_floor(30), int(xp[weapon])+damage_units/TalentRules.DAMAGE_PER_XP)
+	damage_remainder[weapon] = damage_units%TalentRules.DAMAGE_PER_XP if int(xp[weapon]) < TalentRules.xp_floor(30) else 0
+	return true
+
+func mastery_points(weapon: String) -> int:
+	if not mastery.has(weapon): return 0
+	var used := 0
+	for amount: int in mastery[weapon].values(): used += amount
+	return maxi(0,level(weapon)-1-used)
+
+func allocate_mastery(weapon: String, stat: String, expected: int) -> bool:
+	if not mastery.has(weapon) or not TalentRules.MASTERY.has(stat) or mastery_points(weapon) < 1: return false
+	if int(mastery[weapon][stat]) != expected or expected >= int(TalentRules.MASTERY[stat].cap): return false
+	mastery[weapon][stat] = expected+1
+	return true
+
+func mastery_bonuses(weapon: String) -> Dictionary:
+	var values: Dictionary = mastery.get(weapon,{})
+	return {"automatic":(level(weapon)-1)*0.005 if xp.has(weapon) else 0.0,
+		"basic":int(values.get("Dano",0))*0.01,"special":int(values.get("Dano Especial",0))*0.0125,
+		"critical_chance":0.05+int(values.get("Crítico",0))*0.01,
+		"critical_multiplier":1.5+int(values.get("Dano Crítico",0))*0.03}
+
+func reset_tree(weapon: String) -> bool:
+	if not learned.has(weapon) or learned[weapon].is_empty(): return false
+	learned[weapon].clear()
 	return true
 
 func owns(weapon: String, node: String) -> bool:
@@ -42,17 +73,33 @@ func bonuses(weapon: String) -> Dictionary:
 	return result
 
 func to_save() -> Dictionary:
-	return {"xp":xp.duplicate(true),"learned":learned.duplicate(true)}
+	return {"xp":xp.duplicate(true),"learned":learned.duplicate(true),"mastery":mastery.duplicate(true),"damage_remainder":damage_remainder.duplicate(true)}
 
-static func from_save(value: Variant, points: int) -> TalentProgress:
-	if not value is Dictionary or value.size() != 2 or not value.get("xp") is Dictionary or not value.get("learned") is Dictionary: return null
+static func from_save(value: Variant, points: int, legacy: bool = false) -> TalentProgress:
+	if not value is Dictionary or value.size() != (2 if legacy else 4) or not value.get("xp") is Dictionary or not value.get("learned") is Dictionary: return null
 	if value.xp.size() != 5 or value.learned.size() != 5: return null
+	if not legacy and (not value.get("mastery") is Dictionary or value.mastery.size() != 5): return null
+	if not legacy and (not value.get("damage_remainder") is Dictionary or value.damage_remainder.size() != 5): return null
 	var result := TalentProgress.new()
 	for weapon: String in ArsenalRules.CATEGORIES:
 		var amount: Variant = value.xp.get(weapon)
 		var nodes: Variant = value.learned.get(weapon)
-		if not amount is float or amount != floorf(amount) or amount < 0 or amount > TalentRules.xp_floor(30) or not nodes is Array or nodes.size() > TalentRules.NODES.size(): return null
-		result.xp[weapon] = int(amount)
+		var cap := 8700 if legacy else TalentRules.xp_floor(30)
+		if not amount is float or amount != floorf(amount) or amount < 0 or amount > cap or not nodes is Array or nodes.size() > TalentRules.NODES.size(): return null
+		result.xp[weapon] = floori(float(amount)*0.4) if legacy else int(amount)
+		if not legacy:
+			var remainder: Variant = value.damage_remainder.get(weapon)
+			if not remainder is float or remainder != floorf(remainder) or remainder < 0 or remainder >= TalentRules.DAMAGE_PER_XP or (int(amount) == TalentRules.xp_floor(30) and remainder != 0): return null
+			result.damage_remainder[weapon] = int(remainder)
+			var distribution: Variant = value.mastery.get(weapon)
+			if not distribution is Dictionary or distribution.size() != 4: return null
+			var used := 0
+			for stat: String in TalentRules.MASTERY:
+				var invested: Variant = distribution.get(stat)
+				if not invested is float or invested != floorf(invested) or invested < 0 or invested > TalentRules.MASTERY[stat].cap: return null
+				result.mastery[weapon][stat] = int(invested)
+				used += int(invested)
+			if used > result.level(weapon)-1: return null
 		for node: Variant in nodes:
 			if not node is String or not TalentRules.NODES.has(node) or result.owns(weapon,node) or result.level(weapon) < TalentRules.NODES[node].prof: return null
 			result.learned[weapon].append(node)

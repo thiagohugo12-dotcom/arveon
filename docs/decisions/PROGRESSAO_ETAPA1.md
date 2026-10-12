@@ -27,9 +27,12 @@ andares são validados integralmente antes da troca atômica em memória.
 
 ## Proficiência e dano (balanceamento provisório)
 
-Um XP por ponto de vida efetivamente removido, limitado ao orçamento de HP
+Um XP por dez pontos de vida efetivamente removidos, limitado ao orçamento de HP
 original de cada vida do inimigo; regeneração não reabre orçamento. Sem bônus
-por morte nesta etapa. IDs por execução/impacto e alvo impedem reaplicação;
+por acerto ou arredondamento por golpe: o resto 0–9 fica salvo por categoria.
+A taxa 0,1 XP/HP é provisória; 1 XP/HP encerraria a proficiência perto da
+primeira prova, incompatível com a validação de progressão pelos cinco andares.
+Sem bônus por morte nesta etapa. IDs por execução/impacto e alvo impedem reaplicação;
 as verificações de origem/andar/tentativa continuam no Main. Projétil captura
 categoria, tipo de dano, crítico e ID na emissão; nenhum bônus troca em voo.
 

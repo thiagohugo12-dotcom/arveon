@@ -226,10 +226,13 @@ func _register_enemy_defeat(actor: EnemyActor) -> void:
 	actor.defeated.connect(_on_enemy_defeated.bind(actor), CONNECT_ONE_SHOT)
 	actor.weapon_hit.connect(_on_weapon_hit.bind(actor))
 
-func _on_weapon_hit(category: String, actor: EnemyActor) -> void:
+func _on_weapon_hit(category: String, effective: int, event: int, actor: EnemyActor) -> void:
 	if transitioning or input_driver.blocked or not player.health.is_alive() or not ArsenalRules.CATEGORIES.has(category) or actor.get_parent() != self or not actor.is_targetable() or actor.get_meta("floor_id",0) != progress.ascension.current_floor: return
+	if actor.get_meta("floor_epoch",-1) != floor_epoch or (trial.active() and actor.get_meta("tower_attempt",-1) != trial.attempt_id): return
+	if not actor.consume_hit_receipt(category,effective,event): return
 	var before := progress.talents.level(category)
-	if progress.talents.record_hit(category) and progress.talents.level(category) > before:
+	if progress.talents.record_damage(category,effective) and progress.talents.level(category) > before:
+		player.apply_progression(progress)
 		hud.show_notice("%s · Proficiência %d" % [ArsenalRules.CATEGORIES[category].name,progress.talents.level(category)])
 
 func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
@@ -863,6 +866,7 @@ func _spawn_tower_guardian() -> void:
 	tower_guardian.target = player
 	_apply_floor_stats(tower_guardian)
 	tower_guardian.set_meta("floor_id", trial.floor_id)
+	tower_guardian.set_meta("floor_epoch", floor_epoch)
 	tower_guardian.arena_bounds = TowerTrial.BOUNDS
 	tower_guardian.position = trial.spawn_positions(player.position, 1)[0]
 	tower_guardian.set_meta("tower_attempt", trial.attempt_id)

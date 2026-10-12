@@ -21,6 +21,8 @@ static func run(suite: SceneTree) -> void:
 	for version in [4,5,6,7]:
 		var old: Dictionary = JSON.parse_string(p.to_json())
 		old.version = version
+		old.talents.erase("mastery")
+		old.talents.erase("damage_remainder")
 		var attrs := {"Força":3,"Vitalidade":2,"Agilidade":7,"Espírito":5}
 		if version == 4: old.attributes = attrs
 		else: old.rpg.attributes = attrs

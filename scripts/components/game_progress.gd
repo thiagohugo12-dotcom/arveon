@@ -6,7 +6,7 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 8
+const SAVE_VERSION := 9
 const ATTRIBUTES := RPGRules.ATTRIBUTES
 const MAX_LEVEL := RPGRules.MAX_LEVEL
 const POINTS_PER_LEVEL := 2
@@ -86,6 +86,9 @@ func skill_points() -> int:
 
 func learn_talent(weapon: String, node: String) -> bool:
 	return talents.learn(weapon,node,skill_points())
+
+func active_class() -> String:
+	return TalentRules.CLASSES.get(equipped.Arma,"Aventureiro")
 
 func skill_rank(index: int) -> int:
 	var rank := int(skills[RPGRules.SKILLS[index]])
@@ -168,7 +171,8 @@ func combat_stats() -> Dictionary:
 	result.armor += int(passive.armor)
 	result.speed *= 1.0+minf(0.2,int(attributes["Mobilidade"])*0.01)
 	result.damage_type = "magical" if equipped.Arma == "cajado" else "physical"
-	result.damage = result[result.damage_type]
+	result.merge(talents.mastery_bonuses(equipped.Arma))
+	result.damage = roundi(float(result[result.damage_type]) * (1.0+result.automatic+result.basic))
 	return result
 
 func discover_nearby(point: Vector2) -> bool:
@@ -531,7 +535,7 @@ func load_text(text: String) -> bool:
 	if loaded_version >= 7:
 		var remaining := RPGRules.level_for_xp(int(parsed.xp))-1
 		for rank: int in new_rpg.skills.values(): remaining -= rank-1
-		new_talents = TalentProgress.from_save(parsed.get("talents"),remaining)
+		new_talents = TalentProgress.from_save(parsed.get("talents"),remaining,loaded_version < 9)
 		if new_talents == null: return false
 	# Commit all validated fields together; malformed trees cannot partially load.
 	talents = new_talents

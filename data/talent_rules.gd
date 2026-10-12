@@ -3,6 +3,9 @@ extends RefCounted
 
 # Provisional values approved as an adjustable first playable tree (ADR).
 const MAX_PROFICIENCY := 30
+const DAMAGE_PER_XP := 10 # Provisional: carry every fractional unit between hits/saves.
+const CLASSES := {"espada":"Espadachim","machado":"Guerreiro de Machado","lanca":"Lanceiro","arco":"Arqueiro","cajado":"Místico"}
+const MASTERY := {"Dano":{"cap":12,"step":0.01},"Dano Especial":{"cap":12,"step":0.0125},"Crítico":{"cap":10,"step":0.01},"Dano Crítico":{"cap":10,"step":0.03}}
 const NODES := {
 	"corte": {"name":"Corte Circular", "kind":"Técnica", "prof":3, "parent":"", "skill":0, "bonus":{}, "description":"+1 grau de Corte Circular com esta arma (máximo 4).", "icon":"espada", "position":Vector2(0.25,90)},
 	"vigor": {"name":"Vigor", "kind":"Passiva", "prof":5, "parent":"", "skill":-1, "bonus":{"hp":8}, "description":"+8 de HP máximo com esta arma. Não recupera vida.", "icon":"Ervas", "position":Vector2(0.75,90)},
@@ -14,7 +17,7 @@ const NODES := {
 }
 
 static func xp_floor(level: int) -> int:
-	return (level-1)*level*10
+	return (level-1)*level*4
 
 static func level_for_xp(xp: int) -> int:
 	var level := 1

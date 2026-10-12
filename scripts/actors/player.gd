@@ -17,6 +17,9 @@ var spirit := 0
 var armor := 0
 var resistance := 0.0
 var physical_damage := 12
+var special_bonus := 1.0
+var charge_event := 0
+var charge_build: Dictionary = {}
 var fury_left := 0.0
 var charge_left := 0.0
 var charge_direction := Vector2.DOWN
@@ -85,6 +88,12 @@ func apply_progression(progress: GameProgress, initial: bool = false) -> void:
 	stats.dash_speed = 620.0
 	physical_damage = int(values.physical)
 	resistance = float(values.resistance)
+	special_bonus = 1.0+float(values.automatic)+float(values.special)
+	attack.damage_base = float(values[values.damage_type])
+	attack.basic_bonus = 1.0+float(values.automatic)+float(values.basic)
+	attack.critical_chance = float(values.critical_chance)
+	attack.critical_multiplier = float(values.critical_multiplier)
+	attack.damage_type = values.damage_type
 	var configuration := ArsenalRules.profile(progress.equipped.Arma)
 	attack.weapon.category = progress.equipped.Arma if ArsenalRules.CATEGORIES.has(progress.equipped.Arma) else "espada"
 	attack.weapon.reach = configuration.reach
@@ -120,6 +129,8 @@ func use_skill(index: int) -> bool:
 			charge_left = 0.22
 			dash.time_left = 0.0
 			charge_hits.clear()
+			charge_event = CombatRules.next_event()
+			charge_build = {"base":physical_damage,"bonus":special_bonus,"chance":attack.critical_chance,"critical_multiplier":attack.critical_multiplier,"category":attack.weapon.category,"scale":attack.damage_scale}
 			view.set_facing(charge_direction)
 			view.play_skill(1)
 		2:
@@ -133,6 +144,8 @@ func use_skill(index: int) -> bool:
 func _hit_skill(radius: float, multiplier: float, hits: Dictionary) -> void:
 	if SafeCamp.in_clearance(global_position) or not health.is_alive() or input_driver.blocked:
 		return
+	var event := charge_event if hits == charge_hits and charge_left > 0.0 else CombatRules.next_event()
+	var build := charge_build if event == charge_event and not charge_build.is_empty() else {"base":physical_damage,"bonus":special_bonus,"chance":attack.critical_chance,"critical_multiplier":attack.critical_multiplier,"category":attack.weapon.category,"scale":attack.damage_scale}
 	for candidate in get_tree().get_nodes_in_group("damageable_enemies"):
 		if not is_instance_valid(candidate) or candidate.is_queued_for_deletion() or not candidate.is_targetable():
 			continue
@@ -143,7 +156,8 @@ func _hit_skill(radius: float, multiplier: float, hits: Dictionary) -> void:
 		if not get_world_2d().direct_space_state.intersect_ray(query).is_empty():
 			continue
 		hits[id] = true
-		candidate.receive_damage(roundi(physical_damage * multiplier * attack.damage_scale),attack.weapon.category)
+		var hit := CombatRules.resolve(build.base,build.bonus,multiplier*build.scale,build.chance,build.critical_multiplier,CombatRules.roll())
+		candidate.receive_damage(hit.damage,build.category,event,"physical",hit.critical)
 
 func _on_attack(target: Node2D) -> void:
 	# Snapshot the selected target, independently of movement/dash facing.

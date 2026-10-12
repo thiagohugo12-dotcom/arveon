@@ -2,7 +2,7 @@ class_name EnemyActor
 extends CharacterBody2D
 
 signal defeated(kind: int)
-signal weapon_hit(category: String)
+signal weapon_hit(category: String, effective: int, event: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: int)
 
 @export var stats: ActorData
@@ -28,6 +28,10 @@ const SLEEP_EXIT := 520.0
 var home_position := Vector2.ZERO
 var awake := true
 var chasing := false
+var invulnerable := false
+var _damage_events: Dictionary = {}
+var _proficiency_budget := -1
+var _hit_receipts: Dictionary = {}
 
 func _ready() -> void:
 	home_position = global_position
@@ -182,14 +186,29 @@ func _try_contact(distance: float) -> void:
 func is_targetable() -> bool:
 	return health.is_alive() and awake and not SafeCamp.in_clearance(global_position) and not is_queued_for_deletion()
 
-func receive_damage(amount: int, category: String = "") -> void:
-	if amount <= 0 or not is_targetable():
+func consume_hit_receipt(category: String, amount: int, event: int) -> bool:
+	if _hit_receipts.get(event) != [category,amount]: return false
+	_hit_receipts.erase(event)
+	return true
+
+func receive_damage(amount: int, category: String = "", event: int = 0, damage_type: String = "physical", critical: bool = false) -> void:
+	if amount <= 0 or invulnerable or not is_targetable() or damage_type not in ["physical","magical"]:
 		return
+	if event == 0: event = CombatRules.next_event()
+	if event < 0 or _damage_events.has(event): return
+	_damage_events[event] = true
+	if _proficiency_budget < 0: _proficiency_budget = health.maximum
 	var before := health.current
+	var effective := mini(amount,before)
+	var credit := mini(effective,_proficiency_budget)
+	_proficiency_budget -= credit # Healing never replenishes a life's XP budget.
 	# Emit before lethal callbacks so the defeat save includes this last hit.
-	if ArsenalRules.CATEGORIES.has(category): weapon_hit.emit(category)
+	if credit > 0 and ArsenalRules.CATEGORIES.has(category):
+		_hit_receipts[event] = [category,credit]
+		weapon_hit.emit(category,credit,event)
+		_hit_receipts.erase(event)
 	health.damage(amount)
-	view.show_damage(before - health.current)
+	view.show_damage(before - health.current,critical)
 
 func _on_died() -> void:
 	remove_from_group("damageable_enemies")

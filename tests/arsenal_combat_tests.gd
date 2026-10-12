@@ -36,15 +36,15 @@ static func run_world(suite) -> void:
 		player.attack.cooldown_left = 0
 		player.attack.search_left = 0
 		var before := enemy.health.current
-		var proficiency_before := int(p.talents.xp[id])
+		var proficiency_before := int(p.talents.xp[id])*10+int(p.talents.damage_remainder[id])
 		player.attack.tick(0,player)
 		var active := shots(main)
 		if profile.projectile.is_empty():
 			suite.check(active.is_empty() and enemy.health.current == before - player.attack.weapon.damage, "melee hits once without projectile " + id)
-			suite.check(p.talents.xp[id] == proficiency_before+1,"melee awards proficiency only on confirmed damage "+id)
+			suite.check(p.talents.xp[id]*10+p.talents.damage_remainder[id] == proficiency_before+before-enemy.health.current,"melee awards effective damage proficiency "+id)
 		else:
 			suite.check(active.size() == 1 and enemy.health.current == before and active[0].kind == profile.projectile, "ranged launch never deals instantaneous damage " + id)
-			suite.check(p.talents.xp[id] == proficiency_before,"ranged launch alone grants no proficiency "+id)
+			suite.check(p.talents.xp[id]*10+p.talents.damage_remainder[id] == proficiency_before,"ranged launch alone grants no proficiency "+id)
 			var shot := active[0]
 			main.input_driver.blocked = true
 			var position_before := shot.position
@@ -54,7 +54,7 @@ static func run_world(suite) -> void:
 			shot._physics_process(0.3)
 			shot._physics_process(0.3)
 			suite.check(shot.spent and enemy.health.current == before - player.attack.weapon.damage, "swept ranged impact damages exactly once " + id)
-			suite.check(p.talents.xp[id] == proficiency_before+1,"ranged proficiency awarded exactly once at impact "+id)
+			suite.check(p.talents.xp[id]*10+p.talents.damage_remainder[id] == proficiency_before+before-enemy.health.current,"ranged effective damage proficiency awarded once "+id)
 		player.attack.tick(0,player)
 		suite.check(enemy.health.current == before - player.attack.weapon.damage, "cooldown rejects duplicate same attack " + id)
 		await suite.frames()
@@ -117,14 +117,14 @@ static func run_world(suite) -> void:
 	await suite.frames()
 	player.attack.cooldown_left = 0
 	player.attack.search_left = 0
-	var bow_xp := int(p.talents.xp.arco)
+	var bow_xp := int(p.talents.xp.arco)*10+int(p.talents.damage_remainder.arco)
 	var sword_xp := int(p.talents.xp.espada)
 	player.attack.tick(0,player)
 	var switched_shot := shots(main)[0]
 	p.equip("espada")
 	player.apply_progression(p)
 	switched_shot._physics_process(0.3)
-	suite.check(switched_shot.spent and p.talents.xp.arco == bow_xp+1 and p.talents.xp.espada == sword_xp,"in-flight weapon switch preserves original projectile proficiency category")
+	suite.check(switched_shot.spent and p.talents.xp.arco*10+p.talents.damage_remainder.arco == bow_xp+switched_shot.damage and p.talents.xp.espada == sword_xp,"in-flight weapon switch preserves original projectile proficiency category")
 	p.equip("arco")
 	player.apply_progression(p)
 	player.attack.cooldown_left = 0

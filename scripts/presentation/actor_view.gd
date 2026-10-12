@@ -18,6 +18,8 @@ var damage_left: float = 0.0
 var damage_amount: int = 0
 var previous_damage_left := 0.0
 var previous_damage_amount := 0
+var damage_critical := false
+var previous_damage_critical := false
 var impact_left := 0.0
 const IMPACT_DURATION := 0.12
 const DAMAGE_DURATION := 0.85
@@ -81,12 +83,14 @@ func flash() -> void:
 	flash_left = 0.14
 	queue_redraw()
 
-func show_damage(amount: int) -> void:
+func show_damage(amount: int, critical: bool = false) -> void:
 	if amount <= 0:
 		return
 	# Two bounded labels retain closely spaced basic/skill hits without spawning nodes.
 	previous_damage_amount = damage_amount
 	previous_damage_left = damage_left
+	previous_damage_critical = damage_critical
+	damage_critical = critical
 	damage_amount = amount
 	damage_left = DAMAGE_DURATION
 	impact_left = IMPACT_DURATION
@@ -361,15 +365,16 @@ func _draw_hit_feedback(base_y := -42.0) -> void:
 			draw_line(start, (start + direction * 4.0).floor(), Color("#fff0b9", alpha), 2.0)
 		px(-1, -13, 3, 3, Color("#fff6d2", alpha))
 	if previous_damage_left > 0.0:
-		_draw_damage_value(previous_damage_amount, previous_damage_left, Vector2(12, base_y - 17.0), true)
+		_draw_damage_value(previous_damage_amount, previous_damage_left, Vector2(12, base_y - 17.0), true, previous_damage_critical)
 	if damage_left > 0.0:
-		_draw_damage_value(damage_amount, damage_left, Vector2(0, base_y))
+		_draw_damage_value(damage_amount, damage_left, Vector2(0, base_y), false, damage_critical)
 
-func _draw_damage_value(amount: int, remaining: float, at: Vector2, older := false) -> void:
-	var number := "-%d" % amount
+func _draw_damage_value(amount: int, remaining: float, at: Vector2, older := false, critical := false) -> void:
+	var number := "-%d%s" % [amount,"!" if critical else ""]
 	var font := ThemeDB.fallback_font
 	var alpha := clampf(remaining / 0.22, 0.0, 1.0)
 	var color := Color("#ffae8b", alpha) if appearance == 0 else Color("#fff0bd", alpha)
+	if critical: color = Color("#ffd461",alpha)
 	var width := font.get_string_size(number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
 	at += Vector2(-width * 0.5, -(DAMAGE_DURATION - remaining) * 24.0)
 	var readable := _readable_damage_position(at, width)

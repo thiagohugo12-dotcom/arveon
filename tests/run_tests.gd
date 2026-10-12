@@ -26,6 +26,7 @@ func frames(count: int = 2) -> void:
 		await process_frame
 
 func _run() -> void:
+	CombatRules.random_roll_source = func(): return 0.99
 	var test_path := "user://qa_area_segura_%d.json" % Time.get_ticks_usec()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", test_path)
 	preload("res://tests/campaign_state_tests.gd").run(self)
@@ -35,6 +36,7 @@ func _run() -> void:
 	preload("res://tests/save_tests.gd").run(self)
 	preload("res://tests/talent_tests.gd").run(self)
 	preload("res://tests/progression_tests.gd").run(self)
+	preload("res://tests/mastery_tests.gd").run(self)
 	var health := Health.new()
 	root.add_child(health)
 	health.initialize(10)
@@ -550,9 +552,11 @@ func _run() -> void:
 	await preload("res://tests/arsenal_combat_tests.gd").run_world(self)
 	await preload("res://tests/arsenal_ui_tests.gd").run_world(self)
 	await preload("res://tests/talent_tests.gd").run_world(self)
+	await preload("res://tests/mastery_tests.gd").run_world(self)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
 	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
 	print("RESULT: %d checks, %d failures" % [checks, failures])
+	CombatRules.random_roll_source = Callable()
 	quit(1 if failures > 0 else 0)
 
 

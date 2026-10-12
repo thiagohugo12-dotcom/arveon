@@ -6,6 +6,11 @@ signal projectile_requested(origin: Node2D, target: Node2D, specification: Dicti
 @export var weapon: WeaponData
 var cooldown_left: float = 0.0
 var damage_scale := 1.0
+var damage_base := -1.0
+var basic_bonus := 1.0
+var critical_chance := 0.05
+var critical_multiplier := 1.5
+var damage_type := "physical"
 const EMPTY_SEARCH_INTERVAL := 0.08
 var search_left := 0.0
 
@@ -28,12 +33,14 @@ func tick(delta: float, origin: Node2D) -> void:
 	cooldown_left = weapon.interval
 	search_left = 0.0
 	attacked.emit(target)
-	var hit_damage := roundi(weapon.damage * damage_scale)
+	var hit := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale,critical_chance,critical_multiplier,CombatRules.roll())
+	var hit_damage: int = hit.damage
+	var event := CombatRules.next_event()
 	if weapon.projectile_kind.is_empty():
-		if target is EnemyActor: target.receive_damage(hit_damage,weapon.category)
+		if target is EnemyActor: target.receive_damage(hit_damage,weapon.category,event,damage_type,hit.critical)
 		else: target.receive_damage(hit_damage)
 	else:
-		projectile_requested.emit(origin, target, {"damage": hit_damage, "kind": weapon.projectile_kind, "speed": weapon.projectile_speed, "reach": weapon.reach, "category":weapon.category})
+		projectile_requested.emit(origin, target, {"damage": hit_damage, "kind": weapon.projectile_kind, "speed": weapon.projectile_speed, "reach": weapon.reach, "category":weapon.category,"event":event,"damage_type":damage_type,"critical":hit.critical})
 
 func select_target(origin: Node2D) -> Node2D:
 	if weapon == null:
