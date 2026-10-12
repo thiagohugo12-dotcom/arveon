@@ -957,7 +957,10 @@ func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	gold_label.text = "Ouro %d" % progress.gold
 	xp_bar.max_value = RPGRules.cost_to_level(lvl)
 	xp_bar.value = progress.xp-RPGRules.xp_floor(lvl)
-	character_button.notification = progress.attribute_points_available() > 0
+	var mastery_available := false
+	for category: String in ArsenalRules.CATEGORIES:
+		if progress.talents.mastery_points(category) > 0: mastery_available = true
+	character_button.notification = progress.attribute_points_available() > 0 or progress.skill_points() > 0 or mastery_available
 	expanded_map.update_player(player.global_position)
 	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
 	for i in range(3):

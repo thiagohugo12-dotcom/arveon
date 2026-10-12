@@ -95,7 +95,10 @@ static func run(suite, main) -> void:
 	p.allocate_attribute("Força")
 	p.allocate_attribute("Vitalidade")
 	hud.set_rpg_status(p, player)
-	suite.check(not hud.character_button.notification, "spent attribute points clear character notification")
+	suite.check(hud.character_button.notification, "remaining talent points keep character notification after attributes are spent")
+	p.improve_skill("Corte Circular")
+	hud.set_rpg_status(p,player)
+	suite.check(not hud.character_button.notification,"spending all character point budgets clears notification")
 	for i in range(3):
 		player.skill_cooldowns[i] = 0.0
 	hud.set_rpg_status(p, player)

@@ -42,7 +42,11 @@ func _run() -> void:
 		main.hud._open_diary(2)
 		await capture(prefix+"habilidades")
 		main.hud._open_diary(1)
+		main.hud.rpg_panel.prof_section = 0
+		main.hud.rpg_panel.refresh(main.progress)
 		await capture(prefix+"proficiencias")
+		main.hud.rpg_panel.prof_section = 1
+		main.hud.rpg_panel.refresh(main.progress)
 		main.hud.rpg_panel.scroll.scroll_vertical = 230
 		await capture(prefix+"arvore-ramos")
 		main._toggle_character()

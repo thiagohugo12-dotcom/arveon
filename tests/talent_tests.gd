@@ -76,6 +76,7 @@ static func run_world(suite: SceneTree) -> void:
 	main.hud._open_diary(1)
 	await suite.frames()
 	var panel: RPGPanel = main.hud.rpg_panel
+	panel.prof_section = 1
 	panel.talent_selection = "corte"
 	panel.refresh(main.progress)
 	await suite.frames()

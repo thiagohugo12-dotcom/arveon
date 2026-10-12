@@ -508,6 +508,7 @@ func _toggle_character() -> void:
 	elif player.health.is_alive() and not hud.inventory_open and not hud.station_panel.visible and not hud.map_panel.visible:
 		input_driver.reset()
 		input_driver.blocked = true
+		hud.rpg_panel.allow_respec = not trial.active() and SafeCamp.in_clearance(player.global_position)
 		hud.show_character(progress)
 
 func _toggle_map() -> void:
@@ -534,6 +535,11 @@ func _rpg_action(action: String, id: String, expected: int) -> void:
 		elif action == "talent":
 			var parts := id.split(":")
 			if parts.size() == 2: success = progress.learn_talent(parts[0],parts[1])
+		elif action == "mastery":
+			var parts := id.split(":")
+			if parts.size() == 2: success = progress.talents.allocate_mastery(parts[0],parts[1],expected)
+		elif action == "reset_tree" and not trial.active() and SafeCamp.in_clearance(player.global_position):
+			success = progress.talents.reset_tree(id)
 	elif hud.station_panel.visible and hud.station_name == "Ferreiro" and action == "forge":
 		success = progress.forge(id, expected)
 	elif hud.inventory_open and hud.inventory_category == 1:
