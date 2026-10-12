@@ -30,9 +30,10 @@ func tick(delta: float, origin: Node2D) -> void:
 	attacked.emit(target)
 	var hit_damage := roundi(weapon.damage * damage_scale)
 	if weapon.projectile_kind.is_empty():
-		target.receive_damage(hit_damage)
+		if target is EnemyActor: target.receive_damage(hit_damage,weapon.category)
+		else: target.receive_damage(hit_damage)
 	else:
-		projectile_requested.emit(origin, target, {"damage": hit_damage, "kind": weapon.projectile_kind, "speed": weapon.projectile_speed, "reach": weapon.reach})
+		projectile_requested.emit(origin, target, {"damage": hit_damage, "kind": weapon.projectile_kind, "speed": weapon.projectile_speed, "reach": weapon.reach, "category":weapon.category})
 
 func select_target(origin: Node2D) -> Node2D:
 	if weapon == null:

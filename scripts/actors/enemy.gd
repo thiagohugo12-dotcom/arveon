@@ -2,6 +2,7 @@ class_name EnemyActor
 extends CharacterBody2D
 
 signal defeated(kind: int)
+signal weapon_hit(category: String)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: int)
 
 @export var stats: ActorData
@@ -181,10 +182,12 @@ func _try_contact(distance: float) -> void:
 func is_targetable() -> bool:
 	return health.is_alive() and awake and not SafeCamp.in_clearance(global_position) and not is_queued_for_deletion()
 
-func receive_damage(amount: int) -> void:
+func receive_damage(amount: int, category: String = "") -> void:
 	if amount <= 0 or not is_targetable():
 		return
 	var before := health.current
+	# Emit before lethal callbacks so the defeat save includes this last hit.
+	if ArsenalRules.CATEGORIES.has(category): weapon_hit.emit(category)
 	health.damage(amount)
 	view.show_damage(before - health.current)
 

@@ -455,6 +455,7 @@ func _layout() -> void:
 	rpg_panel.scale = Vector2.ONE*diary_scale
 	inventory_panel.size = Vector2(minf(820, (size.x - margin.x - right_inset - 12)/diary_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	inventory_panel.position = (size - inventory_panel.size*diary_scale) * 0.5
+	DiaryArt.skin(inventory_panel)
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for slot in range(4):
 		var i: int = [5, 0, 1, 2][slot]
@@ -465,6 +466,7 @@ func _layout() -> void:
 	station_panel.position = (size - station_panel.size) * 0.5
 	rpg_panel.size = Vector2(minf(640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
+	DiaryArt.skin(rpg_panel)
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
 	restart.size = Vector2(240, 48)
 	# Existing HUD appearance is unchanged. A shared list keeps world hit numbers readable.

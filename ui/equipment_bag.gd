@@ -13,6 +13,8 @@ var progress: GameProgress
 var grid: GridContainer
 var spread: BoxContainer
 var profile: BoxContainer
+var items_page: VBoxContainer
+var profile_heading: Label
 
 func _init(value: GameProgress = null, selection: String = "", comparing: bool = false) -> void:
 	progress = value
@@ -25,9 +27,9 @@ func _init(value: GameProgress = null, selection: String = "", comparing: bool =
 		for id: String in progress.equipment:
 			_card(id)
 		# Visual spare cells are not inventory capacity or interactive fake items.
-		for i in range(maxi(0,6-progress.equipment.size())):
+		for i in range(maxi(0,12-progress.equipment.size())):
 			var empty := PanelContainer.new()
-			empty.custom_minimum_size = Vector2(68,106)
+			empty.custom_minimum_size = Vector2(60,80)
 			empty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			empty.add_theme_stylebox_override("panel",DiaryTheme.box(Color("#ecd9ad"),Color("#c7ad7b"),0,1))
@@ -52,37 +54,60 @@ func _label(text: String, color: Color = DiaryTheme.INK, font_size: int = 12) ->
 func _overview() -> void:
 	spread = BoxContainer.new()
 	spread.vertical = true
+	spread.add_theme_constant_override("separation",22)
 	add_child(spread)
-	profile = BoxContainer.new()
-	profile.custom_minimum_size.x = 180
-	spread.add_child(profile)
-	profile.add_child(DiaryPortrait.new())
-	var summary := VBoxContainer.new()
-	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	profile.add_child(summary)
-	summary.add_child(_label("Explorador · Nv. %d" % progress.level(),DiaryTheme.INK,15))
-	for slot: String in ["Arma","Armadura"]:
-		var equipped: String = progress.equipped.get(slot,"")
-		summary.add_child(_label(RPGRules.EQUIPMENT[equipped].name if not equipped.is_empty() else slot+": vazio"))
-	var stats := progress.combat_stats()
-	summary.add_child(_label("Dano %d · Defesa %d" % [stats.damage,stats.armor]))
-	var items := VBoxContainer.new()
-	items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	spread.add_child(items)
-	items.add_child(_label("Seus equipamentos",DiaryTheme.INK,14))
+	items_page = VBoxContainer.new()
+	items_page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spread.add_child(items_page)
+	items_page.add_child(_label("Mochila",DiaryTheme.GREEN,16))
 	grid = GridContainer.new()
 	grid.columns = 3
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_theme_constant_override("h_separation",6)
 	grid.add_theme_constant_override("v_separation",6)
-	items.add_child(grid)
+	items_page.add_child(grid)
+	profile = BoxContainer.new()
+	profile.vertical = true
+	profile.custom_minimum_size.x = 200
+	profile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spread.add_child(profile)
+	profile_heading = _label("Seu explorador",DiaryTheme.GREEN,16)
+	profile.add_child(profile_heading)
+	var portrait_row := HBoxContainer.new()
+	portrait_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	profile.add_child(portrait_row)
+	var slots := VBoxContainer.new()
+	portrait_row.add_child(slots)
+	for slot: String in RPGRules.SLOTS:
+		var equipped: String = progress.equipped.get(slot,"")
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(44,44)
+		button.tooltip_text = slot+": "+(RPGRules.EQUIPMENT[equipped].name if not equipped.is_empty() else "vazio")
+		button.disabled = equipped.is_empty()
+		if not equipped.is_empty(): button.pressed.connect(func(): selected.emit(equipped))
+		slots.add_child(button)
+		var icon := PixelItemIcon.new(ArsenalRules.metadata(equipped).icon if not equipped.is_empty() else slot)
+		icon.position = Vector2(7,7)
+		icon.modulate.a = 1.0 if not equipped.is_empty() else 0.3
+		button.add_child(icon)
+	portrait_row.add_child(DiaryPortrait.new())
+	var summary := VBoxContainer.new()
+	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	profile.add_child(summary)
+	summary.add_child(_label("Explorador · Nv. %d" % progress.level(),DiaryTheme.INK,15))
+	var stats := progress.combat_stats()
+	summary.add_child(_label("Dano %d · Defesa %d" % [stats.damage,stats.armor]))
 	add_child(_label("Toque em um item para ver atributos, comparar e equipar."))
 
 func _reflow() -> void:
 	if spread == null: return
-	spread.vertical = size.x < 460
+	spread.vertical = size.x < 500
 	profile.vertical = not spread.vertical
-	grid.columns = 3
+	profile_heading.visible = not spread.vertical
+	spread.move_child(profile,0 if spread.vertical else 1)
+	grid.columns = 3 if spread.vertical else 4
+	var visible_cells := maxi(progress.equipment.size(),6 if spread.vertical else 12)
+	for i in range(grid.get_child_count()): grid.get_child(i).visible = i < visible_cells
 
 func _attributes(id: String) -> String:
 	var values := ArsenalRules.effective(progress,id)
@@ -96,7 +121,7 @@ func _card(id: String) -> void:
 	var rarity := ArsenalRules.rarity(id)
 	var color := Color(rarity.color).darkened(0.22)
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(68,106)
+	button.custom_minimum_size = Vector2(60,80)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_stylebox_override("normal",_style(color))
 	button.add_theme_stylebox_override("hover",_style(color.lightened(0.2)))
@@ -113,13 +138,15 @@ func _card(id: String) -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(row)
 	var icon := PixelItemIcon.new(meta.icon,color)
+	icon.custom_minimum_size = Vector2(48,48)
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	row.add_child(icon)
 	var name_label := _label(RPGRules.EQUIPMENT[id].name,DiaryTheme.INK,11)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.hide()
 	row.add_child(name_label)
 	var equipped: bool = progress.equipped[RPGRules.EQUIPMENT[id].slot] == id
-	var marker := _label("Equipado" if equipped else "+%d · %s" % [progress.equipment[id],rarity.name],DiaryTheme.GREEN,10)
+	var marker := _label("Equipado" if equipped else "+%d" % progress.equipment[id],DiaryTheme.GREEN,10)
 	marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(marker)
 	button.tooltip_text = "%s · %s\n%s" % [RPGRules.EQUIPMENT[id].name,rarity.name,_attributes(id)]

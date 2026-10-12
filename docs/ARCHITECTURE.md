@@ -208,3 +208,7 @@ sem novos nós/processos/colisões. Main escolhe o flag pelo current_floor == 1;
 TowerView/ExplorationView acompanham o tema. PNGs autorais pequenos, atlas e
 caminhos preparados offline, filtro nearest. Todos os andares mantêm a mesma
 geometria; 2–5 usam integralmente o renderer anterior. Tema não entra no save.
+
+## Livro e talentos V2
+DiaryArt usa book_skin.png e items_skin.png gerados e preparados offline com nearest, cerca de 176 KB juntos. Masters preservados e excluídos do Web. Controles continuam separados da imagem. DiaryPaper garante papel opaco sem vazamento do cenário; a lombada é discreta. EquipmentBag usa 4 colunas em paisagem, 3 em retrato, com perfil compacto acima no celular.
+TalentRules separa dados e requisitos, TalentProgress controla XP por categoria e nós aprendidos. GameProgress v7 valida tudo antes de aplicar, compartilha pontos entre skills antigas e árvore e migra v1–6. A chave do journal Web permanece v6 intencionalmente para preservar armazenamento existente. EnemyActor emite weapon_hit somente após validar dano/alvo e antes do callback letal; Main registra proficiência. PlayerProjectile captura categoria na criação. Bônus passivos exigem arma equipada e apply_progression nunca cura. Técnicas somam um grau ao legado, máximo efetivo 4; base antiga continua 1–3.

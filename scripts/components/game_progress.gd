@@ -6,7 +6,7 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 6
+const SAVE_VERSION := 7
 const ATTRIBUTES := RPGRules.ATTRIBUTES
 const MAX_LEVEL := RPGRules.MAX_LEVEL
 const POINTS_PER_LEVEL := 2
@@ -14,6 +14,7 @@ const POINTS_PER_LEVEL := 2
 const ADVENTURES := {"explorar": 3, "forjar": 1, "elite": 1, "guardiao": 1}
 var adventures: Dictionary = {"explorar": 0, "forjar": 0, "elite": 0, "guardiao": 0}
 var ascension := AscensionProgress.new()
+var talents := TalentProgress.new()
 var floor_states: Dictionary = {}
 
 func _init() -> void:
@@ -81,7 +82,18 @@ func skill_points() -> int:
 	var spent := 0
 	for value in skills.values():
 		spent += int(value) - 1
-	return maxi(0, level() - 1 - spent)
+	return maxi(0, level() - 1 - spent - talents.spent())
+
+func learn_talent(weapon: String, node: String) -> bool:
+	return talents.learn(weapon,node,skill_points())
+
+func skill_rank(index: int) -> int:
+	var rank := int(skills[RPGRules.SKILLS[index]])
+	var weapon: String = equipped.Arma
+	for node: String in talents.learned.get(weapon,[]):
+		if int(TalentRules.NODES[node].skill) == index: rank += 1
+	# A tree adds one extra rank beyond the old three-rank progression.
+	return mini(4,rank)
 
 func allocate_attribute(name: String) -> bool:
 	if not RPGRules.ATTRIBUTES.has(name) or attribute_points() < 1 or int(attributes[name]) >= 198:
@@ -145,6 +157,8 @@ func combat_stats() -> Dictionary:
 		var bonus := RPGRules.bonuses(id, int(equipment[id]))
 		for key: String in bonus:
 			result[key] += bonus[key]
+	var passive := talents.bonuses(equipped.Arma)
+	for key: String in passive: result[key] += int(passive[key])
 	return result
 
 func discover_nearby(point: Vector2) -> bool:
@@ -223,7 +237,7 @@ func death_loss() -> String:
 func to_json() -> String:
 	_store_floor()
 	return JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
-		"gold": gold, "xp": xp, "kills": kills, "mission_index": mission_index,
+		"gold": gold, "xp": xp, "talents": talents.to_save(), "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
 		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "floor_states": floor_states, "rpg": {"level": level(), "attributes": attributes,
@@ -503,6 +517,14 @@ func load_text(text: String) -> bool:
 		if new_ascension.current_floor != 1:
 			return false
 		new_floors["1"] = {"harvested_until": new_harvested, "opened_caches": new_opened, "discovered_pois": new_discovered, "guardian_defeated": new_adventures.guardiao > 0}
+	var new_talents := TalentProgress.new()
+	if loaded_version >= 7:
+		var remaining := RPGRules.level_for_xp(int(parsed.xp))-1
+		for rank: int in new_rpg.skills.values(): remaining -= rank-1
+		new_talents = TalentProgress.from_save(parsed.get("talents"),remaining)
+		if new_talents == null: return false
+	# Commit all validated fields together; malformed trees cannot partially load.
+	talents = new_talents
 	floor_states = new_floors
 	adventures = new_adventures
 	ascension = new_ascension

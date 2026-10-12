@@ -36,12 +36,15 @@ static func run_world(suite) -> void:
 		player.attack.cooldown_left = 0
 		player.attack.search_left = 0
 		var before := enemy.health.current
+		var proficiency_before := int(p.talents.xp[id])
 		player.attack.tick(0,player)
 		var active := shots(main)
 		if profile.projectile.is_empty():
 			suite.check(active.is_empty() and enemy.health.current == before - player.attack.weapon.damage, "melee hits once without projectile " + id)
+			suite.check(p.talents.xp[id] == proficiency_before+1,"melee awards proficiency only on confirmed damage "+id)
 		else:
 			suite.check(active.size() == 1 and enemy.health.current == before and active[0].kind == profile.projectile, "ranged launch never deals instantaneous damage " + id)
+			suite.check(p.talents.xp[id] == proficiency_before,"ranged launch alone grants no proficiency "+id)
 			var shot := active[0]
 			main.input_driver.blocked = true
 			var position_before := shot.position
@@ -51,6 +54,7 @@ static func run_world(suite) -> void:
 			shot._physics_process(0.3)
 			shot._physics_process(0.3)
 			suite.check(shot.spent and enemy.health.current == before - player.attack.weapon.damage, "swept ranged impact damages exactly once " + id)
+			suite.check(p.talents.xp[id] == proficiency_before+1,"ranged proficiency awarded exactly once at impact "+id)
 		player.attack.tick(0,player)
 		suite.check(enemy.health.current == before - player.attack.weapon.damage, "cooldown rejects duplicate same attack " + id)
 		await suite.frames()
@@ -64,8 +68,10 @@ static func run_world(suite) -> void:
 	var arrow := shots(main)[0]
 	enemy.position.y += 60
 	var before := enemy.health.current
+	var miss_xp := int(p.talents.xp.arco)
 	arrow._physics_process(0.4)
 	suite.check(arrow.direction == Vector2.RIGHT and enemy.health.current == before, "arrow can miss a moving target and never homes")
+	suite.check(p.talents.xp.arco == miss_xp,"missed arrow awards no proficiency")
 	arrow.finish()
 	await suite.frames()
 	p.equip("cajado")

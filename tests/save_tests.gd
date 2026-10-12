@@ -41,7 +41,7 @@ static func run(suite) -> void:
 	suite.check(p.preview_backup(JSON.stringify(envelope)) == null, "unknown archive version rejected")
 	suite.check(p.preview_backup("not JSON") == null and p.preview_backup("x".repeat(GameProgress.MAX_SAVE_BYTES + 1)) == null, "malformed and oversized imports rejected quietly")
 	var payload := JSON.parse_string(p.to_json()) as Dictionary
-	payload.version = 7
+	payload.version = GameProgress.SAVE_VERSION + 1
 	suite.check(p.preview_backup(JSON.stringify(payload)) == null, "future save version rejected")
 	payload = JSON.parse_string(p.to_json())
 	payload.ascension.unlocked_floors = [1, 2]

@@ -92,7 +92,7 @@ func apply_progression(progress: GameProgress, initial: bool = false) -> void:
 	armor = int(values.armor)
 	cooldown_factor = float(values.cooldown)
 	for i in range(3):
-		skill_ranks[i] = int(progress.skills[RPGRules.SKILLS[i]])
+		skill_ranks[i] = progress.skill_rank(i)
 	if initial:
 		health.initialize(stats.max_hp)
 	else:
@@ -140,7 +140,7 @@ func _hit_skill(radius: float, multiplier: float, hits: Dictionary) -> void:
 		if not get_world_2d().direct_space_state.intersect_ray(query).is_empty():
 			continue
 		hits[id] = true
-		candidate.receive_damage(roundi((attack.weapon.damage * multiplier + spirit) * attack.damage_scale))
+		candidate.receive_damage(roundi((attack.weapon.damage * multiplier + spirit) * attack.damage_scale),attack.weapon.category)
 
 func _on_attack(target: Node2D) -> void:
 	# Snapshot the selected target, independently of movement/dash facing.

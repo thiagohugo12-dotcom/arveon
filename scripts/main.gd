@@ -224,6 +224,13 @@ func _register_enemy_defeat(actor: EnemyActor) -> void:
 	actor.set_meta("floor_id", progress.ascension.current_floor)
 	actor.set_meta("floor_epoch", floor_epoch)
 	actor.defeated.connect(_on_enemy_defeated.bind(actor), CONNECT_ONE_SHOT)
+	actor.weapon_hit.connect(_on_weapon_hit.bind(actor))
+
+func _on_weapon_hit(category: String, actor: EnemyActor) -> void:
+	if transitioning or input_driver.blocked or not player.health.is_alive() or not ArsenalRules.CATEGORIES.has(category) or actor.get_parent() != self or not actor.is_targetable() or actor.get_meta("floor_id",0) != progress.ascension.current_floor: return
+	var before := progress.talents.level(category)
+	if progress.talents.record_hit(category) and progress.talents.level(category) > before:
+		hud.show_notice("%s · Proficiência %d" % [ArsenalRules.CATEGORIES[category].name,progress.talents.level(category)])
 
 func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 	if transitioning:
@@ -521,6 +528,9 @@ func _rpg_action(action: String, id: String, expected: int) -> void:
 			success = progress.allocate_attribute(id)
 		elif action == "skill":
 			success = progress.improve_skill(id)
+		elif action == "talent":
+			var parts := id.split(":")
+			if parts.size() == 2: success = progress.learn_talent(parts[0],parts[1])
 	elif hud.station_panel.visible and hud.station_name == "Ferreiro" and action == "forge":
 		success = progress.forge(id, expected)
 	elif hud.inventory_open and hud.inventory_category == 1:
@@ -857,6 +867,7 @@ func _spawn_tower_guardian() -> void:
 	tower_guardian.position = trial.spawn_positions(player.position, 1)[0]
 	tower_guardian.set_meta("tower_attempt", trial.attempt_id)
 	tower_guardian.defeated.connect(_on_tower_guardian_defeated.bind(tower_guardian, trial.attempt_id), CONNECT_ONE_SHOT)
+	tower_guardian.weapon_hit.connect(_on_weapon_hit.bind(tower_guardian))
 	add_child(tower_guardian)
 	tower_guardian.view.damage_occluders = hud.damage_occluders
 	hud.set_boss(tower_guardian)

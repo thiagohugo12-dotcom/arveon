@@ -25,6 +25,8 @@ func _run() -> void:
 	for id: String in RPGRules.EQUIPMENT: main.progress.equipment[id] = 1
 	main.progress.xp = main.progress.xp_for_level(14)
 	main.progress.gold = 1367
+	main.progress.talents.xp.espada = TalentRules.xp_floor(18)
+	main.progress.learn_talent("espada","corte")
 	main.progress.bag = {"Madeira":12,"Ervas":5,"Pedras":8,"Seda":3,"Essência":2}
 	main.hud.set_rpg_status(main.progress,main.player)
 	for resolution: Vector2i in [Vector2i(960,540),Vector2i(390,844),Vector2i(640,360),Vector2i(360,640)]:
@@ -41,5 +43,7 @@ func _run() -> void:
 		await capture(prefix+"habilidades")
 		main.hud._open_diary(1)
 		await capture(prefix+"proficiencias")
+		main.hud.rpg_panel.scroll.scroll_vertical = 230
+		await capture(prefix+"arvore-ramos")
 		main._toggle_character()
 	quit()

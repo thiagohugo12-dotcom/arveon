@@ -9,6 +9,7 @@ var speed := 440.0
 var damage := 12
 var distance_left := 300.0
 var kind := "flecha"
+var category := ""
 var spent := false
 var arena_bounds := Rect2()
 
@@ -21,6 +22,7 @@ func setup(player: PlayerActor, selected: Node2D, specification: Dictionary, bou
 	damage = specification.damage
 	distance_left = specification.reach
 	kind = specification.kind
+	category = specification.get("category","")
 	arena_bounds = bounds
 	rotation = direction.angle()
 	queue_redraw()
@@ -73,7 +75,7 @@ func _physics_process(delta: float) -> void:
 			victim = actor
 	if victim != null:
 		finish() # Mark before callbacks: exactly one victim per shot.
-		victim.receive_damage(damage)
+		victim.receive_damage(damage,category)
 		return
 	global_position = after
 	distance_left -= distance

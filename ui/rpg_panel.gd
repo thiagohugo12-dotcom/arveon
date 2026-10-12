@@ -10,10 +10,15 @@ var close_button: Button
 var progress: GameProgress
 var tab := 0
 var tabs: HBoxContainer
+var talent_weapon := "espada"
+var talent_selection := "corte"
+var talent_tree: TalentTree
+var talent_detail: Label
+var talent_buy: Button
 
 func _ready() -> void:
 	visible = false
-	add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,DiaryTheme.WOOD,12,3))
+	DiaryArt.skin(self)
 	var column := VBoxContainer.new()
 	add_child(column)
 	column.add_child(DiaryTheme.label("Diário do Explorador",18))
@@ -102,7 +107,7 @@ func refresh(value: GameProgress) -> void:
 			card.add_child(row)
 			row.add_child(PixelItemIcon.new(["espada","lanca","cajado"][i]))
 			row.add_child(DiaryTheme.label("Espaço %d · %s" % [i+1,["Corte","Investida","Fúria"][i]],14))
-			_label("%s  ·  GRAU %d / 3" % [name.to_upper(), progress.skills[name]], card, true)
+			_label("%s  ·  GRAU %d · BASE %d / 3" % [name.to_upper(), progress.skill_rank(i),progress.skills[name]], card, true)
 			_label(descriptions[i], card)
 			var button := Button.new()
 			button.text = "Melhorar  ·  1 ponto"
@@ -112,19 +117,61 @@ func refresh(value: GameProgress) -> void:
 			card.add_child(button)
 		_label("PC: 1 Corte  ·  2 Investida  ·  3 Fúria\nDireção: joystick/WASD ou última direção.\nIndisponível em menus e na área segura.")
 	else:
-		_heading("DOMÍNIO DAS ARMAS")
-		_label("Evolução pelo uso de cada arma · Em desenvolvimento")
-		for id: String in ArsenalRules.CATEGORIES:
-			var card := _card()
-			var row := HBoxContainer.new()
-			card.add_child(row)
-			row.add_child(PixelItemIcon.new(ArsenalRules.metadata(id).icon))
-			row.add_child(DiaryTheme.label(ArsenalRules.category_name(id),15))
-			_label("Técnicas · Especialização · Maestria",card)
-		_heading("MARCOS PLANEJADOS")
-		_label("Nv. 3 / 8 / 15 / 25 · Habilidades\nNv. 5 / 12 · Passivas\nNv. 10 / 20 · Marcos de Ultimate\nNv. 18 · Especialização\nNv. 30 · Maestria")
-		_label("Efeitos e funcionamento da Ultimate ainda serão definidos para os três espaços de habilidade.")
+		_talent_page()
 	for i in range(tabs.get_child_count()): DiaryTheme.select(tabs.get_child(i),(tab == 2 and i == 1) or (tab == 1 and i == 2))
+
+func _talent_page() -> void:
+	_heading("ÁRVORE DE TALENTOS · %d PONTOS" % progress.skill_points())
+	var weapons := HBoxContainer.new()
+	weapons.add_theme_constant_override("separation",4)
+	content.add_child(weapons)
+	for id: String in ArsenalRules.CATEGORIES:
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(44,44)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.tooltip_text = ArsenalRules.category_name(id)
+		button.pressed.connect(func():
+			talent_weapon = id
+			refresh(progress)
+		)
+		weapons.add_child(button)
+		var icon := PixelItemIcon.new(id)
+		icon.position = Vector2(7,7)
+		button.add_child(icon)
+		DiaryTheme.select(button,id == talent_weapon)
+	var level := progress.talents.level(talent_weapon)
+	_heading("%s · PROFICIÊNCIA %d / 30" % [ArsenalRules.category_name(talent_weapon).to_upper(),level])
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size.y = 8
+	bar.show_percentage = false
+	bar.max_value = TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level) if level < 30 else 1
+	bar.value = int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level) if level < 30 else 1
+	content.add_child(bar)
+	_label("Acertos evoluem a arma · 1 ponto por nível do personagem.")
+	talent_tree = TalentTree.new(progress,talent_weapon,talent_selection)
+	talent_tree.selected.connect(func(id: String):
+		talent_selection = id
+		_talent_description()
+		scroll.ensure_control_visible(talent_buy)
+	)
+	content.add_child(talent_tree)
+	talent_detail = DiaryTheme.label("",12)
+	content.add_child(talent_detail)
+	talent_buy = Button.new()
+	talent_buy.custom_minimum_size.y = 44
+	talent_buy.pressed.connect(func(): action_requested.emit("talent",talent_weapon+":"+talent_selection,0))
+	content.add_child(talent_buy)
+	_label("Verde: aprendido · claro: disponível · apagado: bloqueado.\nValores iniciais de teste. Técnicas já adquiridas estão preservadas; novas técnicas e escolha de slots virão em outra etapa.")
+	_talent_description()
+
+func _talent_description() -> void:
+	var rule: Dictionary = TalentRules.NODES[talent_selection]
+	var learned := progress.talents.owns(talent_weapon,talent_selection)
+	var requirement := "Proficiência %d" % rule.prof
+	if not rule.parent.is_empty(): requirement += " + "+TalentRules.NODES[rule.parent].name
+	talent_detail.text = "%s · %s\n%s\nRequer %s · custo 1 ponto" % [rule.name,rule.kind,rule.description,requirement]
+	talent_buy.text = "Aprendido" if learned else "Aprender · 1 ponto"
+	talent_buy.disabled = not progress.talents.available(talent_weapon,talent_selection,progress.skill_points())
 
 func _heading(text: String) -> void:
 	_label(text, content, true)

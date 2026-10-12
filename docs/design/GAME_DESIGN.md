@@ -163,3 +163,6 @@ MATA_V2_ANDAR1.md registra o pedido explícito para modificar apenas aparência
 no Andar 1, mantendo posições e todo o restante. A autorização supera a pausa
 na demonstração para esse andar. Andares 2–5 continuam com seu tema anterior.
 Não alterar main/PRODUÇÃO, mecânicas, mapas, personagens ou persistência.
+
+## Árvores e livro ilustrado — 12/10/2026
+Aprovados conforme TALENTOS_DIARIO_V2.md: proficiência abre caminhos, nível geral dá pontos. O orçamento de habilidades existente é compartilhado com talentos. Técnicas adquiridas são preservadas. Primeiro recorte aperfeiçoa os três efeitos existentes e adiciona passivas por categoria; valores provisórios no ADR. Novas técnicas e seleção dos dois slots ainda pendentes. Save v7 migra v1–6.
