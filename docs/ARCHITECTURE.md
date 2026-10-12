@@ -1,5 +1,11 @@
 # Arquitetura
 ## Diário e HUD
+V3: peças 96×96 preparadas offline, com nove fatias para madeira, papel,
+botões e slots; fonte Cormorant Garamond incorporada sob OFL. A mochila
+preserva a grade ao selecionar e apresenta detalhes/comparação abaixo,
+com rolagem até a ação e retorno visível no topo. Colunas em paisagem,
+perfil acima em retrato. HUD usa barras e texto sobre o mundo com contorno,
+missões em papel e ações/menu em madeira. Nenhuma mudança de regra/save.
 DiaryTheme centraliza papel, madeira, contraste e estados de botões.
 DiaryPortrait reutiliza o sprite atual. EquipmentBag apresenta grade e resumo
 responsivos, preservando sinais de seleção/comparação/equipamento. GameHUD

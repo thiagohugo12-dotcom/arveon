@@ -69,6 +69,7 @@ var info_back: Panel
 var mission_back: Panel
 var inventory_panel: PanelContainer
 var inventory_gold: Label
+var inventory_heading: Label
 var inventory_list: VBoxContainer
 var inventory_scroll: ScrollContainer
 var inventory_close: Button
@@ -103,14 +104,17 @@ func _ready() -> void:
 	add_child(menu_shade)
 	info_back = Panel.new()
 	info_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_back.add_theme_stylebox_override("panel", _compact_style())
+	info_back.add_theme_stylebox_override("panel",DiaryTheme.box(Color.TRANSPARENT,Color.TRANSPARENT,0,0))
 	add_child(info_back)
 	mission_back = Panel.new()
 	mission_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mission_back.add_theme_stylebox_override("panel", _compact_style())
+	mission_back.add_theme_stylebox_override("panel", DiaryTheme.piece("paper",0))
 	add_child(mission_back)
 	gold_label = Label.new()
 	gold_label.add_theme_font_size_override("font_size", 11)
+	gold_label.add_theme_color_override("font_color",Color("#ffd67c"))
+	gold_label.add_theme_color_override("font_outline_color",Color("#35291d"))
+	gold_label.add_theme_constant_override("outline_size",3)
 	gold_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(gold_label)
 	heading = Label.new()
@@ -121,6 +125,9 @@ func _ready() -> void:
 	add_child(heading)
 	hp_label = Label.new()
 	hp_label.add_theme_font_size_override("font_size", 12)
+	hp_label.add_theme_color_override("font_color",Color("#fff0ce"))
+	hp_label.add_theme_color_override("font_outline_color",Color("#35291d"))
+	hp_label.add_theme_constant_override("outline_size",3)
 	hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hp_label)
 	heart_icon = DiaryHeart.new()
@@ -137,6 +144,9 @@ func _ready() -> void:
 	add_child(xp_bar)
 	progress_label = Label.new()
 	progress_label.add_theme_font_size_override("font_size", 11)
+	progress_label.add_theme_color_override("font_color",Color("#fff0ce"))
+	progress_label.add_theme_color_override("font_outline_color",Color("#35291d"))
+	progress_label.add_theme_constant_override("outline_size",3)
 	progress_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(progress_label)
 	mission_label = Label.new()
@@ -206,10 +216,12 @@ func _ready() -> void:
 	inventory_panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(inventory_panel)
 	var inventory_column := VBoxContainer.new()
+	inventory_column.add_theme_constant_override("separation",4)
 	inventory_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_panel.add_child(inventory_column)
-	var inventory_heading := Label.new()
+	inventory_heading = Label.new()
 	inventory_heading.text = "Diário do Explorador"
+	inventory_heading.add_theme_font_override("font",DiaryTheme.heading_font())
 	inventory_heading.add_theme_font_size_override("font_size",18)
 	var book_header := HBoxContainer.new()
 	inventory_column.add_child(book_header)
@@ -221,7 +233,8 @@ func _ready() -> void:
 	diary_navigation = HBoxContainer.new()
 	inventory_column.add_child(diary_navigation)
 	for i in range(3):
-		var link := Button.new()
+		var link := DiaryTab.new()
+		link.glyph = ["bag","book","fury"][i]
 		link.text = ["Mochila","Proficiências","Habilidades"][i]
 		link.add_theme_font_size_override("font_size",11)
 		link.custom_minimum_size.y = 44
@@ -232,7 +245,8 @@ func _ready() -> void:
 	inventory_tabs = HBoxContainer.new()
 	inventory_column.add_child(inventory_tabs)
 	for i in range(3):
-		var tab := Button.new()
+		var tab := DiaryTab.new()
+		tab.glyph = ["charge","character","potion"][i]
 		tab.text = ["Materiais", "Equipamentos", "Consumo"][i]
 		tab.custom_minimum_size.y = 44
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -406,17 +420,17 @@ func _layout() -> void:
 	heading.hide()
 	heading.size = Vector2(information_width - 12, 16)
 	heart_icon.position = margin + Vector2(6,5)
-	heart_icon.size = Vector2(16,16)
-	hp_label.position = margin + Vector2(28, 3)
-	hp_label.size = Vector2(information_width - 34, 18)
+	heart_icon.size = Vector2(24,24)
+	hp_label.position = margin + Vector2(34, 3)
+	hp_label.size = Vector2(information_width - 40, 18)
 	gold_label.position = margin + Vector2(6, 51)
 	gold_label.size = Vector2(information_width - 12, 16)
-	hp_bar.position = margin + Vector2(6, 23)
-	hp_bar.size = Vector2(information_width - 12, 6)
-	progress_label.position = margin + Vector2(6, 30)
+	hp_bar.position = margin + Vector2(34, 23)
+	hp_bar.size = Vector2(information_width - 40, 8)
+	progress_label.position = margin + Vector2(6, 32)
 	progress_label.size = Vector2(information_width - 12, 16)
-	xp_bar.position = margin + Vector2(6,47)
-	xp_bar.size = Vector2(information_width-12,3)
+	xp_bar.position = margin + Vector2(6,48)
+	xp_bar.size = Vector2(information_width-12,4)
 	var mission_width := minf(232, minimap.position.x - margin.x - 8)
 	mission_back.position = margin + Vector2(0, 86)
 	mission_back.size = Vector2(mission_width,56 if mission_expanded or boss_name.visible else 44)
@@ -456,6 +470,12 @@ func _layout() -> void:
 	inventory_panel.size = Vector2(minf(820, (size.x - margin.x - right_inset - 12)/diary_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	inventory_panel.position = (size - inventory_panel.size*diary_scale) * 0.5
 	DiaryArt.skin(inventory_panel)
+	inventory_heading.add_theme_font_size_override("font_size",30 if inventory_panel.size.x >= 600 and inventory_panel.size.y >= 420 else 23)
+	inventory_gold.add_theme_font_size_override("font_size",17 if inventory_panel.size.x >= 600 else 13)
+	for link: Button in diary_navigation.get_children():
+		link.add_theme_font_size_override("font_size",20 if inventory_panel.size.x >= 600 else 15)
+	for link: Button in inventory_tabs.get_children():
+		link.add_theme_font_size_override("font_size",18 if inventory_panel.size.x >= 600 else 14)
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for slot in range(4):
 		var i: int = [5, 0, 1, 2][slot]
@@ -536,7 +556,7 @@ func show_inventory(progress: GameProgress) -> void:
 
 func refresh_inventory(progress: GameProgress) -> void:
 	menu_progress = progress
-	inventory_gold.text = "Ouro %d" % progress.gold
+	inventory_gold.text = "● %s" % str(progress.gold)
 	for i in range(inventory_tabs.get_child_count()): DiaryTheme.select(inventory_tabs.get_child(i),i == inventory_category)
 	if progress.ascension.forest_seal:
 		inventory_gold.tooltip_text = "Selo da Mata · %d andares" % progress.ascension.unlocked_floors.size()
@@ -559,6 +579,8 @@ func refresh_inventory(progress: GameProgress) -> void:
 			inventory_compare = not inventory_compare
 			refresh_inventory(progress)
 		)
+		if not inventory_selected.is_empty():
+			_focus_equipment_detail.call_deferred()
 		return
 	if inventory_category == 2:
 		var empty := Label.new()
@@ -578,12 +600,14 @@ func refresh_inventory(progress: GameProgress) -> void:
 			var tile := PanelContainer.new()
 			tile.name = item
 			tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			tile.add_theme_stylebox_override("panel",DiaryTheme.box(Color("#e5d0a1"),Color("#b99863"),6))
+			tile.add_theme_stylebox_override("panel",DiaryTheme.piece("slot",6))
 			material_grid.add_child(tile)
 			var row := VBoxContainer.new()
 			row.custom_minimum_size = Vector2(62,86)
 			tile.add_child(row)
 			var icon := PixelItemIcon.new(item)
+			icon.framed = false
+			icon.custom_minimum_size = Vector2(48,48)
 			icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			row.add_child(icon)
 			var name := Label.new()
@@ -822,7 +846,7 @@ func _input(event: InputEvent) -> void:
 		if _activate_touch_button(inventory_close, event.position):
 			return
 		# Delay card activation until release so a swipe can scroll over the cards.
-		if inventory_category == 1 and inventory_selected.is_empty() and inventory_scroll.get_global_rect().has_point(event.position):
+		if inventory_category == 1 and inventory_scroll.get_global_rect().has_point(event.position):
 			inventory_touch_card = null
 			inventory_touch_origin = event.position
 			inventory_touch_dragged = false
@@ -830,9 +854,10 @@ func _input(event: InputEvent) -> void:
 				if card.get_global_rect().has_point(event.position):
 					inventory_touch_card = card
 					break
-			_begin_scroll(inventory_scroll,event)
-			get_viewport().set_input_as_handled()
-			return
+			if inventory_touch_card != null:
+				_begin_scroll(inventory_scroll,event)
+				get_viewport().set_input_as_handled()
+				return
 		if not _touch_buttons(inventory_panel, event.position):
 			_begin_scroll(inventory_scroll, event)
 		get_viewport().set_input_as_handled()
@@ -955,8 +980,14 @@ func close_map() -> void:
 	map_panel.hide()
 	_sync_controls()
 
-func _compact_style() -> StyleBoxFlat:
-	return DiaryTheme.box(Color("#f0dfb3ee"),DiaryTheme.WOOD,0,2)
+func _compact_style() -> StyleBoxTexture:
+	return DiaryTheme.piece("wood",0)
+
+func _focus_equipment_detail() -> void:
+	if not inventory_open or equipment_bag == null or equipment_bag.detail_panel == null: return
+	await get_tree().process_frame
+	if not is_instance_valid(equipment_bag) or equipment_bag.detail_panel == null: return
+	inventory_scroll.ensure_control_visible(equipment_bag.detail_panel)
 
 func _pixel_theme() -> Theme:
 	return DiaryTheme.create()

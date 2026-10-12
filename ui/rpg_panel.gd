@@ -21,13 +21,16 @@ func _ready() -> void:
 	DiaryArt.skin(self)
 	var column := VBoxContainer.new()
 	add_child(column)
-	column.add_child(DiaryTheme.label("Diário do Explorador",18))
+	var title := DiaryTheme.label("Diário do Explorador",26)
+	title.add_theme_font_override("font",DiaryTheme.heading_font())
+	column.add_child(title)
 	var navigation := HBoxContainer.new()
 	column.add_child(navigation)
 	for i in range(3):
-		var link := Button.new()
+		var link := DiaryTab.new()
+		link.glyph = ["bag","book","fury"][i]
 		link.text = ["Mochila","Proficiências","Habilidades"][i]
-		link.add_theme_font_size_override("font_size",11)
+		link.add_theme_font_size_override("font_size",15)
 		link.custom_minimum_size.y = 44
 		link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		link.pressed.connect(func():

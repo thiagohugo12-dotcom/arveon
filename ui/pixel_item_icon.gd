@@ -3,6 +3,7 @@ extends Control
 
 var slot := "Arma"
 var frame_color := Color("#67805b")
+var framed := true
 
 func _init(value: String = "Arma", color: Color = Color("#67805b")) -> void:
 	slot = value
@@ -13,9 +14,9 @@ func _init(value: String = "Arma", color: Color = Color("#67805b")) -> void:
 
 func _draw() -> void:
 	draw_set_transform(Vector2.ZERO,0,size/30.0)
-	draw_rect(Rect2(0, 0, 30, 30), Color("#e5cfa0"))
-	draw_rect(Rect2(1, 1, 28, 28), frame_color, false, 2)
-	if DiaryArt.icon(self,slot,Rect2(2,2,26,26)): return
+	if framed:
+		draw_style_box(DiaryTheme.piece("slot",0),Rect2(0,0,30,30))
+	if DiaryArt.icon(self,slot,Rect2(2,2,26,26) if framed else Rect2(0,0,30,30)): return
 	var gold := Color("#697f78")
 	match slot:
 		"Madeira":

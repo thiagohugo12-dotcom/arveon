@@ -42,7 +42,8 @@ static func run_world(suite) -> void:
 		touch.pressed = false
 		hud._input(touch)
 		await suite.frames()
-		suite.check(hud.inventory_selected.is_empty() and hud.inventory_scroll.scroll_vertical > 0, "swiping over an equipment card scrolls without selecting " + str(size))
+		var scroll_bar := hud.inventory_scroll.get_v_scroll_bar()
+		suite.check(hud.inventory_selected.is_empty() and (hud.inventory_scroll.scroll_vertical > 0 or scroll_bar.max_value <= scroll_bar.page), "swiping over a card scrolls overflowing content without selecting; fitted content stays still " + str(size))
 		for id: String in ArsenalRules.CATEGORIES:
 			card = hud.equipment_bag.cards[id]
 			hud.inventory_scroll.scroll_vertical += roundi(card.global_position.y - hud.inventory_scroll.global_position.y - 8)
@@ -50,7 +51,7 @@ static func run_world(suite) -> void:
 			suite.check(hud.inventory_scroll.get_global_rect().has_point(card.get_global_rect().get_center()), "weapon card touch target visible " + id + str(size))
 			TOUCH._tap(hud,card)
 			await suite.frames()
-			suite.check(hud.inventory_selected == id and hud.equipment_bag.cards.is_empty(), "tap opens only selected equipment details " + id + str(size))
+			suite.check(hud.inventory_selected == id and hud.equipment_bag.cards.size() == p.equipment.size() and hud.equipment_bag.detail_panel != null, "tap opens selected details while preserving the equipment grid " + id + str(size))
 			var before := p.to_json()
 			hud.inventory_scroll.scroll_vertical += maxi(0,roundi(hud.equipment_bag.compare_button.global_position.y-hud.inventory_scroll.global_position.y-4))
 			await suite.frames()

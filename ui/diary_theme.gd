@@ -2,9 +2,46 @@ class_name DiaryTheme
 extends RefCounted
 
 const INK := Color("#493321")
-const PAPER := Color("#f0dfb3")
-const GREEN := Color("#356443")
+const PAPER := Color("#f4e5bf")
+const GREEN := Color("#2d5839")
 const WOOD := Color("#815332")
+const TITLE_FONT := preload("res://assets/fonts/CormorantGaramond.ttf")
+static var title_font: FontVariation
+
+static func heading_font() -> FontVariation:
+	if title_font == null:
+		title_font = FontVariation.new()
+		title_font.base_font = TITLE_FONT
+		title_font.variation_opentype = {0x77676874:700.0}
+		title_font.variation_embolden = 0.25
+	return title_font
+
+const FRAMES := {
+	"frame": preload("res://assets/art/diary_v3/frame.png"),
+	"paper": preload("res://assets/art/diary_v3/paper.png"),
+	"green": preload("res://assets/art/diary_v3/green.png"),
+	"wood": preload("res://assets/art/diary_v3/wood.png"),
+	"slot": preload("res://assets/art/diary_v3/slot.png"),
+	"empty": preload("res://assets/art/diary_v3/empty.png")
+}
+
+static func piece(kind: String, margin: int = 8) -> StyleBoxTexture:
+	var style := StyleBoxTexture.new()
+	style.texture = FRAMES[kind]
+	var edge := 20 if kind == "frame" else 9
+	style.texture_margin_left = edge
+	style.texture_margin_right = edge
+	style.texture_margin_top = edge
+	style.texture_margin_bottom = edge
+	style.set_content_margin_all(margin)
+	return style
+
+static func primary(button: Button) -> void:
+	button.add_theme_stylebox_override("normal",piece("green"))
+	button.add_theme_stylebox_override("hover",piece("green"))
+	button.add_theme_stylebox_override("pressed",piece("wood"))
+	button.add_theme_color_override("font_color",Color("#fff0ce"))
+	button.add_theme_color_override("font_hover_color",Color.WHITE)
 
 static func box(fill := PAPER, edge := WOOD, margin: int = 8, border: int = 2) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -21,6 +58,8 @@ static func box(fill := PAPER, edge := WOOD, margin: int = 8, border: int = 2) -
 static func create() -> Theme:
 	var result := Theme.new()
 	result.default_font_size = 13
+	result.set_font("font","Button",heading_font())
+	result.set_font_size("font_size","Button",17)
 	for type: String in ["Label", "Button", "CheckButton"]:
 		result.set_color("font_color", type, INK)
 		result.set_color("font_hover_color", type, INK)
@@ -33,7 +72,7 @@ static func create() -> Theme:
 		if state == "pressed": fill = GREEN
 		if state == "disabled": fill = Color("#d7c79f")
 		if state == "focus": fill = Color.TRANSPARENT
-		result.set_stylebox(state,"Button",box(fill,Color("#b69459") if state != "focus" else GREEN,6))
+		result.set_stylebox(state,"Button",box(fill,GREEN,6,1) if state == "focus" else piece("green" if state == "pressed" else "empty" if state == "disabled" else "paper",8))
 	result.set_stylebox("panel","PanelContainer",box())
 	result.set_stylebox("background","ProgressBar",box(Color("#b5a379"),WOOD,0,1))
 	result.set_stylebox("fill","ProgressBar",box(GREEN,GREEN,0,0))
@@ -46,7 +85,7 @@ static func create() -> Theme:
 	return result
 
 static func select(button: Button, selected: bool) -> void:
-	button.add_theme_stylebox_override("normal",box(GREEN if selected else PAPER,WOOD,6))
+	button.add_theme_stylebox_override("normal",piece("green" if selected else "paper",8))
 	button.add_theme_color_override("font_color",Color("#fff0ce") if selected else INK)
 
 static func label(text: String, font_size: int = 13) -> Label:

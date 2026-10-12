@@ -9,12 +9,14 @@ var caption: Label
 var icon := ""
 var recharge := 0.0
 var active := false
-var style: StyleBoxFlat
+var style: StyleBoxTexture
+var active_style: StyleBoxTexture
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	style = StyleBoxFlat.new()
-	style.set_border_width_all(2)
+	style = DiaryTheme.piece("wood",0)
+	active_style = DiaryTheme.piece("green",0)
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	caption = Label.new()
 	caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -65,13 +67,12 @@ func set_recharge(left: float, total: float, glowing: bool = false) -> void:
 func _draw() -> void:
 	if style == null:
 		return
-	style.bg_color = Color("#624329ee") if enabled else Color("#76664dee")
-	style.border_color = Color("#f2c26b") if active else Color("#d6b578") if enabled else Color("#ad9873")
-	draw_style_box(style, Rect2(Vector2.ZERO, size))
-	draw_rect(Rect2(4, 4, size.x - 8, 2), Color("#a47b49"))
+	draw_style_box(active_style if active else style, Rect2(Vector2.ZERO, size))
 	if not icon.is_empty():
 		var color: Color = {"cut":Color("#cbd7d0"),"charge":Color("#82c78c"),"fury":Color("#f1c655"),"dash":Color("#f1d9a0"),"potion":Color("#e3a58e")}.get(icon,Color("#e4dca6"))
-		PixelIcon.paint(self, icon, Rect2(Vector2(12, 6), size - Vector2(24, 24)), color if enabled or active else color.darkened(0.22))
+		var area := Rect2(Vector2(10,5),size-Vector2(20,22))
+		if icon == "cut": DiaryArt.icon(self,"espada",area)
+		else: PixelIcon.illustrate(self,icon,area,color if enabled or active else color.darkened(0.3))
 		var text: String = {"cut":"Corte","charge":"Investida","fury":"Fúria","dash":"Dash","potion":"Poção"}.get(icon,"")
 		var font := ThemeDB.fallback_font
 		var width := font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,10).x
@@ -79,6 +80,5 @@ func _draw() -> void:
 		if recharge > 0.0:
 			draw_rect(Rect2(4, 4, size.x - 8, (size.y - 8) * recharge), Color("#0a171ec7"))
 			draw_rect(Rect2(4, size.y - 6, (size.x - 8) * (1.0 - recharge), 2), Color("#e2b969"))
-		elif enabled:
-			for corner in [Vector2(5, 5), Vector2(size.x - 9, 5), Vector2(5, size.y - 9), Vector2(size.x - 9, size.y - 9)]:
-				draw_rect(Rect2(corner, Vector2(4, 4)), Color("#e2b969") if active else Color("#91ac7d"))
+		if not enabled and not active:
+			draw_rect(Rect2(4,4,size.x-8,size.y-8),Color(0.20,0.16,0.10,0.26))

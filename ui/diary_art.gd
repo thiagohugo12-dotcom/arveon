@@ -28,10 +28,6 @@ static func skin(panel: PanelContainer) -> void:
 	var single := panel.size.x < 600 or panel is RPGPanel
 	if panel.has_meta("diary_single") and panel.get_meta("diary_single") == single: return
 	panel.set_meta("diary_single",single)
-	panel.set_meta("diary_spread",not single)
+	panel.set_meta("diary_spread",false)
 	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	panel.add_theme_stylebox_override("panel",book_style(single))
-	if not panel.has_node("PaperBacking"):
-		panel.add_child(DiaryPaper.new())
-	else:
-		panel.get_node("PaperBacking").queue_redraw()
+	panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",22))
