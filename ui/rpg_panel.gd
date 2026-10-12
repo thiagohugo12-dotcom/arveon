@@ -161,6 +161,11 @@ func _talent_page() -> void:
 	talent_buy.custom_minimum_size.y = 44
 	talent_buy.pressed.connect(func(): action_requested.emit("talent",talent_weapon+":"+talent_selection,0))
 	content.add_child(talent_buy)
+	var return_to_tree := Button.new()
+	return_to_tree.text = "Voltar à árvore"
+	return_to_tree.custom_minimum_size.y = 44
+	return_to_tree.pressed.connect(func(): scroll.ensure_control_visible(talent_tree.buttons[talent_selection]))
+	content.add_child(return_to_tree)
 	_label("Verde: aprendido · claro: disponível · apagado: bloqueado.\nValores iniciais de teste. Técnicas já adquiridas estão preservadas; novas técnicas e escolha de slots virão em outra etapa.")
 	_talent_description()
 

@@ -75,15 +75,37 @@ static func run_world(suite: SceneTree) -> void:
 	main.hud._open_diary(1)
 	await suite.frames()
 	var panel: RPGPanel = main.hud.rpg_panel
-	panel.talent_selection = "vigor"
+	panel.talent_selection = "corte"
 	panel.refresh(main.progress)
 	await suite.frames()
-	panel.scroll.ensure_control_visible(panel.talent_buy)
+	var node: Button = panel.talent_tree.buttons.vigor
+	panel.scroll.ensure_control_visible(node)
 	await suite.frames()
-	suite.check(main.input_driver.blocked and not panel.talent_buy.disabled,"tree inspection blocks gameplay and enables eligible passive")
+	var scroll_before := panel.scroll.scroll_vertical
+	var touch := InputEventScreenTouch.new()
+	touch.index = 94
+	touch.pressed = true
+	touch.position = node.get_global_rect().get_center()
+	main.hud._input(touch)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 94
+	drag.relative = Vector2(0,-30)
+	drag.position = touch.position+drag.relative
+	main.hud._input(drag)
+	touch.pressed = false
+	touch.position = drag.position
+	main.hud._input(touch)
+	await suite.frames()
+	suite.check(panel.talent_selection == "corte" and panel.scroll.scroll_vertical > scroll_before,"swiping over talent scrolls without opening details")
+	panel.scroll.ensure_control_visible(node)
+	await suite.frames()
+	preload("res://tests/tower_trial_tests.gd")._tap(main.hud,node)
+	await suite.frames()
+	suite.check(panel.talent_selection == "vigor" and main.input_driver.blocked and not panel.talent_buy.disabled and panel.scroll.get_global_rect().has_point(panel.talent_buy.get_global_rect().get_center()),"touch inspects talent reveals purchase action and blocks gameplay")
+	var hp_before := main.player.health.current
 	preload("res://tests/tower_trial_tests.gd")._tap(main.hud,panel.talent_buy)
 	await suite.frames()
-	suite.check(main.progress.talents.owns("espada","vigor") and main.player.health.maximum == 108 and panel.talent_buy.disabled,"touch learns passive applies HP maximum and prevents double purchase")
+	suite.check(main.progress.talents.owns("espada","vigor") and main.player.health.maximum == 108 and main.player.health.current == hp_before and panel.talent_buy.disabled,"touch learns passive applies HP maximum without healing and prevents double purchase")
 	var loaded := GameProgress.new()
 	loaded.save_path = main.progress.save_path
 	suite.check(loaded.load_save() and loaded.talents.owns("espada","vigor"),"talent touch transaction persists across process load")

@@ -5,7 +5,7 @@ DiaryPortrait reutiliza o sprite atual. EquipmentBag apresenta grade e resumo
 responsivos, preservando sinais de seleção/comparação/equipamento. GameHUD
 troca páginas do diário pelos mesmos sinais modais do Main; menus continuam
 bloqueando movimento/combate e restaurando comandos ao fechar. RPGPanel
-mostra skills reais e uma página explicitamente planejada de proficiências.
+mostra skills reais e árvores funcionais de proficiência/talentos (V2 abaixo).
 Poção é reserva desativada: nenhuma mecânica ou campo de save foi criado.
 
 ## Atores da vila V4 — Andar 1

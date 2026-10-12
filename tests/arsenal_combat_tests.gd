@@ -112,6 +112,23 @@ static func run_world(suite) -> void:
 	suite.check(shots(main).is_empty(), "ranged target selection also rejects obstructed line of sight")
 	wall.queue_free()
 	await suite.frames()
+	# Switching equipment during flight must not transfer practice to a new tree.
+	enemy.position = player.position+Vector2(60,0)
+	await suite.frames()
+	player.attack.cooldown_left = 0
+	player.attack.search_left = 0
+	var bow_xp := int(p.talents.xp.arco)
+	var sword_xp := int(p.talents.xp.espada)
+	player.attack.tick(0,player)
+	var switched_shot := shots(main)[0]
+	p.equip("espada")
+	player.apply_progression(p)
+	switched_shot._physics_process(0.3)
+	suite.check(switched_shot.spent and p.talents.xp.arco == bow_xp+1 and p.talents.xp.espada == sword_xp,"in-flight weapon switch preserves original projectile proficiency category")
+	p.equip("arco")
+	player.apply_progression(p)
+	player.attack.cooldown_left = 0
+	player.attack.search_left = 0
 	for i in range(PlayerProjectile.MAX_ACTIVE):
 		var shot := PlayerProjectile.new()
 		main.add_child(shot)
