@@ -229,6 +229,12 @@ func _ready() -> void:
 	book_header.add_child(inventory_heading)
 	inventory_gold = Label.new()
 	inventory_gold.add_theme_font_size_override("font_size", 15)
+	var coin := DiaryHeart.new()
+	coin.glyph = "coin"
+	coin.tint = Color("#edb53e")
+	coin.custom_minimum_size = Vector2(16,16)
+	coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	book_header.add_child(coin)
 	book_header.add_child(inventory_gold)
 	diary_navigation = HBoxContainer.new()
 	inventory_column.add_child(diary_navigation)
@@ -556,7 +562,7 @@ func show_inventory(progress: GameProgress) -> void:
 
 func refresh_inventory(progress: GameProgress) -> void:
 	menu_progress = progress
-	inventory_gold.text = "● %s" % str(progress.gold)
+	inventory_gold.text = str(progress.gold)
 	for i in range(inventory_tabs.get_child_count()): DiaryTheme.select(inventory_tabs.get_child(i),i == inventory_category)
 	if progress.ascension.forest_seal:
 		inventory_gold.tooltip_text = "Selo da Mata · %d andares" % progress.ascension.unlocked_floors.size()

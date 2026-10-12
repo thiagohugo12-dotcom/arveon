@@ -419,7 +419,7 @@ func _run() -> void:
 	var wood_visible := false
 	var wood := hud.inventory_list.find_child("Madeira",true,false)
 	wood_visible = wood != null and wood.find_child("Quantity",true,false).text == "× 2"
-	check(hud.inventory_gold.text == "● %d" % main.progress.gold and wood_visible, "bag shows wallet and carried material in separate cells")
+	check(hud.inventory_gold.text == str(main.progress.gold) and wood_visible, "bag shows wallet and carried material in separate cells")
 	check(hud.inventory_panel.get_global_rect().has_point(hud.inventory_close.global_position + hud.inventory_close.size * 0.5), "portrait bag close target fits panel")
 	var saved_player_pos := player.position
 	player.dash.time_left = 0.1
