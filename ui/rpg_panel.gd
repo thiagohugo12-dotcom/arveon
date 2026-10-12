@@ -120,7 +120,7 @@ func refresh(value: GameProgress) -> void:
 			card.add_child(row)
 			row.add_child(PixelItemIcon.new(ArsenalRules.metadata(id).icon))
 			row.add_child(DiaryTheme.label(ArsenalRules.category_name(id),15))
-			_label("Prática → Técnicas → Especialização → Maestria",card)
+			_label("Técnicas · Especialização · Maestria",card)
 		_heading("MARCOS PLANEJADOS")
 		_label("Nv. 3 / 8 / 15 / 25 · Habilidades\nNv. 5 / 12 · Passivas\nNv. 10 / 20 · Marcos de Ultimate\nNv. 18 · Especialização\nNv. 30 · Maestria")
 		_label("Efeitos e funcionamento da Ultimate ainda serão definidos para os três espaços de habilidade.")

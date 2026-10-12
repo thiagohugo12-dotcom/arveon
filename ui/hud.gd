@@ -51,6 +51,7 @@ var dash_button: TouchActionButton
 var actions: Array[TouchActionButton] = []
 var heading: Label
 var hp_label: Label
+var heart_icon: DiaryHeart
 var hp_bar: ProgressBar
 var progress_label: Label
 var mission_label: Label
@@ -122,6 +123,8 @@ func _ready() -> void:
 	hp_label.add_theme_font_size_override("font_size", 12)
 	hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(hp_label)
+	heart_icon = DiaryHeart.new()
+	add_child(heart_icon)
 	hp_bar = ProgressBar.new()
 	hp_bar.show_percentage = false
 	hp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -402,8 +405,10 @@ func _layout() -> void:
 	heading.position = margin + Vector2(6, 2)
 	heading.hide()
 	heading.size = Vector2(information_width - 12, 16)
-	hp_label.position = margin + Vector2(6, 3)
-	hp_label.size = Vector2(information_width - 12, 18)
+	heart_icon.position = margin + Vector2(6,5)
+	heart_icon.size = Vector2(16,16)
+	hp_label.position = margin + Vector2(28, 3)
+	hp_label.size = Vector2(information_width - 34, 18)
 	gold_label.position = margin + Vector2(6, 51)
 	gold_label.size = Vector2(information_width - 12, 16)
 	hp_bar.position = margin + Vector2(6, 23)
@@ -468,7 +473,7 @@ func _layout() -> void:
 		damage_occluders.append(panel.get_global_rect())
 
 func set_health(current: int, maximum: int) -> void:
-	hp_label.text = "♥ %d / %d" % [current, maximum]
+	hp_label.text = "%d / %d" % [current, maximum]
 	hp_bar.max_value = maximum
 	hp_bar.value = current
 	if previous_health >= 0 and current != previous_health:
@@ -502,7 +507,7 @@ func _health_fill(color: Color) -> StyleBoxFlat:
 	return style
 
 func set_mission(value: String) -> void:
-	mission_text = "◆ " + value.replace("Missão comum: ", "")
+	mission_text = value.replace("Missão comum: ", "")
 	_render_mission()
 
 func _render_mission() -> void:
@@ -529,7 +534,7 @@ func show_inventory(progress: GameProgress) -> void:
 
 func refresh_inventory(progress: GameProgress) -> void:
 	menu_progress = progress
-	inventory_gold.text = "● %d" % progress.gold
+	inventory_gold.text = "Ouro %d" % progress.gold
 	for i in range(inventory_tabs.get_child_count()): DiaryTheme.select(inventory_tabs.get_child(i),i == inventory_category)
 	if progress.ascension.forest_seal:
 		inventory_gold.tooltip_text = "Selo da Mata · %d andares" % progress.ascension.unlocked_floors.size()

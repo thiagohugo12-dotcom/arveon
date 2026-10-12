@@ -24,6 +24,14 @@ func _init(value: GameProgress = null, selection: String = "", comparing: bool =
 		_overview()
 		for id: String in progress.equipment:
 			_card(id)
+		# Visual spare cells are not inventory capacity or interactive fake items.
+		for i in range(maxi(0,6-progress.equipment.size())):
+			var empty := PanelContainer.new()
+			empty.custom_minimum_size = Vector2(68,106)
+			empty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			empty.add_theme_stylebox_override("panel",DiaryTheme.box(Color("#ecd9ad"),Color("#c7ad7b"),0,1))
+			grid.add_child(empty)
 		resized.connect(_reflow)
 	else:
 		_details(selection,comparing)
@@ -123,7 +131,7 @@ func _details(id: String, comparing: bool) -> void:
 	var row := HBoxContainer.new()
 	add_child(row)
 	back_button = Button.new()
-	back_button.text = "‹"
+	back_button.text = "<"
 	back_button.tooltip_text = "Voltar aos equipamentos"
 	back_button.custom_minimum_size = Vector2(44,44)
 	back_button.pressed.connect(func(): selected.emit(""))
