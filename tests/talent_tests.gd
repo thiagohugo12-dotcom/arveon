@@ -102,7 +102,7 @@ static func run_world(suite: SceneTree) -> void:
 	preload("res://tests/tower_trial_tests.gd")._tap(main.hud,node)
 	await suite.frames()
 	suite.check(panel.talent_selection == "vigor" and main.input_driver.blocked and not panel.talent_buy.disabled and panel.scroll.get_global_rect().has_point(panel.talent_buy.get_global_rect().get_center()),"touch inspects talent reveals purchase action and blocks gameplay")
-	var hp_before := main.player.health.current
+	var hp_before: int = main.player.health.current
 	preload("res://tests/tower_trial_tests.gd")._tap(main.hud,panel.talent_buy)
 	await suite.frames()
 	suite.check(main.progress.talents.owns("espada","vigor") and main.player.health.maximum == 108 and main.player.health.current == hp_before and panel.talent_buy.disabled,"touch learns passive applies HP maximum without healing and prevents double purchase")
