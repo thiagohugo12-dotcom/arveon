@@ -6,6 +6,8 @@ var output := ""
 var failures := 0
 
 func _initialize() -> void:
+	# These captures assert ordinary hit amounts; criticals have dedicated tests.
+	CombatRules.random_roll_source = func(): return 0.99
 	create_timer(45.0).timeout.connect(func(): quit(1))
 	call_deferred("_run")
 
@@ -162,4 +164,5 @@ func _run() -> void:
 	main.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
+	CombatRules.random_roll_source = Callable()
 	quit(1 if failures > 0 else 0)
