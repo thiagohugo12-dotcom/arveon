@@ -11,10 +11,26 @@ func _init(value: String = "Arma", color: Color = Color("#67805b")) -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _draw() -> void:
-	draw_rect(Rect2(0, 0, 30, 30), Color("#142a25"))
+	draw_rect(Rect2(0, 0, 30, 30), Color("#e5cfa0"))
 	draw_rect(Rect2(1, 1, 28, 28), frame_color, false, 2)
-	var gold := Color("#e3c781")
+	var gold := Color("#697f78")
 	match slot:
+		"Madeira":
+			draw_rect(Rect2(5,11,20,12),Color("#89552f"))
+			draw_rect(Rect2(5,11,6,12),Color("#d5a454"))
+			draw_rect(Rect2(13,13,11,3),Color("#b58042"))
+		"Cogumelo", "Cogumelos":
+			draw_rect(Rect2(12,16,7,10),Color("#fff1c9"))
+			draw_rect(Rect2(5,9,21,9),Color("#bd5237"))
+			draw_rect(Rect2(9,5,13,5),Color("#d76642"))
+			draw_rect(Rect2(10,10,4,3),Color("#fff1c9"))
+		"Pedra", "Pedras":
+			draw_rect(Rect2(6,13,20,10),Color("#7c827b"))
+			draw_rect(Rect2(10,8,12,10),Color("#b1b2a0"))
+		"Erva", "Ervas":
+			draw_rect(Rect2(14,6,3,20),Color("#4c7339"))
+			draw_rect(Rect2(6,10,8,7),Color("#68963d"))
+			draw_rect(Rect2(17,6,7,8),Color("#82a743"))
 		"Arma", "espada":
 			for i in range(10):
 				draw_rect(Rect2(7 + i, 17 - i, 3, 3), gold)

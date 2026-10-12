@@ -32,7 +32,7 @@ static func run(suite, main) -> void:
 		hud._layout()
 		await suite.frames()
 		var bounds := Rect2(Vector2.ZERO, hud.size)
-		var buttons: Array[Control] = [hud.inventory_button, hud.character_button, hud.map_button, hud.actions[0], hud.actions[1], hud.actions[2], hud.dash_button, hud.joystick]
+		var buttons: Array[Control] = [hud.inventory_button, hud.character_button, hud.map_button, hud.actions[0], hud.actions[1], hud.actions[2], hud.dash_button, hud.actions[3], hud.joystick]
 		var valid := true
 		for i in range(buttons.size()):
 			var rect := buttons[i].get_rect()
@@ -40,7 +40,7 @@ static func run(suite, main) -> void:
 			for j in range(i + 1, buttons.size()):
 				valid = valid and not rect.intersects(buttons[j].get_rect())
 		suite.check(valid, "touch targets within viewport and mutually separated %s" % resolution)
-		suite.check(not hud.actions[3].visible and not hud.actions[4].visible and hud.inventory_button.position.y == hud.character_button.position.y and hud.character_button.position.y == hud.map_button.position.y, "four combat buttons and three top menu icons %s" % resolution)
+		suite.check(hud.actions[3].visible and not hud.actions[3].enabled and not hud.actions[4].visible and hud.inventory_button.position.y == hud.character_button.position.y and hud.character_button.position.y == hud.map_button.position.y, "four combat buttons plus unavailable potion and three top menu icons %s" % resolution)
 		var passive_safe := true
 		for panel in [hud.info_back, hud.mission_back, hud.minimap]:
 			for button in buttons:
@@ -50,6 +50,10 @@ static func run(suite, main) -> void:
 		suite.check(text_fits and hud.progress_label.get_theme_font("font").get_string_size(hud.progress_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x <= hud.progress_label.size.x, "mission and XP text fit compact panels %s" % resolution)
 		if resolution.x >= 600 and resolution.x > resolution.y:
 			suite.check(hud.info_back.position.y == hud.mission_back.position.y and not hud.info_back.get_rect().intersects(hud.mission_back.get_rect()),"landscape HUD frees workshop without overlapping readable panels %s" % resolution)
+		var mission_snapshot: String = main.progress.to_json()
+		tap(hud,hud.mission_toggle)
+		suite.check(not hud.mission_expanded and hud.mission_back.size.y == 44 and main.progress.to_json() == mission_snapshot,"collapsing mission frees space without modifying quest progress %s" % resolution)
+		tap(hud,hud.mission_toggle)
 		for menu in ["bag", "character", "map"]:
 			var button: Button = {"bag": hud.inventory_button, "character": hud.character_button, "map": hud.map_button}[menu]
 			tap(hud, button)

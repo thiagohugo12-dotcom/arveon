@@ -10,6 +10,9 @@ var compare_button: Button
 var back_button: Button
 var comparison: VBoxContainer
 var progress: GameProgress
+var grid: GridContainer
+var spread: BoxContainer
+var profile: BoxContainer
 
 func _init(value: GameProgress = null, selection: String = "", comparing: bool = false) -> void:
 	progress = value
@@ -18,20 +21,17 @@ func _init(value: GameProgress = null, selection: String = "", comparing: bool =
 	if value == null:
 		return
 	if selection.is_empty() or not progress.equipment.has(selection):
+		_overview()
 		for id: String in progress.equipment:
 			_card(id)
+		resized.connect(_reflow)
 	else:
 		_details(selection,comparing)
 
 func _style(color: Color) -> StyleBoxFlat:
-	var result := StyleBoxFlat.new()
-	result.bg_color = Color("#1b342c")
-	result.border_color = color
-	result.set_border_width_all(1)
-	result.set_content_margin_all(7)
-	return result
+	return DiaryTheme.box(Color("#e7d2a4"),color,7)
 
-func _label(text: String, color: Color = Color("#e6dfc5"), font_size: int = 12) -> Label:
+func _label(text: String, color: Color = DiaryTheme.INK, font_size: int = 12) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_color_override("font_color",color)
@@ -40,6 +40,41 @@ func _label(text: String, color: Color = Color("#e6dfc5"), font_size: int = 12) 
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return label
+
+func _overview() -> void:
+	spread = BoxContainer.new()
+	spread.vertical = true
+	add_child(spread)
+	profile = BoxContainer.new()
+	profile.custom_minimum_size.x = 180
+	spread.add_child(profile)
+	profile.add_child(DiaryPortrait.new())
+	var summary := VBoxContainer.new()
+	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	profile.add_child(summary)
+	summary.add_child(_label("Explorador · Nv. %d" % progress.level(),DiaryTheme.INK,15))
+	for slot: String in ["Arma","Armadura"]:
+		var equipped: String = progress.equipped.get(slot,"")
+		summary.add_child(_label(RPGRules.EQUIPMENT[equipped].name if not equipped.is_empty() else slot+": vazio"))
+	var stats := progress.combat_stats()
+	summary.add_child(_label("Dano %d · Defesa %d" % [stats.damage,stats.armor]))
+	var items := VBoxContainer.new()
+	items.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spread.add_child(items)
+	items.add_child(_label("Seus equipamentos",DiaryTheme.INK,14))
+	grid = GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation",6)
+	grid.add_theme_constant_override("v_separation",6)
+	items.add_child(grid)
+	add_child(_label("Toque em um item para ver atributos, comparar e equipar."))
+
+func _reflow() -> void:
+	if spread == null: return
+	spread.vertical = size.x < 460
+	profile.vertical = not spread.vertical
+	grid.columns = 3
 
 func _attributes(id: String) -> String:
 	var values := ArsenalRules.effective(progress,id)
@@ -51,17 +86,17 @@ func _attributes(id: String) -> String:
 func _card(id: String) -> void:
 	var meta := ArsenalRules.metadata(id)
 	var rarity := ArsenalRules.rarity(id)
-	var color := Color(rarity.color)
+	var color := Color(rarity.color).darkened(0.22)
 	var button := Button.new()
-	button.custom_minimum_size.y = 72
+	button.custom_minimum_size = Vector2(68,106)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_stylebox_override("normal",_style(color))
 	button.add_theme_stylebox_override("hover",_style(color.lightened(0.2)))
 	button.add_theme_stylebox_override("pressed",_style(Color("#e3c781")))
 	button.pressed.connect(func(): selected.emit(id))
-	add_child(button)
+	grid.add_child(button)
 	cards[id] = button
-	var row := HBoxContainer.new()
+	var row := VBoxContainer.new()
 	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	row.offset_left = 8
 	row.offset_top = 5
@@ -69,20 +104,22 @@ func _card(id: String) -> void:
 	row.offset_bottom = -5
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(row)
-	row.add_child(PixelItemIcon.new(meta.icon,color))
-	var column := VBoxContainer.new()
-	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_theme_constant_override("separation",0)
-	row.add_child(column)
-	column.add_child(_label("%s +%d" % [RPGRules.EQUIPMENT[id].name,progress.equipment[id]],color,13))
-	column.add_child(_label("%s · %s%s" % [ArsenalRules.category_name(id),rarity.name," · Equipado" if progress.equipped[RPGRules.EQUIPMENT[id].slot] == id else ""],color,11))
-	column.add_child(_label(_attributes(id),Color("#ddd9c7"),11))
+	var icon := PixelItemIcon.new(meta.icon,color)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	row.add_child(icon)
+	var name_label := _label(RPGRules.EQUIPMENT[id].name,DiaryTheme.INK,11)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	row.add_child(name_label)
+	var equipped: bool = progress.equipped[RPGRules.EQUIPMENT[id].slot] == id
+	var marker := _label("Equipado" if equipped else "+%d · %s" % [progress.equipment[id],rarity.name],DiaryTheme.GREEN,10)
+	marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	row.add_child(marker)
+	button.tooltip_text = "%s · %s\n%s" % [RPGRules.EQUIPMENT[id].name,rarity.name,_attributes(id)]
 
 func _details(id: String, comparing: bool) -> void:
 	var item: Dictionary = RPGRules.EQUIPMENT[id]
 	var rarity := ArsenalRules.rarity(id)
-	var color := Color(rarity.color)
+	var color := DiaryTheme.INK
 	var row := HBoxContainer.new()
 	add_child(row)
 	back_button = Button.new()
@@ -124,4 +161,4 @@ func _details(id: String, comparing: bool) -> void:
 		var difference := float(candidate[key]) - float(before[key])
 		var good := difference < 0 if key == "interval" else difference > 0
 		var label: String = {"damage":"Dano","interval":"Intervalo (menor é melhor)","reach":"Alcance","hp":"HP","armor":"Defesa","speed":"Movimento","spirit":"Espírito"}[key]
-		comparison.add_child(_label("%s: %+.2f" % [label,difference],Color("#90d49b") if good else Color("#ec9c91") if not is_zero_approx(difference) else Color("#c1c5b7"),11))
+		comparison.add_child(_label("%s: %+.2f" % [label,difference],DiaryTheme.GREEN if good else Color("#a13f30") if not is_zero_approx(difference) else DiaryTheme.INK,12))

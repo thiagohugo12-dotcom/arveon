@@ -1,4 +1,13 @@
 # Arquitetura
+## Diário e HUD
+DiaryTheme centraliza papel, madeira, contraste e estados de botões.
+DiaryPortrait reutiliza o sprite atual. EquipmentBag apresenta grade e resumo
+responsivos, preservando sinais de seleção/comparação/equipamento. GameHUD
+troca páginas do diário pelos mesmos sinais modais do Main; menus continuam
+bloqueando movimento/combate e restaurando comandos ao fechar. RPGPanel
+mostra skills reais e uma página explicitamente planejada de proficiências.
+Poção é reserva desativada: nenhuma mecânica ou campo de save foi criado.
+
 ## Atores da vila V4 — Andar 1
 VillageActorArt compartilha três atlas pequenos nearest 2x, preparados offline
 com alpha original e crop comum entre quadros. ActorView escolhe quatro poses

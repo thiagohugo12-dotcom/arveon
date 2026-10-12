@@ -1,4 +1,11 @@
 # Game Design — fundação v0.1
+## Diário e HUD — aprovação em 11/10/2026
+Conforme DIARIO_HUD_V1.md, adotar diário creme/madeira/verde, mochila em grade
+e menus responsivos. Direção atual: dash + habilidade da arma + duas técnicas
+escolhidas (quatro botões), poção separada e ataque básico automático da arma.
+Supera a exigência anterior de Ultimate separada. Proficiências e seleção
+livre ainda não existem; a entrega visual preserva as três skills atuais.
+
 ## Hub V3 — reconstrução aprovada em 11/10/2026
 ATORES_VILA_V4.md autoriza substituir as artes de personagens, monstros e
 coletas no Andar 1 por sprites simples e animados. A aprovação supera a

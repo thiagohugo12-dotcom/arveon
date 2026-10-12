@@ -204,7 +204,7 @@ static func _interface(suite, main) -> void:
 		hud._layout()
 		main._toggle_character()
 		await suite.frames()
-		suite.check(hud.rpg_panel.visible and driver.blocked and hud.rpg_panel.get_rect().end.y <= hud.size.y, "character screen fits mobile %s and blocks combat" % size)
+		suite.check(hud.rpg_panel.visible and driver.blocked and hud.rpg_panel.get_rect().end.y <= hud.size.y, "character screen fits mobile %s and blocks combat · panel %s" % [size,hud.rpg_panel.get_rect()])
 		var touch := InputEventScreenTouch.new()
 		touch.pressed = true
 		touch.index = 12
@@ -225,6 +225,8 @@ static func _interface(suite, main) -> void:
 		await suite.frames()
 		suite.check(hud.inventory_category == 1 and hud.equipment_bag.cards.size() == 2, "touch backpack equipment category displays owned gear %s" % size)
 		var card: Button = hud.equipment_bag.cards.espada
+		hud.inventory_scroll.scroll_vertical += maxi(0,roundi(card.global_position.y-hud.inventory_scroll.global_position.y-4))
+		await suite.frames()
 		touch.position = card.get_global_rect().get_center()
 		hud._input(touch)
 		touch.pressed = false
@@ -297,6 +299,8 @@ static func _interface(suite, main) -> void:
 	main._toggle_character()
 	await suite.frames()
 	var improvement := _button_with_text(hud.rpg_panel.content, "Melhorar")
+	hud.rpg_panel.scroll.scroll_vertical += maxi(0,roundi(improvement.global_position.y-hud.rpg_panel.scroll.global_position.y-4))
+	await suite.frames()
 	forge_touch.position = improvement.global_position + improvement.size * 0.5
 	hud._input(forge_touch)
 	suite.check(p.skills["Corte Circular"] == 2 and p.skill_points() == 0 and player.skill_ranks[0] == 2, "touch skill screen spends one earned point and applies upgraded rank")

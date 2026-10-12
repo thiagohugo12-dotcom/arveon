@@ -29,6 +29,12 @@ var transition_cover: ColorRect
 var transition_active := false
 var rpg_panel: RPGPanel
 var inventory_category := 0
+var diary_navigation: HBoxContainer
+var xp_bar: ProgressBar
+var menu_shade: ColorRect
+var mission_toggle: Button
+var mission_expanded := true
+var mission_text := ""
 var inventory_selected := ""
 var inventory_compare := false
 var equipment_bag: EquipmentBag
@@ -87,6 +93,13 @@ func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	theme = _pixel_theme()
+	menu_shade = ColorRect.new()
+	menu_shade.color = Color(0.09,0.12,0.08,0.63)
+	menu_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	menu_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	menu_shade.z_index = 9
+	menu_shade.hide()
+	add_child(menu_shade)
 	info_back = Panel.new()
 	info_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info_back.add_theme_stylebox_override("panel", _compact_style())
@@ -114,6 +127,11 @@ func _ready() -> void:
 	hp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hp_bar.add_theme_stylebox_override("fill", _health_fill(Color("#80cf88")))
 	add_child(hp_bar)
+	xp_bar = ProgressBar.new()
+	xp_bar.show_percentage = false
+	xp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	xp_bar.add_theme_stylebox_override("fill",DiaryTheme.box(Color("#dca947"),Color("#dca947"),0,0))
+	add_child(xp_bar)
 	progress_label = Label.new()
 	progress_label.add_theme_font_size_override("font_size", 11)
 	progress_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -122,6 +140,15 @@ func _ready() -> void:
 	mission_label.add_theme_font_size_override("font_size", 11)
 	mission_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(mission_label)
+	mission_toggle = Button.new()
+	mission_toggle.text = "−"
+	mission_toggle.tooltip_text = "Recolher / expandir missões"
+	mission_toggle.pressed.connect(func():
+		mission_expanded = not mission_expanded
+		_render_mission()
+		_layout()
+	)
+	add_child(mission_toggle)
 	loot_label = Label.new()
 	loot_label.add_theme_font_size_override("font_size", 11)
 	loot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -179,11 +206,26 @@ func _ready() -> void:
 	inventory_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_panel.add_child(inventory_column)
 	var inventory_heading := Label.new()
-	inventory_heading.text = "Mochila"
-	inventory_column.add_child(inventory_heading)
+	inventory_heading.text = "Diário do Explorador"
+	inventory_heading.add_theme_font_size_override("font_size",18)
+	var book_header := HBoxContainer.new()
+	inventory_column.add_child(book_header)
+	inventory_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	book_header.add_child(inventory_heading)
 	inventory_gold = Label.new()
 	inventory_gold.add_theme_font_size_override("font_size", 15)
-	inventory_column.add_child(inventory_gold)
+	book_header.add_child(inventory_gold)
+	diary_navigation = HBoxContainer.new()
+	inventory_column.add_child(diary_navigation)
+	for i in range(3):
+		var link := Button.new()
+		link.text = ["Mochila","Proficiências","Habilidades"][i]
+		link.add_theme_font_size_override("font_size",11)
+		link.custom_minimum_size.y = 44
+		link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		DiaryTheme.select(link,i == 0)
+		link.pressed.connect(func(): _open_diary(i))
+		diary_navigation.add_child(link)
 	inventory_tabs = HBoxContainer.new()
 	inventory_column.add_child(inventory_tabs)
 	for i in range(3):
@@ -245,6 +287,11 @@ func _ready() -> void:
 	for i in [3, 4]:
 		actions[i].hide()
 		actions[i].enabled = false
+	actions[3].show()
+	actions[3].icon = "potion"
+	actions[3].title = "Poção"
+	actions[3].tooltip_text = "Poções ainda não disponíveis"
+	actions[3].set_caption("")
 	for i in [0, 1, 2, 5]:
 		actions[i].icon = ["cut", "charge", "fury", "", "", "dash"][i]
 		actions[i].tooltip_text = ["Corte Circular", "Investida", "Fúria Ancestral", "", "", "Dash"][i]
@@ -303,6 +350,7 @@ func _ready() -> void:
 	transition_cover.hide()
 	add_child(transition_cover)
 	rpg_panel.closed.connect(func(): character_toggled.emit())
+	rpg_panel.bag_requested.connect(func(): _open_diary(0))
 	rpg_panel.action_requested.connect(func(action: String, id: String, expected: int): rpg_action.emit(action, id, expected))
 	restart = Button.new()
 	restart.z_index = 20
@@ -322,6 +370,10 @@ func _ready() -> void:
 	boss_bar.hide()
 	add_child(boss_bar)
 	resized.connect(_layout)
+	# Wrapped labels settle their minimum height after the first layout pass.
+	# Refit the modal then, including when rotating or changing diary pages.
+	rpg_panel.minimum_size_changed.connect(func(): _layout.call_deferred())
+	inventory_panel.minimum_size_changed.connect(func(): _layout.call_deferred())
 	_layout()
 
 func _layout() -> void:
@@ -346,20 +398,23 @@ func _layout() -> void:
 	minimap.position = Vector2(size.x - right_inset - minimap.size.x, margin.y + 50)
 	var information_width := minf(192, menu_x - margin.x - 8)
 	info_back.position = margin
-	info_back.size = Vector2(information_width, 74)
+	info_back.size = Vector2(information_width, 72)
 	heading.position = margin + Vector2(6, 2)
+	heading.hide()
 	heading.size = Vector2(information_width - 12, 16)
-	hp_label.position = margin + Vector2(6, 18)
+	hp_label.position = margin + Vector2(6, 3)
 	hp_label.size = Vector2(information_width - 12, 18)
-	gold_label.position = margin + Vector2(6, 54)
+	gold_label.position = margin + Vector2(6, 51)
 	gold_label.size = Vector2(information_width - 12, 16)
-	hp_bar.position = margin + Vector2(6, 37)
+	hp_bar.position = margin + Vector2(6, 23)
 	hp_bar.size = Vector2(information_width - 12, 6)
-	progress_label.position = margin + Vector2(6, 42)
+	progress_label.position = margin + Vector2(6, 30)
 	progress_label.size = Vector2(information_width - 12, 16)
+	xp_bar.position = margin + Vector2(6,47)
+	xp_bar.size = Vector2(information_width-12,3)
 	var mission_width := minf(232, minimap.position.x - margin.x - 8)
-	mission_back.position = margin + Vector2(0, 80)
-	mission_back.size = Vector2(mission_width, 56)
+	mission_back.position = margin + Vector2(0, 86)
+	mission_back.size = Vector2(mission_width,56 if mission_expanded or boss_name.visible else 44)
 	# Landscape places the two readable panels in one top strip, leaving the
 	# workshop visible below. Portrait retains its separate, full-width rows.
 	if size.x >= 600 and size.x > size.y:
@@ -368,12 +423,16 @@ func _layout() -> void:
 		mission_width = mission_back.size.x
 	mission_label.position = mission_back.position + Vector2(6, 3)
 	mission_label.size = mission_back.size - Vector2(12, 6)
+	mission_label.size.x -= 38
+	mission_toggle.position = mission_back.position + Vector2(mission_back.size.x-44,0)
+	mission_toggle.size = Vector2(44,44)
+	mission_toggle.visible = not boss_name.visible
 	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	boss_name.position = mission_label.position
 	boss_name.size = Vector2(mission_width - 12, 30)
 	boss_bar.position = mission_back.position + Vector2(6, 38)
 	boss_bar.size = Vector2(mission_width - 12, 7)
-	loot_label.position = Vector2(margin.x, margin.y + 140)
+	loot_label.position = Vector2(margin.x, margin.y + 146)
 	if size.x >= 600 and size.x > size.y:
 		loot_label.position.y = margin.y+80
 	loot_label.size = Vector2(minf(320, size.x - margin.x - right_inset), 42)
@@ -381,17 +440,26 @@ func _layout() -> void:
 	map_panel.position = (size - map_panel.size) * 0.5
 	save_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(350, size.y - margin.y - bottom_inset - 12))
 	save_panel.position = (size - save_panel.size) * 0.5
-	inventory_panel.size = Vector2(minf(440, size.x - margin.x - right_inset - 12), minf(560, size.y - margin.y - bottom_inset - 12))
-	inventory_panel.position = (size - inventory_panel.size) * 0.5
+	# Large landscape displays use their real pixel budget for the diary, while
+	# world/camera scale and minimum physical touch size remain unchanged.
+	var diary_scale := 1.0
+	var window_size := get_window().size
+	if window_size.x >= 900 and window_size.y >= 500 and size.x > size.y and is_equal_approx(size.x,get_viewport_rect().size.x):
+		diary_scale = minf(1.0,size.x/float(window_size.x))
+	inventory_panel.scale = Vector2.ONE*diary_scale
+	rpg_panel.scale = Vector2.ONE*diary_scale
+	inventory_panel.size = Vector2(minf(820, (size.x - margin.x - right_inset - 12)/diary_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/diary_scale))
+	inventory_panel.position = (size - inventory_panel.size*diary_scale) * 0.5
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for slot in range(4):
-		var i: int = [0, 1, 2, 5][slot]
+		var i: int = [5, 0, 1, 2][slot]
 		actions[i].position = Vector2(size.x - right_inset - 120 + (slot % 2) * 64, size.y - bottom_inset - 120 + (slot / 2) * 64)
+	actions[3].position = Vector2(size.x-right_inset-56,size.y-bottom_inset-184)
 	interact_button.position = Vector2(size.x * 0.5 - 60, size.y - bottom_inset - (185 if size.y > size.x else 67))
 	station_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(320, size.y - margin.y - bottom_inset - 12))
 	station_panel.position = (size - station_panel.size) * 0.5
-	rpg_panel.size = Vector2(minf(320, size.x - margin.x - right_inset - 12), minf(460, size.y - margin.y - bottom_inset - 12))
-	rpg_panel.position = (size - rpg_panel.size) * 0.5
+	rpg_panel.size = Vector2(minf(640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/diary_scale))
+	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
 	restart.size = Vector2(240, 48)
 	# Existing HUD appearance is unchanged. A shared list keeps world hit numbers readable.
@@ -400,7 +468,7 @@ func _layout() -> void:
 		damage_occluders.append(panel.get_global_rect())
 
 func set_health(current: int, maximum: int) -> void:
-	hp_label.text = "HP %d / %d" % [current, maximum]
+	hp_label.text = "♥ %d / %d" % [current, maximum]
 	hp_bar.max_value = maximum
 	hp_bar.value = current
 	if previous_health >= 0 and current != previous_health:
@@ -434,13 +502,18 @@ func _health_fill(color: Color) -> StyleBoxFlat:
 	return style
 
 func set_mission(value: String) -> void:
-	mission_label.text = "◆ " + value.replace("Missão comum: ", "")
+	mission_text = "◆ " + value.replace("Missão comum: ", "")
+	_render_mission()
+
+func _render_mission() -> void:
+	mission_label.text = mission_text if mission_expanded else mission_text.get_slice("\n",0)
+	mission_toggle.text = "−" if mission_expanded else "+"
 
 func show_inventory(progress: GameProgress) -> void:
 	if station_panel.visible or restart.visible or rpg_panel.visible or map_panel.visible:
 		return
 	inventory_open = true
-	inventory_category = 0
+	inventory_category = 1
 	inventory_selected = ""
 	inventory_compare = false
 	inventory_panel.show()
@@ -456,9 +529,10 @@ func show_inventory(progress: GameProgress) -> void:
 
 func refresh_inventory(progress: GameProgress) -> void:
 	menu_progress = progress
-	inventory_gold.text = "Ouro: %d" % progress.gold
+	inventory_gold.text = "● %d" % progress.gold
+	for i in range(inventory_tabs.get_child_count()): DiaryTheme.select(inventory_tabs.get_child(i),i == inventory_category)
 	if progress.ascension.forest_seal:
-		inventory_gold.text += " · Selo da Mata · %d andares" % progress.ascension.unlocked_floors.size()
+		inventory_gold.tooltip_text = "Selo da Mata · %d andares" % progress.ascension.unlocked_floors.size()
 		inventory_gold.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	for child in inventory_list.get_children():
 		inventory_list.remove_child(child)
@@ -485,24 +559,39 @@ func refresh_inventory(progress: GameProgress) -> void:
 		empty.add_theme_font_size_override("font_size", 12)
 		inventory_list.add_child(empty)
 		return
+	var material_grid := GridContainer.new()
+	material_grid.columns = 3
+	material_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inventory_list.add_child(material_grid)
 	var has_material := false
 	for item: String in GameProgress.ITEMS:
 		var count := int(progress.bag.get(item, 0))
 		if count > 0:
 			has_material = true
-			var row := HBoxContainer.new()
-			row.custom_minimum_size.y = 32
-			inventory_list.add_child(row)
+			var tile := PanelContainer.new()
+			tile.name = item
+			tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			tile.add_theme_stylebox_override("panel",DiaryTheme.box(Color("#e5d0a1"),Color("#b99863"),6))
+			material_grid.add_child(tile)
+			var row := VBoxContainer.new()
+			row.custom_minimum_size = Vector2(62,86)
+			tile.add_child(row)
+			var icon := PixelItemIcon.new(item)
+			icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			row.add_child(icon)
 			var name := Label.new()
 			name.text = item
-			name.custom_minimum_size.x = 150
+			name.name = "ItemName"
+			name.add_theme_font_size_override("font_size",11)
+			name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			name.autowrap_mode = TextServer.AUTOWRAP_OFF
+			name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			row.add_child(name)
 			var amount := Label.new()
 			amount.text = "× %d" % count
+			amount.name = "Quantity"
 			amount.custom_minimum_size.x = 44
-			amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			row.add_child(amount)
 	if not has_material:
 		var empty := Label.new()
@@ -732,7 +821,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if not station_panel.visible:
-		for button in [inventory_button, character_button, map_button]:
+		for button in [inventory_button, character_button, map_button, mission_toggle]:
 			if _activate_touch_button(button, event.position):
 				return
 	if not station_panel.visible:
@@ -774,12 +863,7 @@ func _activate_touch_button(button: Button, position: Vector2) -> bool:
 	return false
 
 func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#1b2f27")
-	style.set_border_width_all(3)
-	style.border_color = Color("#d0b878")
-	style.set_content_margin_all(10)
-	return style
+	return DiaryTheme.box(DiaryTheme.PAPER,DiaryTheme.WOOD,12,3)
 
 func set_dash_cooldown(value: float) -> void:
 	var rounded := snappedf(value, 0.1)
@@ -793,8 +877,10 @@ func _sync_controls() -> void:
 	scroll_touch = -1
 	touch_scroll = null
 	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
+	menu_shade.visible = blocked and not transition_active and not restart.visible
 	for button in [inventory_button, character_button, map_button]:
 		button.disabled = blocked
+	mission_toggle.disabled = blocked
 	joystick.reset()
 	joystick.set_process_input(not blocked)
 	for i in [0, 1, 2, 5]:
@@ -821,6 +907,8 @@ func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	var lvl := progress.level()
 	progress_label.text = "Nv %d · XP %d/%d" % [lvl, progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl)] if lvl < RPGRules.MAX_LEVEL else "Nv %d · Nível máximo" % RPGRules.MAX_LEVEL
 	gold_label.text = "Ouro %d" % progress.gold
+	xp_bar.max_value = RPGRules.cost_to_level(lvl)
+	xp_bar.value = progress.xp-RPGRules.xp_floor(lvl)
 	character_button.notification = progress.attribute_points_available() > 0
 	expanded_map.update_player(player.global_position)
 	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
@@ -851,28 +939,20 @@ func close_map() -> void:
 	_sync_controls()
 
 func _compact_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#14271fee")
-	style.set_border_width_all(1)
-	style.border_color = Color("#526548")
-	return style
+	return DiaryTheme.box(Color("#f0dfb3ee"),DiaryTheme.WOOD,0,2)
 
 func _pixel_theme() -> Theme:
-	var result := Theme.new()
-	for state in ["normal", "hover", "pressed", "disabled", "focus"]:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("#203e32") if state != "pressed" else Color("#405b3b")
-		style.border_color = Color("#b6b382") if state != "disabled" else Color("#526548")
-		style.set_border_width_all(2)
-		style.set_content_margin_all(6)
-		if state == "focus":
-			style.bg_color = Color.TRANSPARENT
-			style.border_color = Color("#f2c26b")
-		result.set_stylebox(state, "Button", style)
-	result.set_color("font_color", "Label", Color("#ece4c4"))
-	result.set_color("font_outline_color", "Label", Color("#112219"))
-	result.set_constant("outline_size", "Label", 2)
-	return result
+	return DiaryTheme.create()
+
+func _open_diary(page: int) -> void:
+	if page == 0 and inventory_open: return
+	if inventory_open: inventory_toggled.emit()
+	if rpg_panel.visible: character_toggled.emit()
+	if page == 0:
+		inventory_toggled.emit()
+	else:
+		rpg_panel.tab = 2 if page == 1 else 1
+		character_toggled.emit()
 
 func _add_equipment(id: String, progress: GameProgress, destination: VBoxContainer, in_bag: bool) -> void:
 	var item: Dictionary = RPGRules.EQUIPMENT[id]
@@ -880,8 +960,8 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 	var upgrade := int(progress.equipment.get(id, 0))
 	var card := PanelContainer.new()
 	var card_style := StyleBoxFlat.new()
-	card_style.bg_color = Color("#244135")
-	card_style.border_color = Color("#607951")
+	card_style.bg_color = Color("#e6d1a3")
+	card_style.border_color = Color("#b99863")
 	card_style.set_border_width_all(1)
 	card_style.set_content_margin_all(5)
 	card.add_theme_stylebox_override("panel", card_style)
@@ -895,7 +975,7 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 	var label := Label.new()
 	label.text = "%s  +%d\n%s%s" % [item.name, upgrade, item.slot.to_upper(), "  ·  EQUIPADO" if progress.equipped[item.slot] == id else ""]
 	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", Color("#edcb84"))
+	label.add_theme_color_override("font_color", DiaryTheme.GREEN)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	header.add_child(label)
@@ -958,9 +1038,12 @@ func fade_transition(opaque: bool) -> void:
 
 func set_boss(boss: TowerGuardian) -> void:
 	var active := is_instance_valid(boss)
+	var changed := boss_name.visible != active
 	boss_name.visible = active
 	boss_bar.visible = active
 	mission_label.visible = not active
+	mission_toggle.visible = not active
+	if changed: _layout()
 	if active:
 		boss_name.text = "Guardião da Mata · Fase %d\nHP %d/%d" % [2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
 		boss_bar.max_value = boss.health.maximum

@@ -65,12 +65,17 @@ func set_recharge(left: float, total: float, glowing: bool = false) -> void:
 func _draw() -> void:
 	if style == null:
 		return
-	style.bg_color = Color("#244b3deb") if enabled else Color("#182a25eb")
-	style.border_color = Color("#f2c26b") if active else Color("#b2c99a") if enabled else Color("#53685b")
+	style.bg_color = Color("#624329ee") if enabled else Color("#76664dee")
+	style.border_color = Color("#f2c26b") if active else Color("#d6b578") if enabled else Color("#ad9873")
 	draw_style_box(style, Rect2(Vector2.ZERO, size))
-	draw_rect(Rect2(4, 4, size.x - 8, 2), Color("#57755b"))
+	draw_rect(Rect2(4, 4, size.x - 8, 2), Color("#a47b49"))
 	if not icon.is_empty():
-		PixelIcon.paint(self, icon, Rect2(Vector2(12, 8), size - Vector2(24, 16)), Color("#e4dca6") if enabled or active else Color("#778e7d"))
+		var color: Color = {"cut":Color("#cbd7d0"),"charge":Color("#82c78c"),"fury":Color("#f1c655"),"dash":Color("#f1d9a0"),"potion":Color("#e3a58e")}.get(icon,Color("#e4dca6"))
+		PixelIcon.paint(self, icon, Rect2(Vector2(12, 6), size - Vector2(24, 24)), color if enabled or active else color.darkened(0.22))
+		var text: String = {"cut":"Corte","charge":"Investida","fury":"Fúria","dash":"Dash","potion":"Poção"}.get(icon,"")
+		var font := ThemeDB.fallback_font
+		var width := font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,10).x
+		draw_string(font,Vector2((size.x-width)/2,size.y-6),text,HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("#fff0ce"))
 		if recharge > 0.0:
 			draw_rect(Rect2(4, 4, size.x - 8, (size.y - 8) * recharge), Color("#0a171ec7"))
 			draw_rect(Rect2(4, size.y - 6, (size.x - 8) * (1.0 - recharge), 2), Color("#e2b969"))
