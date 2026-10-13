@@ -258,6 +258,13 @@ func _mastery_page() -> void:
 		mastery_buttons[stat] = button
 		var descriptions := {"Dano":"+1% por ponto · somente ataques básicos.","Dano Especial":"+1,25% por ponto · somente dano de técnicas.","Crítico":"+1% por ponto · chance base 5%.","Dano Crítico":"+3% por ponto · multiplicador base 150%."}
 		_label(descriptions[stat],card)
+	var refund := Button.new()
+	refund.name = "ResetMastery"
+	refund.text = "Redistribuir Domínio\nGrátis na área segura"
+	refund.custom_minimum_size.y = 52
+	refund.disabled = not allow_respec or progress.talents.mastery_points(talent_weapon) >= progress.talents.level(talent_weapon)-1
+	refund.pressed.connect(func(): action_requested.emit("reset_mastery",talent_weapon,0))
+	content.add_child(refund)
 	var bonus := progress.talents.mastery_bonuses(talent_weapon)
 	_label("Básicos +%.1f%% · Técnicas +%.1f%%\nCrítico %.1f%% · Dano crítico %.0f%%" % [(bonus.automatic+bonus.basic)*100,(bonus.automatic+bonus.special)*100,bonus.critical_chance*100,bonus.critical_multiplier*100],_card())
 	_label("Dano real evolui a arma: 1 XP a cada 10 HP removidos. Frações são guardadas. Valores de teste.")
