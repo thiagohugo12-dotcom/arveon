@@ -52,6 +52,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/first_weapon_tests.gd 2>&1 | tee /tmp/first-weapon-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|FIRST_WEAPON_FAIL:' /tmp/first-weapon-tests.log; then exit 1; fi
           grep -E '^FIRST_WEAPON_RESULT: [0-9]+ checks, 0 failures$' /tmp/first-weapon-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/sword_demo_tests.gd 2>&1 | tee /tmp/sword-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SWORD_DEMO_FAIL:' /tmp/sword-tests.log; then exit 1; fi
+          grep -E '^SWORD_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -147,12 +150,16 @@ jobs:
           test -s build/web/index.pck
       - name: Prepare isolated art sample entry
         run: node tools/build-art-sample.mjs
+      - name: Prepare isolated sword review entry
+        run: node tools/build-sword-demo.mjs
       - name: Verify actual Web persistence in Chromium
         shell: bash
         run: |
           set -euo pipefail
           timeout 150s node tests/web_save_browser.mjs 2>&1 | tee /tmp/web-save-browser.log
           grep '^WEB_SAVE_RESULT: [0-9]* checks, 0 failures$' /tmp/web-save-browser.log
+      - name: Verify sword review in desktop and touch Chromium
+        run: node tests/web_sword_demo.mjs
       - name: Save Web build (no deployment)
         uses: actions/upload-artifact@v4
         with:
@@ -250,10 +257,17 @@ jobs:
             if (result.status !== "ok" || result.deployment.readyState !== "READY" || result.deployment.target === "production") process.exit(1);
             console.log(result.deployment.url);
           ')"
-          PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
-          node ../source/tools/verify-test-build.mjs
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
-          echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
-          echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f ../source/tools/sword-review.json ]]; then
+            # Fail closed: malformed/missing exported review data aborts; no alias call.
+            PREVIEW_URL="$preview_url" node ../source/tools/verify-sword-preview.mjs
+            echo "[Espada V1 — demonstração isolada]($preview_url/amostra-espada/index.html)" >> "$GITHUB_STEP_SUMMARY"
+            echo "TESTE fixo preservado; aguardando aprovação visual." >> "$GITHUB_STEP_SUMMARY"
+          else
+            PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+            node ../source/tools/verify-test-build.mjs
+            echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
+            echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+          fi
 

@@ -1,6 +1,10 @@
 {
   "headers": [
     {
+      "source": "/amostra-espada/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+    },
+    {
       "source": "/",
       "headers": [
         {
