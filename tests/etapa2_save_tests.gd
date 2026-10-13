@@ -30,7 +30,7 @@ static func run(suite: SceneTree) -> void:
 	suite.check(target.gold == 777 and target.attributes == legacy.attributes and target.talents.mastery == legacy.talents.mastery and target.talents.xp == legacy.talents.xp and target.equipment == legacy.equipment and target.bag == legacy.bag and target.chest == legacy.chest,"migration preserves wallet attributes proficiency Domain and all storage")
 	var migrated := target.to_json()
 	var parsed: Dictionary = JSON.parse_string(migrated)
-	suite.check(parsed.version == 10 and parsed.rpg.skills.is_empty() and parsed.abilities.loadouts.size() == 5,"v10 snapshot replaces legacy active fields and contains all categories")
+	suite.check(parsed.version == GameProgress.SAVE_VERSION and parsed.rpg.skills.is_empty() and parsed.abilities.loadouts.size() == 5,"current snapshot replaces legacy active fields and contains all categories")
 	var reloaded := GameProgress.new()
 	suite.check(reloaded.load_text(migrated) and reloaded.to_json() == migrated and reloaded.skill_points() == 59,"v10 reload is exact and idempotent")
 	suite.check(reloaded.load_text(source) and reloaded.to_json() == migrated and reloaded.skill_points() == 59,"repeated v9 migration never adds points or rewards")

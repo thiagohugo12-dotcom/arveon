@@ -85,6 +85,24 @@ try {
   check(await evaluate('!!document.createElement("canvas").getContext("webgl2")'),'Chromium has WebGL2 for actual exported game');
   await game(); await until(`!!localStorage.getItem(${JSON.stringify(KEY)})`);
   check((await snapshot()).xp===0,'new exported game initializes a permanent save');
+  const introduction = await snapshot();
+  check(introduction.version===11 && introduction.introduction.status==='active' && introduction.rpg.equipped.Arma==='' && Object.keys(introduction.rpg.equipment).length===0,'actual Web new character starts unarmed with introduction');
+  await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
+  check((await snapshot()).introduction.status==='active' && Object.keys((await snapshot()).rpg.equipment).length===0,'actual Web pending choice survives reload without granting weapon');
+  await stop(); await start(); await game();
+  check((await snapshot()).introduction.status==='active' && Object.keys((await snapshot()).rpg.equipment).length===0,'browser close and reopen retains pending introduction');
+  await seed();
+  const chosen = structuredClone(introduction);
+  chosen.introduction={status:'complete',met_smith:true,weapon:'arco'};
+  chosen.rpg.equipment={arco:0}; chosen.rpg.equipped.Arma='arco';
+  chosen.rpg.equipment_meta={arco:arsenalPayload.rpg.equipment_meta.arco};
+  const chosenRaw=JSON.stringify(chosen);
+  const chosenArchive=JSON.stringify({format:'grande-arvore-rpg-save',archive_version:1,payload:chosenRaw,sha256:createHash('sha256').update(chosenRaw).digest('hex')});
+  await evaluate(`GrandeArvoreSave.write(${JSON.stringify(chosenArchive)},true)`);
+  await game();
+  check((await snapshot()).introduction.status==='complete' && (await snapshot()).rpg.equipped.Arma==='arco' && Object.keys((await snapshot()).rpg.equipment).length===1,'actual Web completed choice loads one equipped weapon');
+  await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
+  check((await snapshot()).introduction.status==='complete' && (await snapshot()).xp===0 && (await snapshot()).gold===0 && Object.keys((await snapshot()).rpg.equipment).length===1,'completed reward never duplicates on reload and grants no XP or gold');
   await seed();
   // Simulate the previous version's real IDBFS directory, without a journal.
   await evaluate(`localStorage.clear();(async()=>{
@@ -155,9 +173,9 @@ try {
   await seed();
   await evaluate(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(progressionArchive)})`);
   await game();
-  await until(`JSON.parse(JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).payload).version === 10`);
+  await until(`JSON.parse(JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).payload).version === 11`);
   const progression = await snapshot();
-  check(progression.version===10 && Object.keys(progression.rpg.attributes).length===6 && !('Agilidade' in progression.rpg.attributes) && progression.rpg.attributes.Mobilidade===0 && progression.rpg.attributes.Destreza===0,'actual Web migrates old Agility into unspent six-attribute budget');
+  check(progression.version===11 && Object.keys(progression.rpg.attributes).length===6 && !('Agilidade' in progression.rpg.attributes) && progression.rpg.attributes.Mobilidade===0 && progression.rpg.attributes.Destreza===0,'actual Web migrates old Agility into unspent six-attribute budget');
   check(progression.xp===progressionPayload.xp && progression.gold===777 && progression.rpg.attributes['Força']===3 && Object.keys(progression.rpg.skills).length===0 && progression.abilities.loadouts.espada.skills.length===2 && progression.rpg.equipment.cajado===2,'actual Web preserves level wallet attributes gear and replaces legacy abilities safely');
   check(progression.talents.xp.espada===1240 && progression.talents.xp.cajado===3480 && progression.talents.learned.espada.length===0 && progression.talents.mastery.espada.Dano===0,'actual Web migrates proficiency and refunds replaced tree without spending Domain');
   check(progression.ascension.campaign_completed && JSON.stringify(progression.floor_states)===JSON.stringify(progressionPayload.floor_states),'actual Web migration preserves all five conquered floors and exploration');
@@ -178,7 +196,7 @@ try {
   await evaluate(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(abilityArchive)})`);
   await game();
   const abilities=await snapshot();
-  check(abilities.version===10 && abilities.abilities.charge.espada===42 && abilities.abilities.charge.cajado===89,'actual Web restores independent Ultimate bars and optional slots');
+  check(abilities.version===11 && abilities.abilities.charge.espada===42 && abilities.abilities.charge.cajado===89,'actual Web restores independent Ultimate bars and optional slots');
   check(abilities.abilities.skill1_cooldowns.espada===4 && abilities.abilities.cooldowns.espada.corte_crescente===5.5,'inactive category cooldowns do not advance during active gameplay');
   await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
   const abilitiesReload=await snapshot();

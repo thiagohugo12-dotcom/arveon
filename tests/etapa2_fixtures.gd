@@ -1,4 +1,11 @@
 extends RefCounted
+static func seed_existing() -> void:
+	var existing := GameProgress.new()
+	existing.save_path = OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	# Reset fixed QA paths as well; captures exercise established characters.
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(existing.save_path))
+	existing.save()
+
 static func unlock(progress: GameProgress, category: String = "espada", level: int = 8) -> void:
 	progress.talents.xp[category] = TalentRules.xp_floor(level)
 	progress.abilities.select_skill(category,0,AbilityRules.CATEGORIES[category].normal[0].id,level,true)

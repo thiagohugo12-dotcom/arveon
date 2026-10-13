@@ -3,6 +3,7 @@ extends RefCounted
 static func run_world(suite: SceneTree) -> void:
 	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH","user://qa_etapa2_combat.json")
+	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	suite.root.add_child(main)
 	main.set_process(false)

@@ -60,6 +60,10 @@ func _run() -> void:
 	check(dash.request(Vector2.ZERO, Vector2.UP, stats) and dash.direction == Vector2.UP, "stationary dash uses last direction")
 	dash.queue_free()
 	var scene := load("res://scenes/main.tscn") as PackedScene
+	# Existing regression scenarios represent an already armed legacy character.
+	var existing_character := GameProgress.new()
+	existing_character.save_path = test_path
+	check(existing_character.save(), "seed existing character for legacy gameplay regression")
 	var main := scene.instantiate()
 	root.add_child(main)
 	preload("res://tests/campaign_scaling_tests.gd").run(self, main)

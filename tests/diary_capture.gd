@@ -15,6 +15,7 @@ func _run() -> void:
 	output = OS.get_environment("QA_RENDER_DIR")
 	DirAccess.make_dir_recursive_absolute(output)
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH","user://diary_capture_%d.json" % Time.get_ticks_usec())
+	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
 	main.set_process(false)

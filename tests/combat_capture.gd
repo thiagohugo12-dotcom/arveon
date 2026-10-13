@@ -38,6 +38,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	var save_path := "user://qa_combat_%d.json" % Time.get_ticks_usec()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", save_path)
+	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
 	main.set_process(false)
