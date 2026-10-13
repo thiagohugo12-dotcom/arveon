@@ -6,7 +6,11 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 9
+const SAVE_VERSION := 10
+# Switched on by the combat integration after both formats pass regression QA.
+var etapa2_enabled := false
+var abilities := AbilityState.new()
+var migration_refund := 0
 const ATTRIBUTES := RPGRules.ATTRIBUTES
 const MAX_LEVEL := RPGRules.MAX_LEVEL
 const POINTS_PER_LEVEL := 2
@@ -79,6 +83,7 @@ func attribute_points() -> int:
 	return maxi(0, (level() - 1) * 2 - spent)
 
 func skill_points() -> int:
+	if etapa2_enabled: return maxi(0,level()-1-abilities.spent())
 	var spent := 0
 	for value in skills.values():
 		spent += int(value) - 1
@@ -253,12 +258,14 @@ func death_loss() -> String:
 
 func to_json() -> String:
 	_store_floor()
-	return JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
+	var payload := {"version": SAVE_VERSION if etapa2_enabled else 9, "bag": bag, "chest": chest,
 		"gold": gold, "xp": xp, "talents": talents.to_save(), "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
 		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "floor_states": floor_states, "rpg": {"level": level(), "attributes": attributes,
-		"skills": skills, "equipment": equipment, "equipped": equipped, "equipment_meta": equipment_metadata()}})
+		"skills": {} if etapa2_enabled else skills, "equipment": equipment, "equipped": equipped, "equipment_meta": equipment_metadata()}}
+	if etapa2_enabled: payload["abilities"] = abilities.to_save()
+	return JSON.stringify(payload)
 
 func _web_save() -> bool:
 	return OS.has_feature("web") and save_path == "user://andar1_progress.json"
@@ -540,8 +547,17 @@ func load_text(text: String) -> bool:
 		for rank: int in new_rpg.skills.values(): remaining -= rank-1
 		new_talents = TalentProgress.from_save(parsed.get("talents"),remaining,loaded_version < 9)
 		if new_talents == null: return false
+	var new_abilities := AbilityState.new()
+	if loaded_version >= 10:
+		for category: String in new_talents.learned:
+			if not new_talents.learned[category].is_empty(): return false
+		var levels := {}
+		for category: String in AbilityRules.CATEGORIES: levels[category] = new_talents.level(category)
+		new_abilities = AbilityState.from_save(parsed.get("abilities"),levels,RPGRules.level_for_xp(int(parsed.xp))-1)
+		if new_abilities == null: return false
 	# Commit all validated fields together; malformed trees cannot partially load.
 	talents = new_talents
+	abilities = new_abilities
 	floor_states = new_floors
 	adventures = new_adventures
 	ascension = new_ascension
@@ -560,6 +576,8 @@ func load_text(text: String) -> bool:
 	skills = new_rpg.skills
 	equipment = new_rpg.equipment
 	equipped = new_rpg.equipped
+	if loaded_version >= 10: etapa2_enabled = true
+	elif etapa2_enabled: migrate_etapa2()
 	return true
 
 func equipment_metadata() -> Dictionary:
@@ -575,7 +593,7 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 		if not value.get(field) is Dictionary:
 			return null
 	var attribute_names: Array = RPGRules.LEGACY_ATTRIBUTES if version < 8 else RPGRules.ATTRIBUTES
-	if value.attributes.size() != attribute_names.size() or value.skills.size() != 3 or value.equipped.size() != 3:
+	if value.attributes.size() != attribute_names.size() or value.skills.size() != (0 if version >= 10 else 3) or value.equipped.size() != 3:
 		return null
 	var attribute_spent := 0
 	var skill_spent := 0
@@ -586,7 +604,7 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 			return null
 		attribute_spent += int(amount)
 		if name != "Agilidade": result.attributes[name] = int(amount)
-	for name: String in RPGRules.SKILLS:
+	for name: String in (RPGRules.SKILLS if version < 10 else []):
 		var amount: Variant = value.skills.get(name)
 		if not _bounded_integer(amount, 1, 3):
 			return null
@@ -701,3 +719,14 @@ func adventure_summary() -> String:
 		if adventures[key] < ADVENTURES[key]:
 			return "%s %d/%d" % [names[key], adventures[key], ADVENTURES[key]]
 	return "Desafios do Andar 1 concluídos"
+
+func migrate_etapa2() -> int:
+	# Called only on a completely validated legacy snapshot. No currency grants,
+	# fivefold refunds or additive point wallets: available = earned - investments.
+	var refund := talents.spent()
+	for rank: int in skills.values(): refund += rank-1
+	for category: String in talents.learned: talents.learned[category].clear()
+	skills = {}
+	etapa2_enabled = true
+	migration_refund = refund
+	return refund

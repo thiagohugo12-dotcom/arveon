@@ -124,5 +124,5 @@ static func run(suite, main) -> void:
 	restored.save_path = path
 	suite.check(restored.load_save() and restored.save(), "v0.3.0 save loads and saves without migration loss")
 	var after := JSON.parse_string(FileAccess.get_file_as_string(path)) as Dictionary
-	suite.check(before == after and int(after.version) == GameProgress.SAVE_VERSION, "UI roundtrip preserves every current save field")
+	suite.check(before == after and int(after.version) == (GameProgress.SAVE_VERSION if p.etapa2_enabled else 9), "UI roundtrip preserves every current save field")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

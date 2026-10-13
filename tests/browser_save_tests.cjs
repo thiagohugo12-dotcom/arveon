@@ -66,3 +66,13 @@ test('visibility and pagehide listeners detach on scene reload', () => {
   listeners.get('pagehide')(); assert.equal(saves,2);
   detach(); assert.equal(listeners.size,0);
 });
+
+test('migration preserves immutable original independently of rotating mirror', () => {
+  const s = storage(), bridge = create(s);
+  const old = JSON.stringify({format:'grande-arvore-rpg-save',payload:JSON.stringify({version:9,gold:77})});
+  bridge.read(); bridge.write(old);
+  bridge.write(JSON.stringify({payload:JSON.stringify({version:10,gold:77})}));
+  bridge.write(JSON.stringify({payload:JSON.stringify({version:10,gold:99})}));
+  assert.equal(s.getItem(KEY+'.v9.original'),old);
+  assert.notEqual(s.getItem(PREVIOUS),old);
+});
