@@ -130,8 +130,8 @@ func _run() -> void:
 		skill.position = main.hud.actions[0].get_global_rect().get_center()
 		main.hud.actions[0]._input(skill)
 		main.hud.actions[0]._input(skill)
-		_check(main.enemy.health.current == 19 and main.player.skill_cooldowns[0] > 0.0, "touch skill responds once alongside separate basic hit %s" % resolution)
-		_check(main.enemy.view.damage_amount == 17 and main.enemy.view.previous_damage_amount == 12, "two rapid intentional hits retain distinct labels %s" % resolution)
+		_check(main.enemy.health.current == 20 and main.player.skill_cooldowns[0] > 0.0, "touch skill responds once alongside separate basic hit %s" % resolution)
+		_check(main.enemy.view.damage_amount == 16 and main.enemy.view.previous_damage_amount == 12, "two rapid intentional hits retain distinct labels %s" % resolution)
 		skill.pressed = false
 		main.hud.actions[0]._input(skill)
 		main.enemy.view._process(0.055)

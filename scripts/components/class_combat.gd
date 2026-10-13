@@ -92,7 +92,7 @@ func hit_modifiers(target: EnemyActor, source: String) -> Dictionary:
 		if has_talent("sequencia_precisa") and basic and (combo+1)%3 == 0: scale += 0.15
 		if specialization() == "duelista" and target.get_instance_id() == last_target and same_target_hits >= 3: scale += 0.12
 		if not basic and perfect_ready: chance = 1.0
-		if counter_left > 0 and has_talent("contra_ataque_fatal"): chance = 1.0
+		if not basic and counter_left > 0 and has_talent("contra_ataque_fatal"): chance = 1.0
 	elif category == "machado":
 		if has_passive("executor") and ratio <= 0.30: scale += 0.20
 		if has_talent("impacto_crescente") and basic and target.get_instance_id() == last_target: scale += minf(0.15,same_target_hits*0.03)
@@ -146,6 +146,7 @@ func use(index: int) -> bool:
 	var prof := progress.talents.level(category)
 	var rule := AbilityRules.skill1(progress.equipped.Arma) if index == 0 else AbilityRules.active_skill(category,state.loadouts[category].skills[index-1])
 	if rule.is_empty(): return false
+	if AbilityRules.effect(rule.id).shape == "projectile" and player.get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE: return false
 	var ultimate: bool = rule.id == AbilityRules.CATEGORIES[category].ultimate.id
 	if index == 0:
 		if not state.start_skill1(category,float(rule.cooldown)): return false
@@ -180,6 +181,7 @@ func use(index: int) -> bool:
 		if mastery() and category == "cajado" and technique_hits%3 == 0:
 			guard_left = maxf(guard_left,3.0)
 			barrier = maxi(barrier,10+player.spirit)
+			counter_left = 3.0
 	if index > 0 and not ultimate: perfect_ready = false
 	player.view.play_skill(2 if ultimate else mini(index,1))
 	player.skill_used.emit(index)
@@ -203,7 +205,7 @@ func _execute(id: String, effect: Dictionary, power: float, ultimate: bool) -> i
 			nearest_squared = distance
 		if nearest == null: return 0
 		var modifiers := hit_modifiers(nearest,id)
-		var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,CombatRules.roll())
+		var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,CombatRules.roll(),float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
 		if player.get_tree().get_nodes_in_group("player_projectiles").size() < PlayerProjectile.MAX_ACTIVE:
 			player.attack.projectile_requested.emit(player,nearest,{"damage":hit.damage,"kind":"orbe" if category == "cajado" else "flecha","speed":player.attack.weapon.projectile_speed,"reach":reach,"category":category,"event":event,"damage_type":player.attack.damage_type,"critical":hit.critical,"ultimate":ultimate,"source":id})
 		return 1
@@ -215,7 +217,7 @@ func _execute(id: String, effect: Dictionary, power: float, ultimate: bool) -> i
 		var modifiers := hit_modifiers(candidate,id)
 		for strike in range(int(effect.get("hits",1))):
 			if not candidate.is_targetable(): break
-			var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,CombatRules.roll())
+			var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,CombatRules.roll(),float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
 			candidate.receive_damage(hit.damage,category,event if strike == 0 else CombatRules.next_event(),player.attack.damage_type,hit.critical,ultimate,id)
 		if candidate.health.is_alive():
 			if effect.get("control",0.0) > 0.0: candidate.apply_control(float(effect.control))

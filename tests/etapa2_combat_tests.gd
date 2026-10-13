@@ -81,6 +81,42 @@ static func run_world(suite: SceneTree) -> void:
 		p.abilities.refund(category,true)
 		player.apply_progression(p)
 		suite.check(player.health.current == hp,"combat respec cannot heal "+category)
+	# Test the actual level-30 mechanic under a non-critical random roll.
+	p.equipped.Arma = "espada"
+	p.configure_ability("equip_skill","espada","corte_crescente",0,true)
+	p.configure_ability("equip_skill","espada","",1,true)
+	p.abilities.death_reset()
+	player.apply_progression(p)
+	player.class_combat.clear_effects()
+	for i in range(3):
+		player.attack.cooldown_left = 0
+		player.attack.search_left = 0
+		player.attack.tick(0,player)
+	suite.check(player.class_combat.perfect_ready,"three real basics prepare sword Maestria without an equipped Ultimate")
+	var hp_before := enemy.health.current
+	var normal := CombatRules.resolve(player.attack.damage_base,player.special_bonus,1.45,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
+	suite.check(player.use_skill(1) and enemy.view.damage_critical and hp_before-enemy.health.current > int(normal.damage) and not player.class_combat.perfect_ready,"level-30 critical override executes once despite ordinary critical cap")
+	suite.check(not CombatRules.resolve(12,1,1,1.0,1.5,0.30).critical and CombatRules.resolve(12,1,1,0.05,1.5,0.30,0.40).critical,"ordinary critical cap preserved while class-specific precision can apply")
+	var boss := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
+	main.add_child(boss)
+	boss.position = enemy.position
+	boss.kind = 4
+	boss.apply_mark("espada",0.15,2.0)
+	boss.apply_control(1.0)
+	boss.tick_ability_status(2.0)
+	suite.check(boss.mark_left == 0 and boss.control_left == 0,"Guardian marks expire and control cannot interrupt boss telegraphs")
+	boss.queue_free()
+	var occupied: Array[Node2D] = []
+	for i in range(PlayerProjectile.MAX_ACTIVE):
+		var node := Node2D.new()
+		main.add_child(node)
+		node.add_to_group("player_projectiles")
+		occupied.append(node)
+	p.equipped.Arma = "arco"
+	player.apply_progression(p)
+	p.abilities.death_reset()
+	suite.check(not player.use_skill(0) and p.abilities.skill1_cooldowns.arco == 0,"full projectile pool cannot consume a cast or its cooldown")
+	for node: Node2D in occupied: node.queue_free()
 	main.input_driver.blocked = true
 	var snapshot := p.abilities.to_save()
 	suite.check(not player.use_skill(0) and p.abilities.to_save() == snapshot,"blocked controls cannot consume cooldowns")

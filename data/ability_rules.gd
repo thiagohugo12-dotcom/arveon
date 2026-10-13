@@ -6,6 +6,7 @@ const CHARGE_HP_PER_POINT := 10
 const MAX_ULTIMATE_CHARGE := 100
 const GLOBAL_ULTIMATE_INTERVAL := 10.0
 const MAX_NORMAL_GRADE := 4
+const WEAPON_SKILLS := {"espada":"talho_agil","machado":"racha_chao","lanca":"impulso_perfurante","arco":"flecha_certeira","cajado":"orbe_arcano"}
 const CATEGORIES := {
 	"espada": {
 		"skill1": {"id":"talho_agil","name":"Talho Ágil","cooldown":6.0,"power":1.35,"type":"physical"},
@@ -91,7 +92,7 @@ static func available(category: String, id: String, proficiency: int) -> bool:
 
 static func skill1(weapon_id: String) -> Dictionary:
 	var category := ArsenalRules.weapon_category(weapon_id)
-	return CATEGORIES[category].skill1 if CATEGORIES.has(category) else {}
+	return CATEGORIES[category].skill1 if CATEGORIES.has(category) and WEAPON_SKILLS.get(weapon_id,"") == CATEGORIES[category].skill1.id else {}
 
 # Geometry and mechanics are provisional. No global old skill is used here.
 const EFFECTS := {

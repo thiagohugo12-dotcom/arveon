@@ -63,9 +63,12 @@ func update_activity(player_position: Vector2) -> void:
 		awake = true
 		set_physics_process(true)
 
-func _physics_process(delta: float) -> void:
+func tick_ability_status(delta: float) -> void:
 	control_left = maxf(0,control_left-delta)
 	mark_left = maxf(0,mark_left-delta)
+
+func _physics_process(delta: float) -> void:
+	tick_ability_status(delta)
 	if control_left > 0:
 		velocity = Vector2.ZERO
 		view.set_moving(false)

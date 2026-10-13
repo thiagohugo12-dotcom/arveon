@@ -952,6 +952,7 @@ func close_character() -> void:
 	_sync_controls()
 
 func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
+	rpg_panel.allow_respec = SafeCamp.in_clearance(player.global_position) and not minimap.arena_bounds.has_area()
 	var lvl := progress.level()
 	progress_label.text = "Nv %d · XP %d/%d" % [lvl, progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl)] if lvl < RPGRules.MAX_LEVEL else "Nv %d · Nível máximo" % RPGRules.MAX_LEVEL
 	gold_label.text = "Ouro %d" % progress.gold

@@ -110,6 +110,10 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/progression-render.log; then exit 1; fi
           grep '^PROGRESSION_QA_RESULT: 0 failures$' /tmp/progression-render.log
           test "$(find build/progression-qa -name '*.png' | wc -l)" -eq 20
+          QA_RENDER_DIR="$PWD/build/etapa2-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/etapa2_capture.gd 2>&1 | tee /tmp/etapa2-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/etapa2-render.log; then exit 1; fi
+          grep '^ETAPA2_RENDER_RESULT: 0 failures$' /tmp/etapa2-render.log
+          test "$(find build/etapa2-qa -name '*.png' | wc -l)" -eq 40
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -119,6 +123,7 @@ jobs:
             build/mobile-qa/
             build/diary-qa/
             build/progression-qa/
+            build/etapa2-qa/
           if-no-files-found: error
           retention-days: 14
       - name: Export Web

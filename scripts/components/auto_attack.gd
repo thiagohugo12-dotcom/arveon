@@ -35,7 +35,7 @@ func tick(delta: float, origin: Node2D) -> void:
 	attacked.emit(target)
 	var modifiers := {"scale":1.0,"chance":critical_chance}
 	if origin is PlayerActor and origin.progress != null and target is EnemyActor: modifiers = origin.class_combat.hit_modifiers(target,"basic")
-	var hit := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale*float(modifiers.scale),float(modifiers.chance),critical_multiplier,CombatRules.roll())
+	var hit := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale*float(modifiers.scale),float(modifiers.chance),critical_multiplier,CombatRules.roll(),float(modifiers.chance) if float(modifiers.chance) > critical_chance else -1.0)
 	var hit_damage: int = hit.damage
 	var event := CombatRules.next_event()
 	if weapon.projectile_kind.is_empty():
