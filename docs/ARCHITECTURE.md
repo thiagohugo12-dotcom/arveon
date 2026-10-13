@@ -1,4 +1,19 @@
 # Arquitetura
+## Introdução — save v11
+Main chama begin_new_character somente quando não existe save recuperável e
+a persistência não está bloqueada. GameProgress mantém dados legados como
+defaults de migração/fixtures; o runtime novo zera apenas o equipamento inicial.
+CommonMission.enabled pausa a missão comum; Main pausa os desafios e a Torre.
+AutoAttack.armed impede busca, dano, projéteis e animação sem categoria equipada.
+ClassCombat e HUD já aceitam categoria vazia e mantêm skills desativadas.
+
+GameProgress.claim_first_weapon valida visita e serviço, concede +0 e equipa,
+grava o snapshot completo e reverte a recompensa se a persistência falhar.
+Save v11 valida introdução antes de substituir qualquer campo. Formatos v1–10
+recebem legacy, incluindo personagens que tenham desequipado sua arma.
+Seleção/confirmador vivem no painel rolável do Ferreiro; nunca no save.
+ArsenalRules.effective compara itens não possuídos com upgrade zero, sem mutação.
+
 ## Progressão — Etapa 1 (save v9)
 RPGRules centraliza seis atributos e redução recebida física/mágica. GameProgress
 mantém dois pontos de atributos e um ponto compartilhado de talento por nível;

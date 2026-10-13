@@ -6,7 +6,7 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 10
+const SAVE_VERSION := 11
 # Legacy-format mode remains only for migration fixtures. Runtime uses v10.
 var etapa2_enabled := true
 var abilities := AbilityState.new()
@@ -73,6 +73,37 @@ var skills: Dictionary = {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral
 # Recipe IDs are unique inventory identities; equipping never removes ownership.
 var equipment: Dictionary = {"espada": 0}
 var equipped: Dictionary = {"Arma": "espada", "Armadura": "", "Acessório": ""}
+# Existing snapshots are exempt; only the no-save runtime starts the introduction.
+var introduction: Dictionary = {"status":"legacy","met_smith":false,"weapon":""}
+
+func begin_new_character() -> void:
+	equipment = {}
+	equipped = {"Arma":"","Armadura":"","Acessório":""}
+	introduction = {"status":"active","met_smith":false,"weapon":""}
+
+func introduction_active() -> bool:
+	return introduction.status == "active"
+
+func introduction_summary() -> String:
+	return "O Primeiro Passo\n" + ("✓ Encontre o Ferreiro\nEscolha sua primeira arma" if introduction.met_smith else "Encontre o Ferreiro\nEscolha sua primeira arma")
+
+func meet_smith() -> bool:
+	if not introduction_active() or introduction.met_smith: return false
+	introduction.met_smith = true
+	return true
+
+func claim_first_weapon(id: String, at_smith: bool) -> bool:
+	# Reward and completion share a single durable snapshot. No UI state grants items.
+	if not at_smith or save_blocked or not introduction_active() or not introduction.met_smith or not ArsenalRules.CATEGORIES.has(id) or not equipment.is_empty(): return false
+	var previous := introduction.duplicate()
+	equipment[id] = 0
+	equipped.Arma = id
+	introduction = {"status":"complete","met_smith":true,"weapon":id}
+	if save(true): return true
+	equipment.erase(id)
+	equipped.Arma = ""
+	introduction = previous
+	return false
 
 func level() -> int:
 	return RPGRules.level_for_xp(xp)
@@ -128,6 +159,7 @@ func improve_skill(name: String, at_camp: bool = false) -> bool:
 	return true
 
 func can_forge(id: String) -> bool:
+	if introduction_active(): return false
 	if not RPGRules.EQUIPMENT.has(id) or (equipment.has(id) and int(equipment[id]) >= 3):
 		return false
 	var cost := RPGRules.recipe(id, equipment.has(id), int(equipment.get(id, 0)))
@@ -274,6 +306,7 @@ func to_json() -> String:
 		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "floor_states": floor_states, "rpg": {"level": level(), "attributes": attributes,
 		"skills": {} if etapa2_enabled else skills, "equipment": equipment, "equipped": equipped, "equipment_meta": equipment_metadata()}}
 	if etapa2_enabled: payload["abilities"] = abilities.to_save()
+	if etapa2_enabled: payload["introduction"] = introduction
 	return JSON.stringify(payload)
 
 func _web_save() -> bool:
@@ -304,7 +337,7 @@ func _valid_text(text: String) -> bool:
 	var candidate = get_script().new()
 	return candidate.load_text(text)
 
-func save() -> bool:
+func save(require_journal: bool = false) -> bool:
 	if save_blocked:
 		return false
 	var text := to_json()
@@ -332,7 +365,7 @@ func save() -> bool:
 		if result != "ok":
 			save_blocked = result == "conflict"
 			save_status = "Outra aba alterou o save. Reabra o jogo nesta aba." if save_blocked else "Backup do navegador indisponível; exporte um arquivo."
-			if save_blocked:
+			if save_blocked or require_journal:
 				return false
 	if not _replace_file(save_path, text):
 		save_status = "Falha ao gravar; cópia anterior preservada."
@@ -564,7 +597,19 @@ func load_text(text: String) -> bool:
 		for category: String in AbilityRules.CATEGORIES: levels[category] = new_talents.level(category)
 		new_abilities = AbilityState.from_save(parsed.get("abilities"),levels,RPGRules.level_for_xp(int(parsed.xp))-1)
 		if new_abilities == null: return false
+	var new_introduction := {"status":"legacy","met_smith":false,"weapon":""}
+	if loaded_version >= 11:
+		var intro: Variant = parsed.get("introduction")
+		if not intro is Dictionary or intro.size() != 3 or not intro.get("met_smith") is bool or not intro.get("status") is String or not intro.get("weapon") is String: return false
+		if intro.status not in ["active","complete","legacy"]: return false
+		if intro.status == "active":
+			if intro.weapon != "" or not new_rpg.equipment.is_empty() or new_rpg.equipped.Arma != "" or parsed.xp != 0 or parsed.kills != 0 or parsed.mission_index != 0 or parsed.mission_progress != 0 or parsed.mission_completed != 0: return false
+		elif intro.status == "complete":
+			if not intro.met_smith or not ArsenalRules.CATEGORIES.has(intro.weapon) or not new_rpg.equipment.has(intro.weapon): return false
+		elif intro.weapon != "" or intro.met_smith: return false
+		new_introduction = intro.duplicate()
 	# Commit all validated fields together; malformed trees cannot partially load.
+	introduction = new_introduction
 	talents = new_talents
 	abilities = new_abilities
 	floor_states = new_floors

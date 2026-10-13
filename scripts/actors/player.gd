@@ -80,6 +80,9 @@ func receive_damage(amount: int, damage_type: String = "physical") -> void:
 
 func apply_progression(value: GameProgress, initial: bool = false) -> void:
 	progress = value
+	attack.armed = not progress.active_category().is_empty()
+	if not attack.armed:
+		view.attack_left = 0.0
 	class_combat.bind(self,progress)
 	_sync_skill_cooldowns()
 	var values := progress.combat_stats()

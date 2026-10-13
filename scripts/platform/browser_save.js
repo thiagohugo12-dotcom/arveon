@@ -25,7 +25,7 @@
             let outer;
             try { outer = JSON.parse(current); } catch (_) { outer = {}; }
             const payload = typeof outer.payload === 'string' ? JSON.parse(outer.payload) : outer;
-            if (Number.isInteger(payload.version) && payload.version > 0 && payload.version < 10) {
+            if (Number.isInteger(payload.version) && payload.version > 0 && payload.version < 11) {
               const original = KEY + '.v' + payload.version + '.original';
               if (storage.getItem(original) === null) storage.setItem(original, current);
               if (storage.getItem(original) === null) return 'storage';

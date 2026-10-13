@@ -1,4 +1,11 @@
 # Game Design — fundação v0.1
+## Primeira arma — aprovada em 13/10/2026
+Conforme PRIMEIRA_ARMA.md e pedido completo de Thiago: novos personagens
+começam desarmados e seguem O Primeiro Passo até o Ferreiro. Uma das cinco
+armas iniciais é escolhida gratuitamente, equipada e salva uma única vez.
+Sem XP/ouro adicionais. Outras armas continuam fabricáveis; personagens
+existentes ficam isentos. Save v11 preserva v1–10 e seus dados.
+
 ## Progressão — Etapa 1, aprovada em 12/10/2026
 Conforme PROGRESSAO_ETAPA1.md e pedido completo de Thiago: seis atributos,
 classes por categoria equipada, proficiência 1–30 por dano efetivo, domínio
