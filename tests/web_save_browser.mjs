@@ -52,11 +52,22 @@ async function until(expression, timeout=30000) {
   throw Error('Timeout: '+expression+'; '+errors.slice(-4).join('\n'));
 }
 async function start() {
-  process=spawn(processEnvChrome(),['--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=9333',`--user-data-dir=${profile}`,'about:blank'],{stdio:'ignore'});
+	// Avoid collisions with runner services; Chromium records its chosen port.
+  process=spawn(processEnvChrome(),['--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{stdio:['ignore','ignore','pipe']});
+  let startupDiagnostics='';
+  process.stderr.on('data', chunk=>{startupDiagnostics=(startupDiagnostics+chunk).slice(-6000);});
   process.on('error', e=>errors.push(String(e)));
   let target;
-  for(let i=0;i<100;i++){try{target=(await (await fetch('http://127.0.0.1:9333/json/list')).json()).find(x=>x.type==='page');if(target)break;}catch(_){} await delay(100);}
-  if(!target)throw Error('Chromium unavailable: '+errors.join('\n'));
+  for(let i=0;i<300;i++){
+    if(process.exitCode!==null) break;
+    try{
+      const port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);
+      target=(await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(x=>x.type==='page');
+      if(target)break;
+    }catch(_){}
+    await delay(100);
+  }
+  if(!target)throw Error('Chromium unavailable (exit '+process.exitCode+'): '+errors.join('\n')+'\n'+startupDiagnostics);
   socket=new WebSocket(target.webSocketDebuggerUrl);
   await new Promise(r=>socket.addEventListener('open',r,{once:true}));
   socket.addEventListener('message',e=>{
