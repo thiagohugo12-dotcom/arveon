@@ -538,6 +538,8 @@ func _rpg_action(action: String, id: String, expected: int) -> void:
 		elif action == "mastery":
 			var parts := id.split(":")
 			if parts.size() == 2: success = progress.talents.allocate_mastery(parts[0],parts[1],expected)
+		elif action == "reset_mastery" and not trial.active() and SafeCamp.in_clearance(player.global_position):
+			success = progress.talents.reset_mastery(id)
 		elif action == "reset_tree" and not trial.active() and SafeCamp.in_clearance(player.global_position):
 			success = progress.talents.reset_tree(id)
 	elif hud.station_panel.visible and hud.station_name == "Ferreiro" and action == "forge":
