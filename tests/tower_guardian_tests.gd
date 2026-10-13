@@ -156,8 +156,10 @@ static func run_world(suite) -> void:
 	player.attack.search_left = 0
 	player.attack.tick(0.1, player)
 	suite.check(boss.health.current < health_before and boss.view.damage_left > 0, "automatic attack and v0.4 feedback damage the Guardian")
+	preload("res://tests/etapa2_fixtures.gd").unlock(main.progress)
+	player.apply_progression(main.progress)
 	for index in range(3):
-		player.skill_cooldowns[index] = 0
+		preload("res://tests/etapa2_fixtures.gd").reset(player)
 		player.charge_left = 0
 		suite.check(player.use_skill(index), "existing skill works against Guardian " + str(index))
 	player.charge_left = 0

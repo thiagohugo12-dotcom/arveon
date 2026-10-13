@@ -14,6 +14,8 @@ static func run(suite, main) -> void:
 	var hud: GameHUD = main.hud
 	var player: PlayerActor = main.player
 	player.set_physics_process(false)
+	preload("res://tests/etapa2_fixtures.gd").unlock(main.progress)
+	player.apply_progression(main.progress)
 	player.health.initialize(player.stats.max_hp)
 	player.position = SafeCamp.RESPAWN
 	hud.restart.hide()
@@ -74,7 +76,7 @@ static func run(suite, main) -> void:
 		suite.check(main.input_driver.touch_direction.x > 0.0, "joystick movement reaches driver %s" % resolution)
 		for i in range(3):
 			player.charge_left = 0.0
-			player.skill_cooldowns[i] = 0.0
+			preload("res://tests/etapa2_fixtures.gd").reset(player)
 			hud.set_rpg_status(main.progress, player)
 			var skill := InputEventScreenTouch.new()
 			skill.index = 51
@@ -100,7 +102,7 @@ static func run(suite, main) -> void:
 	hud.set_rpg_status(p,player)
 	suite.check(not hud.character_button.notification,"spending all character point budgets clears notification")
 	for i in range(3):
-		player.skill_cooldowns[i] = 0.0
+		preload("res://tests/etapa2_fixtures.gd").reset(player)
 	hud.set_rpg_status(p, player)
 	suite.check(hud.actions[0].caption.text.is_empty() and hud.actions[1].caption.text.is_empty() and hud.actions[2].caption.text.is_empty(), "ready touch skills show icons without keyboard numbers")
 	main._toggle_map()

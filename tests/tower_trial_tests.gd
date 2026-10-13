@@ -142,10 +142,12 @@ static func run_world(suite) -> void:
 		_tap_action(hud.dash_button)
 		player._physics_process(0.02)
 		suite.check(player.dash.cooldown_left > 0 and not main.input_driver.dash_requested, "arena touch dash responds once " + str(resolution))
+		preload("res://tests/etapa2_fixtures.gd").unlock(p)
+		player.apply_progression(p)
 		player.charge_left = 0
 		player.dash.time_left = 0
 		for i in range(3):
-			player.skill_cooldowns[i] = 0
+			preload("res://tests/etapa2_fixtures.gd").reset(player)
 			hud.set_rpg_status(p, player)
 			_tap_action(hud.actions[i])
 			suite.check(player.skill_cooldowns[i] > 0, "arena touch skill %d responds in combat %s" % [i, resolution])

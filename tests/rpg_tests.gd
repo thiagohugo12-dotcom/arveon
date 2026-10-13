@@ -119,6 +119,8 @@ static func _gameplay(suite, main) -> void:
 	main.earned_gold = 0
 	main.known_level = 1
 	player.health.initialize(100)
+	preload("res://tests/etapa2_fixtures.gd").unlock(p)
+	player.last_direction = Vector2.RIGHT
 	player.apply_progression(p, true)
 	player.position = Vector2(930, 750)
 	player.set_physics_process(false)
@@ -135,8 +137,8 @@ static func _gameplay(suite, main) -> void:
 	await suite.frames()
 	suite.check(player.use_skill(0) and target.health.current == 31 and player.view.skill_left > 0.0, "Corte Circular deals physical area damage with lightweight effect")
 	var enemy_hp := target.health.current
-	suite.check(not player.use_skill(0) and target.health.current == enemy_hp and player.skill_cooldowns[0] == 5.0, "unavailable skill cannot damage or reset cooldown")
-	player.skill_cooldowns[0] = 0.0
+	suite.check(not player.use_skill(0) and target.health.current == enemy_hp and player.skill_cooldowns[0] == 6.0, "unavailable skill cannot damage or reset cooldown")
+	preload("res://tests/etapa2_fixtures.gd").reset(player)
 	driver.blocked = true
 	suite.check(not player.use_skill(0) and player.skill_cooldowns[0] == 0.0, "menus reject skills without consuming cooldown")
 	driver.blocked = false
@@ -150,27 +152,20 @@ static func _gameplay(suite, main) -> void:
 	target.set_physics_process(false)
 	player.last_direction = Vector2.RIGHT
 	player.attack.cooldown_left = 100.0
-	suite.check(player.use_skill(1) and player.charge_direction == Vector2.RIGHT and player.dash.time_left == 0.0, "offensive charge uses last direction and differs from defensive dash")
-	player._physics_process(0.016)
-	var after_charge := target.health.current
-	player._physics_process(0.016)
-	suite.check(after_charge == enemy_hp - 14 and target.health.current == after_charge, "charge hits each enemy at most once per activation")
-	player.charge_left = 0.0
-	player.position = Vector2(1162, 750)
-	player.skill_cooldowns[1] = 0.0
-	player.use_skill(1)
-	for i in range(14):
-		player._physics_process(0.016)
-	suite.check(player.position.x <= 1171.1, "offensive charge respects outer wall collision")
-	player.charge_left = 0.0
-	player.position = Vector2(930, 750)
+	preload("res://tests/etapa2_fixtures.gd").reset(player)
+	target.position = player.position+Vector2(50,0)
+	target.health.initialize(100)
+	var before_technique := target.health.current
+	suite.check(player.use_skill(1) and target.health.current < before_technique and player.skill_cooldowns[1] == 7.0,"Corte Crescente uses directional damage and independent identifier timer")
+	var after_technique := target.health.current
+	suite.check(not player.use_skill(1) and target.health.current == after_technique,"technique cannot reactivate during its cooldown")
 	player.health.initialize(100)
-	suite.check(player.use_skill(2) and player.fury_left == 6.0 and player.attack.damage_scale > 1.29 and player.view.fury, "Furia activates timed damage buff with visible aura")
+	suite.check(player.use_skill(2) and player.class_combat.guard_left == 3.0,"Guarda Reativa replaces old Fury with a category defense technique")
 	player.receive_damage(8)
-	suite.check(player.health.current == 94, "Furia grants bounded damage resistance")
+	suite.check(player.health.current == 94,"reactive guard grants bounded damage resistance without healing")
 	driver.blocked = true
 	player._physics_process(7.0)
-	suite.check(player.fury_left == 0.0 and player.attack.damage_scale == 1.0 and not player.view.fury and player.skill_cooldowns[2] > 0.0, "buff expires and cooldown ticks while menus block combat")
+	suite.check(player.class_combat.guard_left == 0.0 and player.skill_cooldowns[2] > 0.0,"guard expires while its identifier cooldown remains")
 	driver.blocked = false
 	player.receive_damage(10)
 	var old_hp := player.health.current
@@ -185,7 +180,7 @@ static func _gameplay(suite, main) -> void:
 	main.earned_xp = 80
 	main._save_progress()
 	suite.check(p.level() == 2 and hud.loot_label.text.contains("Level Up") and hud.notice_left > 0.0, "existing XP rewards produce transient level up feedback")
-	player.skill_cooldowns[0] = 0.0
+	preload("res://tests/etapa2_fixtures.gd").reset(player)
 	var key := InputEventAction.new()
 	key.action = "skill_1"
 	key.pressed = true
@@ -240,12 +235,13 @@ static func _interface(suite, main) -> void:
 		hud._input(touch)
 		suite.check(p.equipped.Arma == "", "touch unequips owned starter weapon %s" % size)
 		p.equip("espada")
+		player.apply_progression(p)
 		hud.refresh_inventory(p)
 		await suite.frames()
 		touch.position = hud.inventory_close.global_position + hud.inventory_close.size * 0.5
 		hud._input(touch)
 		suite.check(not hud.inventory_open and not driver.blocked, "equipment bag close reachable %s" % size)
-		player.skill_cooldowns[0] = 0.0
+		preload("res://tests/etapa2_fixtures.gd").reset(player)
 		hud.set_rpg_status(p, player)
 		var skill_touch := InputEventScreenTouch.new()
 		skill_touch.pressed = true
@@ -304,7 +300,7 @@ static func _interface(suite, main) -> void:
 	forge_touch.position = improvement.global_position + improvement.size * 0.5
 	hud._input(forge_touch)
 	suite.check(p.skills["Corte Circular"] == 2 and p.skill_points() == 0 and player.skill_ranks[0] == 2, "touch skill screen spends one earned point and applies upgraded rank")
-	player.skill_cooldowns[0] = 0.0
+	preload("res://tests/etapa2_fixtures.gd").reset(player)
 	main._use_skill(0)
 	suite.check(player.skill_cooldowns[0] == 0.0, "character skill menu cannot activate combat abilities")
 	main._toggle_character()

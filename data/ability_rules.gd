@@ -92,3 +92,36 @@ static func available(category: String, id: String, proficiency: int) -> bool:
 static func skill1(weapon_id: String) -> Dictionary:
 	var category := ArsenalRules.weapon_category(weapon_id)
 	return CATEGORIES[category].skill1 if CATEGORIES.has(category) else {}
+
+# Geometry and mechanics are provisional. No global old skill is used here.
+const EFFECTS := {
+	"talho_agil":{"shape":"cone","reach":120.0,"dot":0.0},
+	"racha_chao":{"shape":"disk","reach":110.0,"control":0.25},
+	"impulso_perfurante":{"shape":"line","reach":190.0,"width":28.0},
+	"flecha_certeira":{"shape":"projectile","reach":340.0},
+	"orbe_arcano":{"shape":"projectile","reach":290.0},
+	"corte_crescente":{"shape":"cone","reach":140.0,"dot":-0.15},
+	"guarda_reativa":{"shape":"guard","duration":3.0},
+	"estocada_precisa":{"shape":"line","reach":155.0,"width":22.0},
+	"golpe_devastador":{"shape":"cone","reach":125.0,"dot":0.1},
+	"quebra_guarda":{"shape":"cone","reach":120.0,"dot":0.0,"mark":0.18},
+	"impacto_brutal":{"shape":"disk","reach":135.0,"control":0.7},
+	"estocada_longa":{"shape":"line","reach":220.0,"width":24.0},
+	"varredura":{"shape":"disk","reach":175.0,"control":0.4},
+	"marca_caca":{"shape":"line","reach":230.0,"width":28.0,"mark":0.20},
+	"rajada_flechas":{"shape":"cone","reach":310.0,"dot":0.8,"hits":3},
+	"tiro_marcado":{"shape":"line","reach":330.0,"width":24.0,"mark":0.15},
+	"flecha_perfurante":{"shape":"line","reach":360.0,"width":20.0},
+	"onda_arcana":{"shape":"disk","reach":170.0},
+	"selo_mistico":{"shape":"disk","reach":220.0,"mark":0.15,"control":0.5},
+	"barreira_espiritual":{"shape":"guard","duration":5.0},
+	"danca_laminas":{"shape":"disk","reach":150.0,"power":0.85,"hits":4},
+	"furia_machado":{"shape":"buff","duration":8.0},
+	"muralha_lancas":{"shape":"cone","reach":250.0,"dot":0.1,"power":3.5,"control":1.0},
+	"chuva_flechas":{"shape":"disk","reach":320.0,"power":3.2},
+	"tempestade_arcana":{"shape":"disk","reach":230.0,"power":3.3,"control":0.6}}
+
+static func effect(id: String, grade: int = 1) -> Dictionary:
+	var result: Dictionary = EFFECTS.get(id,{}).duplicate()
+	if result.has("duration"): result.duration = float(result.duration)+0.5*(grade-1)
+	return result

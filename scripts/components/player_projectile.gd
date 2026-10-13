@@ -12,6 +12,8 @@ var kind := "flecha"
 var category := ""
 var damage_type := "physical"
 var critical := false
+var ultimate := false
+var source := "basic"
 var event := 0
 var spent := false
 var arena_bounds := Rect2()
@@ -28,6 +30,8 @@ func setup(player: PlayerActor, selected: Node2D, specification: Dictionary, bou
 	category = specification.get("category","")
 	damage_type = specification.get("damage_type","physical")
 	critical = specification.get("critical",false)
+	ultimate = specification.get("ultimate",false)
+	source = specification.get("source","basic")
 	event = specification.get("event",0)
 	if event == 0: event = CombatRules.next_event()
 	arena_bounds = bounds
@@ -82,7 +86,7 @@ func _physics_process(delta: float) -> void:
 			victim = actor
 	if victim != null:
 		finish() # Mark before callbacks: exactly one victim per shot.
-		victim.receive_damage(damage,category,event,damage_type,critical)
+		victim.receive_damage(damage,category,event,damage_type,critical,ultimate,source)
 		return
 	global_position = after
 	distance_left -= distance

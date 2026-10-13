@@ -152,19 +152,19 @@ static func run_world(suite: SceneTree) -> void:
 		suite.check(target.health.current == before-int(expected.damage) and target.view.damage_critical,"actual basic critical damage and feedback "+category)
 		await suite.frames()
 	CombatRules.random_roll_source = func(): return 0.99
-	# Current techniques retain physical scaling, even with the magical staff.
-	main.progress.talents.xp.cajado = TalentRules.xp_floor(18)
+	# Staff Skill 1 now follows magical Spirit scaling and special Domain.
+	main.progress.talents.xp.cajado = TalentRules.xp_floor(25)
 	main.progress.talents.mastery.cajado["Dano Especial"] = 12
+	main.progress.abilities.select_skill("cajado",1,"barreira_espiritual",25,true)
 	main.player.apply_progression(main.progress)
 	var base_stats: Dictionary = main.progress.combat_stats()
 	var hp_before := target.health.current
-	main.player.skill_cooldowns[0] = 0
+	preload("res://tests/etapa2_fixtures.gd").reset(main.player)
 	main.player.use_skill(0)
-	var expected_skill := CombatRules.resolve(base_stats.physical,1+base_stats.automatic+base_stats.special,1.4,base_stats.critical_chance,base_stats.critical_multiplier,0.99)
-	suite.check(target.health.current == hp_before-int(expected_skill.damage),"staff keeps existing physical technique, with special mastery but no Spirit leakage")
-	main.player.skill_cooldowns[2] = 0
-	main.player.use_skill(2)
-	suite.check(main.player.fury_left == 6 and main.player.attack.damage_scale == 1.3,"special mastery does not increase Fury duration or its buff magnitude")
+	for shot: PlayerProjectile in preload("res://tests/arsenal_combat_tests.gd").shots(main): shot._physics_process(0.3)
+	var expected_skill := CombatRules.resolve(base_stats.magical,1+base_stats.automatic+base_stats.special,1.45,base_stats.critical_chance,base_stats.critical_multiplier,0.99)
+	suite.check(target.health.current == hp_before-int(expected_skill.damage),"staff Orbe Arcano scales with magical Spirit and special Domain")
+	suite.check(main.player.use_skill(2) and main.player.class_combat.barrier > 0 and main.player.class_combat.guard_left == 5.0,"staff barrier absorbs damage instead of invoking a global Fury")
 	main.queue_free()
 	await suite.frames()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)
