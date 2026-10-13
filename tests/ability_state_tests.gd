@@ -45,3 +45,21 @@ static func run(suite: SceneTree) -> void:
 	suite.check(AbilityState.from_save(overspent,levels,0) == null,"invalid point budget rejected before loading")
 	state.death_reset()
 	suite.check(state.charge.espada == 0 and state.global_ultimate_cooldown == 0.0 and state.cooldowns.espada.is_empty() and state.skill1_cooldowns.espada == 0.0,"death clears all normal cooldowns and charges")
+
+	var protected := AbilityState.new()
+	suite.check(not protected.start_skill1("espada",NAN) and not protected.start_skill1("espada",INF),"non-finite cooldown input rejected")
+	protected.select_skill("espada",0,"danca_laminas",30,true)
+	protected.select_skill("cajado",0,"tempestade_arcana",30,true)
+	protected.charge.espada = 100
+	protected.charge.cajado = 100
+	suite.check(protected.use_ultimate("espada","espada") and not protected.use_ultimate("cajado","cajado"),"cross-category ultimate interval enforced")
+	protected.charge.espada = 100
+	suite.check(protected.use_ultimate("espada","espada"),"global interval concerns different categories only")
+	protected.tick(10.0,"cajado")
+	suite.check(protected.use_ultimate("cajado","cajado"),"other ultimate enabled after ten active seconds")
+	var invalid := protected.to_save()
+	invalid.grades.espada[5] = 2
+	suite.check(AbilityState.from_save(invalid,levels,99) == null,"non-string ability key rejected without a runtime error")
+	var paused := protected.to_save()
+	protected.tick(NAN,"cajado")
+	suite.check(protected.to_save() == paused,"non-finite frame delta cannot corrupt persistent timers")

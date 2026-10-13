@@ -176,3 +176,7 @@ Não alterar main/PRODUÇÃO, mecânicas, mapas, personagens ou persistência.
 
 ## Árvores e livro ilustrado — 12/10/2026
 Aprovados conforme TALENTOS_DIARIO_V2.md: proficiência abre caminhos, nível geral dá pontos. O orçamento de habilidades existente é compartilhado com talentos. Técnicas adquiridas são preservadas. Primeiro recorte aperfeiçoa os três efeitos existentes e adiciona passivas por categoria; valores provisórios no ADR. Novas técnicas e seleção dos dois slots ainda pendentes. Save v7 migra v1–6.
+
+
+## Etapa 2 aprovada em 12/10/2026
+O contrato em `docs/decisions/PROGRESSAO_ETAPA2.md` substitui as habilidades e árvores antigas. Ultimate ocupa opcionalmente Skill 2 ou 3, Maestria 30 é automática e Domínio permanece separado.

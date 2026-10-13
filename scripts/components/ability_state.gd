@@ -11,6 +11,7 @@ var charge_remainder: Dictionary = {}
 var cooldowns: Dictionary = {}
 var skill1_cooldowns: Dictionary = {}
 var global_ultimate_cooldown := 0.0
+var last_ultimate_category := ""
 
 func _init() -> void:
 	for category: String in AbilityRules.CATEGORIES:
@@ -86,7 +87,7 @@ func refund(category: String, at_camp: bool) -> bool:
 	return true
 
 func tick(delta: float, active_category: String) -> void:
-	if delta <= 0.0:
+	if not is_finite(delta) or delta <= 0.0:
 		return
 	global_ultimate_cooldown = maxf(0.0,global_ultimate_cooldown-delta)
 	if not cooldowns.has(active_category):
@@ -96,7 +97,7 @@ func tick(delta: float, active_category: String) -> void:
 		cooldowns[active_category][id] = maxf(0.0,float(cooldowns[active_category][id])-delta)
 
 func start_skill1(category: String, seconds: float) -> bool:
-	if not skill1_cooldowns.has(category) or float(skill1_cooldowns[category]) > 0.0 or seconds <= 0.0:
+	if not skill1_cooldowns.has(category) or float(skill1_cooldowns[category]) > 0.0 or not _safe_number(seconds,120.0) or seconds <= 0.0:
 		return false
 	skill1_cooldowns[category] = seconds
 	return true
@@ -122,17 +123,19 @@ func add_ultimate_damage(category: String, effective: int, active_category: Stri
 	return true
 
 func use_ultimate(category: String, active_category: String) -> bool:
-	if category != active_category or not charge.has(category) or global_ultimate_cooldown > 0.0:
+	if category != active_category or not charge.has(category) or (global_ultimate_cooldown > 0.0 and category != last_ultimate_category):
 		return false
 	if int(charge[category]) != AbilityRules.MAX_ULTIMATE_CHARGE or not loadouts[category].skills.has(AbilityRules.CATEGORIES[category].ultimate.id):
 		return false
 	charge[category] = 0
 	charge_remainder[category] = 0
 	global_ultimate_cooldown = AbilityRules.GLOBAL_ULTIMATE_INTERVAL
+	last_ultimate_category = category
 	return true
 
 func death_reset() -> void:
 	global_ultimate_cooldown = 0.0
+	last_ultimate_category = ""
 	for category: String in AbilityRules.CATEGORIES:
 		charge[category] = 0
 		charge_remainder[category] = 0
@@ -143,13 +146,13 @@ func to_save() -> Dictionary:
 	return {"loadouts":loadouts.duplicate(true),"grades":grades.duplicate(true),"talents":talents.duplicate(true),
 		"charge":charge.duplicate(true),"charge_remainder":charge_remainder.duplicate(true),
 		"cooldowns":cooldowns.duplicate(true),"skill1_cooldowns":skill1_cooldowns.duplicate(true),
-		"global_ultimate_cooldown":global_ultimate_cooldown}
+		"global_ultimate_cooldown":global_ultimate_cooldown,"last_ultimate_category":last_ultimate_category}
 
 static func _safe_number(value: Variant, max_value: float) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) >= 0.0 and float(value) <= max_value
 
 static func from_save(raw: Variant, proficiencies: Dictionary, point_budget: int) -> AbilityState:
-	if not raw is Dictionary or raw.size() != 8:
+	if not raw is Dictionary or raw.size() != 9:
 		return null
 	var fields := ["loadouts","grades","talents","charge","charge_remainder","cooldowns","skill1_cooldowns"]
 	for field: String in fields:
@@ -157,7 +160,12 @@ static func from_save(raw: Variant, proficiencies: Dictionary, point_budget: int
 			return null
 	if not _safe_number(raw.get("global_ultimate_cooldown"),AbilityRules.GLOBAL_ULTIMATE_INTERVAL):
 		return null
+	if not raw.get("last_ultimate_category") is String or (not raw.last_ultimate_category.is_empty() and not AbilityRules.CATEGORIES.has(raw.last_ultimate_category)):
+		return null
+	if float(raw.global_ultimate_cooldown) > 0.0 and raw.last_ultimate_category.is_empty():
+		return null
 	var result := AbilityState.new()
+	result.last_ultimate_category = raw.last_ultimate_category
 	result.global_ultimate_cooldown = float(raw.global_ultimate_cooldown)
 	for category: String in AbilityRules.CATEGORIES:
 		var level := int(proficiencies.get(category,0))
@@ -187,7 +195,8 @@ static func from_save(raw: Variant, proficiencies: Dictionary, point_budget: int
 		var category_cooldowns: Variant = raw.cooldowns.get(category)
 		if not category_grades is Dictionary or not category_talents is Array or not category_cooldowns is Dictionary:
 			return null
-		for id: String in category_grades:
+		for id: Variant in category_grades:
+			if not id is String: return null
 			var rule := AbilityRules.active_skill(category,id)
 			var grade: Variant = category_grades[id]
 			if rule.is_empty() or id == AbilityRules.CATEGORIES[category].ultimate.id or level < int(rule.prof):
@@ -206,7 +215,8 @@ static func from_save(raw: Variant, proficiencies: Dictionary, point_budget: int
 			var rule := AbilityRules.talent(category,id)
 			if not rule.parent.is_empty() and not result.talents[category].has(rule.parent):
 				return null
-		for id: String in category_cooldowns:
+		for id: Variant in category_cooldowns:
+			if not id is String: return null
 			var rule := AbilityRules.active_skill(category,id)
 			if rule.is_empty() or id == AbilityRules.CATEGORIES[category].ultimate.id or not _safe_number(category_cooldowns[id],float(rule.cooldown)):
 				return null
