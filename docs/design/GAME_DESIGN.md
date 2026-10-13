@@ -1,4 +1,9 @@
 # Game Design — fundação v0.1
+## Espada V1 — demonstração aprovada em 13/10/2026
+Conforme ANIMACAO_ESPADA_V1.md: demonstração isolada do ataque de espada,
+preservando explorador, caminhada e regras. Aplicação no jogo e demais armas
+aguardam avaliação visual. TESTE fixo preservado.
+
 ## Primeira arma — aprovada em 13/10/2026
 Conforme PRIMEIRA_ARMA.md e pedido completo de Thiago: novos personagens
 começam desarmados e seguem O Primeiro Passo até o Ferreiro. Uma das cinco
