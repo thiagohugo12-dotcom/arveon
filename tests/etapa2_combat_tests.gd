@@ -81,6 +81,25 @@ static func run_world(suite: SceneTree) -> void:
 		p.abilities.refund(category,true)
 		player.apply_progression(p)
 		suite.check(player.health.current == hp,"combat respec cannot heal "+category)
+	# A damage amplifier cannot credit its own added damage to the same bar.
+	p.equipped.Arma = "machado"
+	p.configure_ability("equip_skill","machado","golpe_devastador",0,true)
+	p.configure_ability("equip_skill","machado","furia_machado",1,true)
+	p.abilities.death_reset()
+	player.apply_progression(p)
+	player.class_combat.clear_effects()
+	enemy.mark_left = 0.0
+	p.abilities.charge.machado = 100
+	suite.check(player.use_skill(2),"axe Ultimate amplifier activates for credit accounting regression")
+	var unboosted_basic := CombatRules.resolve(player.attack.damage_base,player.attack.basic_bonus,1.0,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
+	var unboosted_skill := CombatRules.resolve(player.attack.damage_base,player.special_bonus,1.70,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
+	var amplified_before := enemy.health.current
+	player.attack.cooldown_left = 0.0
+	player.attack.search_left = 0.0
+	player.attack.tick(0,player)
+	suite.check(player.use_skill(1),"normal technique retains its real axe Ultimate amplification")
+	var credited := int(p.abilities.charge.machado)*10+int(p.abilities.charge_remainder.machado)
+	suite.check(credited == int(unboosted_basic.damage)+int(unboosted_skill.damage) and amplified_before-enemy.health.current > credited,"Ultimate amplifier bonus is excluded while valid unamplified basics and techniques charge once")
 	# Test the actual level-30 mechanic under a non-critical random roll.
 	p.equipped.Arma = "espada"
 	p.configure_ability("equip_skill","espada","corte_crescente",0,true)

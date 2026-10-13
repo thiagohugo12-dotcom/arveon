@@ -13,6 +13,7 @@ var category := ""
 var damage_type := "physical"
 var critical := false
 var ultimate := false
+var eligible_damage := -1
 var source := "basic"
 var event := 0
 var spent := false
@@ -31,6 +32,7 @@ func setup(player: PlayerActor, selected: Node2D, specification: Dictionary, bou
 	damage_type = specification.get("damage_type","physical")
 	critical = specification.get("critical",false)
 	ultimate = specification.get("ultimate",false)
+	eligible_damage = int(specification.get("eligible_damage",-1))
 	source = specification.get("source","basic")
 	event = specification.get("event",0)
 	if event == 0: event = CombatRules.next_event()
@@ -86,7 +88,7 @@ func _physics_process(delta: float) -> void:
 			victim = actor
 	if victim != null:
 		finish() # Mark before callbacks: exactly one victim per shot.
-		victim.receive_damage(damage,category,event,damage_type,critical,ultimate,source)
+		victim.receive_damage(damage,category,event,damage_type,critical,ultimate,source,eligible_damage)
 		return
 	global_position = after
 	distance_left -= distance

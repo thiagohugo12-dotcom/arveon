@@ -37,6 +37,7 @@ Espada favorece sequências/contra-ataque; Machado impacto e execução; Lança 
 
 - Crítico garantido da Maestria precisava de uma chance condicional separada do limite comum de 15%; a fórmula comum e Domínio continuam iguais.
 - Marcas de técnicas precisam expirar também nos dois scripts de Guardião; controle não interrompe suas sinalizações.
+- A amplificação da Fúria do Machado é separada no recibo: básicos e técnicas creditam somente o dano sem o bônus da própria Ultimate, limitado ao HP realmente removido. O mesmo roll de crítico é usado nos dois cálculos; o dano real não é duplicado.
 - Pool de quatro projéteis cheio rejeita o disparo sem consumir recarga.
 - Diário aberto pela Mochila recebe corretamente a permissão de personalização da área segura.
 - A captura antiga esperava 17 de Corte Circular; Talho Ágil inicial produz 16, conforme cálculo por arredondamento. Asserções visuais foram atualizadas.

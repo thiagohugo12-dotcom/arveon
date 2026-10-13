@@ -231,7 +231,7 @@ func _on_weapon_hit(category: String, effective: int, event: int, actor: EnemyAc
 	if actor.get_meta("floor_epoch",-1) != floor_epoch or (trial.active() and actor.get_meta("tower_attempt",-1) != trial.attempt_id): return
 	var details := actor.hit_details(event)
 	if not actor.consume_hit_receipt(category,effective,event): return
-	if not details.get("ultimate",false): progress.abilities.add_ultimate_damage(category,effective,progress.active_category())
+	if not details.get("ultimate",false): progress.abilities.add_ultimate_damage(category,int(details.get("charge",effective)),progress.active_category())
 	if category == progress.active_category(): player.class_combat.record_hit(actor,details.get("source","basic"),details.get("critical",false))
 	var before := progress.talents.level(category)
 	if progress.talents.record_damage(category,effective) and progress.talents.level(category) > before:

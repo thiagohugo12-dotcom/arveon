@@ -205,14 +205,16 @@ func consume_hit_receipt(category: String, amount: int, event: int) -> bool:
 	_hit_receipts.erase(event)
 	return true
 
-func receive_damage(amount: int, category: String = "", event: int = 0, damage_type: String = "physical", critical: bool = false, ultimate: bool = false, source: String = "basic") -> void:
+func receive_damage(amount: int, category: String = "", event: int = 0, damage_type: String = "physical", critical: bool = false, ultimate: bool = false, source: String = "basic", eligible_damage: int = -1) -> void:
 	if amount <= 0 or invulnerable or not is_targetable() or damage_type not in ["physical","magical"]:
 		return
 	if event == 0: event = CombatRules.next_event()
 	if event < 0 or _damage_events.has(event): return
 	_damage_events[event] = true
 	if _proficiency_budget < 0: _proficiency_budget = health.maximum
-	if mark_left > 0 and mark_category == category: amount = ceili(amount*(1.0+mark_bonus))
+	if mark_left > 0 and mark_category == category:
+		amount = ceili(amount*(1.0+mark_bonus))
+		if eligible_damage >= 0: eligible_damage = ceili(eligible_damage*(1.0+mark_bonus))
 	var before := health.current
 	var effective := mini(amount,before)
 	var credit := mini(effective,_proficiency_budget)
@@ -220,7 +222,7 @@ func receive_damage(amount: int, category: String = "", event: int = 0, damage_t
 	# Emit before lethal callbacks so the defeat save includes this last hit.
 	if credit > 0 and ArsenalRules.CATEGORIES.has(category):
 		_hit_receipts[event] = [category,credit]
-		_receipt_details[event] = {"ultimate":ultimate,"source":source,"critical":critical}
+		_receipt_details[event] = {"ultimate":ultimate,"source":source,"critical":critical,"charge":0 if ultimate else mini(credit,amount if eligible_damage < 0 else eligible_damage)}
 		weapon_hit.emit(category,credit,event)
 		_hit_receipts.erase(event)
 		_receipt_details.erase(event)

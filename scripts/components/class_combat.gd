@@ -116,7 +116,7 @@ func hit_modifiers(target: EnemyActor, source: String) -> Dictionary:
 		if specialization() == "arcanista" and not basic and source not in ["orbe_arcano","basic"]: scale += 0.12
 		if mastery() and not basic and counter_left > 0: chance = 1.0
 	if fury_left > 0: scale += 0.45
-	return {"scale":scale,"chance":chance}
+	return {"scale":scale,"chance":chance,"charge_scale":scale-(0.45 if fury_left > 0 else 0.0)}
 
 func receive(amount: int) -> int:
 	var scale := 1.0
@@ -205,9 +205,11 @@ func _execute(id: String, effect: Dictionary, power: float, ultimate: bool) -> i
 			nearest_squared = distance
 		if nearest == null: return 0
 		var modifiers := hit_modifiers(nearest,id)
-		var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,CombatRules.roll(),float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
+		var roll := CombatRules.roll()
+		var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
+		var eligible := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.charge_scale),float(modifiers.chance),player.attack.critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
 		if player.get_tree().get_nodes_in_group("player_projectiles").size() < PlayerProjectile.MAX_ACTIVE:
-			player.attack.projectile_requested.emit(player,nearest,{"damage":hit.damage,"kind":"orbe" if category == "cajado" else "flecha","speed":player.attack.weapon.projectile_speed,"reach":reach,"category":category,"event":event,"damage_type":player.attack.damage_type,"critical":hit.critical,"ultimate":ultimate,"source":id})
+			player.attack.projectile_requested.emit(player,nearest,{"damage":hit.damage,"kind":"orbe" if category == "cajado" else "flecha","speed":player.attack.weapon.projectile_speed,"reach":reach,"category":category,"event":event,"damage_type":player.attack.damage_type,"critical":hit.critical,"ultimate":ultimate,"source":id,"eligible_damage":eligible.damage})
 		return 1
 	for candidate in candidates:
 		if not candidate is EnemyActor or not candidate.is_targetable() or origin.distance_squared_to(candidate.global_position) > reach*reach or not _visible(candidate): continue
@@ -217,8 +219,10 @@ func _execute(id: String, effect: Dictionary, power: float, ultimate: bool) -> i
 		var modifiers := hit_modifiers(candidate,id)
 		for strike in range(int(effect.get("hits",1))):
 			if not candidate.is_targetable(): break
-			var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,CombatRules.roll(),float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
-			candidate.receive_damage(hit.damage,category,event if strike == 0 else CombatRules.next_event(),player.attack.damage_type,hit.critical,ultimate,id)
+			var roll := CombatRules.roll()
+			var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
+			var eligible := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.charge_scale),float(modifiers.chance),player.attack.critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
+			candidate.receive_damage(hit.damage,category,event if strike == 0 else CombatRules.next_event(),player.attack.damage_type,hit.critical,ultimate,id,eligible.damage)
 		if candidate.health.is_alive():
 			if effect.get("control",0.0) > 0.0: candidate.apply_control(float(effect.control))
 			if effect.get("mark",0.0) > 0.0: candidate.apply_mark(category,float(effect.mark),4.0)
