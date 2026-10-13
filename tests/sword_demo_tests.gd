@@ -80,6 +80,7 @@ func run() -> void:
 	view._process(0.5)
 	check(view.walking and view.phase() == -1,"recovery returns to walking")
 	view.position = Vector2.ZERO
+	var base_animation_duration := 0.0
 	for dex in [0,20]:
 		if demo.dexterity != dex: demo._toggle_dex()
 		demo.select_direction(3)
@@ -95,6 +96,8 @@ func run() -> void:
 		check(demo.targets[1].hits-hits == view.sword_attacks-count,"one visual per hit, consecutive Dex %d" % dex)
 		check(get_node_count() == nodes,"no nodes allocated per attack at Dex %d" % dex)
 		check(view.sword_duration < interval,"recovery ends before next attack at Dex %d" % dex)
+		if dex == 0: base_animation_duration = view.sword_duration
+		else: check(view.sword_duration < base_animation_duration,"Dex also speeds the animation itself")
 	# Real touch analog -> InputDriver -> movement -> same collision body/dash.
 	demo.select_direction(3)
 	for player in demo.players: player.set_physics_process(true)

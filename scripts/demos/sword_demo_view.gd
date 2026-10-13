@@ -32,8 +32,9 @@ func cancel_preparation() -> void:
 func play_sword_attack(offset: Vector2, interval: float) -> void:
 	sword_row = direction_row(facing if offset.is_zero_approx() else offset)
 	attack_direction = DIRECTIONS[sword_row]
-	# Ends before the next actual attack, including Dex modifiers.
-	sword_duration = minf(0.24,maxf(0.04,interval*0.58))
+	# 240 ms at the original 650 ms cadence; Dex speeds the whole swing too.
+	# Always shorter than its actual interval; never changes the damage timer.
+	sword_duration = minf(0.30,interval*(0.24/0.65))
 	sword_time = sword_duration
 	preparing = false
 	preparation_weight = 0.0
