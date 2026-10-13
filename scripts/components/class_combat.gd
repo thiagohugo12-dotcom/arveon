@@ -74,6 +74,7 @@ func record_hit(actor: EnemyActor, source: String, critical: bool) -> void:
 			actor.apply_mark(category,0.15,3.0)
 		if has_talent("primeiro_disparo") and same_target_hits == 1:
 			actor.apply_control(0.25)
+		if has_passive("vigilancia") and player.global_position.distance_to(actor.global_position) < 120: counter_left = 1.5
 		if has_talent("posicao_firme") and player.velocity.length_squared() < 4:
 			counter_left = 2.0
 		if has_passive("canalizacao") and combo % 3 == 0:
@@ -170,6 +171,9 @@ func use(index: int) -> bool:
 			barrier = maxi(barrier,ceili(player.health.maximum*0.08))
 		if has_talent("corpo_ferro") and hits > 0:
 			guard_left = maxf(guard_left,2.0)
+		if specialization() == "guardiao_espiritual" and hits > 0:
+			guard_left = maxf(guard_left,2.0)
+			barrier = maxi(barrier,8+player.spirit)
 		if has_talent("veu_espiritual") and hits > 0:
 			guard_left = maxf(guard_left,2.0)
 			barrier = maxi(barrier,6+player.spirit)

@@ -125,3 +125,76 @@ static func effect(id: String, grade: int = 1) -> Dictionary:
 	var result: Dictionary = EFFECTS.get(id,{}).duplicate()
 	if result.has("duration"): result.duration = float(result.duration)+0.5*(grade-1)
 	return result
+
+const SPECIALIZATIONS := {
+	"duelista":{"name":"Duelista","description":"Sequências no mesmo alvo aumentam o dano após três acertos."},
+	"guardiao_lamina":{"name":"Guardião da Lâmina","description":"Guarda Reativa ganha barreira; contra-ataques controlam inimigos comuns."},
+	"berserker":{"name":"Berserker","description":"Causa mais dano quando abaixo de metade da vida."},
+	"colosso":{"name":"Colosso","description":"Acertar dois inimigos com técnica gera barreira temporária."},
+	"cacador":{"name":"Caçador","description":"Explora a Marca de Caça para pressionar o alvo."},
+	"sentinela":{"name":"Sentinela","description":"Recebe menos dano quando mantém a posição."},
+	"atirador_elite":{"name":"Atirador de Elite","description":"Técnicas ganham precisão crítica a longa distância."},
+	"batedor":{"name":"Batedor","description":"Manter movimento reduz o dano recebido."},
+	"arcanista":{"name":"Arcanista","description":"Amplifica técnicas de área sem depender da força física."},
+	"guardiao_espiritual":{"name":"Guardião Espiritual","description":"Técnicas ofensivas geram uma barreira curta; reforça Barreira Espiritual."}}
+const DESCRIPTIONS := {
+	"fio_afiado":"Críticos deixam uma abertura para o próximo ataque.",
+	"ritmo_combate":"A cada três básicos válidos, reduz recargas normais em 0,3s.",
+	"postura_firme":"Parado, recebe 8% menos dano.",
+	"golpe_pesado":"Básicos interrompem brevemente inimigos comuns.",
+	"pele_ferro":"Abaixo de metade da vida, recebe 10% menos dano.",
+	"executor":"Causa 20% mais dano a inimigos abaixo de 30% de HP.",
+	"alcance_treinado":"Aumenta em 20px o alcance básico e das técnicas.",
+	"vigilancia":"Acertar um inimigo próximo abre uma janela defensiva.",
+	"ponta_precisa":"Causa 10% mais dano além de 110px.",
+	"mira_instintiva":"Cada terceiro básico marca o alvo por 2s.",
+	"passos_leves":"Um segundo em movimento reduz dano recebido em 8%.",
+	"cacador_preciso":"Causa 15% mais dano além de 180px.",
+	"canalizacao":"Cada terceiro básico reduz 0,5s da recarga de Orbe Arcano.",
+	"foco_arcano":"Críticos fortalecem a próxima técnica por uma janela curta.",
+	"guarda_eter":"Recebe 10% menos dano enquanto possui barreira.",
+	"sequencia_precisa":"Cada terceiro básico causa 15% mais dano.",
+	"contra_ataque_fatal":"Técnicas na janela de contra-ataque são críticas.",
+	"guarda_aperfeicoada":"Guarda Reativa dura mais um segundo.",
+	"postura_equilibrada":"A guarda reduz mais 5% do dano recebido.",
+	"impacto_crescente":"Básicos sucessivos no mesmo alvo aumentam o impacto.",
+	"finalizador":"Técnicas causam mais dano a alvos abaixo de 20% de HP.",
+	"corpo_ferro":"Acertar uma técnica concede guarda curta.",
+	"presenca_imponente":"Técnicas interrompem brevemente inimigos comuns.",
+	"alcance_ideal":"Favorece ataques feitos entre 100 e 170px.",
+	"ponta_letal":"Técnicas na janela de posição firme são críticas.",
+	"posicao_firme":"Básicos parado abrem uma janela de posicionamento.",
+	"recuo_tatico":"Recebe menos dano durante o dash, sem alterar sua recarga.",
+	"primeiro_disparo":"O primeiro básico no alvo interrompe inimigos comuns.",
+	"mira_continua":"Três básicos no mesmo alvo expõem uma abertura.",
+	"distancia_segura":"Favorece ataques a mais de 240px.",
+	"evasao_agil":"Recebe menos dano durante o dash, sem alterar sua velocidade.",
+	"energia_focada":"Técnicas ganham potência enquanto há barreira.",
+	"eco_arcano":"Técnicas deixam uma abertura arcana no alvo.",
+	"veu_espiritual":"Acertar técnicas gera uma pequena barreira temporária.",
+	"protecao_mistica":"A barreira reduz mais 10% do dano recebido."}
+const TALENT_NAMES := {
+	"sequencia_precisa":"Sequência Precisa","contra_ataque_fatal":"Contra-ataque Fatal","guarda_aperfeicoada":"Guarda Aperfeiçoada","postura_equilibrada":"Postura Equilibrada",
+	"impacto_crescente":"Impacto Crescente","finalizador":"Finalizador","corpo_ferro":"Corpo de Ferro","presenca_imponente":"Presença Imponente",
+	"alcance_ideal":"Alcance Ideal","ponta_letal":"Ponta Letal","posicao_firme":"Posição Firme","recuo_tatico":"Recuo Tático",
+	"primeiro_disparo":"Primeiro Disparo","mira_continua":"Mira Contínua","distancia_segura":"Distância Segura","evasao_agil":"Evasão Ágil",
+	"energia_focada":"Energia Focada","eco_arcano":"Eco Arcano","veu_espiritual":"Véu Espiritual","protecao_mistica":"Proteção Mística"}
+const MASTERY_HELP := {
+	"espada":"Após três básicos, a próxima técnica é crítica.",
+	"machado":"Técnicas ficam mais fortes quanto menor o HP do alvo.",
+	"lanca":"Mantém vantagem de dano a partir de 120px.",
+	"arco":"Técnicas contra alvos marcados são críticas.",
+	"cajado":"Cada terceira técnica ofensiva cria barreira; a janela arcana favorece críticos."}
+
+static func talent_tree(category: String) -> Dictionary:
+	var result := {}
+	var entries: Array = TALENTS.get(category,[])
+	for i in range(entries.size()):
+		var rule: Dictionary = entries[i].duplicate()
+		rule["name"] = TALENT_NAMES[rule.id]
+		rule["description"] = DESCRIPTIONS[rule.id]
+		rule["icon"] = category
+		rule["kind"] = "Talento"
+		rule["position"] = Vector2(0.25 if i < 2 else 0.75,90 if i%2 == 0 else 200)
+		result[rule.id] = rule
+	return result

@@ -37,6 +37,8 @@ static func effective(progress: GameProgress, id: String) -> Dictionary:
 	candidate.attributes = progress.attributes.duplicate()
 	candidate.equipment = progress.equipment.duplicate()
 	candidate.talents = progress.talents
+	candidate.abilities = progress.abilities
+	candidate.etapa2_enabled = progress.etapa2_enabled
 	candidate.equipped = current
 	candidate.equipped[RPGRules.EQUIPMENT[id].slot] = id
 	var values := candidate.combat_stats()

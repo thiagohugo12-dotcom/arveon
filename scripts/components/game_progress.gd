@@ -89,7 +89,8 @@ func skill_points() -> int:
 		spent += int(value) - 1
 	return maxi(0, level() - 1 - spent - talents.spent())
 
-func learn_talent(weapon: String, node: String) -> bool:
+func learn_talent(weapon: String, node: String, at_camp: bool = false) -> bool:
+	if etapa2_enabled: return abilities.learn_talent(weapon,node,talents.level(weapon),skill_points(),at_camp)
 	return talents.learn(weapon,node,skill_points())
 
 func active_class() -> String:
@@ -99,6 +100,10 @@ func active_category() -> String:
 	return ArsenalRules.weapon_category(equipped.Arma)
 
 func skill_rank(index: int) -> int:
+	if etapa2_enabled:
+		var category := active_category()
+		if index == 0 or category.is_empty(): return 1
+		return int(abilities.grades[category].get(abilities.loadouts[category].skills[index-1],1))
 	var rank := int(skills[RPGRules.SKILLS[index]])
 	var weapon := active_category()
 	for node: String in talents.learned.get(weapon,[]):
@@ -112,7 +117,10 @@ func allocate_attribute(name: String) -> bool:
 	attributes[name] = int(attributes[name]) + 1
 	return true
 
-func improve_skill(name: String) -> bool:
+func improve_skill(name: String, at_camp: bool = false) -> bool:
+	if etapa2_enabled:
+		var parts := name.split(":")
+		return parts.size() == 2 and abilities.improve(parts[0],parts[1],talents.level(parts[0]),skill_points(),at_camp)
 	if not RPGRules.SKILLS.has(name) or skill_points() < 1 or int(skills[name]) >= 3:
 		return false
 	skills[name] = int(skills[name]) + 1
@@ -172,7 +180,7 @@ func combat_stats() -> Dictionary:
 		result.physical += int(bonus.damage)
 		result.magical += int(bonus.damage) + int(bonus.spirit) * 2
 		for key: String in ["hp","speed","spirit","armor"]: result[key] += bonus[key]
-	var passive := talents.bonuses(active_category())
+	var passive := {"damage":0,"hp":0,"armor":0} if etapa2_enabled else talents.bonuses(active_category())
 	result.physical += int(passive.damage)
 	result.magical += int(passive.damage)
 	result.hp += int(passive.hp)
@@ -730,3 +738,31 @@ func migrate_etapa2() -> int:
 	etapa2_enabled = true
 	migration_refund = refund
 	return refund
+
+func configure_ability(action: String, category: String, id: String, slot: int, at_camp: bool) -> bool:
+	if not at_camp or not AbilityRules.CATEGORIES.has(category): return false
+	var prof := talents.level(category)
+	match action:
+		"equip_skill":
+			if slot not in [0,1]: return false
+			if not id.is_empty() and not AbilityRules.available(category,id,prof): return false
+			var slots: Array = abilities.loadouts[category].skills
+			if not id.is_empty() and slots[1-slot] == id:
+				slots[1-slot] = slots[slot]
+				slots[slot] = id
+				return true
+			return abilities.select_skill(category,slot,id,prof,true)
+		"equip_passive":
+			if slot not in [0,1]: return false
+			var rule := AbilityRules.passive(category,id)
+			if not id.is_empty() and (rule.is_empty() or prof < int(rule.prof)): return false
+			var slots: Array = abilities.loadouts[category].passives
+			if not id.is_empty() and slots[1-slot] == id:
+				slots[1-slot] = slots[slot]
+				slots[slot] = id
+				return true
+			return abilities.select_passive(category,slot,id,prof,true)
+		"specialization": return abilities.set_specialization(category,id,prof,true)
+		"reset_tree": return abilities.refund(category,true)
+		"reset_mastery": return talents.reset_mastery(category)
+	return false
