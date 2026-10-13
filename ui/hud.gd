@@ -35,6 +35,7 @@ var menu_shade: ColorRect
 var mission_toggle: Button
 var mission_expanded := true
 var mission_text := ""
+var introduction_hud := false
 var inventory_selected := ""
 var inventory_compare := false
 var equipment_bag: EquipmentBag
@@ -89,6 +90,16 @@ var station_scroll: ScrollContainer
 var station_name := ""
 var station_close_button: Button
 var station_page := 0
+var first_weapon_page := 0
+var first_weapon_selected := ""
+var first_weapon_buttons: Dictionary = {}
+const FIRST_WEAPON_DESCRIPTION := "Todo aventureiro precisa de uma arma. Procure o Ferreiro no acampamento e escolha aquela que combina com seu estilo de combate."
+const WEAPON_STYLES := {
+	"espada":"Combate próximo e ágil, com sequências e contra-ataques.",
+	"machado":"Golpes pesados, impacto e execução de alvos enfraquecidos.",
+	"lanca":"Maior alcance corpo a corpo, posicionamento e controle.",
+	"arco":"Ataques físicos à distância, mobilidade e marcas no alvo.",
+	"cajado":"Ataques mágicos à distância, técnicas de área e barreiras."}
 const ITEMS_PER_PAGE := 3
 
 func _ready() -> void:
@@ -439,7 +450,7 @@ func _layout() -> void:
 	xp_bar.size = Vector2(information_width-12,4)
 	var mission_width := minf(232, minimap.position.x - margin.x - 8)
 	mission_back.position = margin + Vector2(0, 86)
-	mission_back.size = Vector2(mission_width,56 if mission_expanded or boss_name.visible else 44)
+	mission_back.size = Vector2(mission_width,86 if introduction_hud and mission_expanded else 56 if mission_expanded or boss_name.visible else 44)
 	# Landscape places the two readable panels in one top strip, leaving the
 	# workshop visible below. Portrait retains its separate, full-width rows.
 	if size.x >= 600 and size.x > size.y:
@@ -460,6 +471,8 @@ func _layout() -> void:
 	loot_label.position = Vector2(margin.x, margin.y + 146)
 	if size.x >= 600 and size.x > size.y:
 		loot_label.position.y = margin.y+80
+	if introduction_hud:
+		loot_label.position.y = maxf(loot_label.position.y,mission_back.position.y+mission_back.size.y+6)
 	loot_label.size = Vector2(minf(320, size.x - margin.x - right_inset), 42)
 	map_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(400, size.y - margin.y - bottom_inset - 12))
 	map_panel.position = (size - map_panel.size) * 0.5
@@ -666,6 +679,8 @@ func show_station(name: String, progress: GameProgress) -> void:
 	station_name = name
 	selected_floor = progress.ascension.current_floor
 	station_page = 0
+	first_weapon_page = 0
+	first_weapon_selected = ""
 	close_inventory()
 	station_panel.show()
 	_sync_controls()
@@ -685,6 +700,7 @@ func close_station() -> void:
 
 func refresh_station(progress: GameProgress) -> void:
 	station_title.text = station_name
+	first_weapon_buttons.clear()
 	for child in station_content.get_children():
 		station_content.remove_child(child)
 		child.queue_free()
@@ -716,6 +732,9 @@ func refresh_station(progress: GameProgress) -> void:
 			travel_button.disabled = selected_floor == progress.ascension.current_floor or not progress.ascension.can_travel(selected_floor)
 			travel_button.show()
 	elif station_name == "Ferreiro":
+		if progress.introduction_active():
+			_first_weapon_interface(progress)
+			return
 		_add_description("Ouro %d · fabricar ou aprimorar até +3.\nMateriais usados: somente os da mochila." % progress.gold)
 		for id: String in RPGRules.EQUIPMENT:
 			_add_equipment(id, progress, station_content, false)
@@ -952,6 +971,9 @@ func close_character() -> void:
 	_sync_controls()
 
 func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
+	if introduction_hud != progress.introduction_active():
+		introduction_hud = progress.introduction_active()
+		_layout()
 	rpg_panel.allow_respec = SafeCamp.in_clearance(player.global_position) and not minimap.arena_bounds.has_area()
 	var lvl := progress.level()
 	progress_label.text = "Nv %d · XP %d/%d" % [lvl, progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl)] if lvl < RPGRules.MAX_LEVEL else "Nv %d · Nível máximo" % RPGRules.MAX_LEVEL
@@ -1079,6 +1101,66 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 		button.text = "Aprimorar para +%d" % (upgrade + 1) if owned else "Fabricar"
 		button.disabled = not progress.can_forge(id)
 		button.pressed.connect(func(): rpg_action.emit("forge", id, expected))
+
+func _first_weapon_button(key: String, caption: String, callback: Callable) -> Button:
+	var button := Button.new()
+	button.text = caption
+	button.custom_minimum_size.y = 48
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.pressed.connect(callback)
+	station_content.add_child(button)
+	first_weapon_buttons[key] = button
+	return button
+
+func _first_weapon_interface(progress: GameProgress) -> void:
+	station_title.text = "O Primeiro Passo"
+	if first_weapon_page == 0:
+		_add_description(FIRST_WEAPON_DESCRIPTION)
+		_add_description("Escolha uma arma gratuita. Você poderá fabricar as outras depois.\nSem XP, ouro ou equipamentos extras.")
+		_first_weapon_button("open","Escolher primeira arma",func():
+			first_weapon_page = 1
+			station_scroll.scroll_vertical = 0
+			refresh_station(progress))
+		return
+	if first_weapon_page == 2 and ArsenalRules.CATEGORIES.has(first_weapon_selected):
+		_add_description("Você deseja começar sua jornada com %s?" % RPGRules.EQUIPMENT[first_weapon_selected].name)
+		_add_description("A arma será equipada automaticamente. A escolha gratuita é única; outras categorias continuarão disponíveis no Ferreiro.")
+		var confirm := _first_weapon_button("confirm","Confirmar",func(): station_action.emit("first_weapon",first_weapon_selected))
+		confirm.disabled = progress.save_blocked
+		_first_weapon_button("back","Voltar",func():
+			first_weapon_page = 1
+			refresh_station(progress))
+		return
+	_add_description("Compare as cinco opções. Role para ver todas antes de escolher.")
+	for id: String in ArsenalRules.CATEGORIES:
+		var card := PanelContainer.new()
+		card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,DiaryTheme.WOOD,6,1))
+		station_content.add_child(card)
+		var box := VBoxContainer.new()
+		card.add_child(box)
+		var header := HBoxContainer.new()
+		box.add_child(header)
+		header.add_child(ITEM_ICON.new(id))
+		var name_label := DiaryTheme.label(RPGRules.EQUIPMENT[id].name + "\n" + TalentRules.CLASSES[id],16)
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		header.add_child(name_label)
+		var values := ArsenalRules.effective(progress,id)
+		var details := DiaryTheme.label("Dano básico %d · Alcance %.0f px\nVelocidade %.2f ataques/s · intervalo %.2f s\n%s" % [values.damage,values.reach,1.0/values.interval,values.interval,WEAPON_STYLES[id]],14)
+		box.add_child(details)
+		var button := Button.new()
+		button.text = "Escolher " + ArsenalRules.category_name(id)
+		button.custom_minimum_size.y = 48
+		button.pressed.connect(func():
+			first_weapon_selected = id
+			first_weapon_page = 2
+			station_scroll.scroll_vertical = 0
+			refresh_station(progress))
+		box.add_child(button)
+		first_weapon_buttons[id] = button
+	_first_weapon_button("back","Voltar",func():
+		first_weapon_page = 0
+		station_scroll.scroll_vertical = 0
+		refresh_station(progress))
 
 func _touch_buttons(node: Node, point: Vector2) -> bool:
 	if node is Control and node.clip_contents and not node.get_global_rect().has_point(point):

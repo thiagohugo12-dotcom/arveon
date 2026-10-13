@@ -49,6 +49,9 @@ func _draw() -> void:
 	var camp_end := _map_point(SafeCamp.AREA.end)
 	draw_rect(Rect2(camp_start, camp_end - camp_start), Color("#9ec681"))
 	if progress != null:
+		if progress.introduction_active():
+			var smith := _map_point(SafeCamp.DISPLAY_STATIONS.Ferreiro)
+			draw_rect(Rect2(smith-Vector2(3,3),Vector2(7,7)),Color("#e7b867"),false,2.0)
 		for spot: Dictionary in Exploration.RESOURCE_SPOTS:
 			if progress.discovered_pois.has(spot.id):
 				draw_rect(Rect2(_map_point(spot.position) - Vector2(2, 2), Vector2(4, 4)), Color("#c0d586"))

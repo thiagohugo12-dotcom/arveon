@@ -62,6 +62,9 @@ func _ready() -> void:
 		mission.mission_index = progress.mission_index
 		mission.progress = progress.mission_progress
 		mission.completed_count = progress.mission_completed
+	elif not progress.save_blocked:
+		progress.begin_new_character()
+	mission.enabled = not progress.introduction_active()
 	collected_materials = progress.bag
 	hud.minimap.progress = progress
 	hud.minimap.player_position = player.global_position
@@ -363,6 +366,8 @@ func _interact() -> void:
 			(world.get_node("FloorView") as FloorView).set_chest_open(found.id == "Baú")
 			input_driver.reset()
 			input_driver.blocked = true
+			if found.id == "Ferreiro" and progress.meet_smith():
+				_save_progress()
 			hud.show_station(found.id, progress)
 		"resource":
 			var item := progress.collect_resource(found.id, int(Time.get_unix_time_from_system()))
@@ -432,6 +437,20 @@ func _station_action(action: String, item: String) -> void:
 		return
 	var success := false
 	match [hud.station_name, action]:
+		["Ferreiro", "first_weapon"]:
+			var at_smith := not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro"
+			if progress.claim_first_weapon(item,at_smith):
+				mission.enabled = true
+				player.apply_progression(progress)
+				_refresh_mission()
+				hud.minimap.queue_redraw()
+				hud.expanded_map.queue_redraw()
+				hud.first_weapon_page = 0
+				hud.first_weapon_selected = ""
+				hud.show_notice("O Primeiro Passo concluído · " + RPGRules.EQUIPMENT[item].name)
+				hud.set_rpg_status(progress,player)
+			else:
+				hud.show_notice(progress.save_status if not progress.save_status.is_empty() else "Escolha indisponível. Nenhuma arma concedida.")
 		["Baú", "Guardar"]: success = progress.transfer(item, true)
 		["Baú", "Retirar"]: success = progress.transfer(item, false)
 		["Vendedor", "Comprar"]: success = progress.buy(item)
@@ -585,6 +604,7 @@ func _adapt_orientation() -> void:
 
 
 func _record_adventure(id: String) -> void:
+	if progress.introduction_active(): return
 	progress.xp = earned_xp
 	progress.gold = earned_gold
 	var reward := progress.record_adventure(id)
@@ -594,6 +614,7 @@ func _record_adventure(id: String) -> void:
 		hud.show_notice("Desafio concluído! +%d XP · +%d ouro" % [reward.xp, reward.gold])
 
 func _start_guardian() -> void:
+	if progress.introduction_active(): return
 	if trial.active() or transitioning:
 		return
 	if is_instance_valid(guardian) or progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated:
@@ -619,7 +640,7 @@ func _start_guardian() -> void:
 	hud.show_notice("Guardião: evite as áreas douradas. Desafio opcional!")
 
 func _refresh_mission() -> void:
-	hud.set_mission(trial.summary() if trial.active() else mission.summary() + "\n" + progress.adventure_summary())
+	hud.set_mission(progress.introduction_summary() if progress.introduction_active() else trial.summary() if trial.active() else mission.summary() + "\n" + progress.adventure_summary())
 
 func _clear_combat_actors() -> void:
 	for node in get_children():
@@ -642,6 +663,7 @@ func _camera_bounds(bounds: Rect2) -> void:
 	camera.force_update_scroll()
 
 func _enter_trial() -> void:
+	if progress.introduction_active(): return
 	if transitioning or trial.active() or not player.health.is_alive() or not progress.ascension.entrance_unlocked():
 		return
 	transitioning = true
@@ -923,6 +945,7 @@ func _update_floor_identity() -> void:
 	hud.minimap.queue_redraw()
 
 func _travel_floor(destination: int) -> void:
+	if progress.introduction_active(): return
 	if transitioning or trial.active() or not player.health.is_alive() or destination == progress.ascension.current_floor or not progress.ascension.can_travel(destination):
 		return
 	transitioning = true
