@@ -26,7 +26,7 @@ func _run() -> void:
 	main.progress.xp = main.progress.xp_for_level(14)
 	main.progress.gold = 1367
 	main.progress.talents.xp.espada = TalentRules.xp_floor(18)
-	main.progress.learn_talent("espada","corte")
+	main.progress.learn_talent("espada","sequencia_precisa",true)
 	main.progress.bag = {"Madeira":12,"Ervas":5,"Pedras":8,"Seda":3,"Essência":2}
 	main.hud.set_rpg_status(main.progress,main.player)
 	for resolution: Vector2i in [Vector2i(960,540),Vector2i(390,844),Vector2i(640,360),Vector2i(360,640)]:

@@ -26,8 +26,8 @@ func _run() -> void:
 		main.progress.equipment[category] = 0
 		main.progress.talents.xp[category] = TalentRules.xp_floor(18)
 		main.progress.talents.mastery[category] = {"Dano":3,"Dano Especial":2,"Crítico":2,"Dano Crítico":2}
-	main.progress.learn_talent("espada","corte")
-	main.progress.learn_talent("espada","vigor")
+	main.progress.learn_talent("espada","sequencia_precisa",true)
+	main.progress.learn_talent("espada","guarda_aperfeicoada",true)
 	main.player.apply_progression(main.progress)
 	main.hud.set_rpg_status(main.progress,main.player)
 	var panel: RPGPanel = main.hud.rpg_panel

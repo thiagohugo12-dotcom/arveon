@@ -98,13 +98,16 @@ static func run(suite, main) -> void:
 	p.allocate_attribute("Vitalidade")
 	hud.set_rpg_status(p, player)
 	suite.check(hud.character_button.notification, "remaining talent points keep character notification after attributes are spent")
-	p.improve_skill("Corte Circular")
+	p.talents.xp.espada = TalentRules.xp_floor(3)
+	p.talents.allocate_mastery("espada","Dano",0)
+	p.talents.allocate_mastery("espada","Dano",1)
+	p.improve_skill("espada:corte_crescente",true)
 	hud.set_rpg_status(p,player)
 	suite.check(not hud.character_button.notification,"spending all character point budgets clears notification")
 	for i in range(3):
 		preload("res://tests/etapa2_fixtures.gd").reset(player)
 	hud.set_rpg_status(p, player)
-	suite.check(hud.actions[0].caption.text.is_empty() and hud.actions[1].caption.text.is_empty() and hud.actions[2].caption.text.is_empty(), "ready touch skills show icons without keyboard numbers")
+	suite.check(hud.actions[0].caption.text.is_empty() and hud.actions[1].caption.text == "—" and hud.actions[2].caption.text == "—", "ready Skill 1 and empty slots have clear independent feedback")
 	main._toggle_map()
 	var escape := InputEventAction.new()
 	escape.action = "ui_cancel"

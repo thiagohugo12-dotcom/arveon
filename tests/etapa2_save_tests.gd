@@ -2,6 +2,7 @@ extends RefCounted
 
 static func run(suite: SceneTree) -> void:
 	var legacy := GameProgress.new()
+	legacy.etapa2_enabled = false
 	legacy.xp = RPGRules.xp_floor(40)
 	legacy.gold = 777
 	legacy.bag = {"Madeira":8,"Essência":2}

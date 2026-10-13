@@ -59,7 +59,7 @@ static func run_world(suite: SceneTree) -> void:
 	loaded.save_path = path
 	suite.check(loaded.load_save() and loaded.talents.mastery == main.progress.talents.mastery and loaded.attributes == main.progress.attributes,"all UI allocations persist across full load")
 	# Reset is available in camp only, refunds shared talent budget, preserves ranks/XP/mastery.
-	main.progress.learn_talent("espada","vigor")
+	main.progress.learn_talent("espada","sequencia_precisa",true)
 	var mastery_before: Dictionary = main.progress.talents.mastery.duplicate(true)
 	var xp_before: Dictionary = main.progress.talents.xp.duplicate()
 	var skills_before: Dictionary = main.progress.skills.duplicate()
@@ -68,10 +68,10 @@ static func run_world(suite: SceneTree) -> void:
 	panel.tab = 2
 	main._toggle_character()
 	main._rpg_action("reset_tree","espada",0)
-	suite.check(main.progress.talents.owns("espada","vigor") and main.progress.skill_points() == points,"respec rejected outside safe area")
+	suite.check(main.progress.abilities.talents.espada.has("sequencia_precisa") and main.progress.skill_points() == points,"respec rejected outside safe area")
 	main.player.position = SafeCamp.RESPAWN
 	main._rpg_action("reset_tree","espada",0)
-	suite.check(not main.progress.talents.owns("espada","vigor") and main.progress.skill_points() == points+1 and main.progress.talents.mastery == mastery_before and main.progress.talents.xp == xp_before and main.progress.skills == skills_before,"free safe respec refunds only existing learned nodes, preserves other systems")
+	suite.check(not main.progress.abilities.talents.espada.has("sequencia_precisa") and main.progress.skill_points() == points+1 and main.progress.talents.mastery == mastery_before and main.progress.talents.xp == xp_before and main.progress.skills == skills_before,"free safe respec refunds only existing learned nodes, preserves other systems")
 	main.queue_free()
 	await suite.frames()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)

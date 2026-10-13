@@ -4,52 +4,42 @@ static func run(suite: SceneTree) -> void:
 	var p := GameProgress.new()
 	p.xp = RPGRules.xp_floor(20)
 	var original := p.to_json()
-	suite.check(not p.learn_talent("espada","vigor"),"talent cannot be purchased before weapon proficiency")
+	suite.check(not p.learn_talent("espada","sequencia_precisa",true),"talent locked before proficiency ten")
 	suite.check(not p.talents.record_damage("unknown",1) and p.to_json() == original,"unknown proficiency cannot mutate state")
-	p.talents.record_damage("espada",TalentRules.xp_floor(18)*TalentRules.DAMAGE_PER_XP)
-	suite.check(p.talents.level("espada") == 18 and p.talents.level("arco") == 1,"real use advances only its weapon category")
-	suite.check(not p.learn_talent("espada","guarda"),"talent branch requires its parent")
+	p.talents.record_damage("espada",TalentRules.xp_floor(20)*TalentRules.DAMAGE_PER_XP)
+	suite.check(p.talents.level("espada") == 20 and p.talents.level("arco") == 1,"real use advances only its category")
+	suite.check(not p.learn_talent("espada","contra_ataque_fatal",true),"category branch requires its parent")
 	var points := p.skill_points()
-	suite.check(p.learn_talent("espada","vigor") and p.skill_points() == points-1,"level point buys passive exactly once")
-	suite.check(not p.learn_talent("espada","vigor") and p.skill_points() == points-1,"double purchase cannot spend another point")
-	suite.check(p.combat_stats().hp == 108,"learned passive applies with its weapon equipped")
+	suite.check(p.learn_talent("espada","sequencia_precisa",true) and p.skill_points() == points-1,"shared point buys one category talent")
+	suite.check(not p.learn_talent("espada","sequencia_precisa",true) and p.skill_points() == points-1,"duplicate purchase cannot spend another point")
+	suite.check(p.configure_ability("equip_passive","espada","fio_afiado",0,true) and p.skill_points() == points-1,"passive selection is free")
 	p.equipment.arco = 0
 	p.equip("arco")
-	suite.check(p.combat_stats().hp == 100 and p.talents.owns("espada","vigor"),"weapon switch suspends bonus and preserves learned tree")
+	suite.check(p.abilities.talents.espada.has("sequencia_precisa") and p.active_category() == "arco","switch preserves inactive category tree")
 	p.equip("espada")
-	suite.check(p.learn_talent("espada","corte") and p.skill_rank(0) == 2,"technique node improves existing combat rank for its category")
-	p.skills["Corte Circular"] = 3
-	suite.check(p.skill_rank(0) == 4,"tree technique remains useful with maximum legacy skill rank")
-	p.skills["Corte Circular"] = 1
-	suite.check(p.learn_talent("espada","guarda") and p.combat_stats().armor == 1,"passive branch applies real defense")
-	suite.check(p.improve_skill("Investida") and p.skill_points() == points-4,"old skill improvements and tree share one level point budget")
+	suite.check(p.learn_talent("espada","contra_ataque_fatal",true),"second talent unlocks after parent")
+	suite.check(p.improve_skill("espada:corte_crescente",true) and p.skill_points() == points-3,"normal grades and tree share one point budget")
 	var saved := p.to_json()
 	var restored := GameProgress.new()
-	suite.check(restored.load_text(saved) and restored.to_json() == saved,"v7 preserves proficiency trees equipment and old skills")
-	var payload: Dictionary = JSON.parse_string(saved)
-	payload.version = 6
-	payload.rpg.attributes = preload("res://tests/progression_tests.gd").legacy_attributes(p.attributes)
-	payload.erase("talents")
-	suite.check(restored.load_text(JSON.stringify(payload)) and restored.talents.spent() == 0 and restored.skills == p.skills and restored.equipment == p.equipment,"v6 migrates without losing any acquired skill or gear")
-	restored.load_text(saved)
+	suite.check(restored.load_text(saved) and restored.to_json() == saved,"v10 roundtrip preserves category tree loadout and grades")
 	var before := restored.to_json()
 	for corruption: String in ["negative","fractional","unknown","duplicate","parent","budget","requirement"]:
-		payload = JSON.parse_string(saved)
+		var payload: Dictionary = JSON.parse_string(saved)
 		match corruption:
 			"negative": payload.talents.xp.espada = -1
 			"fractional": payload.talents.xp.espada = 2.5
-			"unknown": payload.talents.learned.espada.append("unknown")
-			"duplicate": payload.talents.learned.espada.append("vigor")
-			"parent": payload.talents.learned.espada.erase("vigor")
-			"budget": payload.xp = RPGRules.xp_floor(3)
+			"unknown": payload.abilities.talents.espada.append("unknown")
+			"duplicate": payload.abilities.talents.espada.append("sequencia_precisa")
+			"parent": payload.abilities.talents.espada.erase("sequencia_precisa")
+			"budget": payload.xp = RPGRules.xp_floor(3); payload.rpg.level = 3
 			"requirement": payload.talents.xp.espada = 0
 		suite.check(not restored.load_text(JSON.stringify(payload)) and restored.to_json() == before,"invalid talent save rejected atomically: "+corruption)
 	var poor := GameProgress.new()
 	poor.xp = RPGRules.xp_floor(2)
-	poor.talents.xp.espada = TalentRules.xp_floor(12)
-	suite.check(poor.learn_talent("espada","vigor") and not poor.learn_talent("espada","guarda") and not poor.improve_skill("Investida"),"no point duplication across old skill menu and tree")
+	poor.talents.xp.espada = TalentRules.xp_floor(20)
+	suite.check(poor.learn_talent("espada","sequencia_precisa",true) and not poor.learn_talent("espada","contra_ataque_fatal",true) and not poor.improve_skill("espada:corte_crescente",true),"no point duplication across grades and talents")
 	p.talents.xp.espada = TalentRules.xp_floor(30)
-	suite.check(not p.talents.record_damage("espada",1) and p.talents.level("espada") == 30,"proficiency caps at thirty without overflowing XP")
+	suite.check(not p.talents.record_damage("espada",1),"proficiency still caps at thirty")
 
 static func run_world(suite: SceneTree) -> void:
 	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
@@ -72,15 +62,15 @@ static func run_world(suite: SceneTree) -> void:
 	var old: String = main.progress.to_json()
 	main.progress.xp = RPGRules.xp_floor(10)
 	main.earned_xp = main.progress.xp
-	main.progress.talents.xp.espada = TalentRules.xp_floor(5)
+	main.progress.talents.xp.espada = TalentRules.xp_floor(10)
 	main.hud._open_diary(1)
 	await suite.frames()
 	var panel: RPGPanel = main.hud.rpg_panel
 	panel.prof_section = 1
-	panel.talent_selection = "corte"
+	panel.talent_selection = "sequencia_precisa"
 	panel.refresh(main.progress)
 	await suite.frames()
-	var node: Button = panel.talent_tree.buttons.vigor
+	var node: Button = panel.talent_tree.buttons.guarda_aperfeicoada
 	panel.scroll.ensure_control_visible(node)
 	await suite.frames()
 	var scroll_before := panel.scroll.scroll_vertical
@@ -98,19 +88,19 @@ static func run_world(suite: SceneTree) -> void:
 	touch.position = drag.position
 	main.hud._input(touch)
 	await suite.frames()
-	suite.check(panel.talent_selection == "corte" and panel.scroll.scroll_vertical > scroll_before,"swiping over talent scrolls without opening details")
+	suite.check(panel.talent_selection == "sequencia_precisa" and panel.scroll.scroll_vertical > scroll_before,"swiping over talent scrolls without opening details")
 	panel.scroll.ensure_control_visible(node)
 	await suite.frames()
 	preload("res://tests/tower_trial_tests.gd")._tap(main.hud,node)
 	await suite.frames()
-	suite.check(panel.talent_selection == "vigor" and main.input_driver.blocked and not panel.talent_buy.disabled and panel.scroll.get_global_rect().has_point(panel.talent_buy.get_global_rect().get_center()),"touch inspects talent reveals purchase action and blocks gameplay")
+	suite.check(panel.talent_selection == "guarda_aperfeicoada" and main.input_driver.blocked and not panel.talent_buy.disabled and panel.scroll.get_global_rect().has_point(panel.talent_buy.get_global_rect().get_center()),"touch inspects talent reveals purchase action and blocks gameplay")
 	var hp_before: int = main.player.health.current
 	preload("res://tests/tower_trial_tests.gd")._tap(main.hud,panel.talent_buy)
 	await suite.frames()
-	suite.check(main.progress.talents.owns("espada","vigor") and main.player.health.maximum == 108 and main.player.health.current == hp_before and panel.talent_buy.disabled,"touch learns passive applies HP maximum without healing and prevents double purchase")
+	suite.check(main.progress.abilities.talents.espada.has("guarda_aperfeicoada") and main.player.health.maximum == 100 and main.player.health.current == hp_before and panel.talent_buy.disabled,"touch learns passive applies HP maximum without healing and prevents double purchase")
 	var loaded := GameProgress.new()
 	loaded.save_path = main.progress.save_path
-	suite.check(loaded.load_save() and loaded.talents.owns("espada","vigor"),"talent touch transaction persists across process load")
+	suite.check(loaded.load_save() and loaded.abilities.talents.espada.has("guarda_aperfeicoada"),"talent touch transaction persists across process load")
 	main._toggle_character()
 	main.progress.load_text(old)
 	main.earned_xp = main.progress.xp

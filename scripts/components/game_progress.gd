@@ -7,8 +7,8 @@ const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeir
 const BUY_PRICE := 5
 const SELL_PRICE := 2
 const SAVE_VERSION := 10
-# Switched on by the combat integration after both formats pass regression QA.
-var etapa2_enabled := false
+# Legacy-format mode remains only for migration fixtures. Runtime uses v10.
+var etapa2_enabled := true
 var abilities := AbilityState.new()
 var migration_refund := 0
 const ATTRIBUTES := RPGRules.ATTRIBUTES
@@ -22,6 +22,7 @@ var talents := TalentProgress.new()
 var floor_states: Dictionary = {}
 
 func _init() -> void:
+	if etapa2_enabled: skills = {}
 	for id in range(1,6):
 		floor_states[str(id)] = _empty_floor()
 

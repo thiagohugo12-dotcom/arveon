@@ -18,7 +18,8 @@ static func run(suite, main) -> void:
 	suite.check(p.level() == 2 and p.attribute_points() == 2 and p.skill_points() == 1, "level two grants two attributes and one skill point")
 	suite.check(p.allocate_attribute("Força") and p.allocate_attribute("Vitalidade") and not p.allocate_attribute("Agilidade"), "attribute spending cannot exceed earned points")
 	suite.check(not p.allocate_attribute("Inexistente") and p.combat_stats().damage == 14 and p.combat_stats().hp == 108, "attributes affect existing combat values")
-	suite.check(p.improve_skill("Corte Circular") and not p.improve_skill("Investida"), "skill improvement consumes bounded points")
+	p.talents.xp.arco = TalentRules.xp_floor(3)
+	suite.check(p.improve_skill("arco:rajada_flechas",true) and not p.improve_skill("arco:tiro_marcado",true), "skill improvement consumes bounded points")
 	p.xp = 150
 	suite.check(p.level() == 3 and p.attribute_points() == 2 and p.skill_points() == 1, "XP curve increases transition cost")
 	p.xp = 100000000
@@ -26,8 +27,8 @@ static func run(suite, main) -> void:
 		p.allocate_attribute("Destreza")
 	suite.check(p.level() == 100 and not p.allocate_attribute("Destreza") and is_equal_approx(float(p.combat_stats().basic_interval_factor), 0.85), "level attribute and dexterity interval caps hold with huge XP")
 	for i in range(5):
-		p.improve_skill("Corte Circular")
-	suite.check(p.skills["Corte Circular"] == 3 and not p.improve_skill("Corte Circular"), "skill ranks capped at three")
+		p.improve_skill("arco:rajada_flechas",true)
+	suite.check(p.abilities.grades.arco.rajada_flechas == 4 and not p.improve_skill("arco:rajada_flechas",true), "normal grades capped at four")
 	var before := p.bag.duplicate()
 	suite.check(not p.forge("machado", -1) and p.bag == before and p.gold == 0, "insufficient forging is atomic")
 	p.gold = 1000
@@ -57,6 +58,7 @@ static func run(suite, main) -> void:
 	for version in [1, 2, 3]:
 		var old := saved.duplicate(true)
 		old.version = version
+		old.rpg.skills = preload("res://tests/etapa2_fixtures.gd").legacy_skills(p)
 		old.xp = 500
 		old.erase("rpg")
 		if version < 3:
@@ -195,6 +197,7 @@ static func _interface(suite, main) -> void:
 	var p: GameProgress = main.progress
 	suite.check(hud.inventory_panel.z_index > hud.actions[0].z_index and hud.station_panel.z_index > hud.actions[0].z_index and hud.rpg_panel.z_index > hud.actions[0].z_index, "modal panels render above combat controls")
 	for size: Vector2 in [Vector2(360, 640), Vector2(640, 360)]:
+		player.position = SafeCamp.RESPAWN
 		hud.size = size
 		hud._layout()
 		main._toggle_character()
@@ -241,6 +244,7 @@ static func _interface(suite, main) -> void:
 		touch.position = hud.inventory_close.global_position + hud.inventory_close.size * 0.5
 		hud._input(touch)
 		suite.check(not hud.inventory_open and not driver.blocked, "equipment bag close reachable %s" % size)
+		player.position = Vector2(930,750)
 		preload("res://tests/etapa2_fixtures.gd").reset(player)
 		hud.set_rpg_status(p, player)
 		var skill_touch := InputEventScreenTouch.new()
@@ -290,7 +294,7 @@ static func _interface(suite, main) -> void:
 	hud._input(forge_touch)
 	suite.check(p.equipment.has("machado") and p.gold == 80 and p.adventures.forjar == 1, "mobile smith button crafts through existing wallet and inventory")
 	hud.close_station()
-	player.position = Vector2(930, 750)
+	player.position = SafeCamp.RESPAWN
 	hud.rpg_panel.tab = 1
 	main._toggle_character()
 	await suite.frames()
@@ -299,7 +303,7 @@ static func _interface(suite, main) -> void:
 	await suite.frames()
 	forge_touch.position = improvement.global_position + improvement.size * 0.5
 	hud._input(forge_touch)
-	suite.check(p.skills["Corte Circular"] == 2 and p.skill_points() == 0 and player.skill_ranks[0] == 2, "touch skill screen spends one earned point and applies upgraded rank")
+	suite.check(p.abilities.grades.espada.corte_crescente == 2 and p.skill_points() == 0 and player.skill_ranks[1] == 2, "touch skill screen spends one earned point and applies upgraded rank")
 	preload("res://tests/etapa2_fixtures.gd").reset(player)
 	main._use_skill(0)
 	suite.check(player.skill_cooldowns[0] == 0.0, "character skill menu cannot activate combat abilities")

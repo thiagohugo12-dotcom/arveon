@@ -119,7 +119,8 @@ func _run() -> void:
 		main.enemy.view.previous_damage_left = 0.0
 		main.player.attack.cooldown_left = 0.0
 		main.player.attack.search_left = 0.0
-		main.player.skill_cooldowns[0] = 0.0
+		preload("res://tests/etapa2_fixtures.gd").reset(main.player)
+		main.player.last_direction = Vector2.LEFT
 		main.hud.set_rpg_status(main.progress, main.player)
 		await _frames()
 		main.player._physics_process(0.0)

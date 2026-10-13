@@ -61,13 +61,9 @@ func _physics_process(delta: float) -> void:
 	if not movement.is_zero_approx():
 		last_direction = movement.normalized()
 		view.set_facing(last_direction)
-	if input_driver.consume_dash() and charge_left <= 0.0:
+	if input_driver.consume_dash():
 		dash.request(movement, last_direction, stats)
-	velocity = charge_direction * 420.0 if charge_left > 0.0 else dash.direction * stats.dash_speed if dash.active() else movement * stats.move_speed
-	# Charge respects camp and walls; it never deals damage from the protected side.
-	if charge_left > 0.0 and SafeCamp.in_clearance(global_position + velocity * delta):
-		charge_left = 0.0
-		velocity = Vector2.ZERO
+	velocity = dash.direction * stats.dash_speed if dash.active() else movement * stats.move_speed
 	move_and_slide()
 
 	view.set_moving(velocity.length_squared() > 1.0)

@@ -36,6 +36,7 @@ static func run(suite: SceneTree) -> void:
 		for level in range(1,31):
 			var old: Dictionary = JSON.parse_string(p.to_json())
 			old.version = old_version
+			old.rpg.skills = preload("res://tests/etapa2_fixtures.gd").legacy_skills(p)
 			old.talents.erase("mastery")
 			old.talents.erase("damage_remainder")
 			for weapon: String in ArsenalRules.CATEGORIES:
@@ -48,6 +49,7 @@ static func run(suite: SceneTree) -> void:
 	# Existing temporary tree and legacy ranks survive migration together.
 	var old: Dictionary = JSON.parse_string(p.to_json())
 	old.version = 7
+	old.rpg.skills = preload("res://tests/etapa2_fixtures.gd").legacy_skills(p)
 	old.rpg.attributes = {"Força":3,"Vitalidade":2,"Agilidade":7,"Espírito":4}
 	old.rpg.skills["Corte Circular"] = 3
 	old.talents.erase("mastery")
@@ -56,7 +58,7 @@ static func run(suite: SceneTree) -> void:
 	old.talents.learned.espada = ["corte","vigor","guarda","investida","furia","especializacao"]
 	# Other categories must also use the old curve.
 	for weapon: String in ["machado","lanca","arco","cajado"]: old.talents.xp[weapon] = 8700
-	suite.check(restored.load_text(JSON.stringify(old)) and restored.talents.level("espada") == 18 and restored.talents.spent() == 6 and restored.skills["Corte Circular"] == 3 and restored.attribute_points() == 69,"v7 preserves acquired tree ranks and exact Agility refund")
+	suite.check(restored.load_text(JSON.stringify(old)) and restored.talents.level("espada") == 18 and restored.talents.spent() == 0 and restored.skills.is_empty() and restored.skill_points() == 39 and restored.attribute_points() == 69,"v7 refunds all replaced nodes and global skills exactly once, preserves Agility refund")
 	var raw := JSON.stringify(old)
 	var envelope := JSON.stringify({"format":"grande-arvore-rpg-save","archive_version":1,"payload":raw,"sha256":raw.sha256_text()})
 	var path := "user://qa_progression_migration_%d.json" % Time.get_ticks_usec()

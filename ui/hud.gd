@@ -293,7 +293,7 @@ func _ready() -> void:
 	joystick.size = Vector2(128, 128)
 	joystick.direction_changed.connect(func(value: Vector2): movement_changed.emit(value))
 	add_child(joystick)
-	for title: String in ["Skill 1", "Skill 2", "Ultimate", "Poção", "", "Dash"]:
+	for title: String in ["Skill 1", "Skill 2", "Skill 3", "Poção", "", "Dash"]:
 		var button := TouchActionButton.new()
 		button.title = title + "\nEm breve" if title != "Dash" and title != "" else title
 		button.enabled = title == "Dash"
@@ -963,11 +963,23 @@ func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	character_button.notification = progress.attribute_points_available() > 0 or progress.skill_points() > 0 or mastery_available
 	expanded_map.update_player(player.global_position)
 	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
+	player._sync_skill_cooldowns()
+	var category := progress.active_category()
 	for i in range(3):
+		var rule := AbilityRules.skill1(progress.equipped.Arma) if i == 0 else AbilityRules.active_skill(category,progress.abilities.loadouts[category].skills[i-1]) if not category.is_empty() else {}
+		var ultimate: bool = not rule.is_empty() and not category.is_empty() and rule.id == AbilityRules.CATEGORIES[category].ultimate.id
+		actions[i].legend = "Ultimate" if ultimate else "Skill %d" % (i+1)
+		actions[i].tooltip_text = rule.get("name","Slot vazio")
+		actions[i].icon = "fury" if ultimate else category if i == 0 and not category.is_empty() else "charge"
+		actions[i].charge_fraction = float(progress.abilities.charge[category])/100.0 if ultimate else -1.0
 		var left := player.skill_cooldowns[i]
-		actions[i].set_recharge(left, [5.0, 8.0, 35.0][i] * player.cooldown_factor, i == 2 and player.fury_left > 0.0)
-		var enabled := not blocked and left <= 0.0
-		skill_available[i] = left <= 0.0
+		if ultimate:
+			left = progress.abilities.global_ultimate_cooldown if progress.abilities.last_ultimate_category != category else 0.0
+		actions[i].set_recharge(left,float(rule.get("cooldown",10.0)),ultimate and actions[i].charge_fraction >= 1.0)
+		if ultimate and left <= 0: actions[i].set_caption("%d%%" % progress.abilities.charge[category])
+		elif rule.is_empty(): actions[i].set_caption("—")
+		var enabled := not blocked and player.skill_ready(i)
+		skill_available[i] = player.skill_ready(i)
 		if actions[i].enabled != enabled:
 			actions[i].enabled = enabled
 			actions[i].queue_redraw()

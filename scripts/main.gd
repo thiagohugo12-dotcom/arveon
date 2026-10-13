@@ -531,20 +531,22 @@ func _rpg_action(action: String, id: String, expected: int) -> void:
 		return
 	var success := false
 	if hud.rpg_panel.visible:
-		if action == "attribute":
-			success = progress.allocate_attribute(id)
+		var at_camp := not trial.active() and SafeCamp.in_clearance(player.global_position)
+		if not at_camp: return
+		if action == "attribute": success = progress.allocate_attribute(id)
 		elif action == "skill":
-			success = progress.improve_skill(id)
+			var parts := id.split(":")
+			if parts.size() == 2 and int(progress.abilities.grades.get(parts[0],{}).get(parts[1],1)) == expected: success = progress.improve_skill(id,true)
 		elif action == "talent":
 			var parts := id.split(":")
-			if parts.size() == 2: success = progress.learn_talent(parts[0],parts[1])
+			if parts.size() == 2: success = progress.learn_talent(parts[0],parts[1],true)
 		elif action == "mastery":
 			var parts := id.split(":")
 			if parts.size() == 2: success = progress.talents.allocate_mastery(parts[0],parts[1],expected)
-		elif action == "reset_mastery" and not trial.active() and SafeCamp.in_clearance(player.global_position):
-			success = progress.talents.reset_mastery(id)
-		elif action == "reset_tree" and not trial.active() and SafeCamp.in_clearance(player.global_position):
-			success = progress.talents.reset_tree(id)
+		elif action in ["reset_mastery","reset_tree"]: success = progress.configure_ability(action,id,"",0,true)
+		elif action in ["equip_skill","equip_passive","specialization"]:
+			var parts := id.split(":")
+			if parts.size() == 2: success = progress.configure_ability(action,parts[0],parts[1],expected,true)
 	elif hud.station_panel.visible and hud.station_name == "Ferreiro" and action == "forge":
 		success = progress.forge(id, expected)
 	elif hud.inventory_open and hud.inventory_category == 1:
