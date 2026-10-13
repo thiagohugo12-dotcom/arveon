@@ -193,8 +193,8 @@ jobs:
     name: Preview proposed Godot Web changes
     needs: web
     if: >-
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/andar1-v020-primeiro-passe') ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe')
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'feat/andar1-v020-primeiro-passe' || github.head_ref == 'feat/progressao-etapa2')) ||
+      (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe' || github.ref == 'refs/heads/feat/progressao-etapa2'))
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency:

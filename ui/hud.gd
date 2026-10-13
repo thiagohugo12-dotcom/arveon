@@ -317,7 +317,7 @@ func _ready() -> void:
 	actions[3].set_caption("")
 	for i in [0, 1, 2, 5]:
 		actions[i].icon = ["cut", "charge", "fury", "", "", "dash"][i]
-		actions[i].tooltip_text = ["Corte Circular", "Investida", "Fúria Ancestral", "", "", "Dash"][i]
+		actions[i].tooltip_text = ["Skill 1", "Skill 2", "Skill 3", "", "", "Dash"][i]
 		actions[i].set_caption("")
 	interact_button = TouchActionButton.new()
 	interact_button.title = "Interagir"

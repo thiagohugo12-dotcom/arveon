@@ -76,7 +76,7 @@ func _draw() -> void:
 		if icon in AbilityRules.CATEGORIES: DiaryArt.icon(self,icon,area)
 		elif icon == "cut": DiaryArt.icon(self,"espada",area)
 		else: PixelIcon.illustrate(self,icon,area,color if enabled or active else color.darkened(0.3))
-		var text: String = legend if not legend.is_empty() else {"cut":"Corte","charge":"Investida","fury":"Fúria","dash":"Dash","potion":"Poção"}.get(icon,"")
+		var text: String = legend if not legend.is_empty() else {"cut":"Skill 1","charge":"Técnica","fury":"Ultimate","dash":"Dash","potion":"Poção"}.get(icon,"")
 		var font := ThemeDB.fallback_font
 		var width := font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,10).x
 		draw_string(font,Vector2((size.x-width)/2,size.y-6),text,HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("#fff0ce"))
