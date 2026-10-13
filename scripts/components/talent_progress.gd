@@ -43,6 +43,18 @@ func mastery_bonuses(weapon: String) -> Dictionary:
 		"critical_chance":0.05+int(values.get("Crítico",0))*0.01,
 		"critical_multiplier":1.5+int(values.get("Dano Crítico",0))*0.03}
 
+func reset_mastery(weapon: String) -> bool:
+	if not mastery.has(weapon):
+		return false
+	var invested := 0
+	for amount: int in mastery[weapon].values():
+		invested += amount
+	if invested == 0:
+		return false
+	for stat: String in TalentRules.MASTERY:
+		mastery[weapon][stat] = 0
+	return true
+
 func reset_tree(weapon: String) -> bool:
 	if not learned.has(weapon) or learned[weapon].is_empty(): return false
 	learned[weapon].clear()
