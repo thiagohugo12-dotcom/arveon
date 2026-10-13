@@ -69,6 +69,14 @@ static func run(suite: SceneTree) -> void:
 	suite.check(imported.import_backup(envelope,true) and imported.to_json() == original,"repeated old import refunds once and never adds rewards")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
+	var reset_sample := GameProgress.new()
+	reset_sample.talents.xp.espada = TalentRules.xp_floor(10)
+	suite.check(reset_sample.talents.allocate_mastery("espada","Crítico",0),"allocate category Domain before respec")
+	var before_other: Dictionary = reset_sample.talents.mastery.machado.duplicate(true)
+	suite.check(reset_sample.talents.reset_mastery("espada") and reset_sample.talents.mastery_points("espada") == 9 and reset_sample.talents.mastery.machado == before_other,"Domain reset refunds only selected category")
+	suite.check(not reset_sample.talents.reset_mastery("espada"),"empty Domain reset rejected")
+	suite.check(reset_sample.load_text(reset_sample.to_json()) and reset_sample.talents.mastery_points("espada") == 9,"Domain reallocation persists after save roundtrip")
+
 static func run_world(suite: SceneTree) -> void:
 	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
 	var path := "user://qa_effective_damage_%d.json" % Time.get_ticks_usec()
