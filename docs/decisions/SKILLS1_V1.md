@@ -29,3 +29,5 @@ Etapa A concluida: Talho Agil, 123 checks especificos sem falhas; regressoes dos
 Etapa B concluida: Racha-Chao, 250 checks acumulados sem falhas; disco/controle 0.25 originais preservados; cinco basicos sem regressao.
 
 Etapa C concluida: Impulso Perfurante, 386 checks acumulados sem falhas; limites 27/29px, alcance190 e ausencia de deslocamento extra confirmados; basicos preservados.
+
+Etapa D concluida: Flecha Certeira, 543 checks acumulados sem falhas; soltura/origem visual e trajetoria fisica, velocidade, alcance e dano originais confirmados; cinco basicos preservados.

@@ -2,6 +2,7 @@ extends "res://scripts/demos/bow_attack_demo.gd"
 const CATALOGUE := preload("res://scripts/demos/skill1_catalogue.gd")
 const SKILL_VIEW := preload("res://scripts/demos/skill1_actor_view.gd")
 const GROUND := preload("res://scripts/demos/skill1_ground_effect.gd")
+const SKILL_PROJECTILE := preload("res://scripts/demos/skill1_projectile.gd")
 var selected_category := "espada"
 var category_buttons: Array[Button] = []
 var ground_effects: Array[Node2D] = []
@@ -46,8 +47,9 @@ func _spawn_projectile(player: PlayerActor,updated: bool,shooter: Node2D,target:
 	var basic: bool = spec.get("source","basic") == "basic" and not spec.get("ultimate",false)
 	if basic and spec.category == "arco": projectile = BowProjectile.new()
 	elif basic and spec.category == "cajado": projectile = StaffProjectile.new()
+	elif updated and spec.category in ["arco","cajado"] and CATALOGUE.supported(spec.category) and spec.get("source","") == CATALOGUE.rule(spec.category).id and not spec.get("ultimate",false): projectile = SKILL_PROJECTILE.new()
 	else: projectile = PlayerProjectile.new()
-	if updated and spec.get("source","") == CATALOGUE.rule(selected_category).id:
+	if projectile.get_script() == SKILL_PROJECTILE:
 		player.view.skill1_direction = player.global_position.direction_to(target.global_position)
 	player.get_parent().add_child(projectile)
 	projectile.setup(shooter,target,spec,Rect2())

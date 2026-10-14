@@ -76,6 +76,13 @@ func run() -> void:
 				for shot in projectiles:
 					shot.set_physics_process(false)
 					check(shot.source == rule.id and shot.category == category and shot.speed == after.attack.weapon.projectile_speed and shot.distance_left == AbilityRules.effect(rule.id).reach,"real projectile specification "+category)
+				for shot in projectiles:
+					check(shot.global_position == shot.shooter.global_position,"original physical projectile origin "+category)
+					if shot.shooter == after:
+						check(shot.get_script() == preload("res://scripts/demos/skill1_projectile.gd") and view.skill1_frame() == 3,"special projectile released on execution frame "+category)
+				step_arrows(0.05)
+				check((projectiles[0].global_position-projectiles[0].shooter.global_position).is_equal_approx(projectiles[1].global_position-projectiles[1].shooter.global_position),"identical actual trajectory "+category)
+				for shot in projectiles: check(is_equal_approx(shot.distance_left,float(AbilityRules.effect(rule.id).reach)-shot.speed*0.05),"same real range budget "+category)
 				for tick in range(100): step_arrows(0.01)
 			else:
 				check(demo.targets[1].health.current < hp and projectiles.is_empty(),"original immediate melee damage "+category)
@@ -114,6 +121,14 @@ func run() -> void:
 				inside.queue_free()
 				beyond.queue_free()
 			for actor in [rear,side,outside]: actor.queue_free()
+			await frames()
+		if category in ["arco","cajado"]:
+			# No other skill, Ultimate or basic may be intercepted by Skill 1 art.
+			for source: String in ["basic",AbilityRules.CATEGORIES[category].normal[0].id,rule.id]:
+				after.attack.projectile_requested.emit(after,demo.targets[1],{"damage":1,"kind":"flecha" if category == "arco" else "orbe","speed":after.attack.weapon.projectile_speed,"reach":100.0,"category":category,"source":source,"ultimate":source==rule.id})
+				var shot: PlayerProjectile = arrows()[0]
+				check(shot.get_script() != preload("res://scripts/demos/skill1_projectile.gd"),"basic/Skill 2/3/Ultimate retains original drawing "+category)
+				shot.finish()
 			await frames()
 		view.clear_skill1()
 		view.set_moving(true)
