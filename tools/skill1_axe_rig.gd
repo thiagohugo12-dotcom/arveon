@@ -15,7 +15,7 @@ func bow_parts() -> void:
 	line(head-blade*5+blade.orthogonal()*7,head+blade*5+blade.orthogonal()*7,Color("#e4e0bd"),1)
 	if frame == 4 or frame == 5:
 		for offset: Vector2 in [Vector2(-5,3),Vector2(4,4),Vector2(1,6)]:
-			draw_rect(Rect2((head+offset).round(),Vector2(2,1)),Color("#d9b77e"))
+			pixel_mark(Rect2((head+offset).round(),Vector2(2,1)),Color("#d9b77e"))
 	var shoulder: Vector2 = MELEE.SHOULDERS[row][0]
 	var other: Vector2 = MELEE.SHOULDERS[row][1]
 	var support := other.lerp(hand-axis*3,0.45).round()

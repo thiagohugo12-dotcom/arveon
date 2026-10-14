@@ -73,3 +73,5 @@ Nao publicar no TESTE fixo/main/PRODUCAO; somente preview apos validacao.
 
 Etapa A V2: Talho Agil com recuo, passada, giro/inclinacao e corte com faixa
 luminosa ligada a lamina; 734 verificacoes sem falhas, margens e identidade conferidas.
+
+Etapa B V2: Racha-Chao levanta tronco/arma e flexiona quadril/joelhos no impacto. 743 checks sem falhas; corrigida ligacao visual entre quadril e pes nas poses elevadas.

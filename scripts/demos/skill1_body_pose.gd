@@ -9,7 +9,8 @@ const PROFILES := {
  "cajado":{"travel":[0,-1,-2,3,2,1,0,0],"crouch":[0,1,1,0,1,1,0,0],"lean":[0,-1,-2,3,2,1,0,0],"twist":[0,-1,-2,2,1,0,0,0],"step":[0,0,-1,2,2,1,0,0]}}
 static func point(p: Vector2,category: String,row: int,frame: int) -> Vector2:
  var profile: Dictionary=PROFILES[category]
- var offset: Vector2=AIM[row]*float(profile.travel[frame])+Vector2(0,profile.crouch[frame])
+ var travel: float=0 if category=="machado" and row<2 else profile.travel[frame]
+ var offset: Vector2=AIM[row]*travel+Vector2(0,profile.crouch[frame])
  var lean: float=profile.lean[frame]*AIM[row].x if row>=2 else profile.twist[frame]
  var weight:=0.75 if p.y<24 else clampf((31-p.y)/16.0,0,0.75)
  return (p+offset+Vector2(lean*weight,0)).round()
