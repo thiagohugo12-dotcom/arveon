@@ -70,6 +70,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/staff_game_tests.gd 2>&1 | tee /tmp/staff-game-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|STAFF_GAME_FAIL:' /tmp/staff-game-tests.log; then exit 1; fi
           grep -E '^STAFF_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/staff-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/melee_demo_tests.gd 2>&1 | tee /tmp/melee-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|MELEE_DEMO_FAIL:' /tmp/melee-tests.log; then exit 1; fi
+          grep -E '^MELEE_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/melee-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -171,6 +174,12 @@ jobs:
         run: node tools/build-bow-demo.mjs
       - name: Prepare isolated staff review entry
         run: node tools/build-staff-demo.mjs
+      - name: Prepare isolated axe and spear reviews
+        run: node tools/build-melee-demos.mjs
+      - name: Verify axe and spear with desktop and touch Chromium
+        run: |
+          MELEE_REVIEW_WEAPON=machado timeout 150s node tests/web_melee_demos.mjs
+          MELEE_REVIEW_WEAPON=lanca timeout 150s node tests/web_melee_demos.mjs
       - name: Verify staff review in desktop and touch Chromium
         run: timeout 150s node tests/web_staff_demo.mjs
       - name: Verify bow review in desktop and touch Chromium
@@ -282,7 +291,10 @@ jobs:
           ')"
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -f ../source/tools/staff-review.json ]]; then
+          if [[ -f ../source/tools/melee-review.json ]]; then
+            # New melee reviews never replace the fixed TESTE before approval.
+            PREVIEW_URL="$preview_url" node ../source/tools/verify-melee-preview.mjs
+          elif [[ -f ../source/tools/staff-review.json ]]; then
             staff_status="$(node --input-type=module -e '
               import { readFileSync } from "node:fs";
               const p=JSON.parse(readFileSync("../source/tools/staff-review.json","utf8"));

@@ -1,4 +1,12 @@
 # Arquitetura
+## Machado/Lanca V1 - demonstracoes
+MeleeReviewDemo estende a UI/mundos/alvos da demonstracao do Arco. Duas cenas
+selecionam a arma e seu perfil real; MeleeReviewView compartilha estado e
+pernas, mas cada atlas usa landmarks e movimentos diferentes. O rig herda
+a composicao aprovada do Cajado, com bracos compactos e cabeca sobre a arma.
+AutoAttack aplica dano imediato pelo caminho original. Nenhum codigo do
+jogo principal muda. A politica melee-review bloqueia o TESTE fixo.
+
 ## Cajado V1 - integracao aprovada
 StaffActorView estende BowActorView, com estado separado para o cajado.
 StaffProjectile reaproveita a fisica e muda somente o desenho/origem visual.

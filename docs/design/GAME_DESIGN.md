@@ -1,4 +1,9 @@
 # Game Design — fundação v0.1
+## Machado e Lanca V1 - desenvolvimento autorizado em 14/10/2026
+Thiago autorizou as duas armas restantes. Conforme ANIMACAO_MACHADO_LANCA_V1.md,
+criar demonstracoes isoladas com golpe amplo/estocada, preservando regras,
+explorador e armas aprovadas. Integracao apos avaliacao visual.
+
 ## Cajado V1 - integracao aprovada em 14/10/2026
 Thiago aprovou visualmente com "coloque no jogo". Integrar o atlas existente
 ao ataque basico do Andar 1 e publicar somente no TESTE apos validacao.
