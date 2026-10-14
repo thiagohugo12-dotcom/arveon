@@ -1,3 +1,10 @@
+## Inspecao visual das Skills 1
+A demonstracao pode congelar PlayerActor e projeteis reais e avancar somente
+ActorView/efeitos em delta local (0.5x ou 1x). Execute/repeat nao chama combate,
+nao cria eventos nem adiciona PlayerProjectile ao grupo real. Desenhos aprovados
+sao reutilizados por wrappers exclusivamente visuais. Modo Combate separado
+preserva o caminho original e os testes existentes. Nenhum atlas foi alterado.
+
 # Arquitetura
 ## Skills 1 V1 - preview isolado
 Skill1ActorView estende MeleeActorView sem alterar os cinco basicos.

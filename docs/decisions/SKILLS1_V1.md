@@ -35,3 +35,27 @@ Etapa D concluida: Flecha Certeira, 543 checks acumulados sem falhas; soltura/or
 Etapa E concluida: Orbe Arcano, 725 checks acumulados sem falhas; rastreio, limites de projeteis e pausa originais preservados. Todas as regressoes locais passaram. Probe nativo de 600 quadros: maximo 1 projetil, crescimento 1 no, pico 66 draw calls, media 8.012ms neste computador (nao e medicao de celular).
 
 Refinamento visual final: Talho Agil de costas corta pelo lado externo da silhueta do cabelo, mantendo corpo/arm spans e todos os 725 checks. Capturas das quatro direcoes renovadas.
+
+
+## Correcao de inspecao visual - autorizada por Thiago
+Base 076e037. Investigacao nativa confirmou atlas especiais carregados e quadros
+novos exibidos; o problema nao era falta dos sprites. Skill ativa por 0.36-0.68s,
+contra cooldown de 6-10s, com basicos em ambos os paineis no restante do tempo.
+O botao de repetir tambem aguardava cooldown. Layout calculava zoom antes de
+reduzir o painel, prejudicando enquadramento principalmente nas direcoes verticais.
+
+Preview agora abre em Inspecao Visual, 0.5x, botao Executar Skill 1 destacado,
+loop visual independente, pausa de basicos e opcao explicita Combate Real.
+Somente views/efeitos avancam em tempo local; nenhum use_skill/ataque/evento real
+ou setup/fisica de projetil e chamado na reproducao. Desenhos dos projeteis sao
+reutilizados por subclasses sem grupo/fisica. Jogadores e projeteis reais ficam
+congelados e sao retomados com cooldown/budget inalterados. Alvo visual proximo
+na inspecao; distancia de combate original restaurada ao sair. Sem Engine.time_scale.
+Atlas/basicos e todo core mantidos byte a byte. Novo enquadramento usa o tamanho
+final do painel. Bridge informa o atlas/quadro do caminho _draw_explorer efetivo.
+
+159 checks de isolamento (inclusive projeteis reais em voo), 725 checks de combate,
+regressoes dos cinco basicos aprovadas. 68 capturas nativas da timeline real, sem
+pose_override, nas quatro direcoes: preparo, execucao, contato e impacto ranged.
+Folhas de contato conferidas visualmente; bracos/armas e efeitos legiveis.
+Publicar somente novo preview isolado; TESTE fixo/main/PRODUCAO preservados.

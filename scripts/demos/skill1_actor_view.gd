@@ -10,6 +10,8 @@ var skill1_preparing := false
 var skill1_weight := 0.0
 var skill1_remaining := 0.0
 var skill1_casts := 0
+var displayed_skill1_frame := -1
+var displayed_skill1_atlas := ""
 var skill1_pose_override := -1
 func configure(category: String) -> void:
 	clear_skill1()
@@ -58,8 +60,12 @@ func skill1_frame() -> int:
 	return clampi(3+int((1-skill1_remaining/maxf(0.01,float(skill_config.get("duration",0.24))))*5),3,7)
 func _draw_explorer(tint: Color) -> void:
 	if skill_texture == null or not village_scale or skill1_phase() < 0:
+		displayed_skill1_frame = -1
+		displayed_skill1_atlas = ""
 		super._draw_explorer(tint)
 		return
+	displayed_skill1_frame = skill1_frame()
+	displayed_skill1_atlas = skill_texture.resource_path
 	var legs := anim_frame if walking or settle_left > 0 else 0
 	draw_texture_rect_region(VillageActorArt.PEOPLE,Rect2(-32,0,64,16),Rect2(legs*32,skill1_row*40+32,32,8),tint)
 	draw_texture_rect_region(skill_texture,Rect2(-80,-104,160,160),Rect2(skill1_frame()*80,skill1_row*80,80,80),tint)

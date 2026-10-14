@@ -79,6 +79,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/skill1_tests.gd 2>&1 | tee /tmp/skill1-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_FAIL:' /tmp/skill1-tests.log; then exit 1; fi
           grep -E '^SKILL1_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-tests.log
+          timeout 90s godot --headless --path . --script res://tests/skill1_inspection_tests.gd 2>&1 | tee /tmp/inspection-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|INSPECTION_FAIL:' /tmp/inspection-tests.log; then exit 1; fi
+          grep -E '^INSPECTION_RESULT: [0-9]+ checks, 0 failures$' /tmp/inspection-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:

@@ -19,6 +19,7 @@ func run() -> void:
 	root.content_scale_size = root.size
 	var demo = SKILL_DEMO.instantiate()
 	root.add_child(demo)
+	demo.set_inspection_mode(false)
 	demo.set_physics_process(false)
 	demo.automatic_skills = false
 	for player in demo.players:

@@ -9,6 +9,20 @@ var ground_effects: Array[Node2D] = []
 var pending_cast := 0.0
 var automatic_skills := true
 var accepted_casts := 0
+var inspection_mode := false
+var visual_speed := 0.5
+var visual_loop := true
+var visual_basics := true
+var visual_time := -1.0
+var visual_wait := 0.0
+var visual_basic_time := 0.0
+var visual_replays := 0
+var inspection_mode_button: Button
+var inspection_loop_button: Button
+var suspended_projectiles: Array[Node2D] = []
+var visual_basic_shot: Node2D
+var visual_shot: Node2D
+const VISUAL_SHOT := preload("res://scripts/demos/skill1_inspection_projectile.gd")
 func _ready() -> void:
 	super._ready()
 	for category: String in CATALOGUE.ORDER:
@@ -16,8 +30,13 @@ func _ready() -> void:
 		button.disabled = not CATALOGUE.supported(category)
 		button.add_theme_font_size_override("font_size",12)
 		category_buttons.append(button)
+	inspection_mode_button = _button("Inspeção visual",func(): set_inspection_mode(not inspection_mode))
+	inspection_loop_button = _button("Repetir: sim",func():
+		visual_loop = not visual_loop
+		inspection_loop_button.text = "Repetir: sim" if visual_loop else "Repetir: não")
 	select_category("espada")
-	attack_button.text = "Automático: sim"
+	set_inspection_mode(true)
+	attack_button.text = "Básicos: sim"
 	subtitle.text = "1–4: direção · R: Skill 1 · C: arma · V: caminhar"
 	if OS.has_feature("web"): JavaScriptBridge.eval("delete window.BowDemoReady; window.Skill1DemoReady=true;")
 func _create_panel(updated: bool) -> void:
@@ -57,6 +76,8 @@ func select_category(category: String) -> void:
 	if not CATALOGUE.supported(category): return
 	selected_category = category
 	pending_cast = 0
+	visual_time = -1
+	clear_visual_shot()
 	for index in range(players.size()):
 		var player := players[index]
 		player.progress.equipment[category] = 0
@@ -67,9 +88,18 @@ func select_category(category: String) -> void:
 		ground_effects[index].clear()
 	for index in range(category_buttons.size()): category_buttons[index].text = ("• " if CATALOGUE.ORDER[index] == category else "")+ArsenalRules.CATEGORIES[CATALOGUE.ORDER[index]].name
 	select_direction(direction_index)
+	if inspection_mode: execute_visual_skill()
 func select_direction(index: int) -> void:
-	super.select_direction(index)
+	if not inspection_mode:
+		super.select_direction(index)
+	else:
+		direction_index = index
+		for i in range(players.size()):
+			players[i].view.set_facing(DIRECTIONS[index])
+		for i in range(direction_buttons.size()): direction_buttons[i].text = ("• " if i == index else "")+LABELS[i]
 	pending_cast = 0
+	visual_time = -1
+	clear_visual_shot()
 	for i in range(players.size()):
 		var player := players[i]
 		player.last_direction = DIRECTIONS[index]
@@ -78,9 +108,10 @@ func select_direction(index: int) -> void:
 		player.view.clear_staff()
 		player.view.clear_melee()
 		if i == 1: player.view.clear_skill1()
-		targets[i].position = origins[i]+DIRECTIONS[index]*(150 if selected_category in ["arco","cajado"] else 80)
+		targets[i].position = origins[i]+DIRECTIONS[index]*(150 if not inspection_mode and selected_category in ["arco","cajado"] else 80)
 		cameras[i].position = origins[i]+Vector2(0,-18)+DIRECTIONS[index]*(65 if selected_category in ["arco","cajado"] else 40)
 		if i < ground_effects.size(): ground_effects[i].clear()
+	_layout()
 func request_skill1() -> bool:
 	var player := players[1]
 	if pending_cast > 0 or not CATALOGUE.supported(selected_category) or not player.health.is_alive() or player.input_driver.blocked or not player.skill_ready(0): return false
@@ -96,8 +127,15 @@ func release_skill1() -> bool:
 	if accepted: accepted_casts += 1
 	else: player.view.clear_skill1()
 	return accepted
-func _repeat() -> void: request_skill1()
+func _repeat() -> void:
+	if inspection_mode: execute_visual_skill()
+	else: request_skill1()
 func _toggle_attacks() -> void:
+	if inspection_mode:
+		visual_basics = not visual_basics
+		attack_button.text = "Básicos: sim" if visual_basics else "Básicos: pausados"
+		if not visual_basics: clear_basic_pose(players[0].view)
+		return
 	attacks_enabled = not attacks_enabled
 	attack_button.text = "Automático: sim" if attacks_enabled else "Automático: não"
 	for player in players: player.attack.armed = attacks_enabled and not player.progress.active_category().is_empty()
@@ -105,9 +143,14 @@ func _toggle_attacks() -> void:
 		pending_cast = 0
 		players[1].view.clear_skill1()
 func _toggle_dex() -> void:
+	if inspection_mode:
+		visual_speed = 1.0 if visual_speed == 0.5 else 0.5
+		dex_button.text = "Velocidade: 0,5×" if visual_speed == 0.5 else "Velocidade: 1×"
+		return
 	super._toggle_dex()
 	for player in players: player.attack.armed = attacks_enabled and not player.progress.active_category().is_empty()
 func _physics_process(delta: float) -> void:
+	if inspection_mode: return
 	super._physics_process(delta)
 	if players.size() < 2: return
 	var player := players[1]
@@ -123,17 +166,21 @@ func _physics_process(delta: float) -> void:
 		request_skill1()
 func _process(delta: float) -> void:
 	if players.size() < 2 or status == null: return
+	if inspection_mode: step_inspection(delta*visual_speed)
 	var player := players[1]
 	var phase: int = player.view.skill1_phase()
 	var cooldown: float = player.progress.abilities.skill1_cooldowns[selected_category]
 	var description: String = ["Preparação","Execução","Impacto","Recuperação"][phase] if phase >= 0 else "Básico / caminhada"
 	status.text = "%s · %s\nRecarga: %.1fs · Acertos: %d" % [LABELS[direction_index],description,cooldown,targets[1].hits]
-	buttons[8].text = "Skill 1" if cooldown <= 0 else "%.1fs" % cooldown
+	if inspection_mode:
+		if targets[1].view.impact_left > 0: description = "Impacto visual"
+		status.text = "INSPEÇÃO · sem dano ou disparos reais\n%s · %s · Quadro %d/8" % [LABELS[direction_index],description,player.view.skill1_frame()+1 if phase >= 0 else 0]
+	buttons[8].text = "Executar Skill 1"
 	if OS.has_feature("web"):
 		qa_bridge_left -= delta
 		if qa_bridge_left <= 0:
 			qa_bridge_left = 0.1
-			JavaScriptBridge.eval("window.Skill1DemoState=%s;" % JSON.stringify({"automatic":attacks_enabled,"category":selected_category,"name":CATALOGUE.rule(selected_category).name,"direction":direction_index,"walking":player.view.walking,"phase":phase,"casts":accepted_casts,"cooldown":cooldown,"hits":targets[1].hits,"basic_hits":targets[0].hits,"writes":player.progress.disk_writes,"projectiles":get_tree().get_nodes_in_group("player_projectiles").size()}))
+			JavaScriptBridge.eval("window.Skill1DemoState=%s;" % JSON.stringify({"inspection":inspection_mode,"speed":visual_speed,"visual_replays":visual_replays,"displayed_frame":player.view.displayed_skill1_frame,"displayed_atlas":player.view.displayed_skill1_atlas,"automatic":visual_basics if inspection_mode else attacks_enabled,"category":selected_category,"name":CATALOGUE.rule(selected_category).name,"direction":direction_index,"walking":player.view.walking,"phase":phase,"casts":accepted_casts,"cooldown":cooldown,"hits":targets[1].hits,"basic_hits":targets[0].hits,"writes":player.progress.disk_writes,"projectiles":get_tree().get_nodes_in_group("player_projectiles").size()}))
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_C:
 		var next := (CATALOGUE.ORDER.find(selected_category)+1)%5
@@ -147,20 +194,165 @@ func _layout() -> void:
 	var area := size
 	var portrait := area.x < 700
 	var short_landscape := area.y < 520 and not portrait
-	heading.text = "SKILLS 1 · "+CATALOGUE.rule(selected_category).name
-	heading.add_theme_font_size_override("font_size",18 if portrait else 23)
-	var usable_width := area.x-352 if short_landscape else area.x-32
+	var usable := area.x-352 if short_landscape else area.x-32
+	heading.text = CATALOGUE.rule(selected_category).name
+	heading.add_theme_font_size_override("font_size",20 if portrait else 25)
+	subtitle.text = "INSPEÇÃO VISUAL · R: executar · X: velocidade" if inspection_mode else "COMBATE REAL · recargas e regras originais"
 	for i in range(category_buttons.size()):
-		category_buttons[i].position = Vector2(16+i*usable_width/5,72)
-		category_buttons[i].size = Vector2(usable_width/5-4,34)
-	var available := area.y-220-124
+		category_buttons[i].position = Vector2(16+i*usable/5,72)
+		category_buttons[i].size = Vector2(usable/5-4,34)
+	if inspection_mode_button == null: return
+	buttons[8].position = Vector2(16,112)
+	buttons[8].size = Vector2(usable if portrait else usable*0.44-4,40)
+	buttons[8].add_theme_font_size_override("font_size",17 if not short_landscape else 13)
+	inspection_mode_button.position = Vector2(16 if portrait else 16+usable*0.44,156 if portrait else 112)
+	inspection_mode_button.size = Vector2(usable*0.55-4 if portrait else usable*0.32-4,36)
+	inspection_mode_button.text = "Modo: Inspeção" if inspection_mode else "Modo: Combate"
+	inspection_loop_button.position = Vector2(16+usable*0.55 if portrait else 16+usable*0.76,156 if portrait else 112)
+	inspection_loop_button.size = Vector2(usable*0.45-4 if portrait else usable*0.24-4,36)
+	inspection_loop_button.visible = inspection_mode
+	var top := 204 if portrait else 160
+	var end := area.y-228 if not short_landscape else area.y-12
+	var height := maxf(100,end-top)
 	for i in range(2):
-		if portrait:
-			panels[i].position = Vector2(16,120+i*(available/2+6))
-			panels[i].size = Vector2(area.x-32,available/2-6)
+		panels[i].position = Vector2(16,top+i*(height/2+3)) if portrait else Vector2(16+i*usable/2,top)
+		panels[i].size = Vector2(usable,height/2-3) if portrait else Vector2(usable/2-6,height)
+		var label := panels[i].get_child(0) as Label
+		label.text = "SKILL 1 · "+CATALOGUE.rule(selected_category).name if i == 1 else "ATAQUE BÁSICO · "+ArsenalRules.CATEGORIES[selected_category].name
+		label.add_theme_font_size_override("font_size",12 if portrait or short_landscape else 15)
+		var container := panels[i].get_child(1) as SubViewportContainer
+		container.size = panels[i].size-Vector2(10,45)
+		if inspection_mode:
+			# Fit the actual full-body sprite after resizing panels, not before.
+			var zoom := minf(container.size.x/220,container.size.y/150)
+			cameras[i].zoom = Vector2.ONE*maxf(0.55,minf(2.3,zoom)) if inspection_zoom else Vector2.ONE
+			cameras[i].position = origins[i]+Vector2(0,-30)+DIRECTIONS[direction_index]*20
+		if short_landscape: status.position.y = 204
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("#39795b")
+	style.border_color = Color("#ffe1a1")
+	style.set_border_width_all(3)
+	buttons[8].add_theme_stylebox_override("normal",style)
+	buttons[8].text = "Executar Skill 1"
+
+func clear_basic_pose(view: Node2D) -> void:
+	view.clear_sword()
+	view.clear_bow()
+	view.clear_staff()
+	view.clear_melee()
+
+func clear_visual_shot() -> void:
+	if is_instance_valid(visual_basic_shot): visual_basic_shot.queue_free()
+	visual_basic_shot = null
+	if is_instance_valid(visual_shot): visual_shot.queue_free()
+	visual_shot = null
+
+func set_inspection_mode(value: bool) -> void:
+	inspection_mode = value
+	pending_cast = 0
+	visual_time = -1
+	clear_visual_shot()
+	if value:
+		for projectile in get_tree().get_nodes_in_group("player_projectiles"):
+			projectile.set_physics_process(false)
+			projectile.hide()
+			suspended_projectiles.append(projectile)
+	else:
+		for projectile in suspended_projectiles:
+			if is_instance_valid(projectile):
+				projectile.set_physics_process(true)
+				projectile.show()
+		suspended_projectiles.clear()
+	for i in range(players.size()):
+		players[i].set_physics_process(not value)
+		players[i].view.set_process(not value)
+		targets[i].set_physics_process(not value)
+		targets[i].view.set_process(not value)
+		ground_effects[i].set_process(not value)
+		clear_basic_pose(players[i].view)
+		targets[i].position = origins[i]+DIRECTIONS[direction_index]*(150 if not value and selected_category in ["arco","cajado"] else 80)
+		ground_effects[i].clear()
+	players[1].view.clear_skill1()
+	attack_button.text = ("Básicos: sim" if visual_basics else "Básicos: pausados") if value else ("Automático: sim" if attacks_enabled else "Automático: não")
+	dex_button.text = ("Velocidade: 0,5×" if visual_speed == 0.5 else "Velocidade: 1×") if value else "Destreza: %d" % dexterity
+	_layout()
+	if value: execute_visual_skill()
+
+func execute_visual_skill() -> void:
+	if not inspection_mode: return
+	clear_visual_shot()
+	clear_basic_pose(players[1].view)
+	players[1].view.clear_skill1()
+	ground_effects[1].clear()
+	visual_time = 0
+	visual_wait = 0
+	visual_replays += 1
+	players[1].view.prepare_skill1(DIRECTIONS[direction_index],0)
+	visual_basic_time = 0
+
+func step_inspection(delta: float) -> void:
+	# No PlayerActor, ClassCombat, AutoAttack, event IDs or projectile setup calls.
+	var view = players[1].view
+	var prepare: float = CATALOGUE.CONFIGS[selected_category].prepare
+	var duration: float = CATALOGUE.CONFIGS[selected_category].duration
+	var aim: Vector2 = DIRECTIONS[direction_index]
+	walk_time += delta
+	for i in range(2):
+		var moving: bool = automatic_walk or not drivers[i].touch_direction.is_zero_approx()
+		players[i].view.set_moving(moving)
+		if moving:
+			players[i].view.walk_distance += delta*110 # Visual gait only; physical feet stay planted.
+		players[i].view._process(delta)
+		targets[i].view._process(delta)
+		ground_effects[i]._process(delta)
+	visual_basic_time += delta
+	if visual_basics:
+		var basic = players[0].view
+		var interval: float = players[0].attack.weapon.interval
+		if visual_basic_time >= interval:
+			visual_basic_time = 0
+			match selected_category:
+				"espada": basic.play_sword_attack(aim,interval)
+				"machado","lanca":
+					basic.weapon_kind = 0 if selected_category == "machado" else 1
+					basic.play_melee(aim,interval)
+				"arco": basic.play_bow_attack(aim,interval)
+				"cajado": basic.play_staff_attack(aim,interval)
+			if selected_category in ["arco","cajado"]:
+				if is_instance_valid(visual_basic_shot): visual_basic_shot.queue_free()
+				visual_basic_shot = VISUAL_SHOT.new()
+				players[0].get_parent().add_child(visual_basic_shot)
+				visual_basic_shot.configure_visual(players[0].global_position,targets[0].global_position,selected_category,false)
+	if is_instance_valid(visual_basic_shot) and visual_basic_shot.advance_visual(delta):
+		targets[0].view.skill1_impact = ""
+		targets[0].view.impact_left = targets[0].view.IMPACT_DURATION
+		visual_basic_shot.queue_free()
+		visual_basic_shot = null
+	if visual_time < 0:
+		visual_wait += delta
+		if visual_loop and visual_wait >= 0.65: execute_visual_skill()
+		return
+	var previous := visual_time
+	visual_time += delta
+	if visual_time < prepare:
+		view.prepare_skill1(aim,visual_time/prepare)
+	elif previous < prepare:
+		view.skill1_direction = aim
+		view.play_skill(0) # View only; never PlayerActor.use_skill.
+		ground_effects[1].show_cast(players[1].global_position,aim,selected_category)
+		if selected_category in ["arco","cajado"]:
+			visual_shot = VISUAL_SHOT.new()
+			players[1].get_parent().add_child(visual_shot)
+			visual_shot.configure_visual(players[1].global_position,targets[1].global_position,selected_category)
 		else:
-			panels[i].position.y = 120
-			panels[i].size.y = area.y-132 if short_landscape else available
-		(panels[i].get_child(0) as Label).text = "SKILL 1 · "+CATALOGUE.rule(selected_category).name if i == 1 else "BÁSICO · "+ArsenalRules.CATEGORIES[selected_category].name
-		(panels[i].get_child(0) as Label).add_theme_font_size_override("font_size",13 if short_landscape else 15)
-		(panels[i].get_child(1) as SubViewportContainer).size = panels[i].size-Vector2(10,45)
+			targets[1].view.skill1_impact = selected_category
+			targets[1].view.impact_left = targets[1].view.IMPACT_DURATION
+	if is_instance_valid(visual_shot):
+		if visual_shot.advance_visual(delta):
+			targets[1].view.skill1_impact = selected_category
+			targets[1].view.impact_left = targets[1].view.IMPACT_DURATION
+			visual_shot.queue_free()
+			visual_shot = null
+	if visual_time >= prepare+maxf(duration,0.8):
+		visual_time = -1
+		visual_wait = 0

@@ -7,6 +7,7 @@ func run() -> void:
 	root.content_scale_size = root.size
 	var demo := preload("res://scenes/demos/skill1_review.tscn").instantiate()
 	root.add_child(demo)
+	demo.set_inspection_mode(false)
 	var maximum_projectiles := 0
 	var maximum_growth := 0
 	var draw_calls := 0

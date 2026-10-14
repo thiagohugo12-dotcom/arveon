@@ -85,7 +85,41 @@ try{
   await until('document.readyState === "complete" && location.pathname === "/seed.html"');
   await evaluate('localStorage.setItem("grande-arvore-rpg.save.v6","skill1-review-sentinel"); localStorage.setItem("grande-arvore-rpg.save.v6.previous","backup-sentinel")');
   await call('Page.navigate',{url:origin+'/amostra-skills1/index.html'});
-  await until('window.Skill1DemoReady && window.Skill1DemoState?.casts >= 1');
+  await until('window.Skill1DemoReady && window.Skill1DemoState?.inspection');
+  check(await evaluate('window.Skill1DemoState.speed === .5'),'default half-speed visual inspection');
+  const isolated=await evaluate('JSON.stringify([window.Skill1DemoState.casts,window.Skill1DemoState.hits,window.Skill1DemoState.projectiles,window.Skill1DemoState.cooldown])');
+  for(let categoryIndex=0;categoryIndex<5;categoryIndex++){
+    await click(16+(960-32)/5*(categoryIndex+.5),89);
+    const atlas=['espada','machado','lanca','arco','cajado'][categoryIndex];
+    for(let direction=0;direction<4;direction++){
+      await click(16+(960-32)/4*(direction+.5),419);
+      const replay=await evaluate('window.Skill1DemoState.visual_replays');
+      await click(180,132);
+      await until(`window.Skill1DemoState.visual_replays > ${replay} && window.Skill1DemoState.displayed_frame >= 0 && window.Skill1DemoState.displayed_atlas.endsWith('/${atlas}.png')`);
+      check(true,`actual rendered special atlas ${atlas} direction ${direction}`);
+    }
+  }
+  const replay=await evaluate('window.Skill1DemoState.visual_replays');
+  for(let i=0;i<3;i++)await click(180,132);
+  check(await evaluate(`window.Skill1DemoState.visual_replays >= ${replay+3}`),'manual repetitions do not wait for real cooldown');
+  check(await evaluate('window.Skill1DemoState.casts === 0 && window.Skill1DemoState.hits === 0 && window.Skill1DemoState.projectiles === 0'),'visual mode creates no real casts, damage or projectiles');
+  await click(200,501);
+  await until('window.Skill1DemoState.speed === 1');
+  check(true,'visual speed toggle does not change real combat');
+  await click(700,463);
+  await until('window.Skill1DemoState.automatic === false');
+  check(true,'basic comparison can pause independently');
+  await viewport(390,844,true);
+  const touchReplay=await evaluate('window.Skill1DemoState.visual_replays');
+  await click(180,132,true);
+  await until(`window.Skill1DemoState.visual_replays > ${touchReplay}`);
+  check(true,'highlighted inspection button works by touch');
+  await capture('inspection-portrait');
+  await viewport(960,620,false);
+  await click(560,132); // Explicitly enter original real-combat mode for existing regression flow.
+  await until('!window.Skill1DemoState.inspection');
+  await click(16+(960-32)/5*.5,89);
+  await until('window.Skill1DemoState.casts >= 1');
   check(await evaluate('!window.GrandeArvoreSave'),'isolated review never initializes journal');
   const names=['Talho Ágil','Racha-Chão','Impulso Perfurante','Flecha Certeira','Orbe Arcano'];
   const categories=['espada','machado','lanca','arco','cajado'];
@@ -133,7 +167,7 @@ try{
   await until('window.Skill1DemoState.cooldown <= .001');
   const oldCasts=await evaluate('window.Skill1DemoState.casts');
   const oldHits=await evaluate('window.Skill1DemoState.hits');
-  await click(145,791,true);
+  await click(180,132,true);
   await until(`window.Skill1DemoState.casts > ${oldCasts} && window.Skill1DemoState.hits > ${oldHits}`);
   check(true,'manual touch Skill 1 executes actual combat after real cooldown');
   await capture('portrait');
