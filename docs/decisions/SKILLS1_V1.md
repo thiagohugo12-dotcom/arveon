@@ -25,3 +25,5 @@ sem Main/journal/saves. TESTE fixo aff0c45, main e producao preservados.
 Integracao das Skills 1 ao jogo depende de aprovacao visual posterior.
 
 Etapa A concluida: Talho Agil, 123 checks especificos sem falhas; regressoes dos cinco basicos passaram; captura Godot 4.5.1 desktop/mobile conferida.
+
+Etapa B concluida: Racha-Chao, 250 checks acumulados sem falhas; disco/controle 0.25 originais preservados; cinco basicos sem regressao.

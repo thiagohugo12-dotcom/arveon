@@ -1,4 +1,4 @@
-extends "res://tools/staff_pose_rig.gd"
+extends "res://tools/skill1_rig.gd"
 const MELEE_DATA := preload("res://scripts/demos/melee_pose_data.gd")
 func bow_parts() -> void:
 	var shoulder: Vector2 = MELEE_DATA.SHOULDERS[row][0]

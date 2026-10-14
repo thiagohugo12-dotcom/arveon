@@ -29,7 +29,7 @@ func run() -> void:
 			atlas.blit_rect(cell,Rect2i(0,0,80,80),Vector2i(frame*80,row*80))
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://assets/art/skills1_v1"))
 	var error := atlas.save_png("res://assets/art/skills1_v1/"+category+".png")
-	print("SKILL1_BAKE: ",category," result ",error)
+	print("SKILL1_BAKE: ",category," result ",error," max arm span ",rig.max_arm_span)
 	viewport.queue_free()
 	await process_frame
 	quit(0 if error == OK else 1)

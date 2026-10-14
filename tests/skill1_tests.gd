@@ -61,6 +61,7 @@ func run() -> void:
 				player._sync_skill_cooldowns()
 				player.last_direction = SwordActorView.DIRECTIONS[row]
 			var hp: int = demo.targets[1].health.current
+			var before_hp: int = demo.targets[0].health.current
 			var casts: int = view.skill1_casts
 			check(demo.request_skill1() and view.skill1_phase() == 0,"visual preparation "+category)
 			check(after.progress.abilities.skill1_cooldowns[category] == 0 and demo.targets[1].health.current == hp and arrows().is_empty(),"preparation spends/deals/spawns nothing "+category)
@@ -76,7 +77,8 @@ func run() -> void:
 				for tick in range(100): step_arrows(0.01)
 			else:
 				check(demo.targets[1].health.current < hp and projectiles.is_empty(),"original immediate melee damage "+category)
-			check(demo.targets[0].total_damage == demo.targets[1].total_damage,"equal resolved damage with/without new presentation "+category)
+			if category == "machado": check(is_equal_approx(demo.targets[1].control_left,0.25),"original Racha-Chao control duration")
+			check(before_hp-demo.targets[0].health.current == hp-demo.targets[1].health.current,"equal resolved damage with/without new presentation "+category)
 			var damaged: int = demo.targets[1].health.current
 			check(not after.use_skill(0) and view.skill1_casts == casts+1 and demo.targets[1].health.current == damaged,"cooldown prevents duplicate cast/damage "+category)
 			view._process(float(config.duration)*0.3)
