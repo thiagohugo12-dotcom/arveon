@@ -61,6 +61,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/bow_demo_tests.gd 2>&1 | tee /tmp/bow-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|BOW_DEMO_FAIL:' /tmp/bow-tests.log; then exit 1; fi
           grep -E '^BOW_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/bow-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/bow_game_tests.gd 2>&1 | tee /tmp/bow-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|BOW_GAME_FAIL:' /tmp/bow-game-tests.log; then exit 1; fi
+          grep -E '^BOW_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/bow-game-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -270,10 +273,20 @@ jobs:
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
           if [[ -f ../source/tools/bow-review.json ]]; then
-            # Bow review never calls the fixed TESTE alias publisher.
-            PREVIEW_URL="$preview_url" node ../source/tools/verify-bow-preview.mjs
-            echo "[Arco V1 — demonstração isolada]($preview_url/amostra-arco/index.html)" >> "$GITHUB_STEP_SUMMARY"
-            echo "TESTE fixo e preview anterior da espada preservados." >> "$GITHUB_STEP_SUMMARY"
+            bow_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/bow-review.json","utf8"));
+              if(p.entry!=="amostra-arco/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$bow_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-bow-preview.mjs
+            fi
           else
             review_status="$(node --input-type=module -e '
               import { readFileSync } from "node:fs";

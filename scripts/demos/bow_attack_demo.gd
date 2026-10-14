@@ -196,7 +196,7 @@ func select_direction(index: int) -> void:
 		players[i].view.attack_left = 0
 		if players[i].view is NEW_VIEW:
 			players[i].view.bow_time = 0
-			players[i].view.cancel_preparation()
+			players[i].view.cancel_bow_preparation()
 		targets[i].position = origins[i]+DIRECTIONS[index]*160
 		cameras[i].position = origins[i]+Vector2(0,-18)+DIRECTIONS[index]*70
 	for i in range(direction_buttons.size()):
@@ -214,7 +214,7 @@ func _toggle_attacks() -> void:
 	for target in targets: target.enabled = attacks_enabled
 	if not attacks_enabled:
 		for player in players:
-			if player.view is NEW_VIEW: player.view.cancel_preparation()
+			if player.view is NEW_VIEW: player.view.cancel_bow_preparation()
 
 func _toggle_dex() -> void:
 	dexterity = 20 if dexterity == 0 else 0

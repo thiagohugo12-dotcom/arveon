@@ -2,7 +2,7 @@ extends Node2D
 ## Build-time only: approved torso pixels, articulated arms and an actual bowstring.
 const PEOPLE := preload("res://assets/art/actors_v4/people.png")
 const AIM := [Vector2.DOWN,Vector2.UP,Vector2.LEFT,Vector2.RIGHT]
-const CENTRES := [Vector2(21,31),Vector2(10,20),Vector2(4,26),Vector2(27,26)]
+const CENTRES := [Vector2(19,29),Vector2(12,22),Vector2(10,26),Vector2(21,26)]
 const SHOULDERS := [[Vector2(22,27),Vector2(10,27)],[Vector2(9,24),Vector2(22,24)],[Vector2(17,26),Vector2(19,25)],[Vector2(14,26),Vector2(12,25)]]
 var row := 0
 var frame := 0
@@ -23,7 +23,7 @@ func bow_parts() -> void:
 	var settle := maxi(0,frame-5)
 	var centre: Vector2 = CENTRES[row]+Vector2(0,settle)
 	var pull: float = [1,3,6,8,0,0,1,0][frame]
-	if row == 0: pull *= 0.5 # Foreshortened draw stays below the face.
+	pull *= 0.5 if row == 0 else 0.75 # Compact reach; keep the same draw/release phases.
 	var tip_a := centre+side*11
 	var tip_b := centre-side*11
 	var grip := centre+direction*4
@@ -42,9 +42,9 @@ func bow_parts() -> void:
 		line(nock+side*2,nock-direction*2,Color("#72af9c"))
 	var bow_shoulder: Vector2 = SHOULDERS[row][0]
 	var draw_shoulder: Vector2 = SHOULDERS[row][1]
-	arm(bow_shoulder,(bow_shoulder+grip)*0.5+side*2,grip)
-	var draw_hand := nock if frame < 4 else centre-direction*8+side*3 if frame == 4 else draw_shoulder+Vector2(0,6-settle)
-	arm(draw_shoulder,(draw_shoulder+draw_hand)*0.5-side*3,draw_hand)
+	arm(bow_shoulder,(bow_shoulder+grip)*0.5+side,grip)
+	var draw_hand := nock if frame < 4 else centre-direction*6+side*2 if frame == 4 else draw_shoulder+Vector2(0,6-settle)
+	arm(draw_shoulder,(draw_shoulder+draw_hand)*0.5-side*2,draw_hand)
 
 func _draw() -> void:
 	draw_set_transform(Vector2(-16,-32))

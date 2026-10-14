@@ -1,4 +1,4 @@
-# Arco V1 — atlas exclusivo da demonstração
+# Arco V1 — atlas reutilizado no jogo e na demonstração
 
 Explorador original: `actors_v4/people.png`, sem alteração de seus pixels.
 Rig de braços, arco e corda: `tools/bow_pose_rig.gd`. Bake reproduzível pelo
@@ -15,4 +15,7 @@ Godot 4.5.1: `--path . --audio-driver Dummy --rendering-method gl_compatibility
   Destreza altera o intervalo por suas regras originais, escalando as poses.
 - MUZZLES acompanha o grip em pixels de jogo; desloca apenas a apresentação,
   nunca origem física, colisões, velocidade, dano ou alcance da flecha.
-- Demo isolada. Nenhum arquivo/pose da espada substituído.
+- Em 14/10/2026, braços encurtados nas quatro direções por ajuste das
+  ancoragens do rig existente. Mesmo personagem, atlas, fases e caminhada.
+- BowActorView/BowProjectile reutilizam a apresentação da demonstração
+  no básico do Andar 1. Nenhum arquivo/pose da espada substituído.

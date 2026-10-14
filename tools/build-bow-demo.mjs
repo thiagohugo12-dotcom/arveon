@@ -1,7 +1,8 @@
 // New isolated entry. Neither main HTML nor the approved sword entry is replaced.
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 const review=JSON.parse(await readFile('tools/bow-review.json','utf8'));
-if(review.status!=='awaiting-visual-approval'||review.fixedTestAlias!==false||review.entry!=='amostra-arco/index.html')throw Error('Invalid bow isolation policy');
+const valid=(review.status==='awaiting-visual-approval'&&review.fixedTestAlias===false)||(review.status==='approved-in-game'&&review.fixedTestAlias===true);
+if(!valid||review.entry!=='amostra-arco/index.html')throw Error('Invalid bow review policy');
 const source=await readFile('build/web/index.html','utf8');
 const match=source.match(/const GODOT_CONFIG = (.*);/);
 if(!match)throw Error('Godot shell configuration missing');

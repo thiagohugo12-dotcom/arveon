@@ -1,5 +1,16 @@
 # Arquitetura
-## Arco V1 — demonstração isolada
+## Arco V1 — integração aprovada
+BowActorView estende SwordActorView sem alterar seus frames ou comportamento.
+As poses do arco usam estado independente; PlayerActor antecipa apenas durante
+cooldown e dispara a pose pelo mesmo sinal de AutoAttack. BowProjectile muda
+somente o desenho do básico no Andar 1; Skills e pisos legados usam a classe
+original. Troca de arma, morte, modais e área segura limpam as poses.
+O atlas existente foi ajustado apenas nas ancoragens/extensão dos braços e
+do arco. Personagem, dimensões, oito poses, pernas e cadência preservados.
+Publicação no TESTE autorizada em 14/10; política aprovada é validada antes
+de chamar o publicador do alias. Dados de save/progressão não mudam.
+
+## Demonstração do arco preservada
 BowAttackDemo cria dois mundos e perfis somente em memória. Antes usa
 PlayerActor/ActorView/PlayerProjectile; Agora usa subclasses exclusivas da
 demonstração para antecipar poses e deslocar somente o desenho da flecha.
@@ -8,8 +19,8 @@ Alvos de treino derivam de EnemyActor para exercitar impactos reais; nenhum
 recibo/recompensa é conectado à progressão. Sem Main ou journal de save.
 Atlas de oito quadros e quatro direções com pés em (40,52), escala inteira 2x,
 pernas originais independentes. Rig/baker não entram na exportação Web.
-bow-review.json bloqueia o publicador do alias TESTE e valida seus hashes
-originais após criar o preview exclusivo. A espada não é modificada.
+A demonstração reutiliza as classes de apresentação integradas. A espada
+não é modificada; o modo Antes continua usando ActorView/PlayerProjectile.
 
 ## Espada V1 — apresentação aprovada
 PlayerActor antecipa apenas poses durante o cooldown; o sinal original de

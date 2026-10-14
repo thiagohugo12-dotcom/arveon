@@ -1,9 +1,9 @@
 # Game Design — fundação v0.1
-## Arco V1 — demonstração autorizada em 13/10/2026
-Conforme ANIMACAO_ARCO_V1.md: desenvolver apenas o básico do arco em cena
-isolada, reutilizando explorador e caminhada, sem alterar regras/projéteis
-reais ou a espada aprovada. TESTE fixo e produção preservados. Integração e
-Machado/Lança/Cajado aguardam aprovação visual do usuário.
+## Arco V1 — integração autorizada em 14/10/2026
+Conforme ANIMACAO_ARCO_V1.md: encurtar braços nas quatro direções do atlas
+existente e integrar o básico no Andar 1. Publicar somente no TESTE fixo após
+validação. Preservar espada, caminhada, regras, atributos, Skills e save v11.
+Machado/Lança/Cajado aguardam aprovação; produção fora do escopo.
 
 ## Espada V1 — integração aprovada em 13/10/2026
 Conforme ANIMACAO_ESPADA_V1.md e “aprovado, pode colocar” de Thiago:

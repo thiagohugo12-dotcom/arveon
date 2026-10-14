@@ -104,7 +104,10 @@ func run() -> void:
 		check(view.phase() == -1,"equip cancels stale sword for "+category)
 		var swings := view.sword_attacks
 		player._on_attack(main.enemy)
-		check(view.sword_attacks == swings and view.attack_left > 0.0,"other weapon retains original visual "+category)
+		if category == "arco" and view is BowActorView:
+			check(view.sword_attacks == swings and (view as BowActorView).bow_phase() == 2,"bow animation stays independent of sword")
+		else:
+			check(view.sword_attacks == swings and view.attack_left > 0.0,"other weapon retains original visual "+category)
 	main.progress.equipped.Arma = ""
 	player.apply_progression(main.progress)
 	check(not player.attack.armed and view.phase() == -1 and view.attack_left == 0.0,"unequip clears sword and disables combat")
