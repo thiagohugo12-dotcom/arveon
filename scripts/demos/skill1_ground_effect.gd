@@ -29,10 +29,13 @@ func _draw() -> void:
 	var progress := 1-remaining/duration
 	var alpha := remaining/duration
 	if category == "espada":
-		var radius := lerpf(40,float(geometry.reach),progress)
-		for mark in range(13):
-			var point := (direction.rotated(-PI/2+mark*PI/12)*radius).round()
-			draw_rect(Rect2(point,Vector2(3,3)),Color(1,0.94,0.72,alpha))
+		var radius := lerpf(52,float(geometry.reach),progress)
+		for mark in range(12):
+			var a := direction.rotated(-PI/2+mark*PI/12)
+			var b := direction.rotated(-PI/2+(mark+1)*PI/12)
+			var points := PackedVector2Array([(a*(radius-7)).snapped(Vector2(2,2)),(a*radius).snapped(Vector2(2,2)),(b*radius).snapped(Vector2(2,2)),(b*(radius-7)).snapped(Vector2(2,2))])
+			draw_colored_polygon(points,Color(0.47,0.86,0.84,alpha*0.55))
+			draw_line(points[1],points[2],Color(0.85,1.0,0.93,alpha),2,false)
 	elif category == "machado":
 		# Actual Racha-Chao is a disk around the player's feet, not a forward cone.
 		var radius := lerpf(15,float(geometry.reach),progress)

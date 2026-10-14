@@ -1,3 +1,9 @@
+## Skill 1 - poses de corpo inteiro V2
+Skill1BodyPose compartilha os landmarks em pixels com o baker e a origem visual
+de projeteis. Full-body inclui apoio dos pes parado; upper-body combina a acao
+com pernas originais durante caminhada. Transformacoes de pose sao rasterizadas
+no atlas, nunca aplicadas ao PlayerActor fisico. Core/basicos preservados.
+
 ## Inspecao visual das Skills 1
 A demonstracao pode congelar PlayerActor e projeteis reais e avancar somente
 ActorView/efeitos em delta local (0.5x ou 1x). Execute/repeat nao chama combate,

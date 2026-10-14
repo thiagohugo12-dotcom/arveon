@@ -4,6 +4,9 @@ const STAFF_DATA := preload("res://scripts/demos/staff_pose_data.gd")
 func setup(player: PlayerActor,selected: Node2D,spec: Dictionary,bounds: Rect2) -> void:
 	super.setup(player,selected,spec,bounds)
 	if category == "cajado": visual_start = STAFF_DATA.muzzle(BowActorView.direction_row(direction))
+	if preload("res://scripts/demos/skill1_catalogue.gd").CONFIGS[category].get("body",false):
+		visual_start = preload("res://scripts/demos/skill1_body_pose.gd").muzzle(category,BowActorView.direction_row(direction))
+		visual_direction = (selected.global_position+visual_end-(player.global_position+visual_start)).normalized()
 func draw_orb() -> void:
 	var point := (global_position+visual_offset()).round()
 	draw_set_transform(to_local(point),-rotation)

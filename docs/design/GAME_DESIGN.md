@@ -1,3 +1,8 @@
+## Skills 1 - atuacao corporal V2 autorizada
+Pedido do usuario: movimentos reais de corpo, apoio, antecipacao e recuperacao
+conforme referencia das cinco armas. Preview isolado, sem alterar combate ou
+basicos. Conforme docs/decisions/SKILLS1_V1.md; avaliacao visual pendente.
+
 # Game Design — fundação v0.1
 ## Skills 1 V1 - autorizadas em 14/10/2026
 Conforme SKILLS1_V1.md: cinco etapas independentes com commit/testes,

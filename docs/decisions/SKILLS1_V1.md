@@ -59,3 +59,17 @@ regressoes dos cinco basicos aprovadas. 68 capturas nativas da timeline real, se
 pose_override, nas quatro direcoes: preparo, execucao, contato e impacto ranged.
 Folhas de contato conferidas visualmente; bracos/armas e efeitos legiveis.
 Publicar somente novo preview isolado; TESTE fixo/main/PRODUCAO preservados.
+
+
+## Corpo inteiro V2 - autorizado pelo usuario
+Pedido "quero animacoes de verdade", referencia de cinco acoes corporais.
+Base d647b7e; checkpoint checkpoint-antes-skills1-corpo-v2-2026-10-14.
+Cada Skill recebe antecipacao, apoio/passo, inclinacao do tronco/cabeca e
+recuperacao proprios. Pixels do explorador preservados, sem recolorir identidade.
+Atlas full body parado e upper body caminhando; pernas originais seguem a caminhada.
+Sem alterar fisica, deslocamento real, alcance, dano, cadencia, progressao ou basicos.
+Arco/Cajado nascem visualmente dos landmarks da pose nova, com fisica original.
+Nao publicar no TESTE fixo/main/PRODUCAO; somente preview apos validacao.
+
+Etapa A V2: Talho Agil com recuo, passada, giro/inclinacao e corte com faixa
+luminosa ligada a lamina; 734 verificacoes sem falhas, margens e identidade conferidas.

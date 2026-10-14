@@ -50,9 +50,16 @@ func run() -> void:
 					for x in range(32):
 						var original := people.get_pixel(x,row*40+y)
 						if original.a < 1: continue
-						var baked := atlas.get_pixel(col*80+24+x,row*80+20+y)
+						var point := preload("res://scripts/demos/skill1_body_pose.gd").point(Vector2(x,y),category,row,col) if config.get("body",false) else Vector2(x,y)
+						var baked := atlas.get_pixelv(Vector2i(col*80+24,row*80+20)+Vector2i(point))
 						if absf(original.r-baked.r)+absf(original.g-baked.g)+absf(original.b-baked.b) > 0.015 or baked.a < 0.99: head_ok = false
 				check(head_ok,"approved head/hair/face "+category)
+		if config.get("body",false):
+			check(view.walking_skill_texture != null,"separate upper atlas preserves approved walking "+category)
+			for row in range(4):
+				var poses := preload("res://scripts/demos/skill1_body_pose.gd")
+				check(poses.point(Vector2(16,10),category,row,2).distance_to(poses.point(Vector2(16,10),category,row,4))>=3,"head and torso act between anticipation/impact "+category+str(row))
+				check(poses.leg_point(Vector2(18 if row in [0,3] else 12,38),category,row,3)!=poses.leg_point(Vector2(18 if row in [0,3] else 12,38),category,row,0),"planted lead foot changes stance "+category+str(row))
 		check(before.attack.damage_base == after.attack.damage_base and before.attack.weapon.interval == after.attack.weapon.interval,"same real weapon stats "+category)
 		for row in range(4):
 			demo.select_direction(row)

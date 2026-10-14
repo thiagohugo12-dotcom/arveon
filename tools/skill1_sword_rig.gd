@@ -12,9 +12,13 @@ func bow_parts() -> void:
 	line(hand+axis*3+axis.orthogonal(),hand+axis*17,Color("#edf2d5"),1)
 	line(hand-axis.orthogonal()*3,hand+axis.orthogonal()*3,Color("#c99645"),2)
 	if frame >= 3 and frame <= 5:
-		for i in range(7):
-			var point := hand+axis.rotated(-0.8+i*0.13)*23
-			draw_rect(Rect2(point.round(),Vector2(2,2)),Color("#fff0b9") if i % 2 else Color("#f2ce77"))
+		# Attached luminous blade ribbon follows the actual sweep, not a detached ring.
+		for i in range(8):
+			var near := hand+axis.rotated(-0.9+i*0.13)*18
+			var far := hand+axis.rotated(-0.9+i*0.13)*(21 if row==0 else 23)
+			var next := hand+axis.rotated(-0.9+(i+1)*0.13)*(21 if row==0 else 23)
+			var inner_next := hand+axis.rotated(-0.9+(i+1)*0.13)*18
+			draw_colored_polygon(PackedVector2Array([source_point(near),source_point(far),source_point(next),source_point(inner_next)]),Color("#a6eadb") if i>3 else Color("#4f9eb0"))
 	arm(shoulder,(shoulder+hand)*0.5,hand)
 	var other: Vector2 = MELEE_DATA.SHOULDERS[row][1]
 	arm(other,other+Vector2(0,2),other+Vector2(-1,5))

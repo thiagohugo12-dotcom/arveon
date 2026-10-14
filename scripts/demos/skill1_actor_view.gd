@@ -4,6 +4,7 @@ const CATALOGUE := preload("res://scripts/demos/skill1_catalogue.gd")
 var skill_category := "espada"
 var skill_config: Dictionary = {}
 var skill_texture: Texture2D
+var walking_skill_texture: Texture2D
 var skill1_direction := Vector2.RIGHT
 var skill1_row := 3
 var skill1_preparing := false
@@ -18,6 +19,7 @@ func configure(category: String) -> void:
 	skill_category = category
 	skill_config = CATALOGUE.CONFIGS.get(category,{})
 	skill_texture = load(skill_config.atlas) if not skill_config.is_empty() else null
+	walking_skill_texture = load(String(skill_config.atlas).replace(".png","_upper.png")) if skill_config.get("body",false) else skill_texture
 func clear_skill1() -> void:
 	skill1_remaining = 0
 	skill1_preparing = false
@@ -67,5 +69,7 @@ func _draw_explorer(tint: Color) -> void:
 	displayed_skill1_frame = skill1_frame()
 	displayed_skill1_atlas = skill_texture.resource_path
 	var legs := anim_frame if walking or settle_left > 0 else 0
-	draw_texture_rect_region(VillageActorArt.PEOPLE,Rect2(-32,0,64,16),Rect2(legs*32,skill1_row*40+32,32,8),tint)
-	draw_texture_rect_region(skill_texture,Rect2(-80,-104,160,160),Rect2(skill1_frame()*80,skill1_row*80,80,80),tint)
+	if walking or settle_left > 0 or not skill_config.get("body",false):
+		draw_texture_rect_region(VillageActorArt.PEOPLE,Rect2(-32,0,64,16),Rect2(legs*32,skill1_row*40+32,32,8),tint)
+	var texture := walking_skill_texture if walking or settle_left>0 else skill_texture
+	draw_texture_rect_region(texture,Rect2(-80,-104,160,160),Rect2(skill1_frame()*80,skill1_row*80,80,80),tint)

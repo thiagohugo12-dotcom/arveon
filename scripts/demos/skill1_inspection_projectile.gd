@@ -16,6 +16,7 @@ func configure_visual(at: Vector2,to: Vector2,weapon: String,special: bool=true)
  drawing.category=weapon
  drawing.direction=at.direction_to(to);drawing.rotation=drawing.direction.angle()
  drawing.visual_start=preload("res://scripts/demos/staff_pose_data.gd").muzzle(BowActorView.direction_row(drawing.direction)) if weapon=="cajado" else BowActorView.MUZZLES[BowActorView.direction_row(drawing.direction)]
+ if special and preload("res://scripts/demos/skill1_catalogue.gd").CONFIGS[weapon].get("body",false):drawing.visual_start=preload("res://scripts/demos/skill1_body_pose.gd").muzzle(weapon,BowActorView.direction_row(drawing.direction))
  drawing.visual_end=Vector2(0,-27)
  drawing.visual_direction=(to+drawing.visual_end-at-drawing.visual_start).normalized()
  drawing.start_distance=at.distance_to(to);drawing.start_budget=drawing.start_distance;drawing.distance_left=drawing.start_distance
