@@ -64,6 +64,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/bow_game_tests.gd 2>&1 | tee /tmp/bow-game-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|BOW_GAME_FAIL:' /tmp/bow-game-tests.log; then exit 1; fi
           grep -E '^BOW_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/bow-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/staff_demo_tests.gd 2>&1 | tee /tmp/staff-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|STAFF_DEMO_FAIL:' /tmp/staff-tests.log; then exit 1; fi
+          grep -E '^STAFF_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/staff-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -163,6 +166,10 @@ jobs:
         run: node tools/build-sword-demo.mjs
       - name: Prepare isolated bow review entry
         run: node tools/build-bow-demo.mjs
+      - name: Prepare isolated staff review entry
+        run: node tools/build-staff-demo.mjs
+      - name: Verify staff review in desktop and touch Chromium
+        run: timeout 150s node tests/web_staff_demo.mjs
       - name: Verify bow review in desktop and touch Chromium
         run: node tests/web_bow_demo.mjs
       - name: Verify actual Web persistence in Chromium
@@ -272,7 +279,11 @@ jobs:
           ')"
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -f ../source/tools/bow-review.json ]]; then
+          if [[ -f ../source/tools/staff-review.json ]]; then
+            # Pending staff review is fail closed: never call the fixed alias publisher.
+            PREVIEW_URL="$preview_url" node ../source/tools/verify-staff-preview.mjs
+            echo "Cajado V1 isolado; TESTE fixo preservado." >> "$GITHUB_STEP_SUMMARY"
+          elif [[ -f ../source/tools/bow-review.json ]]; then
             bow_status="$(node --input-type=module -e '
               import { readFileSync } from "node:fs";
               const p=JSON.parse(readFileSync("../source/tools/bow-review.json","utf8"));

@@ -1,4 +1,10 @@
 # Game Design — fundação v0.1
+## Cajado V1 — demonstração autorizada em 14/10/2026
+Conforme ANIMACAO_CAJADO_V1.md: criar apenas apresentação do básico do Místico
+em preview isolado, com braços curtos, canalização e orbe verde-azulado.
+Preservar espada, arco, caminhada, regras e save v11. TESTE fixo/produção
+permanecem na versão aprovada. Integração depende de aprovação visual.
+
 ## Arco V1 — integração autorizada em 14/10/2026
 Conforme ANIMACAO_ARCO_V1.md: encurtar braços nas quatro direções do atlas
 existente e integrar o básico no Andar 1. Publicar somente no TESTE fixo após

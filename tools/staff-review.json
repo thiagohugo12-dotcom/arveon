@@ -1,0 +1,10 @@
+{
+  "status": "awaiting-visual-approval",
+  "entry": "amostra-cajado/index.html",
+  "fixedTestAlias": false,
+  "preservedGameCommit": "10f00de72f9a455d510c681d2f2b509155631554",
+  "fixedTestSha256": {
+    "index.html": "7abbe050cd2969e57930b9aa7c299203917f96781fb7d92c31e5bdb754e93dd3",
+    "index.pck": "b4d37e47febb296f9de2a342752c2bc369a4de3185f3b14f38bd83140e225620"
+  }
+}
