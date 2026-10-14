@@ -79,3 +79,5 @@ Etapa B V2: Racha-Chao levanta tronco/arma e flexiona quadril/joelhos no impacto
 Etapa C V2: Impulso Perfurante com recuo, passada e inclinacao do tronco. Margem transparente 112px para nao cortar a ponta; escala/ancora fisica preservadas. 752 checks sem falhas.
 
 Etapa D V2: Flecha Certeira com apoio, puxada maior e recuo corporal; origem visual acompanha arco na soltura, sem mudar fisica. 761 checks sem falhas. Movimento avaliado pela amplitude da acao completa, incluindo recuo/recuperacao.
+
+Etapa E V2: Orbe Arcano com canalizacao, inclinacao e avancar/recuar do apoio; 770 checks das Skills e 159 de isolamento sem falhas. Basicos, contratos gerais e journal passaram. 20 ciclos completos capturados nas quatro direcoes, alem das 68 poses/impactos. Preview abre em 1x; 0.5x continua opcional. Sem Engine.time_scale ou alteracao de combate.

@@ -41,11 +41,13 @@ func _draw() -> void:
 		var radius := lerpf(15,float(geometry.reach),progress)
 		for mark in range(20):
 			var axis := Vector2.RIGHT.rotated(mark*TAU/20)
-			draw_rect(Rect2((axis*radius).round(),Vector2(4,2)),Color(0.88,0.73,0.48,alpha))
+			var next_axis := Vector2.RIGHT.rotated((mark+1)*TAU/20)
+			draw_line((axis*radius).snapped(Vector2(2,2)),(next_axis*radius).snapped(Vector2(2,2)),Color(0.88,0.73,0.48,alpha*0.85),3,false)
 		for mark in range(8):
 			var axis := Vector2.RIGHT.rotated(mark*TAU/8)
 			var dust := (axis*(14+progress*26)+Vector2(0,-progress*6)).round()
-			draw_rect(Rect2(dust,Vector2(3,2)),Color(0.77,0.61,0.39,alpha*0.8))
+			draw_rect(Rect2(dust+Vector2(0,2),Vector2(5,2)),Color(0.49,0.38,0.25,alpha*0.5))
+			draw_rect(Rect2(dust,Vector2(4,3)),Color(0.86,0.72,0.48,alpha*0.85))
 	elif category == "lanca":
 		var end := direction*float(geometry.reach)
 		var side := direction.orthogonal()

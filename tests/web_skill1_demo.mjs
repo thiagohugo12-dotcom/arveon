@@ -86,7 +86,7 @@ try{
   await evaluate('localStorage.setItem("grande-arvore-rpg.save.v6","skill1-review-sentinel"); localStorage.setItem("grande-arvore-rpg.save.v6.previous","backup-sentinel")');
   await call('Page.navigate',{url:origin+'/amostra-skills1/index.html'});
   await until('window.Skill1DemoReady && window.Skill1DemoState?.inspection');
-  check(await evaluate('window.Skill1DemoState.speed === .5'),'default half-speed visual inspection');
+  check(await evaluate('window.Skill1DemoState.speed === 1'),'default normal-speed visual inspection');
   const isolated=await evaluate('JSON.stringify([window.Skill1DemoState.casts,window.Skill1DemoState.hits,window.Skill1DemoState.projectiles,window.Skill1DemoState.cooldown])');
   for(let categoryIndex=0;categoryIndex<5;categoryIndex++){
     await click(16+(960-32)/5*(categoryIndex+.5),89);
@@ -104,7 +104,7 @@ try{
   check(await evaluate(`window.Skill1DemoState.visual_replays >= ${replay+3}`),'manual repetitions do not wait for real cooldown');
   check(await evaluate('window.Skill1DemoState.casts === 0 && window.Skill1DemoState.hits === 0 && window.Skill1DemoState.projectiles === 0'),'visual mode creates no real casts, damage or projectiles');
   await click(200,501);
-  await until('window.Skill1DemoState.speed === 1');
+  await until('window.Skill1DemoState.speed === .5');
   check(true,'visual speed toggle does not change real combat');
   await click(700,463);
   await until('window.Skill1DemoState.automatic === false');

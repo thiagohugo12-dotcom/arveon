@@ -11,7 +11,7 @@ func run() -> void:
  var demo=load("res://scenes/demos/skill1_review.tscn").instantiate()
  root.add_child(demo)
  demo.set_process(false)
- check(demo.inspection_mode and demo.visual_speed==0.5,"default isolated half-speed inspection")
+ check(demo.inspection_mode and demo.visual_speed==1.0,"default isolated normal-speed inspection")
  for category in demo.CATALOGUE.ORDER:
   demo.select_category(category)
   var player=demo.players[1]
@@ -42,9 +42,9 @@ func run() -> void:
   check(not demo.visual_basics,"basics pause independently")
   demo._toggle_attacks()
   demo._toggle_dex()
-  check(demo.visual_speed==1.0,"normal speed selected")
-  demo._toggle_dex()
   check(demo.visual_speed==0.5,"half speed selected")
+  demo._toggle_dex()
+  check(demo.visual_speed==1.0,"normal speed selected")
   check(player.progress.attributes.Destreza==0,"speed does not modify Dexterity")
  demo.visual_loop=true
  demo.execute_visual_skill()
@@ -67,7 +67,7 @@ func run() -> void:
  check(demo.get_tree().get_nodes_in_group("player_projectiles").size()==active,"inspection does not add/remove existing real shots")
  check(projectile.distance_left==budget and not projectile.is_physics_processing(),"in-flight real projectile is frozen intact")
  check(demo.players[1].progress.abilities.skill1_cooldowns.arco==real_cooldown and demo.targets[1].health.current==health,"spent real cooldown and health preserved exactly")
- demo.execute_visual_skill();demo._process(0.1)
+ demo.visual_speed=0.5;demo.execute_visual_skill();demo._process(0.1)
  check(is_equal_approx(demo.visual_time,0.05),"half-speed scales only visual timeline")
  demo.set_inspection_mode(false)
  check(projectile.is_physics_processing() and projectile.distance_left==budget,"real shot resumes with same remaining budget")
@@ -75,4 +75,3 @@ func run() -> void:
  demo.queue_free();await process_frame
  print("INSPECTION_RESULT: %d checks, %d failures" % [checks,failures])
  quit(failures)
-

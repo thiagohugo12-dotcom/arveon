@@ -67,11 +67,11 @@ func _draw_explorer(tint: Color) -> void:
 		super._draw_explorer(tint)
 		return
 	displayed_skill1_frame = skill1_frame()
-	displayed_skill1_atlas = skill_texture.resource_path
 	var legs := anim_frame if walking or settle_left > 0 else 0
 	if walking or settle_left > 0 or not skill_config.get("body",false):
 		draw_texture_rect_region(VillageActorArt.PEOPLE,Rect2(-32,0,64,16),Rect2(legs*32,skill1_row*40+32,32,8),tint)
 	var texture := walking_skill_texture if walking or settle_left>0 else skill_texture
+	displayed_skill1_atlas = texture.resource_path
 	var cell: int = skill_config.get("cell",80)
 	var anchor: Vector2 = skill_config.get("anchor",Vector2(40,52))
 	draw_texture_rect_region(texture,Rect2(-anchor*2,Vector2.ONE*cell*2),Rect2(skill1_frame()*cell,skill1_row*cell,cell,cell),tint)

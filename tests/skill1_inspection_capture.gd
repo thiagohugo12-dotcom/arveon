@@ -1,6 +1,6 @@
 extends "res://tests/bow_demo_capture.gd"
 func _initialize() -> void:
- create_timer(60).timeout.connect(func():quit(1))
+ create_timer(90).timeout.connect(func():quit(1))
  call_deferred("run")
 func run() -> void:
  var output:=OS.get_environment("QA_RENDER_DIR")
@@ -38,6 +38,13 @@ func run() -> void:
    demo._process(0)
    await process_frame;await capture(output,"%s_%d_hit" % [category,row])
    if demo.targets[1].view.impact_left<=0:failed+=1
+ for category in demo.CATALOGUE.ORDER:
+  demo.select_category(category)
+  for row in range(4):
+   demo.select_direction(row);demo.execute_visual_skill()
+   for frame in range(32):
+    demo.step_inspection(0.04);demo._process(0)
+    await process_frame;await capture(output,"cycle_%s_%d_%02d" % [category,row,frame])
  demo.select_category("arco");demo.select_direction(3);demo.automatic_walk=true
  for i in range(24):
   demo.step_inspection(0.025);await process_frame

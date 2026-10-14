@@ -6,6 +6,6 @@ const CONFIGS := {
 	"machado":{"body":true,"atlas":"res://assets/art/skills1_v1/machado.png","prepare":0.34,"duration":0.60,"color":Color("#ddba82")},
 	"lanca":{"body":true,"cell":112,"anchor":Vector2(56,64),"atlas":"res://assets/art/skills1_v1/lanca.png","prepare":0.24,"duration":0.42,"color":Color("#e1e9c5")},
 	"arco":{"body":true,"atlas":"res://assets/art/skills1_v1/arco.png","prepare":0.32,"duration":0.44,"color":Color("#fff0b9")},
-	"cajado":{"atlas":"res://assets/art/skills1_v1/cajado.png","prepare":0.22,"duration":0.38,"color":Color("#a9e4c2")}}
+	"cajado":{"body":true,"atlas":"res://assets/art/skills1_v1/cajado.png","prepare":0.36,"duration":0.50,"color":Color("#a9e4c2")}}
 static func rule(category: String) -> Dictionary: return AbilityRules.CATEGORIES[category].skill1
 static func supported(category: String) -> bool: return CONFIGS.has(category)
