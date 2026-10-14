@@ -9,5 +9,9 @@ func _draw() -> void:
 		for offset: Vector2 in [Vector2(-12,5),Vector2(10,6),Vector2(-5,9)]:
 			draw_rect(Rect2(offset+Vector2(0,-(1-alpha)*8),Vector2(3,2)),Color(0.82,0.65,0.42,alpha))
 		return
+	if skill1_impact == "lanca":
+		draw_line(Vector2(-8,-27),Vector2(8,-27),Color(0.88,0.94,0.75,alpha),1,false)
+		draw_line(Vector2(0,-33),Vector2(0,-21),Color(0.88,0.94,0.75,alpha),1,false)
+		return
 	for axis: Vector2 in [Vector2.UP,Vector2.DOWN,Vector2.LEFT,Vector2.RIGHT]:
 		draw_rect(Rect2((Vector2(0,-27)+axis*spread).round(),Vector2(2,2)),Color(1,0.94,0.72,alpha))

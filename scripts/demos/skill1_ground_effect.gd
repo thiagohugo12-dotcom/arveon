@@ -43,3 +43,13 @@ func _draw() -> void:
 			var axis := Vector2.RIGHT.rotated(mark*TAU/8)
 			var dust := (axis*(14+progress*26)+Vector2(0,-progress*6)).round()
 			draw_rect(Rect2(dust,Vector2(3,2)),Color(0.77,0.61,0.39,alpha*0.8))
+	elif category == "lanca":
+		var end := direction*float(geometry.reach)
+		var side := direction.orthogonal()
+		draw_line((direction*12).round(),end.round(),Color(0.88,0.94,0.75,alpha),3,false)
+		draw_line((direction*26+side*4).round(),(end-direction*15+side*4).round(),Color(0.66,0.79,0.63,alpha*0.7),1,false)
+		# Faint edge ticks reflect the existing half-width, without widening damage.
+		for mark in range(5):
+			for sign_value in [-1,1]:
+				var point: Vector2 = direction*(25+mark*35)+side*float(geometry.width)*sign_value
+				draw_rect(Rect2(point.round(),Vector2.ONE),Color(0.76,0.85,0.67,alpha*0.4))

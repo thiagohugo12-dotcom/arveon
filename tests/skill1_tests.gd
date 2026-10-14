@@ -65,7 +65,9 @@ func run() -> void:
 			var casts: int = view.skill1_casts
 			check(demo.request_skill1() and view.skill1_phase() == 0,"visual preparation "+category)
 			check(after.progress.abilities.skill1_cooldowns[category] == 0 and demo.targets[1].health.current == hp and arrows().is_empty(),"preparation spends/deals/spawns nothing "+category)
+			var position_before := after.global_position
 			check(before.use_skill(0) and demo.release_skill1(),"original Skill 1 succeeds "+category)
+			check(after.global_position == position_before,"Skill 1 never adds artificial movement "+category)
 			check(view.skill1_phase() == 1 and view.skill1_row == row and view.skill1_casts == casts+1,"execution uses correct direction "+category)
 			check(after.progress.abilities.skill1_cooldowns[category] == float(rule.cooldown),"unmodified real cooldown "+category)
 			var projectiles := arrows()
@@ -103,6 +105,14 @@ func run() -> void:
 			check(side.hits == (0 if category == "lanca" else 1),"side inclusion follows original shape "+category)
 			check(outside.hits == 0,"original range limit "+category)
 			check(demo.ground_effects[1].geometry.shape == AbilityRules.effect(rule.id).shape and demo.ground_effects[1].geometry.reach == AbilityRules.effect(rule.id).reach,"visual geometry uses real rule "+category)
+			if category == "lanca":
+				var inside := new_target(after,Vector2(80,27))
+				var beyond := new_target(after,Vector2(80,29))
+				after.progress.abilities.skill1_cooldowns[category] = 0
+				after._sync_skill_cooldowns()
+				check(after.use_skill(0) and inside.hits == 1 and beyond.hits == 0,"original 28px half-width boundary")
+				inside.queue_free()
+				beyond.queue_free()
 			for actor in [rear,side,outside]: actor.queue_free()
 			await frames()
 		view.clear_skill1()
