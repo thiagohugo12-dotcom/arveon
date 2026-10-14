@@ -1,4 +1,10 @@
 # Game Design — fundação v0.1
+## Skills 1 V1 - autorizadas em 14/10/2026
+Conforme SKILLS1_V1.md: cinco etapas independentes com commit/testes,
+animacoes exclusivas de Skill 1 e um preview isolado. Preservar os cinco
+basicos, ClassCombat/AbilityRules, progressao, Skill 2/3 e Ultimates.
+Nao publicar no TESTE fixo antes da aprovacao visual.
+
 ## Machado e Lanca V1 - integracao aprovada em 14/10/2026
 Thiago aprovou as demonstracoes com "implemente". Integrar os mesmos sprites
 no ataque basico do jogo e publicar somente no TESTE apos os testes.

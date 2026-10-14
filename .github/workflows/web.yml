@@ -76,6 +76,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/melee_game_tests.gd 2>&1 | tee /tmp/melee-game-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|MELEE_GAME_FAIL:' /tmp/melee-game-tests.log; then exit 1; fi
           grep -E '^MELEE_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/melee-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/skill1_tests.gd 2>&1 | tee /tmp/skill1-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_FAIL:' /tmp/skill1-tests.log; then exit 1; fi
+          grep -E '^SKILL1_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -179,6 +182,8 @@ jobs:
         run: node tools/build-staff-demo.mjs
       - name: Prepare isolated axe and spear reviews
         run: node tools/build-melee-demos.mjs
+      - name: Prepare isolated Skill 1 review
+        run: node tools/build-skill1-demo.mjs
       - name: Verify axe and spear with desktop and touch Chromium
         run: |
           MELEE_REVIEW_WEAPON=machado timeout 150s node tests/web_melee_demos.mjs
@@ -294,7 +299,10 @@ jobs:
           ')"
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -f ../source/tools/melee-review.json ]]; then
+          if [[ -f ../source/tools/skill1-review.json ]]; then
+            # Skills 1 are pending visual review: never call the fixed alias publisher.
+            PREVIEW_URL="$preview_url" node ../source/tools/verify-skill1-preview.mjs
+          elif [[ -f ../source/tools/melee-review.json ]]; then
             melee_status="$(node --input-type=module -e '
               import { readFileSync } from "node:fs";
               const p=JSON.parse(readFileSync("../source/tools/melee-review.json","utf8"));

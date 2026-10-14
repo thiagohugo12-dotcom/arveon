@@ -1,4 +1,14 @@
 # Arquitetura
+## Skills 1 V1 - preview isolado
+Skill1ActorView estende MeleeActorView sem alterar os cinco basicos.
+Apenas play_skill(0) usa os novos atlas; outros indices delegam ao original.
+Skill1ReviewDemo reutiliza os mundos/controles/alvos e executa PlayerActor.
+use_skill(0) sem reimplementar ClassCombat. A intencao de preparacao no
+preview antecede a chamada real, que resolve dano/projeteis imediatamente.
+Efeitos de area leem AbilityRules; nao possuem colisoes ou dano. Uma instancia
+por painel e reutilizada. Sem Main, journal ou saves. Politica skill1-review
+bloqueia TESTE fixo; nenhum basico/core de combate e modificado.
+
 ## Machado/Lanca V1 - integracao aprovada
 MeleeActorView estende StaffActorView e compartilha os atlas/timing aprovados
 com as demonstracoes. Estado melee separado; trocar Machado/Lanca limpa a
