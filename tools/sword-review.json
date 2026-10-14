@@ -1,5 +1,5 @@
 {
-  "status": "awaiting-visual-approval",
+  "status": "approved-in-game",
   "entry": "amostra-espada/index.html",
-  "fixedTestAlias": false
+  "fixedTestAlias": true
 }

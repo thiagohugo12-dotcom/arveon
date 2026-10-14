@@ -55,6 +55,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/sword_demo_tests.gd 2>&1 | tee /tmp/sword-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|SWORD_DEMO_FAIL:' /tmp/sword-tests.log; then exit 1; fi
           grep -E '^SWORD_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/sword_game_tests.gd 2>&1 | tee /tmp/sword-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SWORD_GAME_FAIL:' /tmp/sword-game-tests.log; then exit 1; fi
+          grep -E '^SWORD_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-game-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -259,7 +262,15 @@ jobs:
           ')"
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
-          if [[ -f ../source/tools/sword-review.json ]]; then
+          review_status="$(node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const p = JSON.parse(readFileSync("../source/tools/sword-review.json", "utf8"));
+            if (p.entry !== "amostra-espada/index.html") process.exit(1);
+            if (p.status === "awaiting-visual-approval" && p.fixedTestAlias === false) console.log("pending");
+            else if (p.status === "approved-in-game" && p.fixedTestAlias === true) console.log("approved");
+            else process.exit(1);
+          ')"
+          if [[ "$review_status" == "pending" ]]; then
             # Fail closed: malformed/missing exported review data aborts; no alias call.
             PREVIEW_URL="$preview_url" node ../source/tools/verify-sword-preview.mjs
             echo "[Espada V1 — demonstração isolada]($preview_url/amostra-espada/index.html)" >> "$GITHUB_STEP_SUMMARY"

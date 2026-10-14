@@ -1,8 +1,9 @@
 # Game Design — fundação v0.1
-## Espada V1 — demonstração aprovada em 13/10/2026
-Conforme ANIMACAO_ESPADA_V1.md: demonstração isolada do ataque de espada,
-preservando explorador, caminhada e regras. Aplicação no jogo e demais armas
-aguardam avaliação visual. TESTE fixo preservado.
+## Espada V1 — integração aprovada em 13/10/2026
+Conforme ANIMACAO_ESPADA_V1.md e “aprovado, pode colocar” de Thiago:
+aplicar o ataque de espada aprovado ao explorador do Andar 1 e ao TESTE fixo,
+preservando caminhada, regras, feedback, outras armas e saves v11.
+Demonstração comparativa mantida; produção e outras animações fora do escopo.
 
 ## Primeira arma — aprovada em 13/10/2026
 Conforme PRIMEIRA_ARMA.md e pedido completo de Thiago: novos personagens

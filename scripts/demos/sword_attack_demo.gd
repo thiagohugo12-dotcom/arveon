@@ -140,6 +140,8 @@ func _create_panel(updated: bool) -> void:
 		player.set_script(NEW_PLAYER)
 		player.stats = preload("res://data/actors/player.tres")
 		player.get_node("View").set_script(NEW_VIEW)
+	else:
+		player.get_node("View").set_script(preload("res://scripts/presentation/actor_view.gd"))
 	player.position = origin
 	player.input_driver = driver
 	(player.get_node("View") as ActorView).village_scale = true

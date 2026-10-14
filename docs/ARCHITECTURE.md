@@ -1,4 +1,11 @@
 # Arquitetura
+## Espada V1 — apresentação aprovada
+PlayerActor antecipa apenas poses durante o cooldown; o sinal original de
+AutoAttack inicia o corte, sem alterar dano ou cadência. SwordActorView substitui
+somente o corpo pelo atlas aprovado, mantendo pernas, sombras e feedback de
+ActorView. Ativo apenas com espada equipada na apresentação do Andar 1;
+demais armas e pisos preservam a apresentação anterior. Saves não mudam.
+
 ## Introdução — save v11
 Main chama begin_new_character somente quando não existe save recuperável e
 a persistência não está bloqueada. GameProgress mantém dados legados como

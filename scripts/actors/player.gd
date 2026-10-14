@@ -46,10 +46,12 @@ func _physics_process(delta: float) -> void:
 	attack.damage_scale = 1.0
 	view.set_fury(fury_left > 0.0)
 	if not health.is_alive() or input_driver == null:
+		_clear_sword_visual()
 		velocity = Vector2.ZERO
 		view.set_moving(false)
 		return
 	if input_driver.blocked:
+		_clear_sword_visual()
 		dash.time_left = 0.0
 		charge_left = 0.0
 		charge_hits.clear()
@@ -67,7 +69,30 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	view.set_moving(velocity.length_squared() > 1.0)
+	_prepare_sword_visual()
 	attack.tick(delta, self)
+
+func _uses_sword_visual() -> bool:
+	return view is SwordActorView and view.village_scale and attack.armed and attack.weapon.category == "espada"
+
+func _clear_sword_visual() -> void:
+	if view is SwordActorView:
+		(view as SwordActorView).clear_sword()
+
+func _prepare_sword_visual() -> void:
+	if not view is SwordActorView: return
+	var sword_view := view as SwordActorView
+	if not _uses_sword_visual() or SafeCamp.in_clearance(global_position):
+		sword_view.clear_sword()
+		return
+	# Read-only anticipation: target selection never spends cooldown or deals damage.
+	var candidate: Node2D = null
+	if attack.cooldown_left > 0.0 and attack.cooldown_left <= SwordActorView.PREPARE_TIME:
+		candidate = attack.select_target(self)
+	if candidate != null:
+		sword_view.prepare_sword(candidate.global_position-global_position,attack.cooldown_left)
+	else:
+		sword_view.cancel_preparation()
 
 func receive_damage(amount: int, damage_type: String = "physical") -> void:
 	if SafeCamp.in_clearance(global_position) or not health.is_alive() or amount <= 0:
@@ -100,6 +125,7 @@ func apply_progression(value: GameProgress, initial: bool = false) -> void:
 	attack.damage_type = values.damage_type
 	var configuration := ArsenalRules.profile(progress.equipped.Arma)
 	attack.weapon.category = progress.active_category()
+	if not _uses_sword_visual(): _clear_sword_visual()
 	attack.weapon.reach = configuration.reach + (20.0 if class_combat.has_passive("alcance_treinado") else 0.0)
 	attack.weapon.projectile_kind = configuration.projectile
 	attack.weapon.projectile_speed = configuration.speed
@@ -146,9 +172,14 @@ func skill_ready(index: int) -> bool:
 
 func _on_attack(target: Node2D) -> void:
 	# Snapshot the selected target, independently of movement/dash facing.
-	view.play_attack(target.global_position - global_position)
+	if _uses_sword_visual():
+		(view as SwordActorView).play_sword_attack(target.global_position-global_position,attack.weapon.interval)
+	else:
+		_clear_sword_visual()
+		view.play_attack(target.global_position-global_position)
 
 func _on_died() -> void:
+	_clear_sword_visual()
 	charge_left = 0.0
 	fury_left = 0.0
 	class_combat.clear_effects()
