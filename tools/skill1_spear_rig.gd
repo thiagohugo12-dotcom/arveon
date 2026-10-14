@@ -14,7 +14,7 @@ func bow_parts() -> void:
 	line(tip-axis*3-axis.orthogonal(),tip-axis*3+axis.orthogonal(),Color("#4c9c8c"),2)
 	if frame == 3 or frame == 4:
 		line(tip-axis*12+axis.orthogonal()*3,tip+axis*2+axis.orthogonal()*3,Color("#edf4c9"),1)
-		for i in range(3): draw_rect(Rect2((tip-axis*(8+i*4)-axis.orthogonal()*3).round(),Vector2.ONE),Color("#a9c8a3"))
+		for i in range(3): pixel_mark(Rect2((tip-axis*(8+i*4)-axis.orthogonal()*3).round(),Vector2.ONE),Color("#a9c8a3"))
 	var shoulder: Vector2 = MELEE.SHOULDERS[row][0]
 	var other: Vector2 = MELEE.SHOULDERS[row][1]
 	var support := other.lerp(hand-axis*6,0.5).round()

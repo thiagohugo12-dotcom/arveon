@@ -37,13 +37,15 @@ func run() -> void:
 		var rule := CATALOGUE.rule(category)
 		var config: Dictionary = CATALOGUE.CONFIGS[category]
 		var atlas: Image = view.skill_texture.get_image()
-		check(atlas.get_size() == Vector2i(640,320),category+" 8 frames x 4 directions")
+		var cell: int = config.get("cell",80)
+		var anchor: Vector2 = config.get("anchor",Vector2(40,52))
+		check(atlas.get_size() == Vector2i(cell*8,cell*4),category+" 8 frames x 4 directions")
 		for row in range(4):
 			for col in range(8):
 				var clear := true
-				for pixel in range(80):
-					for edge: Vector2i in [Vector2i(pixel,0),Vector2i(pixel,79),Vector2i(0,pixel),Vector2i(79,pixel)]:
-						clear = clear and atlas.get_pixelv(Vector2i(col*80,row*80)+edge).a == 0
+				for pixel in range(cell):
+					for edge: Vector2i in [Vector2i(pixel,0),Vector2i(pixel,cell-1),Vector2i(0,pixel),Vector2i(cell-1,pixel)]:
+						clear = clear and atlas.get_pixelv(Vector2i(col*cell,row*cell)+edge).a == 0
 				check(clear,"no clipped weapon/trail "+category)
 				var head_ok := true
 				for y in range(24):
@@ -51,7 +53,7 @@ func run() -> void:
 						var original := people.get_pixel(x,row*40+y)
 						if original.a < 1: continue
 						var point := preload("res://scripts/demos/skill1_body_pose.gd").point(Vector2(x,y),category,row,col) if config.get("body",false) else Vector2(x,y)
-						var baked := atlas.get_pixelv(Vector2i(col*80+24,row*80+20)+Vector2i(point))
+						var baked := atlas.get_pixelv(Vector2i(col*cell,row*cell)+Vector2i(anchor-Vector2(16,32)+point))
 						if absf(original.r-baked.r)+absf(original.g-baked.g)+absf(original.b-baked.b) > 0.015 or baked.a < 0.99: head_ok = false
 				check(head_ok,"approved head/hair/face "+category)
 		if config.get("body",false):
