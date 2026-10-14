@@ -21,4 +21,5 @@ static func leg_point(p: Vector2,category: String,row: int,frame: int) -> Vector
  return (p+AIM[row]*step+spread).round()
 static func muzzle(category: String,row: int) -> Vector2:
  var original: Vector2=preload("res://scripts/demos/staff_pose_data.gd").muzzle(row) if category=="cajado" else BowActorView.MUZZLES[row]
+ if category=="arco" and row==1:original=Vector2(-18,-28)
  return (point(original/2+Vector2(16,32),category,row,3)-Vector2(16,32))*2

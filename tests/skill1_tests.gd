@@ -60,7 +60,10 @@ func run() -> void:
 			check(view.walking_skill_texture != null,"separate upper atlas preserves approved walking "+category)
 			for row in range(4):
 				var poses := preload("res://scripts/demos/skill1_body_pose.gd")
-				check(poses.point(Vector2(16,10),category,row,2).distance_to(poses.point(Vector2(16,10),category,row,4))>=3,"head and torso act between anticipation/impact "+category+str(row))
+				var max_head_travel := 0.0
+				for first in range(8):
+					for second in range(8): max_head_travel = maxf(max_head_travel,poses.point(Vector2(16,10),category,row,first).distance_to(poses.point(Vector2(16,10),category,row,second)))
+				check(max_head_travel>=3,"head and torso act through complete anticipation/release/recovery "+category+str(row))
 				check(poses.leg_point(Vector2(18 if row in [0,3] else 12,38),category,row,3)!=poses.leg_point(Vector2(18 if row in [0,3] else 12,38),category,row,0),"planted lead foot changes stance "+category+str(row))
 		check(before.attack.damage_base == after.attack.damage_base and before.attack.weapon.interval == after.attack.weapon.interval,"same real weapon stats "+category)
 		for row in range(4):

@@ -77,3 +77,5 @@ luminosa ligada a lamina; 734 verificacoes sem falhas, margens e identidade conf
 Etapa B V2: Racha-Chao levanta tronco/arma e flexiona quadril/joelhos no impacto. 743 checks sem falhas; corrigida ligacao visual entre quadril e pes nas poses elevadas.
 
 Etapa C V2: Impulso Perfurante com recuo, passada e inclinacao do tronco. Margem transparente 112px para nao cortar a ponta; escala/ancora fisica preservadas. 752 checks sem falhas.
+
+Etapa D V2: Flecha Certeira com apoio, puxada maior e recuo corporal; origem visual acompanha arco na soltura, sem mudar fisica. 761 checks sem falhas. Movimento avaliado pela amplitude da acao completa, incluindo recuo/recuperacao.

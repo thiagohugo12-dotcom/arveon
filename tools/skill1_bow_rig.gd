@@ -2,9 +2,9 @@ extends "res://tools/skill1_rig.gd"
 func bow_parts() -> void:
 	var aim: Vector2 = AIM[row]
 	var side := aim.orthogonal()
-	var centre: Vector2 = CENTRES[row]
+	var centre: Vector2 = Vector2(7,22) if row==1 else CENTRES[row]
 	var grip := centre+aim*4
-	var pull: float = [1,3,6,0,0,0,0,0][frame]
+	var pull: float = [1,4,8,0,0,0,0,0][frame]
 	var nock := centre-aim*pull
 	var tip_a := centre+side*12
 	var tip_b := centre-side*12
@@ -20,9 +20,9 @@ func bow_parts() -> void:
 		line(centre+aim*12,centre+aim*9-side*2,Color("#edf4d5"))
 		line(nock+side*2,nock-aim*2,Color("#76bfb0"))
 		if frame == 2:
-			for offset: Vector2 in [side*4,-side*4,aim*3]: draw_rect(Rect2((centre+aim*12+offset).round(),Vector2.ONE),Color("#fff0b9"))
+			for offset: Vector2 in [side*4,-side*4,aim*3]: pixel_mark(Rect2((centre+aim*12+offset).round(),Vector2.ONE),Color("#fff0b9"))
 	var shoulder: Vector2 = SHOULDERS[row][0]
-	var other: Vector2 = SHOULDERS[row][1]
+	var other: Vector2 = Vector2(17,24) if row==1 else SHOULDERS[row][1]
 	var hand := nock if frame < 3 else centre-aim*6+side if frame <= 4 else other+Vector2(0,4)
 	arm(shoulder,(shoulder+grip)*0.5+side,grip)
 	arm(other,(other+hand)*0.5-side,hand)
