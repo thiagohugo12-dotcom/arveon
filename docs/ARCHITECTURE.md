@@ -1,11 +1,20 @@
 # Arquitetura
+## Machado/Lanca V1 - integracao aprovada
+MeleeActorView estende StaffActorView e compartilha os atlas/timing aprovados
+com as demonstracoes. Estado melee separado; trocar Machado/Lanca limpa a
+pose anterior e seleciona o atlas correto. PlayerActor antecipa o golpe
+apenas durante cooldown com alvo valido, e inicia a pose no sinal original.
+AutoAttack continua aplicando o dano imediato uma unica vez. Skills, saves,
+atributos e apresentacoes de Espada/Arco/Cajado permanecem intactos.
+A politica melee-review aprovada autoriza publicar somente no TESTE fixo.
+
 ## Machado/Lanca V1 - demonstracoes
 MeleeReviewDemo estende a UI/mundos/alvos da demonstracao do Arco. Duas cenas
 selecionam a arma e seu perfil real; MeleeReviewView compartilha estado e
 pernas, mas cada atlas usa landmarks e movimentos diferentes. O rig herda
 a composicao aprovada do Cajado, com bracos compactos e cabeca sobre a arma.
-AutoAttack aplica dano imediato pelo caminho original. Nenhum codigo do
-jogo principal muda. A politica melee-review bloqueia o TESTE fixo.
+AutoAttack aplica dano imediato pelo caminho original. As demos nao
+inicializam Main nem o journal. A politica aprovada permite atualizar o TESTE.
 
 ## Cajado V1 - integracao aprovada
 StaffActorView estende BowActorView, com estado separado para o cajado.

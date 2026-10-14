@@ -14,3 +14,9 @@ reais (dano imediato, alcance, cadencia, selecao), Skills ou progressao.
 Base: 3327b2d. Checkpoint: checkpoint-antes-machado-lanca-v1-2026-10-14.
 Preservar Espada/Arco/Cajado aprovados, mapa, save v11, main e producao.
 Aguardar avaliacao visual das duas demonstracoes para integrar no TESTE.
+
+## Integracao aprovada - 14/10/2026
+Thiago: "implemente". Integrar os atlas aprovados no Andar 1 e no TESTE.
+Checkpoint: checkpoint-antes-integracao-machado-lanca-v1-2026-10-14 (94f111e).
+A restricao de integracao/alias pendente foi revogada por esta aprovacao.
+Main e producao continuam fora do escopo.

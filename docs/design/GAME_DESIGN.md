@@ -1,4 +1,9 @@
 # Game Design — fundação v0.1
+## Machado e Lanca V1 - integracao aprovada em 14/10/2026
+Thiago aprovou as demonstracoes com "implemente". Integrar os mesmos sprites
+no ataque basico do jogo e publicar somente no TESTE apos os testes.
+Preservar Espada, Arco, Cajado, caminhada, Skills, regras e save v11.
+
 ## Machado e Lanca V1 - desenvolvimento autorizado em 14/10/2026
 Thiago autorizou as duas armas restantes. Conforme ANIMACAO_MACHADO_LANCA_V1.md,
 criar demonstracoes isoladas com golpe amplo/estocada, preservando regras,

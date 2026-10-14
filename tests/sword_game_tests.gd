@@ -108,6 +108,8 @@ func run() -> void:
 			check(view.sword_attacks == swings and (view as BowActorView).bow_phase() == 2,"bow animation stays independent of sword")
 		elif category == "cajado" and view is StaffActorView:
 			check(view.sword_attacks == swings and (view as StaffActorView).staff_phase() == 2,"staff animation stays independent of sword")
+		elif category in ["machado","lanca"] and view is MeleeActorView:
+			check(view.sword_attacks == swings and (view as MeleeActorView).melee_phase() == 1,"approved melee animation stays independent of sword "+category)
 		else:
 			check(view.sword_attacks == swings and view.attack_left > 0.0,"other weapon retains original visual "+category)
 	main.progress.equipped.Arma = ""

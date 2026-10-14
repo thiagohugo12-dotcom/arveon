@@ -72,7 +72,7 @@ func run() -> void:
 		after.attack.search_left = 0
 		demo._physics_process(0)
 		after._physics_process(0)
-		check(view.swings == swings and not view.preparing,"no phantom hit without target "+category)
+		check(view.swings == swings and not view.melee_preparing,"no phantom hit without target "+category)
 		demo.targets[1].enabled = true
 		demo.targets[1].position = after.position+Vector2.RIGHT*(profile.reach+30)
 		after.attack.search_left = 0

@@ -49,6 +49,7 @@ func _physics_process(delta: float) -> void:
 		_clear_sword_visual()
 		_clear_bow_visual()
 		_clear_staff_visual()
+		_clear_melee_visual()
 		velocity = Vector2.ZERO
 		view.set_moving(false)
 		return
@@ -56,6 +57,7 @@ func _physics_process(delta: float) -> void:
 		_clear_sword_visual()
 		_clear_bow_visual()
 		_clear_staff_visual()
+		_clear_melee_visual()
 		dash.time_left = 0.0
 		charge_left = 0.0
 		charge_hits.clear()
@@ -76,7 +78,39 @@ func _physics_process(delta: float) -> void:
 	_prepare_sword_visual()
 	_prepare_bow_visual()
 	_prepare_staff_visual()
+	_prepare_melee_visual()
 	attack.tick(delta, self)
+
+func _uses_melee_visual() -> bool:
+	return view is MeleeActorView and view.village_scale and attack.armed and attack.weapon.category in ["machado","lanca"]
+
+func _clear_melee_visual() -> void:
+	if view is MeleeActorView: (view as MeleeActorView).clear_melee()
+
+func _sync_melee_weapon() -> void:
+	if not _uses_melee_visual():
+		_clear_melee_visual()
+		return
+	var melee := view as MeleeActorView
+	var kind := 0 if attack.weapon.category == "machado" else 1
+	if melee.weapon_kind != kind:
+		melee.clear_melee()
+		melee.weapon_kind = kind
+
+func _prepare_melee_visual() -> void:
+	if not view is MeleeActorView: return
+	var melee := view as MeleeActorView
+	if not _uses_melee_visual() or SafeCamp.in_clearance(global_position):
+		melee.clear_melee()
+		return
+	_sync_melee_weapon()
+	var candidate: Node2D = null
+	if attack.cooldown_left > 0 and attack.cooldown_left <= MeleeActorView.melee_prepare_time(attack.weapon.interval):
+		candidate = attack.select_target(self)
+	if candidate != null:
+		melee.prepare_melee(candidate.global_position-global_position,attack.cooldown_left,attack.weapon.interval)
+	else:
+		melee.cancel_melee_preparation()
 
 func _uses_staff_visual() -> bool:
 	return view is StaffActorView and view.village_scale and attack.armed and attack.weapon.category == "cajado"
@@ -174,6 +208,7 @@ func apply_progression(value: GameProgress, initial: bool = false) -> void:
 	if not _uses_sword_visual(): _clear_sword_visual()
 	if not _uses_bow_visual(): _clear_bow_visual()
 	if not _uses_staff_visual(): _clear_staff_visual()
+	_sync_melee_weapon()
 	attack.weapon.reach = configuration.reach + (20.0 if class_combat.has_passive("alcance_treinado") else 0.0)
 	attack.weapon.projectile_kind = configuration.projectile
 	attack.weapon.projectile_speed = configuration.speed
@@ -222,6 +257,9 @@ func _on_attack(target: Node2D) -> void:
 	# Snapshot the selected target, independently of movement/dash facing.
 	if _uses_sword_visual():
 		(view as SwordActorView).play_sword_attack(target.global_position-global_position,attack.weapon.interval)
+	elif _uses_melee_visual():
+		_sync_melee_weapon()
+		(view as MeleeActorView).play_melee(target.global_position-global_position,attack.weapon.interval)
 	elif _uses_staff_visual():
 		(view as StaffActorView).play_staff_attack(target.global_position-global_position,attack.weapon.interval)
 	elif _uses_bow_visual():
@@ -230,9 +268,11 @@ func _on_attack(target: Node2D) -> void:
 		_clear_sword_visual()
 		_clear_bow_visual()
 		_clear_staff_visual()
+		_clear_melee_visual()
 		view.play_attack(target.global_position-global_position)
 
 func _on_died() -> void:
+	_clear_melee_visual()
 	_clear_staff_visual()
 	_clear_sword_visual()
 	_clear_bow_visual()

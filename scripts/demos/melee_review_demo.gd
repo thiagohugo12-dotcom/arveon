@@ -13,9 +13,7 @@ func _create_panel(updated: bool) -> void:
 		player.get_node("View").set_script(REVIEW_VIEW)
 		player.view.weapon_kind = weapon_kind
 		player.view.village_scale = true
-		player.attack.attacked.connect(func(target: Node2D):
-			if player.attack.weapon.category == category() and player.attack.armed:
-				player.view.play_melee(target.global_position-player.global_position,player.attack.weapon.interval))
+
 		player.health.died.connect(player.view.clear_melee)
 	player.progress.equipment[category()] = 0
 	player.progress.equipped.Arma = category()

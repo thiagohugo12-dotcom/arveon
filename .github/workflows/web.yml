@@ -73,6 +73,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/melee_demo_tests.gd 2>&1 | tee /tmp/melee-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|MELEE_DEMO_FAIL:' /tmp/melee-tests.log; then exit 1; fi
           grep -E '^MELEE_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/melee-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/melee_game_tests.gd 2>&1 | tee /tmp/melee-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|MELEE_GAME_FAIL:' /tmp/melee-game-tests.log; then exit 1; fi
+          grep -E '^MELEE_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/melee-game-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -292,8 +295,20 @@ jobs:
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
           if [[ -f ../source/tools/melee-review.json ]]; then
-            # New melee reviews never replace the fixed TESTE before approval.
-            PREVIEW_URL="$preview_url" node ../source/tools/verify-melee-preview.mjs
+            melee_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/melee-review.json","utf8"));
+              if(p.entry!=="amostra-machado/index.html" || JSON.stringify(p.additionalEntries)!==JSON.stringify(["amostra-lanca/index.html"])) process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$melee_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-melee-preview.mjs
+            fi
           elif [[ -f ../source/tools/staff-review.json ]]; then
             staff_status="$(node --input-type=module -e '
               import { readFileSync } from "node:fs";
