@@ -5,7 +5,8 @@ func bow_parts() -> void:
 	var hand: Vector2 = MELEE_DATA.AXE_HANDS[row][frame]
 	var aim: Vector2 = AIM[row]
 	var angle: float = [-1.9,-1.8,-1.4,-0.3,0.65,1.0,0.1,-0.9][frame]
-	var axis := aim.rotated(angle*(1 if row != 2 else -1))
+	# On the back row, sweep outside the hair silhouette instead of behind it.
+	var axis := aim.rotated(angle*(-1 if row in [1,2] else 1))
 	line(hand-axis*3,hand+axis*18,Color("#382b25"),4)
 	line(hand,hand+axis*17,Color("#82969b"),3)
 	line(hand+axis*3+axis.orthogonal(),hand+axis*17,Color("#edf2d5"),1)

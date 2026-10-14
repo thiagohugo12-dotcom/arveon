@@ -33,3 +33,5 @@ Etapa C concluida: Impulso Perfurante, 386 checks acumulados sem falhas; limites
 Etapa D concluida: Flecha Certeira, 543 checks acumulados sem falhas; soltura/origem visual e trajetoria fisica, velocidade, alcance e dano originais confirmados; cinco basicos preservados.
 
 Etapa E concluida: Orbe Arcano, 725 checks acumulados sem falhas; rastreio, limites de projeteis e pausa originais preservados. Todas as regressoes locais passaram. Probe nativo de 600 quadros: maximo 1 projetil, crescimento 1 no, pico 66 draw calls, media 8.012ms neste computador (nao e medicao de celular).
+
+Refinamento visual final: Talho Agil de costas corta pelo lado externo da silhueta do cabelo, mantendo corpo/arm spans e todos os 725 checks. Capturas das quatro direcoes renovadas.
