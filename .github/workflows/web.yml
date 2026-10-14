@@ -148,6 +148,14 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:|FIRST_WEAPON_FAIL:' /tmp/first-weapon-render.log; then exit 1; fi
           grep -E '^FIRST_WEAPON_RESULT: [0-9]+ checks, 0 failures$' /tmp/first-weapon-render.log
           test "$(find build/first-weapon-qa -name '*.png' | wc -l)" -eq 8
+      - name: Probe bounded Skill 1 effects in software GL
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_perf_probe.gd 2>&1 | tee /tmp/skill1-perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/skill1-perf.log; then exit 1; fi
+          grep -E '^SKILL1_PERF_RESULT: .*0 failures$' /tmp/skill1-perf.log
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -184,6 +192,8 @@ jobs:
         run: node tools/build-melee-demos.mjs
       - name: Prepare isolated Skill 1 review
         run: node tools/build-skill1-demo.mjs
+      - name: Verify five Skills 1 in desktop and touch Chromium
+        run: timeout 150s node tests/web_skill1_demo.mjs
       - name: Verify axe and spear with desktop and touch Chromium
         run: |
           MELEE_REVIEW_WEAPON=machado timeout 150s node tests/web_melee_demos.mjs

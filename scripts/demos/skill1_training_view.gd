@@ -5,6 +5,11 @@ func _draw() -> void:
 	if impact_left <= 0 or skill1_impact.is_empty(): return
 	var alpha := impact_left/IMPACT_DURATION
 	var spread := 5+(1-alpha)*9
+	if skill1_impact == "cajado":
+		for mark in range(6):
+			var point := Vector2(0,-27)+Vector2.RIGHT.rotated(mark*TAU/6)*spread
+			draw_rect(Rect2(point.round(),Vector2(2,2)),Color(0.66,0.89,0.76,alpha))
+		return
 	if skill1_impact == "machado":
 		for offset: Vector2 in [Vector2(-12,5),Vector2(10,6),Vector2(-5,9)]:
 			draw_rect(Rect2(offset+Vector2(0,-(1-alpha)*8),Vector2(3,2)),Color(0.82,0.65,0.42,alpha))

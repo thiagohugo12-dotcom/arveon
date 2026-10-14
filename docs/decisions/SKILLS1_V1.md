@@ -31,3 +31,5 @@ Etapa B concluida: Racha-Chao, 250 checks acumulados sem falhas; disco/controle 
 Etapa C concluida: Impulso Perfurante, 386 checks acumulados sem falhas; limites 27/29px, alcance190 e ausencia de deslocamento extra confirmados; basicos preservados.
 
 Etapa D concluida: Flecha Certeira, 543 checks acumulados sem falhas; soltura/origem visual e trajetoria fisica, velocidade, alcance e dano originais confirmados; cinco basicos preservados.
+
+Etapa E concluida: Orbe Arcano, 725 checks acumulados sem falhas; rastreio, limites de projeteis e pausa originais preservados. Todas as regressoes locais passaram. Probe nativo de 600 quadros: maximo 1 projetil, crescimento 1 no, pico 66 draw calls, media 8.012ms neste computador (nao e medicao de celular).

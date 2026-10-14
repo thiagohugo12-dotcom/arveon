@@ -133,7 +133,7 @@ func _process(delta: float) -> void:
 		qa_bridge_left -= delta
 		if qa_bridge_left <= 0:
 			qa_bridge_left = 0.1
-			JavaScriptBridge.eval("window.Skill1DemoState=%s;" % JSON.stringify({"category":selected_category,"name":CATALOGUE.rule(selected_category).name,"direction":direction_index,"walking":player.view.walking,"phase":phase,"casts":accepted_casts,"cooldown":cooldown,"hits":targets[1].hits,"basic_hits":targets[0].hits,"writes":player.progress.disk_writes,"projectiles":get_tree().get_nodes_in_group("player_projectiles").size()}))
+			JavaScriptBridge.eval("window.Skill1DemoState=%s;" % JSON.stringify({"automatic":attacks_enabled,"category":selected_category,"name":CATALOGUE.rule(selected_category).name,"direction":direction_index,"walking":player.view.walking,"phase":phase,"casts":accepted_casts,"cooldown":cooldown,"hits":targets[1].hits,"basic_hits":targets[0].hits,"writes":player.progress.disk_writes,"projectiles":get_tree().get_nodes_in_group("player_projectiles").size()}))
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.physical_keycode == KEY_C:
 		var next := (CATALOGUE.ORDER.find(selected_category)+1)%5

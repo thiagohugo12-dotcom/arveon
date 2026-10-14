@@ -123,6 +123,42 @@ func run() -> void:
 			for actor in [rear,side,outside]: actor.queue_free()
 			await frames()
 		if category in ["arco","cajado"]:
+			demo.select_direction(3)
+			for player in demo.players:
+				player.attack.armed = false
+				player.progress.abilities.skill1_cooldowns[category] = 0
+				player._sync_skill_cooldowns()
+				player.last_direction = Vector2.RIGHT
+			view.skill1_direction = Vector2.RIGHT
+			check(before.use_skill(0) and demo.release_skill1(),"moving target test executes original skill "+category)
+			for shot in arrows(): shot.set_physics_process(false)
+			for target in demo.targets: target.position += Vector2(0,25)
+			step_arrows(0.1)
+			var moving_shots := arrows()
+			check(moving_shots.size() == 2 and moving_shots[0].direction.is_equal_approx(moving_shots[1].direction),"same steering toward moving target "+category)
+			check(moving_shots[1].direction.y > 0 if category == "cajado" else is_zero_approx(moving_shots[1].direction.y),"original homing/straight-flight behavior "+category)
+			check((moving_shots[0].position-moving_shots[0].shooter.position).is_equal_approx(moving_shots[1].position-moving_shots[1].shooter.position),"same actual path after target movement "+category)
+			after.input_driver.blocked = true
+			var frozen_position: Vector2 = moving_shots[1].position
+			var frozen_budget: float = moving_shots[1].distance_left
+			moving_shots[1]._physics_process(0.1)
+			check(moving_shots[1].position == frozen_position and moving_shots[1].distance_left == frozen_budget,"modal freezes original projectile/budget "+category)
+			after.input_driver.blocked = false
+			for shot in arrows(): shot.finish()
+			await frames()
+			demo.select_direction(3)
+			# Original cap rejects without spending cooldown or inventing a shot.
+			for index in range(PlayerProjectile.MAX_ACTIVE):
+				var dummy := PlayerProjectile.new()
+				after.get_parent().add_child(dummy)
+				dummy.setup(after,demo.targets[1],{"damage":1,"kind":"flecha","speed":440.0,"reach":100.0},Rect2())
+				dummy.set_physics_process(false)
+			after.progress.abilities.skill1_cooldowns[category] = 0
+			after._sync_skill_cooldowns()
+			var old_casts: int = view.skill1_casts
+			check(not after.use_skill(0) and after.progress.abilities.skill1_cooldowns[category] == 0 and view.skill1_casts == old_casts,"original projectile cap rejects cleanly "+category)
+			for shot in arrows(): shot.finish()
+			await frames()
 			# No other skill, Ultimate or basic may be intercepted by Skill 1 art.
 			for source: String in ["basic",AbilityRules.CATEGORIES[category].normal[0].id,rule.id]:
 				after.attack.projectile_requested.emit(after,demo.targets[1],{"damage":1,"kind":"flecha" if category == "arco" else "orbe","speed":after.attack.weapon.projectile_speed,"reach":100.0,"category":category,"source":source,"ultimate":source==rule.id})
@@ -160,6 +196,29 @@ func run() -> void:
 		await frames()
 		for player in demo.players:
 			check(player.progress.disk_writes == 0 and player.progress.talents.xp[category] == 0,"no saves or proficiency mutations "+category)
+		# Bounded shared effect, no spawned particles/timers for melee casts.
+		if category in ["espada","machado","lanca"]:
+			var node_count := get_node_count()
+			for iteration in range(30):
+				after.progress.abilities.skill1_cooldowns[category] = 0
+				after._sync_skill_cooldowns()
+				after.use_skill(0)
+				view._process(float(config.duration))
+				demo.ground_effects[1]._process(1)
+			check(get_node_count() == node_count and demo.ground_effects[1].get_child_count() == 0,"no per-cast particle/timer/node growth "+category)
+		view.prepare_skill1(Vector2.RIGHT,0.5)
+		var other_category := "machado" if category != "machado" else "espada"
+		after.progress.equipment[other_category] = 0
+		after.progress.equipped.Arma = other_category
+		after.apply_progression(after.progress)
+		demo._physics_process(0)
+		check(view.skill1_phase() == -1,"weapon switch cancels pending Skill 1 "+category)
+		after.progress.equipped.Arma = category
+		after.apply_progression(after.progress)
+		view.prepare_skill1(Vector2.RIGHT,0.5)
+		after.health.damage(after.health.maximum)
+		check(view.skill1_phase() == -1,"death clears pending Skill 1 "+category)
+		after.health.initialize(after.stats.max_hp)
 		print("SKILL1_CATEGORY_PASS: ",category)
 	demo.queue_free()
 	await frames()
