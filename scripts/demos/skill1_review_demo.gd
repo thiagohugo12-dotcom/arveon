@@ -309,6 +309,18 @@ func step_inspection(delta: float) -> void:
 	if visual_basics:
 		var basic = players[0].view
 		var interval: float = players[0].attack.weapon.interval
+		var remaining := interval-visual_basic_time
+		# Preserve the approved basic wind-up too, not only its release frames.
+		match selected_category:
+			"espada":
+				if remaining > 0 and remaining <= SwordActorView.PREPARE_TIME: basic.prepare_sword(aim,remaining)
+			"machado","lanca":
+				basic.weapon_kind = 0 if selected_category == "machado" else 1
+				if remaining > 0 and remaining <= MeleeActorView.melee_prepare_time(interval): basic.prepare_melee(aim,remaining,interval)
+			"arco":
+				if remaining > 0 and remaining <= BowActorView.prepare_time(interval): basic.prepare_bow(aim,remaining,interval)
+			"cajado":
+				if remaining > 0 and remaining <= StaffActorView.staff_prepare_time(interval): basic.prepare_staff(aim,remaining,interval)
 		if visual_basic_time >= interval:
 			visual_basic_time = 0
 			match selected_category:
