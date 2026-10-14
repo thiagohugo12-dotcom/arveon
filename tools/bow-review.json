@@ -1,0 +1,10 @@
+{
+  "status": "awaiting-visual-approval",
+  "entry": "amostra-arco/index.html",
+  "fixedTestAlias": false,
+  "preservedGameCommit": "d8c48a43d2a205abe05243b10816f9e8febbf4c2",
+  "fixedTestSha256": {
+    "index.html": "f3d8219f67730093f41c3bb10e65801c59cb0755121f963c0b978fa7b6dd2728",
+    "index.pck": "ff0268b48c21772deb49de67f469f0283a4600d20829edc80013f444abf77751"
+  }
+}

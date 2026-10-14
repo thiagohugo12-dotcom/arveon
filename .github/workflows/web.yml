@@ -58,6 +58,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/sword_game_tests.gd 2>&1 | tee /tmp/sword-game-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|SWORD_GAME_FAIL:' /tmp/sword-game-tests.log; then exit 1; fi
           grep -E '^SWORD_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/bow_demo_tests.gd 2>&1 | tee /tmp/bow-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|BOW_DEMO_FAIL:' /tmp/bow-tests.log; then exit 1; fi
+          grep -E '^BOW_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/bow-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -155,6 +158,10 @@ jobs:
         run: node tools/build-art-sample.mjs
       - name: Prepare isolated sword review entry
         run: node tools/build-sword-demo.mjs
+      - name: Prepare isolated bow review entry
+        run: node tools/build-bow-demo.mjs
+      - name: Verify bow review in desktop and touch Chromium
+        run: node tests/web_bow_demo.mjs
       - name: Verify actual Web persistence in Chromium
         shell: bash
         run: |
@@ -262,23 +269,30 @@ jobs:
           ')"
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
-          review_status="$(node --input-type=module -e '
-            import { readFileSync } from "node:fs";
-            const p = JSON.parse(readFileSync("../source/tools/sword-review.json", "utf8"));
-            if (p.entry !== "amostra-espada/index.html") process.exit(1);
-            if (p.status === "awaiting-visual-approval" && p.fixedTestAlias === false) console.log("pending");
-            else if (p.status === "approved-in-game" && p.fixedTestAlias === true) console.log("approved");
-            else process.exit(1);
-          ')"
-          if [[ "$review_status" == "pending" ]]; then
-            # Fail closed: malformed/missing exported review data aborts; no alias call.
-            PREVIEW_URL="$preview_url" node ../source/tools/verify-sword-preview.mjs
-            echo "[Espada V1 — demonstração isolada]($preview_url/amostra-espada/index.html)" >> "$GITHUB_STEP_SUMMARY"
-            echo "TESTE fixo preservado; aguardando aprovação visual." >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f ../source/tools/bow-review.json ]]; then
+            # Bow review never calls the fixed TESTE alias publisher.
+            PREVIEW_URL="$preview_url" node ../source/tools/verify-bow-preview.mjs
+            echo "[Arco V1 — demonstração isolada]($preview_url/amostra-arco/index.html)" >> "$GITHUB_STEP_SUMMARY"
+            echo "TESTE fixo e preview anterior da espada preservados." >> "$GITHUB_STEP_SUMMARY"
           else
-            PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
-            node ../source/tools/verify-test-build.mjs
-            echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
-            echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+            review_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p = JSON.parse(readFileSync("../source/tools/sword-review.json", "utf8"));
+              if (p.entry !== "amostra-espada/index.html") process.exit(1);
+              if (p.status === "awaiting-visual-approval" && p.fixedTestAlias === false) console.log("pending");
+              else if (p.status === "approved-in-game" && p.fixedTestAlias === true) console.log("approved");
+              else process.exit(1);
+            ')"
+            if [[ "$review_status" == "pending" ]]; then
+              # Fail closed: malformed/missing exported review data aborts; no alias call.
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-sword-preview.mjs
+              echo "[Espada V1 — demonstração isolada]($preview_url/amostra-espada/index.html)" >> "$GITHUB_STEP_SUMMARY"
+              echo "TESTE fixo preservado; aguardando aprovação visual." >> "$GITHUB_STEP_SUMMARY"
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+              echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
+              echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+            fi
           fi
 
