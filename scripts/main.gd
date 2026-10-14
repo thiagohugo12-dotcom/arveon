@@ -227,6 +227,9 @@ func _register_enemy_defeat(actor: EnemyActor) -> void:
 	actor.set_meta("floor_id", progress.ascension.current_floor)
 	actor.set_meta("floor_epoch", floor_epoch)
 	actor.defeated.connect(_on_enemy_defeated.bind(actor), CONNECT_ONE_SHOT)
+	var impact := preload("res://scripts/presentation/skill1_game_impact.gd").new()
+	actor.get_node("View").add_child(impact)
+	actor.weapon_hit.connect(impact.show_hit.bind(actor))
 	actor.weapon_hit.connect(_on_weapon_hit.bind(actor))
 
 func _on_weapon_hit(category: String, effective: int, event: int, actor: EnemyActor) -> void:
@@ -1002,9 +1005,13 @@ func _on_player_projectile(origin: Node2D, target: Node2D, specification: Dictio
 	if get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE:
 		return
 	# Only approved basic ranged attacks use attached pose/muzzle presentation.
-	# Special techniques and legacy floors retain their original projectile view.
+	# Approved Skill 1 uses its own presentation; other techniques keep theirs.
 	var basic_bow: bool = player.view.village_scale and specification.get("category","") == "arco" and specification.get("kind","") == "flecha" and specification.get("source","basic") == "basic" and not specification.get("ultimate",false)
 	var basic_staff: bool = player.view.village_scale and specification.get("category","") == "cajado" and specification.get("kind","") == "orbe" and specification.get("source","basic") == "basic" and not specification.get("ultimate",false)
-	var shot := StaffProjectile.new() if basic_staff else BowProjectile.new() if basic_bow else PlayerProjectile.new()
+	var category: String = specification.get("category","")
+	var special: bool = player.view.village_scale and category in ["arco","cajado"] and not specification.get("ultimate",false) and specification.get("source","") == AbilityRules.CATEGORIES[category].skill1.id
+	if special and player.view is Skill1GameView:
+		player.view.skill1_direction = (target.global_position-player.global_position).normalized()
+	var shot := Skill1GameProjectile.new() if special else StaffProjectile.new() if basic_staff else BowProjectile.new() if basic_bow else PlayerProjectile.new()
 	add_child(shot)
 	shot.setup(player, target, specification, TowerTrial.BOUNDS if trial.active() else Rect2(Vector2.ZERO, MiniMap.WORLD_SIZE))

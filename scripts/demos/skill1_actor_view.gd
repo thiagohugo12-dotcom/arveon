@@ -33,7 +33,7 @@ func prepare_skill1(direction: Vector2,weight: float) -> void:
 	skill1_weight = clampf(weight,0,1)
 	queue_redraw()
 func play_skill(index: int) -> void:
-	if index != 0 or skill_config.is_empty():
+	if index != 0 or skill_config.is_empty() or not village_scale:
 		super.play_skill(index)
 		return
 	# ClassCombat calls this only after the existing execution has succeeded.

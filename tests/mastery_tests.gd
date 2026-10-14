@@ -164,6 +164,7 @@ static func run_world(suite: SceneTree) -> void:
 	var hp_before := target.health.current
 	preload("res://tests/etapa2_fixtures.gd").reset(main.player)
 	main.player.use_skill(0)
+	preload("res://tests/etapa2_fixtures.gd").finish_skill1(main.player)
 	for shot: PlayerProjectile in preload("res://tests/arsenal_combat_tests.gd").shots(main): shot._physics_process(0.3)
 	var expected_skill := CombatRules.resolve(base_stats.magical,1+base_stats.automatic+base_stats.special,1.45,base_stats.critical_chance,base_stats.critical_multiplier,0.99)
 	suite.check(target.health.current == hp_before-int(expected_skill.damage),"staff Orbe Arcano scales with magical Spirit and special Domain")

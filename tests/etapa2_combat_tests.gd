@@ -34,6 +34,7 @@ static func run_world(suite: SceneTree) -> void:
 		p.abilities.death_reset()
 		var before := enemy.health.current
 		suite.check(player.use_skill(0),"individual Skill 1 executes "+category)
+		preload("res://tests/etapa2_fixtures.gd").finish_skill1(player)
 		for shot: PlayerProjectile in preload("res://tests/arsenal_combat_tests.gd").shots(main): shot._physics_process(0.5)
 		suite.check(enemy.health.current < before and p.abilities.skill1_cooldowns[category] > 0,"Skill 1 causes real damage and shared timer "+category)
 		var after := enemy.health.current

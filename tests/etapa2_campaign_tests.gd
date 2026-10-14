@@ -41,6 +41,7 @@ static func run_world(suite: SceneTree) -> void:
 			enemy.health.initialize(2000)
 			var original := enemy.health.current
 			suite.check(player.use_skill(0),"class Skill 1 executes in floor matrix "+category+str(floor_id))
+			preload("res://tests/etapa2_fixtures.gd").finish_skill1(player)
 			for shot: PlayerProjectile in preload("res://tests/arsenal_combat_tests.gd").shots(main): shot._physics_process(0.5)
 			suite.check(player.use_skill(1) and enemy.health.current < original,"normal technique damages scaled elite "+category+str(floor_id))
 			player.attack.cooldown_left = 0

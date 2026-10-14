@@ -137,7 +137,9 @@ static func _gameplay(suite, main) -> void:
 	target.home_position = target.position
 	target.set_physics_process(false)
 	await suite.frames()
-	suite.check(player.use_skill(0) and target.health.current == 31 and player.view.skill_left > 0.0, "Corte Circular deals physical area damage with lightweight effect")
+	var accepted := player.use_skill(0)
+	preload("res://tests/etapa2_fixtures.gd").finish_skill1(player)
+	suite.check(accepted and target.health.current == 31 and (player.view as Skill1GameView).skill1_phase() >= 1, "Talho Agil deals original physical damage after approved startup")
 	var enemy_hp := target.health.current
 	suite.check(not player.use_skill(0) and target.health.current == enemy_hp and player.skill_cooldowns[0] == 6.0, "unavailable skill cannot damage or reset cooldown")
 	preload("res://tests/etapa2_fixtures.gd").reset(player)
@@ -149,6 +151,7 @@ static func _gameplay(suite, main) -> void:
 	player.position = Vector2(930, 750)
 	target.update_activity(target.position + Vector2(650, 0))
 	player.use_skill(0)
+	preload("res://tests/etapa2_fixtures.gd").finish_skill1(player)
 	suite.check(target.health.current == enemy_hp, "suspended monsters immune to area farming")
 	target.update_activity(target.position)
 	target.set_physics_process(false)

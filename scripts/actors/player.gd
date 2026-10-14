@@ -28,6 +28,33 @@ var charge_direction := Vector2.DOWN
 var charge_hits: Dictionary = {}
 var base_max_hp := 100
 var base_weapon_damage := 12
+# Transient startup only: never serialized or written into ability cooldowns.
+var skill1_pending := 0.0
+var skill1_pending_category := ""
+var skill1_pending_direction := Vector2.DOWN
+
+func _cancel_skill1() -> void:
+	skill1_pending = 0
+	skill1_pending_category = ""
+	if view is Skill1GameView: view.clear_skill1()
+	_sync_skill_cooldowns()
+
+func _tick_skill1(delta: float) -> void:
+	if skill1_pending <= 0: return
+	if not health.is_alive() or input_driver == null or input_driver.blocked or not view.village_scale or not attack.armed or progress.active_category() != skill1_pending_category or SafeCamp.in_clearance(global_position):
+		_cancel_skill1()
+		return
+	skill1_pending = maxf(0,skill1_pending-delta)
+	var preparation: float = view.skill_config.prepare
+	view.prepare_skill1(skill1_pending_direction,1-skill1_pending/preparation)
+	if skill1_pending == 0:
+		# Commit once through the original combat implementation, with input aim.
+		var walking_direction := last_direction
+		last_direction = skill1_pending_direction
+		skill1_pending_category = ""
+		if not class_combat.use(0): view.clear_skill1()
+		last_direction = walking_direction
+	_sync_skill_cooldowns()
 
 func _ready() -> void:
 	stats = stats.duplicate() as ActorData
@@ -46,6 +73,7 @@ func _physics_process(delta: float) -> void:
 	attack.damage_scale = 1.0
 	view.set_fury(fury_left > 0.0)
 	if not health.is_alive() or input_driver == null:
+		_cancel_skill1()
 		_clear_sword_visual()
 		_clear_bow_visual()
 		_clear_staff_visual()
@@ -54,6 +82,7 @@ func _physics_process(delta: float) -> void:
 		view.set_moving(false)
 		return
 	if input_driver.blocked:
+		_cancel_skill1()
 		_clear_sword_visual()
 		_clear_bow_visual()
 		_clear_staff_visual()
@@ -75,6 +104,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	view.set_moving(velocity.length_squared() > 1.0)
+	_tick_skill1(delta)
 	_prepare_sword_visual()
 	_prepare_bow_visual()
 	_prepare_staff_visual()
@@ -205,6 +235,11 @@ func apply_progression(value: GameProgress, initial: bool = false) -> void:
 	attack.damage_type = values.damage_type
 	var configuration := ArsenalRules.profile(progress.equipped.Arma)
 	attack.weapon.category = progress.active_category()
+	if view is Skill1GameView and view.skill_category != attack.weapon.category:
+		_cancel_skill1()
+		view.configure(attack.weapon.category)
+	elif view is Skill1GameView and view.skill_config.is_empty():
+		view.configure(attack.weapon.category)
 	if not _uses_sword_visual(): _clear_sword_visual()
 	if not _uses_bow_visual(): _clear_bow_visual()
 	if not _uses_staff_visual(): _clear_staff_visual()
@@ -228,6 +263,26 @@ func apply_progression(value: GameProgress, initial: bool = false) -> void:
 
 func use_skill(index: int) -> bool:
 	if index < 0 or index >= 3 or progress == null or input_driver == null or input_driver.blocked or not health.is_alive() or SafeCamp.in_clearance(global_position): return false
+	if index == 0 and view is Skill1GameView and view.village_scale and not view.skill_config.is_empty():
+		if skill1_pending > 0 or float(progress.abilities.skill1_cooldowns[progress.active_category()]) > 0: return false
+		var rule := AbilityRules.skill1(progress.equipped.Arma)
+		if rule.is_empty(): return false
+		if AbilityRules.effect(rule.id).shape == "projectile" and get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE: return false
+		skill1_pending_category = progress.active_category()
+		skill1_pending_direction = last_direction
+		if AbilityRules.effect(rule.id).shape == "projectile":
+			var reach := float(AbilityRules.effect(rule.id).reach)+(20.0 if class_combat.has_passive("alcance_treinado") else 0.0)
+			var nearest_squared := reach*reach
+			for candidate in get_tree().get_nodes_in_group("damageable_enemies"):
+				if not candidate is EnemyActor or not candidate.is_targetable() or not class_combat._visible(candidate): continue
+				var distance := global_position.distance_squared_to(candidate.global_position)
+				if distance <= nearest_squared:
+					nearest_squared = distance
+					skill1_pending_direction = global_position.direction_to(candidate.global_position)
+		skill1_pending = float(view.skill_config.prepare)
+		view.prepare_skill1(skill1_pending_direction,0)
+		_sync_skill_cooldowns()
+		return true
 	var used := class_combat.use(index)
 	_sync_skill_cooldowns()
 	return used
@@ -238,7 +293,7 @@ func _sync_skill_cooldowns() -> void:
 	if category.is_empty():
 		skill_cooldowns = [0.0,0.0,0.0]
 		return
-	skill_cooldowns[0] = float(progress.abilities.skill1_cooldowns[category])
+	skill_cooldowns[0] = maxf(skill1_pending,float(progress.abilities.skill1_cooldowns[category]))
 	for i in range(1,3):
 		var id: String = progress.abilities.loadouts[category].skills[i-1]
 		skill_cooldowns[i] = float(progress.abilities.cooldowns[category].get(id,0.0))
@@ -265,6 +320,7 @@ func _on_attack(target: Node2D) -> void:
 	elif _uses_bow_visual():
 		(view as BowActorView).play_bow_attack(target.global_position-global_position,attack.weapon.interval)
 	else:
+		_cancel_skill1()
 		_clear_sword_visual()
 		_clear_bow_visual()
 		_clear_staff_visual()
@@ -272,6 +328,7 @@ func _on_attack(target: Node2D) -> void:
 		view.play_attack(target.global_position-global_position)
 
 func _on_died() -> void:
+	_cancel_skill1()
 	_clear_melee_visual()
 	_clear_staff_visual()
 	_clear_sword_visual()

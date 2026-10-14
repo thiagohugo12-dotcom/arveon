@@ -1,3 +1,14 @@
+## Skills 1 V2 - integradas no Andar 1
+Skill1GameView adapta os atlas aprovados e herda todos os basicos. PlayerActor
+agenda uma startup transitoria antes da chamada original ClassCombat.use(0).
+Apenas a View de jogo ativa esse caminho: a demonstracao mantem seu controlador
+isolado sem dupla preparacao. Sem alteracao em ClassCombat/AbilityRules/saves.
+Skill1GameProjectile reutiliza a arte especial da demo sobre PlayerProjectile;
+colisao, alvo, velocidade e budget originais. ImpactMarks compartilha os mesmos
+pixels com alvos de demo e filhos visuais dos monstros, sem trocar suas Views.
+GroundEffect e unico/reutilizado, em coordenadas de mundo e z abaixo dos atores.
+Outros andares e Skills 2/3 continuam no caminho original.
+
 ## Skill 1 - poses de corpo inteiro V2
 Skill1BodyPose compartilha os landmarks em pixels com o baker e a origem visual
 de projeteis. Full-body inclui apoio dos pes parado; upper-body combina a acao

@@ -79,6 +79,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/skill1_tests.gd 2>&1 | tee /tmp/skill1-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_FAIL:' /tmp/skill1-tests.log; then exit 1; fi
           grep -E '^SKILL1_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-tests.log
+          timeout 90s godot --headless --path . --script res://tests/skill1_game_tests.gd 2>&1 | tee /tmp/skill1-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_GAME_FAIL:' /tmp/skill1-game-tests.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-game-tests.log
           timeout 90s godot --headless --path . --script res://tests/skill1_inspection_tests.gd 2>&1 | tee /tmp/inspection-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|INSPECTION_FAIL:' /tmp/inspection-tests.log; then exit 1; fi
           grep -E '^INSPECTION_RESULT: [0-9]+ checks, 0 failures$' /tmp/inspection-tests.log
@@ -159,6 +162,12 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_perf_probe.gd 2>&1 | tee /tmp/skill1-perf.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/skill1-perf.log; then exit 1; fi
           grep -E '^SKILL1_PERF_RESULT: .*0 failures$' /tmp/skill1-perf.log
+          QA_RENDER_DIR="$PWD/build/skill1-game-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_game_tests.gd 2>&1 | tee /tmp/skill1-game-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_GAME_FAIL:' /tmp/skill1-game-render.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-game-render.log
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_game_perf.gd 2>&1 | tee /tmp/skill1-game-perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/skill1-game-perf.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_PERF_RESULT: .*0 failures$' /tmp/skill1-game-perf.log
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -170,6 +179,7 @@ jobs:
             build/progression-qa/
             build/etapa2-qa/
             build/first-weapon-qa/
+            build/skill1-game-qa/
           if-no-files-found: error
           retention-days: 14
       - name: Export Web
@@ -313,8 +323,20 @@ jobs:
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
           if [[ -f ../source/tools/skill1-review.json ]]; then
-            # Skills 1 are pending visual review: never call the fixed alias publisher.
-            PREVIEW_URL="$preview_url" node ../source/tools/verify-skill1-preview.mjs
+            skill1_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/skill1-review.json","utf8"));
+              if(p.entry!=="amostra-skills1/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$skill1_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-skill1-preview.mjs
+            fi
           elif [[ -f ../source/tools/melee-review.json ]]; then
             melee_status="$(node --input-type=module -e '
               import { readFileSync } from "node:fs";

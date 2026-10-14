@@ -90,7 +90,7 @@ func run() -> void:
 	player.attack.cooldown_left = 0.0
 	player._physics_process(0.0)
 	check(player.use_skill(0),"class skill remains usable during sword swing")
-	check(view.sword_time > 0.0 and view.skill_left > 0.0,"sword and skill presentation coexist")
+	check(view.sword_time > 0.0 and (view as Skill1GameView).skill1_phase() == 0,"original sword state coexists with approved Skill 1 preparation")
 	view.flash()
 	view.set_fury(true)
 	view.queue_redraw()

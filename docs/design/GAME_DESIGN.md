@@ -1,3 +1,10 @@
+## Skills 1 V2 - integracao aprovada em 14/10/2026
+Thiago aprovou o preview 55617e3 com "pronto, gostei" e "pode integrar".
+Escolheu explicitamente "Preparacao completa antes do impacto": startup de
+0.24-0.36s conforme arma, seguido de uma unica execucao original. Caminhada
+permitida; dano, alcance, cooldown e projeteis mantidos. Publicar somente no
+TESTE fixo apos validacao. Basicos, Skills 2/3, Ultimates e save v11 preservados.
+
 ## Skills 1 - atuacao corporal V2 autorizada
 Pedido do usuario: movimentos reais de corpo, apoio, antecipacao e recuperacao
 conforme referencia das cinco armas. Preview isolado, sem alterar combate ou

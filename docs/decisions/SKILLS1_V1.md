@@ -81,3 +81,16 @@ Etapa C V2: Impulso Perfurante com recuo, passada e inclinacao do tronco. Margem
 Etapa D V2: Flecha Certeira com apoio, puxada maior e recuo corporal; origem visual acompanha arco na soltura, sem mudar fisica. 761 checks sem falhas. Movimento avaliado pela amplitude da acao completa, incluindo recuo/recuperacao.
 
 Etapa E V2: Orbe Arcano com canalizacao, inclinacao e avancar/recuar do apoio; 770 checks das Skills e 159 de isolamento sem falhas. Basicos, contratos gerais e journal passaram. 20 ciclos completos capturados nas quatro direcoes, alem das 68 poses/impactos. Preview abre em 1x; 0.5x continua opcional. Sem Engine.time_scale ou alteracao de combate.
+
+## Integracao V2 - APROVADA em 14/10/2026
+Aprovacao visual do preview qkporqf6k (55617e3): "pronto, gostei".
+Integracao: "pode integrar". Perguntado sobre impacto imediato versus startup,
+Thiago escolheu "Preparacao completa antes do impacto". Esta e a unica mudanca
+intencional de timing: 0.26s espada, 0.34s machado, 0.24s lanca, 0.32s arco,
+0.36s cajado. Movimento/dash continuam; aim melee e capturado no comando.
+Ranged mira o alvo elegivel mais proximo na preparacao e o sistema original
+seleciona o alvo ao disparar. O cooldown original inicia na execucao.
+Modal, morte, troca de categoria, desarme, entrada na safe ou mudanca de visual
+cancelam a preparacao sem gastar cooldown. Limite real de projeteis e conferido
+na solicitacao e na execucao. Nenhum estado de preparacao e salvo.
+Autorizada publicacao somente no TESTE; main/PRODUCAO fora do escopo.
