@@ -20,3 +20,10 @@ de 14/10/2026. Integração ao jogo depende de aprovação visual posterior.
   bloquear o alias TESTE e conferir seus hashes originais.
 - Não integrar Cajado, iniciar Machado/Lança, alterar andares, cenário, main
   ou produção. Limpar poses ao morrer/trocar arma/bloquear controles.
+
+## Integracao aprovada - 14/10/2026
+Thiago: "coloque no jogo". Promover a apresentacao existente sem refazer o
+atlas, reutilizar PlayerActor/AutoAttack/PlayerProjectile e publicar no TESTE.
+Checkpoint: checkpoint-antes-integracao-cajado-v1-2026-10-14 (4aa7d86).
+A restricao anterior de integracao/alias foi revogada por esta aprovacao.
+Main branch e producao continuam fora do escopo.

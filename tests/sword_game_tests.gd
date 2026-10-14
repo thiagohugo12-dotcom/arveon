@@ -106,6 +106,8 @@ func run() -> void:
 		player._on_attack(main.enemy)
 		if category == "arco" and view is BowActorView:
 			check(view.sword_attacks == swings and (view as BowActorView).bow_phase() == 2,"bow animation stays independent of sword")
+		elif category == "cajado" and view is StaffActorView:
+			check(view.sword_attacks == swings and (view as StaffActorView).staff_phase() == 2,"staff animation stays independent of sword")
 		else:
 			check(view.sword_attacks == swings and view.attack_left > 0.0,"other weapon retains original visual "+category)
 	main.progress.equipped.Arma = ""

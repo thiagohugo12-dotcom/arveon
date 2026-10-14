@@ -1,7 +1,7 @@
 // New isolated entry. Neither main HTML nor the approved sword entry is replaced.
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 const review=JSON.parse(await readFile('tools/staff-review.json','utf8'));
-const valid=review.status==='awaiting-visual-approval'&&review.fixedTestAlias===false;
+const valid=(review.status==='awaiting-visual-approval'&&review.fixedTestAlias===false)||(review.status==='approved-in-game'&&review.fixedTestAlias===true);
 if(!valid||review.entry!=='amostra-cajado/index.html')throw Error('Invalid staff review policy');
 const source=await readFile('build/web/index.html','utf8');
 const match=source.match(/const GODOT_CONFIG = (.*);/);

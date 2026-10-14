@@ -12,9 +12,7 @@ func _create_panel(updated: bool) -> void:
 	if updated:
 		player.get_node("View").set_script(STAFF_VIEW)
 		player.view.village_scale = true
-		player.attack.attacked.connect(func(target: Node2D):
-			if player.attack.weapon.category == "cajado" and player.attack.armed:
-				player.view.play_staff_attack(target.global_position-player.global_position,player.attack.weapon.interval))
+
 		player.health.died.connect(player.view.clear_staff)
 		targets.back().get_node("View").set_script(preload("res://scripts/demos/staff_training_view.gd"))
 	# Replace only the review's spawn callback, leaving AutoAttack untouched.

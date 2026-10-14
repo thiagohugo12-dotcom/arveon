@@ -1,7 +1,7 @@
 {
-  "status": "awaiting-visual-approval",
+  "status": "approved-in-game",
   "entry": "amostra-cajado/index.html",
-  "fixedTestAlias": false,
+  "fixedTestAlias": true,
   "preservedGameCommit": "10f00de72f9a455d510c681d2f2b509155631554",
   "fixedTestSha256": {
     "index.html": "7abbe050cd2969e57930b9aa7c299203917f96781fb7d92c31e5bdb754e93dd3",

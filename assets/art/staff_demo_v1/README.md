@@ -11,4 +11,5 @@ the baker and the visual projectile muzzle. No extra physics or damage.
 Rebuild: godot --path . --rendering-method gl_compatibility --audio-driver Dummy
 --script res://tools/bake_staff_demo.gd
 
-Pending visual approval. Not integrated into the main game or fixed TESTE.
+Approved for main-game integration and fixed TESTE on 14/10/2026.
+The original atlas is shared unchanged by demo and game.

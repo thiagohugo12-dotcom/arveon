@@ -1,4 +1,9 @@
 # Game Design — fundação v0.1
+## Cajado V1 - integracao aprovada em 14/10/2026
+Thiago aprovou visualmente com "coloque no jogo". Integrar o atlas existente
+ao ataque basico do Andar 1 e publicar somente no TESTE apos validacao.
+Preservar Espada, Arco, caminhada, Skills, regras e save v11.
+
 ## Cajado V1 — demonstração autorizada em 14/10/2026
 Conforme ANIMACAO_CAJADO_V1.md: criar apenas apresentação do básico do Místico
 em preview isolado, com braços curtos, canalização e orbe verde-azulado.

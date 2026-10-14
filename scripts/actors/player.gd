@@ -48,12 +48,14 @@ func _physics_process(delta: float) -> void:
 	if not health.is_alive() or input_driver == null:
 		_clear_sword_visual()
 		_clear_bow_visual()
+		_clear_staff_visual()
 		velocity = Vector2.ZERO
 		view.set_moving(false)
 		return
 	if input_driver.blocked:
 		_clear_sword_visual()
 		_clear_bow_visual()
+		_clear_staff_visual()
 		dash.time_left = 0.0
 		charge_left = 0.0
 		charge_hits.clear()
@@ -73,7 +75,28 @@ func _physics_process(delta: float) -> void:
 	view.set_moving(velocity.length_squared() > 1.0)
 	_prepare_sword_visual()
 	_prepare_bow_visual()
+	_prepare_staff_visual()
 	attack.tick(delta, self)
+
+func _uses_staff_visual() -> bool:
+	return view is StaffActorView and view.village_scale and attack.armed and attack.weapon.category == "cajado"
+
+func _clear_staff_visual() -> void:
+	if view is StaffActorView: (view as StaffActorView).clear_staff()
+
+func _prepare_staff_visual() -> void:
+	if not view is StaffActorView: return
+	var staff := view as StaffActorView
+	if not _uses_staff_visual() or SafeCamp.in_clearance(global_position):
+		staff.clear_staff()
+		return
+	var candidate: Node2D = null
+	if attack.cooldown_left > 0 and attack.cooldown_left <= StaffActorView.staff_prepare_time(attack.weapon.interval):
+		candidate = attack.select_target(self)
+	if candidate != null:
+		staff.prepare_staff(candidate.global_position-global_position,attack.cooldown_left,attack.weapon.interval)
+	else:
+		staff.cancel_channel()
 
 func _uses_bow_visual() -> bool:
 	return view is BowActorView and view.village_scale and attack.armed and attack.weapon.category == "arco"
@@ -150,6 +173,7 @@ func apply_progression(value: GameProgress, initial: bool = false) -> void:
 	attack.weapon.category = progress.active_category()
 	if not _uses_sword_visual(): _clear_sword_visual()
 	if not _uses_bow_visual(): _clear_bow_visual()
+	if not _uses_staff_visual(): _clear_staff_visual()
 	attack.weapon.reach = configuration.reach + (20.0 if class_combat.has_passive("alcance_treinado") else 0.0)
 	attack.weapon.projectile_kind = configuration.projectile
 	attack.weapon.projectile_speed = configuration.speed
@@ -198,14 +222,18 @@ func _on_attack(target: Node2D) -> void:
 	# Snapshot the selected target, independently of movement/dash facing.
 	if _uses_sword_visual():
 		(view as SwordActorView).play_sword_attack(target.global_position-global_position,attack.weapon.interval)
+	elif _uses_staff_visual():
+		(view as StaffActorView).play_staff_attack(target.global_position-global_position,attack.weapon.interval)
 	elif _uses_bow_visual():
 		(view as BowActorView).play_bow_attack(target.global_position-global_position,attack.weapon.interval)
 	else:
 		_clear_sword_visual()
 		_clear_bow_visual()
+		_clear_staff_visual()
 		view.play_attack(target.global_position-global_position)
 
 func _on_died() -> void:
+	_clear_staff_visual()
 	_clear_sword_visual()
 	_clear_bow_visual()
 	charge_left = 0.0

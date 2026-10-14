@@ -1,4 +1,13 @@
 # Arquitetura
+## Cajado V1 - integracao aprovada
+StaffActorView estende BowActorView, com estado separado para o cajado.
+StaffProjectile reaproveita a fisica e muda somente o desenho/origem visual.
+O atlas aprovado e compartilhado pelo jogo e demo, que usa adaptadores leves.
+PlayerActor antecipa durante cooldown e dispara pelo sinal original. Main
+seleciona StaffProjectile somente para basicos cajado/orbe no Andar 1.
+Skills, Ultimates, cenarios legados e todas as regras permanecem intactos.
+A aprovacao de Thiago permite atualizar exclusivamente o alias TESTE.
+
 ## Cajado V1 - demonstracao isolada
 StaffAttackDemo herda a UI, controles, mundos e alvos de BowAttackDemo.
 StaffDemoView usa o atlas de oito poses/quatro direcoes, pernas originais
@@ -6,7 +15,7 @@ e landmarks compartilhados com o rig. StaffDemoProjectile herda a fisica
 original e altera apenas desenho/offset visual; canalizacao antecipa somente
 a pose. Skills e Ultimates continuam com PlayerProjectile. Nenhum Main,
 save ou sistema de progressao e instanciado/modificado pelo demo.
-A politica staff-review bloqueia o alias TESTE enquanto aguarda aprovacao.
+A politica staff-review passou a aprovada para integrar no TESTE.
 
 ## Arco V1 — integração aprovada
 BowActorView estende SwordActorView sem alterar seus frames ou comportamento.

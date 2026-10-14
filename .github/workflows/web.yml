@@ -67,6 +67,9 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/staff_demo_tests.gd 2>&1 | tee /tmp/staff-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|STAFF_DEMO_FAIL:' /tmp/staff-tests.log; then exit 1; fi
           grep -E '^STAFF_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/staff-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/staff_game_tests.gd 2>&1 | tee /tmp/staff-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|STAFF_GAME_FAIL:' /tmp/staff-game-tests.log; then exit 1; fi
+          grep -E '^STAFF_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/staff-game-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -280,9 +283,20 @@ jobs:
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
           if [[ -f ../source/tools/staff-review.json ]]; then
-            # Pending staff review is fail closed: never call the fixed alias publisher.
-            PREVIEW_URL="$preview_url" node ../source/tools/verify-staff-preview.mjs
-            echo "Cajado V1 isolado; TESTE fixo preservado." >> "$GITHUB_STEP_SUMMARY"
+            staff_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/staff-review.json","utf8"));
+              if(p.entry!=="amostra-cajado/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$staff_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-staff-preview.mjs
+            fi
           elif [[ -f ../source/tools/bow-review.json ]]; then
             bow_status="$(node --input-type=module -e '
               import { readFileSync } from "node:fs";

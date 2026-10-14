@@ -1001,9 +1001,10 @@ func _on_player_projectile(origin: Node2D, target: Node2D, specification: Dictio
 		return
 	if get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE:
 		return
-	# Only the basic bow uses the approved pose/muzzle presentation.
+	# Only approved basic ranged attacks use attached pose/muzzle presentation.
 	# Special techniques and legacy floors retain their original projectile view.
 	var basic_bow: bool = player.view.village_scale and specification.get("category","") == "arco" and specification.get("kind","") == "flecha" and specification.get("source","basic") == "basic" and not specification.get("ultimate",false)
-	var shot := BowProjectile.new() if basic_bow else PlayerProjectile.new()
+	var basic_staff: bool = player.view.village_scale and specification.get("category","") == "cajado" and specification.get("kind","") == "orbe" and specification.get("source","basic") == "basic" and not specification.get("ultimate",false)
+	var shot := StaffProjectile.new() if basic_staff else BowProjectile.new() if basic_bow else PlayerProjectile.new()
 	add_child(shot)
 	shot.setup(player, target, specification, TowerTrial.BOUNDS if trial.active() else Rect2(Vector2.ZERO, MiniMap.WORLD_SIZE))
