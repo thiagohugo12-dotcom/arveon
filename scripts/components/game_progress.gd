@@ -183,6 +183,30 @@ func forge(id: String, expected_upgrade: int) -> bool:
 	equipment[id] = expected_upgrade + 1
 	return true
 
+# Gold-only starter shop at the Ferreiro. The free first-weapon gift is separate.
+static func starter_weapon_price(id: String) -> int:
+	if not ArsenalRules.CATEGORIES.has(id): return -1
+	return int(RPGRules.EQUIPMENT[id].gold)
+
+func can_buy_starter_weapon(id: String) -> bool:
+	var price := starter_weapon_price(id)
+	return not introduction_active() and not save_blocked and price > 0 and not equipment.has(id) and gold >= price
+
+func purchase_starter_weapon(id: String, at_smith: bool) -> bool:
+	# The caller must verify the player is actually at the Ferreiro.
+	if not at_smith or not can_buy_starter_weapon(id): return false
+	var price := starter_weapon_price(id)
+	var previous_weapon: String = equipped.Arma
+	gold -= price
+	equipment[id] = 0
+	equipped.Arma = id
+	# One durable transaction: balance, ownership and active class.
+	if save(true): return true
+	gold += price
+	equipment.erase(id)
+	equipped.Arma = previous_weapon
+	return false
+
 func equip(id: String) -> bool:
 	if not equipment.has(id) or not RPGRules.EQUIPMENT.has(id) or level() < int(ArsenalRules.metadata(id).level):
 		return false
