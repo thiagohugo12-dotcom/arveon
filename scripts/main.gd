@@ -454,6 +454,14 @@ func _station_action(action: String, item: String) -> void:
 				hud.set_rpg_status(progress,player)
 			else:
 				hud.show_notice(progress.save_status if not progress.save_status.is_empty() else "Escolha indisponível. Nenhuma arma concedida.")
+		["Ferreiro", "buy_starter"]:
+			var at_smith := not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro"
+			success = progress.purchase_starter_weapon(item,at_smith)
+			if success:
+				player.apply_progression(progress)
+				hud.smith_shop_selected = ""
+			else:
+				hud.show_notice(progress.save_status if progress.save_blocked else "Compra indisponível: confira seu ouro e as armas possuídas.")
 		["Baú", "Guardar"]: success = progress.transfer(item, true)
 		["Baú", "Retirar"]: success = progress.transfer(item, false)
 		["Vendedor", "Comprar"]: success = progress.buy(item)
@@ -462,6 +470,8 @@ func _station_action(action: String, item: String) -> void:
 		earned_gold = progress.gold
 		_save_progress()
 		var trade_text := "%s: 1 %s" % [action, item]
+		if action == "buy_starter":
+			trade_text = "%s comprada e equipada · -%d ouro" % [RPGRules.EQUIPMENT[item].name,GameProgress.starter_weapon_price(item)]
 		if action == "Vender":
 			trade_text += " · +%d ouro" % GameProgress.SELL_PRICE
 		elif action == "Comprar":
