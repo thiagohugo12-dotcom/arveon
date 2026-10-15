@@ -193,6 +193,10 @@ jobs:
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
+      - name: Install branded ARVÉON loading screen
+        run: node tools/inject-arveon-loading.mjs
+      - name: Validate responsive loading without fake progress
+        run: node tests/web_arveon_loading.mjs
       - name: Prepare isolated art sample entry
         run: node tools/build-art-sample.mjs
       - name: Prepare isolated sword review entry
