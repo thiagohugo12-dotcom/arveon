@@ -22,7 +22,7 @@ static func run(suite: SceneTree) -> void:
 	suite.check(not p.learn_talent("espada","bastiao_ancestral",true), "late defensive talent requires an actual parent purchase")
 	suite.check(p.learn_talent("espada","guarda_aperfeicoada",true) and p.learn_talent("espada","postura_equilibrada",true) and p.learn_talent("espada","bastiao_ancestral",true), "sword defensive path learns in prerequisite order")
 	p.talents.xp.espada = TalentRules.xp_floor(60)
-	var cap := p.talents.xp.espada
+	var cap: int = p.talents.xp.espada
 	suite.check(p.talents.level("espada") == 60 and not p.talents.record_damage("espada",99999) and p.talents.xp.espada == cap, "level 60 is a hard XP cap")
 	suite.check(is_equal_approx(p.talents.mastery_bonuses("espada").automatic,0.295), "all sixty levels apply deterministic automatic proficiency scaling")
 	var saved := p.to_json()
