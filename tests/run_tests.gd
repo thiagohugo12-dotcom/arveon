@@ -41,6 +41,7 @@ func _run() -> void:
 	preload("res://tests/ability_state_tests.gd").run(self)
 	preload("res://tests/etapa2_save_tests.gd").run(self)
 	preload("res://tests/etapa2_progression_tests.gd").run(self)
+	preload("res://tests/sword_evolution_tests.gd").run(self)
 	var health := Health.new()
 	root.add_child(health)
 	health.initialize(10)
