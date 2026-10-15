@@ -20,12 +20,12 @@ const server=http.createServer(async(req,res)=>{
     const bytes=await readFile(path.join(web,name));
     const type={'.html':'text/html','.js':'application/javascript','.css':'text/css','.png':'image/png','.json':'application/json','.svg':'image/svg+xml','.wasm':'application/wasm'}[path.extname(name)]||'application/octet-stream';
     res.writeHead(200,{'Content-Type':type,'Content-Length':bytes.length,'Cache-Control':name.startsWith('loading-artwork/')?'public,max-age=31536000,immutable':'no-store'});
-    if(hold&&name==='index.pck'){res.write(bytes.subarray(0,65536));pendingPack.push(()=>res.end(bytes.subarray(65536)));}
+    if(hold&&name==='index.pck'){res.write(bytes.subarray(0,65536));pendingPack.push(()=>{if(!res.writableEnded&&!res.destroyed)res.end(bytes.subarray(65536));});}
     else res.end(bytes);
   }catch{res.writeHead(404);res.end();}
 });
 await new Promise(r=>server.listen(0,'127.0.0.1',r));
-const origin=process.env.LOADING_TEST_BASE_URL||'http://127.0.0.1:'+server.address().port;
+const origin=(process.env.LOADING_TEST_BASE_URL||'http://127.0.0.1:'+server.address().port).replace(/\/+$/,'');
 const remote=!!process.env.LOADING_TEST_BASE_URL;
 let intercepted=[];
 function check(value,message){assert.ok(value,message);checks++;console.log('LOADING_BROWSER_PASS: '+message);}
@@ -89,7 +89,7 @@ try{
  await until('document.querySelector(".arveon-tip-text").textContent!=='+JSON.stringify(initialTip),10000);
  check(true,'tips rotate during actual pending download');
  check(!requests.some(url=>/arveon-(desktop|mobile)\.avif/.test(url)),'no obsolete artwork URL requested');
- hold=false;for(const release of pendingPack)release();
+ hold=false;for(const release of pendingPack)release();pendingPack=[];
  for(const requestId of intercepted)await call('Fetch.continueRequest',{requestId});intercepted=[];
  await until('!document.getElementById("status") && !!window.GrandeArvoreSave && !!localStorage.getItem("grande-arvore-rpg.save.v6")',90000);
  check(true,'full Godot initialization removes the loading screen');
