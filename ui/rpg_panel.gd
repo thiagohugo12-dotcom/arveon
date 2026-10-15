@@ -446,6 +446,8 @@ func _focus_training() -> void:
 		scroll.ensure_control_visible(mastery_buttons.Dano)
 
 func _reflow_stats() -> void:
+	for slot: Button in skill_slots:
+		if is_instance_valid(slot): slot.custom_minimum_size.y = 100 if size.x < 340 else 90
 	if is_instance_valid(attribute_grid): attribute_grid.columns = 2 if size.x >= 620 else 1
 	if is_instance_valid(mastery_grid): mastery_grid.columns = 2 if size.x >= 620 else 1
 
@@ -528,7 +530,7 @@ func _skills_page() -> void:
 	for index in range(3):
 		var id: String = catalog.skill1.id if index == 0 else build.skills[index-1]
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0,90)
+		button.custom_minimum_size = Vector2(0,100 if size.x < 340 else 90)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.tooltip_text = "Skill 1 fixa" if index == 0 else "Selecione uma técnica para este espaço"
 		button.pressed.connect(func():
