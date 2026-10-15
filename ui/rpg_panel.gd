@@ -298,8 +298,8 @@ func _sword_evolution_page() -> void:
 			button.pressed.connect(func(): action_requested.emit("equip_passive","espada:"+id,slot))
 			sword_detail.add_child(button)
 	elif kind == "talent" and not rule.is_empty():
-		var learned := progress.abilities.talents.espada.has(id)
-		var ready := rule.parent.is_empty() or progress.abilities.talents.espada.has(rule.parent)
+		var learned: bool = progress.abilities.talents.espada.has(id)
+		var ready: bool = rule.parent.is_empty() or progress.abilities.talents.espada.has(rule.parent)
 		var buy := Button.new()
 		buy.text = "Aprendido" if learned else "Aprender · 1 ponto geral"
 		buy.custom_minimum_size.y = 44
