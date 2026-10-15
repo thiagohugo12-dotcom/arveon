@@ -93,6 +93,9 @@ var station_page := 0
 var first_weapon_page := 0
 var first_weapon_selected := ""
 var first_weapon_buttons: Dictionary = {}
+var smith_tab := 0 # Loja (somente ouro) ou Forja (receitas)
+var smith_shop_selected := ""
+var smith_shop_buttons: Dictionary = {}
 const FIRST_WEAPON_DESCRIPTION := "Todo aventureiro precisa de uma arma. Procure o Ferreiro no acampamento e escolha aquela que combina com seu estilo de combate."
 const WEAPON_STYLES := {
 	"espada":"Combate próximo e ágil, com sequências e contra-ataques.",
@@ -681,6 +684,8 @@ func show_station(name: String, progress: GameProgress) -> void:
 	station_page = 0
 	first_weapon_page = 0
 	first_weapon_selected = ""
+	smith_tab = 0
+	smith_shop_selected = ""
 	close_inventory()
 	station_panel.show()
 	_sync_controls()
@@ -701,6 +706,7 @@ func close_station() -> void:
 func refresh_station(progress: GameProgress) -> void:
 	station_title.text = station_name
 	first_weapon_buttons.clear()
+	smith_shop_buttons.clear()
 	for child in station_content.get_children():
 		station_content.remove_child(child)
 		child.queue_free()
@@ -735,9 +741,13 @@ func refresh_station(progress: GameProgress) -> void:
 		if progress.introduction_active():
 			_first_weapon_interface(progress)
 			return
-		_add_description("Ouro %d · fabricar ou aprimorar até +3.\nMateriais usados: somente os da mochila." % progress.gold)
-		for id: String in RPGRules.EQUIPMENT:
-			_add_equipment(id, progress, station_content, false)
+		_smith_tabs(progress)
+		if smith_tab == 0:
+			_smith_shop(progress)
+		else:
+			_add_description("Forja · Ouro %d · fabricar ou aprimorar até +3.\nMateriais: somente os da mochila." % progress.gold)
+			for id: String in RPGRules.EQUIPMENT:
+				_add_equipment(id, progress, station_content, false)
 	elif station_name == "Baú":
 		_add_description("Mochila/Baú · itens guardados ficam protegidos.")
 		for item: String in _page_items(GameProgress.ITEMS):
@@ -1101,6 +1111,87 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 		button.text = "Aprimorar para +%d" % (upgrade + 1) if owned else "Fabricar"
 		button.disabled = not progress.can_forge(id)
 		button.pressed.connect(func(): rpg_action.emit("forge", id, expected))
+
+func _smith_tabs(progress: GameProgress) -> void:
+	var tabs := HBoxContainer.new()
+	station_content.add_child(tabs)
+	for index in range(2):
+		var tab := Button.new()
+		tab.text = "Loja · ouro" if index == 0 else "Forja · materiais"
+		tab.custom_minimum_size.y = 44
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tab.disabled = smith_tab == index
+		tab.pressed.connect(func():
+			smith_tab = index
+			smith_shop_selected = ""
+			station_scroll.scroll_vertical = 0
+			refresh_station(progress))
+		tabs.add_child(tab)
+
+func _smith_shop(progress: GameProgress) -> void:
+	_add_description("Loja de armas iniciais · Ouro disponível: %d\nAqui você só precisa de ouro. Cada arma é comprada uma vez." % progress.gold)
+	if not smith_shop_selected.is_empty():
+		if not ArsenalRules.CATEGORIES.has(smith_shop_selected):
+			smith_shop_selected = ""
+			return
+		var chosen: String = smith_shop_selected
+		var cost := GameProgress.starter_weapon_price(chosen)
+		_add_description("Comprar %s por %d ouro?\nSerá equipada automaticamente. Saldo após compra: %d ouro." % [RPGRules.EQUIPMENT[chosen].name,cost,progress.gold-cost])
+		var confirm := Button.new()
+		confirm.text = "Confirmar · %d ouro" % cost
+		confirm.custom_minimum_size.y = 48
+		confirm.disabled = not progress.can_buy_starter_weapon(chosen)
+		confirm.pressed.connect(func(): station_action.emit("buy_starter",chosen))
+		station_content.add_child(confirm)
+		smith_shop_buttons["confirm"] = confirm
+		var cancel := Button.new()
+		cancel.text = "Voltar às armas"
+		cancel.custom_minimum_size.y = 48
+		cancel.pressed.connect(func():
+			smith_shop_selected = ""
+			refresh_station(progress))
+		station_content.add_child(cancel)
+		smith_shop_buttons["back"] = cancel
+		return
+	for id: String in ArsenalRules.CATEGORIES:
+		_smith_shop_weapon(id,progress)
+
+func _smith_shop_weapon(id: String, progress: GameProgress) -> void:
+	var item: Dictionary = RPGRules.EQUIPMENT[id]
+	var price := GameProgress.starter_weapon_price(id)
+	var owned := progress.equipment.has(id)
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,DiaryTheme.WOOD,6,1))
+	station_content.add_child(card)
+	var content := VBoxContainer.new()
+	card.add_child(content)
+	var header := HBoxContainer.new()
+	content.add_child(header)
+	header.add_child(ITEM_ICON.new(id))
+	var title := DiaryTheme.label("%s · %s" % [item.name,TalentRules.CLASSES[id]],13)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	header.add_child(title)
+	var details := DiaryTheme.label("%s\nPreço: %d ouro · sem materiais" % [WEAPON_STYLES[id],price],12)
+	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(details)
+	var button := Button.new()
+	button.custom_minimum_size.y = 48
+	if progress.equipped.Arma == id:
+		button.text = "Equipada"
+	elif owned:
+		button.text = "Já possui · Mochila"
+	elif progress.gold < price:
+		button.text = "Faltam %d ouro" % (price-progress.gold)
+	else:
+		button.text = "Comprar · %d ouro" % price
+	button.disabled = owned or not progress.can_buy_starter_weapon(id)
+	button.pressed.connect(func():
+		smith_shop_selected = id
+		station_scroll.scroll_vertical = 0
+		refresh_station(progress))
+	content.add_child(button)
+	smith_shop_buttons[id] = button
 
 func _first_weapon_button(key: String, caption: String, callback: Callable) -> Button:
 	var button := Button.new()
