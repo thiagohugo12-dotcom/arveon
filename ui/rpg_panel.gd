@@ -194,6 +194,126 @@ func _talent_page() -> void:
 	_label("Verde: aprendido · claro: disponível · apagado: bloqueado.\nTalentos custam pontos gerais. Passivas, especialização e Maestria são gratuitas. Valores provisórios.")
 	_talent_description()
 
+
+func _sword_evolution_page() -> void:
+	var prof := progress.talents.level("espada")
+	_heading("EVOLUÇÃO DA ESPADA  ·  %d / %d" % [prof,TalentRules.MAX_PROFICIENCY])
+	_label("Uma árvore reúne técnicas, passivas e talentos. Toque em um nó para aprender, equipar ou aprimorar.")
+	_label("Treinamento: pontos desta arma · Talentos/graus: pontos gerais do personagem.")
+	var tree := SwordEvolutionTree.new(progress,sword_selection)
+	tree.node_selected.connect(func(kind: String, id: String):
+		sword_selection = kind+":"+id
+		refresh(progress)
+		if sword_detail != null:
+			scroll.call_deferred("ensure_control_visible",sword_detail)
+	)
+	content.add_child(tree)
+	sword_detail = _card()
+	var pair := sword_selection.split(":")
+	var kind := pair[0] if pair.size() == 2 else "skill1"
+	var id := pair[1] if pair.size() == 2 else "talho_agil"
+	var rule: Dictionary = {}
+	var desc := ""
+	var title := ""
+	match kind:
+		"skill1":
+			rule = AbilityRules.CATEGORIES.espada.skill1
+			title = rule.name+" · SKILL 1"
+			desc = "Técnica inicial fixa. Recarga %.0fs. Não ocupa os dois espaços configuráveis." % rule.cooldown
+		"normal", "ultimate":
+			rule = AbilityRules.active_skill("espada",id)
+			if not rule.is_empty():
+				title = rule.name+(" · ULTIMATE" if kind == "ultimate" else " · TÉCNICA ATIVA")
+				desc = "Requer proficiência %d." % int(rule.prof)
+				if kind == "ultimate":
+					desc += " Carregue a Ultimate causando dano e equipe em Skill 2 ou 3."
+				else:
+					desc += " Recarga %.0fs · Grau %d/4." % [rule.cooldown,int(progress.abilities.grades.espada.get(id,1))]
+		"passive":
+			rule = AbilityRules.passive("espada",id)
+			if not rule.is_empty():
+				title = rule.name+" · PASSIVA EQUIPÁVEL"
+				desc = AbilityRules.DESCRIPTIONS[id]
+		"talent":
+			rule = AbilityRules.talent("espada",id)
+			if not rule.is_empty():
+				title = AbilityRules.TALENT_NAMES[id]+" · TALENTO"
+				desc = AbilityRules.DESCRIPTIONS[id]
+				if not rule.parent.is_empty():
+					desc += "\nRequer também: "+AbilityRules.TALENT_NAMES[rule.parent]
+		"specialization":
+			title = "ESPECIALIZAÇÃO"
+			desc = "Escolha entre Duelista e Guardião da Lâmina. Pode alterar gratuitamente na área segura."
+		"mastery":
+			title = "LÂMINA PERFEITA · MAESTRIA 30"
+			desc = AbilityRules.MASTERY_HELP.espada+"\nAutomática. Não exige equipar a Ultimate."
+		"supreme":
+			title = "ASCENSÃO DA LÂMINA · MAESTRIA SUPREMA 60"
+			desc = "Automática: a Ultimate Dança das Lâminas causa 20% mais dano a partir da proficiência 60."
+	if title.is_empty():
+		title = "Escolha um marco da árvore"
+	_label(title,sword_detail,true)
+	_label(desc,sword_detail)
+	var required := int(rule.get("prof",1))
+	if kind == "specialization": required = 18
+	if kind == "mastery": required = 30
+	if kind == "supreme": required = 60
+	if prof < required:
+		_label("Bloqueado · alcance proficiência %d." % required,sword_detail)
+	if not allow_respec:
+		_label("Somente consulta fora da área segura.",sword_detail)
+	var loadout: Dictionary = progress.abilities.loadouts.espada
+	if kind in ["normal","ultimate"] and not rule.is_empty():
+		for slot in range(2):
+			var button := Button.new()
+			button.text = ("Equipada na " if loadout.skills[slot] == id else "Equipar na ")+"Skill %d" % (slot+2)
+			button.custom_minimum_size.y = 44
+			button.disabled = not allow_respec or prof < required or loadout.skills[slot] == id
+			button.pressed.connect(func(): action_requested.emit("equip_skill","espada:"+id,slot))
+			sword_detail.add_child(button)
+		if kind == "normal":
+			var grade: int = progress.abilities.grades.espada.get(id,1)
+			var improve := Button.new()
+			improve.text = "Melhorar técnica · 1 ponto geral" if grade < 4 else "Grau máximo"
+			improve.custom_minimum_size.y = 44
+			improve.disabled = not allow_respec or prof < required or grade >= 4 or progress.skill_points() < 1
+			improve.pressed.connect(func(): action_requested.emit("skill","espada:"+id,grade))
+			sword_detail.add_child(improve)
+	elif kind == "passive" and not rule.is_empty():
+		for slot in range(2):
+			var button := Button.new()
+			button.text = ("Equipada na " if loadout.passives[slot] == id else "Equipar na ")+"Passiva %d" % (slot+1)
+			button.custom_minimum_size.y = 44
+			button.disabled = not allow_respec or prof < required or loadout.passives[slot] == id
+			button.pressed.connect(func(): action_requested.emit("equip_passive","espada:"+id,slot))
+			sword_detail.add_child(button)
+	elif kind == "talent" and not rule.is_empty():
+		var learned := progress.abilities.talents.espada.has(id)
+		var ready := rule.parent.is_empty() or progress.abilities.talents.espada.has(rule.parent)
+		var buy := Button.new()
+		buy.text = "Aprendido" if learned else "Aprender · 1 ponto geral"
+		buy.custom_minimum_size.y = 44
+		buy.disabled = not allow_respec or learned or not ready or prof < required or progress.skill_points() < 1
+		buy.pressed.connect(func(): action_requested.emit("talent","espada:"+id,0))
+		sword_detail.add_child(buy)
+	elif kind == "specialization":
+		for style: String in AbilityRules.CATEGORIES.espada.specializations:
+			var item: Dictionary = AbilityRules.SPECIALIZATIONS[style]
+			_label(item.name+" · "+item.description,sword_detail)
+			var button := Button.new()
+			button.text = "Escolhido" if loadout.specialization == style else "Escolher "+item.name
+			button.custom_minimum_size.y = 44
+			button.disabled = not allow_respec or prof < 18 or loadout.specialization == style
+			button.pressed.connect(func(): action_requested.emit("specialization","espada:"+style,0))
+			sword_detail.add_child(button)
+	var reset := Button.new()
+	reset.text = "Redistribuir talentos e graus · grátis no acampamento"
+	reset.custom_minimum_size.y = 44
+	reset.disabled = not allow_respec or (progress.abilities.talents.espada.is_empty() and progress.abilities.grades.espada.is_empty())
+	reset.pressed.connect(func(): action_requested.emit("reset_tree","espada",0))
+	content.add_child(reset)
+	_label("Skill 1 fixa · Skill 2 e 3 configuráveis · 2 passivas equipáveis · Maestrias automáticas.")
+
 func _mastery_page() -> void:
 	_heading("DOMÍNIO · %d PONTOS DISPONÍVEIS" % progress.talents.mastery_points(talent_weapon))
 	_label("+1 ponto por nível de proficiência. Cada categoria tem seu próprio saldo.")
