@@ -110,7 +110,8 @@ func refresh(value: GameProgress) -> void:
 	page_title.text = "Habilidades" if tab == 1 else "Treinamento" if tab == 2 and prof_section == 0 else "Diário do Explorador"
 	add_theme_stylebox_override("panel",DiaryTheme.piece("frame",16 if focused_page else 22))
 	tabs.visible = not focused_page
-	diary_return.visible = focused_page
+	diary_return.visible = tab != 0
+	diary_return.text = "Voltar ao diário" if focused_page else "Personagem"
 	footer_close.visible = not focused_page
 	header_close.visible = focused_page
 	close_button = header_close if focused_page else footer_close
