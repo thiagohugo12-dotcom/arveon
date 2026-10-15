@@ -686,6 +686,7 @@ func set_nearby_station(name: String) -> void:
 
 func show_station(name: String, progress: GameProgress) -> void:
 	station_name = name
+	station_scroll.scroll_vertical = 0
 	selected_floor = progress.ascension.current_floor
 	station_page = 0
 	first_weapon_page = 0
@@ -712,6 +713,7 @@ func close_station() -> void:
 func refresh_station(progress: GameProgress) -> void:
 	station_title.text = station_name
 	first_weapon_buttons.clear()
+	station_content.add_theme_constant_override("separation",4 if station_name in ["Ferreiro","Vendedor"] else 8)
 	smith_shop_buttons.clear()
 	vendor_buttons.clear()
 	for child in station_content.get_children():
@@ -1182,14 +1184,16 @@ func _smith_shop_weapon(id: String, progress: GameProgress) -> void:
 	var price := GameProgress.starter_weapon_price(id)
 	var owned := progress.equipment.has(id)
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,Color("#bea16a"),6,1))
+	card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,Color("#bea16a"),4,1))
 	station_content.add_child(card)
 	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation",3)
+	box.add_theme_constant_override("separation",2)
 	card.add_child(box)
 	var header := HBoxContainer.new()
 	box.add_child(header)
-	header.add_child(ITEM_ICON.new(id))
+	var icon := ITEM_ICON.new(id)
+	icon.custom_minimum_size = Vector2(24,24)
+	header.add_child(icon)
 	var title := DiaryTheme.label("%s · %s" % [RPGRules.EQUIPMENT[id].name,TalentRules.CLASSES[id]],13)
 	header.add_child(title)
 	var button := Button.new()

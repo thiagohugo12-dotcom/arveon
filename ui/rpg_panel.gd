@@ -391,7 +391,7 @@ func _mastery_page() -> void:
 		var base := 5.0 if stat == "Crítico" else 150.0 if stat == "Dano Crítico" else 0.0
 		var current := base+invested*float(rule.step)*100
 		var next := base+mini(invested+1,int(rule.cap))*float(rule.step)*100
-		_label("Investidos: %d / %d\nAgora: %s%% · com +1: %s%%" % [invested,rule.cap,str(snappedf(current,0.01)),str(snappedf(next,0.01))],card)
+		_label("Investidos: %d / %d\nAgora: %s%% · com +1: %s%%" % [invested,rule.cap,String.num(current,2).replace(".",","),String.num(next,2).replace(".",",")],card)
 
 	var refund := Button.new()
 	refund.name = "ResetMastery"
@@ -403,6 +403,12 @@ func _mastery_page() -> void:
 	var bonus := progress.talents.mastery_bonuses(talent_weapon)
 	_label("Básicos +%.1f%% · Técnicas +%.1f%%\nCrítico %.1f%% · Dano crítico %.0f%%" % [(bonus.automatic+bonus.basic)*100,(bonus.automatic+bonus.special)*100,bonus.critical_chance*100,bonus.critical_multiplier*100],_card())
 	_label("Os bônus de treino só valem com esta categoria equipada.")
+	if size.x > size.y: _focus_training.call_deferred()
+
+func _focus_training() -> void:
+	await get_tree().process_frame
+	if mastery_buttons.has("Dano") and is_instance_valid(mastery_buttons.Dano):
+		scroll.ensure_control_visible(mastery_buttons.Dano)
 
 func _reflow_stats() -> void:
 	if is_instance_valid(attribute_grid): attribute_grid.columns = 2 if size.x >= 620 else 1
@@ -530,6 +536,12 @@ func _skills_page() -> void:
 	back.custom_minimum_size.y = 44
 	back.pressed.connect(func(): scroll.ensure_control_visible(skill_catalog_buttons[skill_choice]))
 	content.add_child(back)
+	if size.x > size.y: _focus_skill_catalog.call_deferred()
+
+func _focus_skill_catalog() -> void:
+	await get_tree().process_frame
+	if skill_catalog_buttons.has(skill_choice) and is_instance_valid(skill_catalog_buttons[skill_choice]):
+		scroll.ensure_control_visible(skill_catalog_buttons[skill_choice])
 
 func _focus_skill_detail() -> void:
 	await get_tree().process_frame

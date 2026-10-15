@@ -79,6 +79,9 @@ func _run() -> void:
 		await frames()
 		check(hud.station_panel.size.y > 320 or resolution.y < 400,"service uses available screen height "+prefix)
 		check(hud.smith_shop_buttons.size() == 5 and hud.smith_shop_buttons.espada.disabled,"five categories and owned-state survive compact shop "+prefix)
+		if resolution.y > resolution.x:
+			for button: Button in hud.smith_shop_buttons.values():
+				check(hud.station_scroll.get_global_rect().encloses(button.get_global_rect()),"all five shop actions fit in portrait "+prefix)
 		await capture(prefix+"ferreiro")
 		await tap(hud,hud.smith_shop_buttons.arco,hud.station_scroll)
 		check(hud.smith_shop_selected == "arco" and p.to_json() == snapshot,"selecting weapon never spends gold "+prefix)
