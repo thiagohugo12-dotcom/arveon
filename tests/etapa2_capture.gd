@@ -43,10 +43,16 @@ func _run() -> void:
 			var prefix := "%s_%dx%d_" % [category,resolution.x,resolution.y]
 			await capture(prefix+"hud")
 			panel.tab = 1
+			panel.skill_section = 0
+			panel.skill_choice = catalog.normal[0].id
 			panel.talent_weapon = category
 			main._toggle_character()
 			panel.scroll.scroll_vertical = 0
 			await capture(prefix+"habilidades")
+			panel.skill_section = 2
+			panel.skill_choice = catalog.specializations[0]
+			panel.refresh(p)
+			await process_frame
 			panel.scroll.ensure_control_visible(panel.specialization_buttons[catalog.specializations[0]])
 			await capture(prefix+"especializacao")
 			panel.tab = 2
@@ -57,3 +63,4 @@ func _run() -> void:
 			main._toggle_character()
 	print("ETAPA2_RENDER_RESULT: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+

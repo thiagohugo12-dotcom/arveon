@@ -216,6 +216,8 @@ func run() -> void:
 		main._interact()
 		check(hud.station_panel.visible and hud.smith_tab == 0 and hud.smith_shop_buttons.size() == 5 and hud.smith_shop_buttons[id].disabled,"shop displays five starter categories and marks owned "+id)
 		check(not hud.smith_shop_buttons[next_weapon].disabled and "Comprar" in hud.smith_shop_buttons[next_weapon].text,"gold-only shop enables affordable second class "+id)
+		hud.station_scroll.ensure_control_visible(hud.smith_shop_buttons[next_weapon])
+		await frames()
 		preload("res://tests/mobile_polish_tests.gd").tap(hud,hud.smith_shop_buttons[next_weapon])
 		await frames()
 		check(hud.smith_shop_selected == next_weapon and p.gold == shop_cost and not p.equipment.has(next_weapon),"touch enters confirmation without spending "+id)
@@ -238,3 +240,4 @@ func run() -> void:
 func _finish() -> void:
 	CombatRules.random_roll_source = Callable()
 	quit(1 if failures else 0)
+

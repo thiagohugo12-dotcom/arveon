@@ -96,6 +96,7 @@ var first_weapon_buttons: Dictionary = {}
 var smith_tab := 0 # Loja (somente ouro) ou Forja (receitas)
 var smith_shop_selected := ""
 var smith_shop_buttons: Dictionary = {}
+var vendor_buttons: Dictionary = {}
 const FIRST_WEAPON_DESCRIPTION := "Todo aventureiro precisa de uma arma. Procure o Ferreiro no acampamento e escolha aquela que combina com seu estilo de combate."
 const WEAPON_STYLES := {
 	"espada":"Combate próximo e ágil, com sequências e contra-ataques.",
@@ -348,7 +349,8 @@ func _ready() -> void:
 	var column := VBoxContainer.new()
 	station_panel.add_child(column)
 	station_title = Label.new()
-	station_title.add_theme_font_size_override("font_size", 17)
+	station_title.add_theme_font_size_override("font_size", 24)
+	station_title.add_theme_font_override("font",DiaryTheme.heading_font())
 	column.add_child(station_title)
 	station_scroll = ScrollContainer.new()
 	station_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -504,7 +506,9 @@ func _layout() -> void:
 		actions[i].position = Vector2(size.x - right_inset - 120 + (slot % 2) * 64, size.y - bottom_inset - 120 + (slot / 2) * 64)
 	actions[3].position = Vector2(size.x-right_inset-56,size.y-bottom_inset-184)
 	interact_button.position = Vector2(size.x * 0.5 - 60, size.y - bottom_inset - (185 if size.y > size.x else 67))
-	station_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(320, size.y - margin.y - bottom_inset - 12))
+	var service := station_name in ["Ferreiro","Vendedor"]
+	station_panel.size = Vector2(minf(560 if service else 340, size.x - margin.x - right_inset - 12), minf(620 if service else 320, size.y - margin.y - bottom_inset - 12))
+	station_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",16) if service else _panel_style())
 	station_panel.position = (size - station_panel.size) * 0.5
 	rpg_panel.size = Vector2(minf(640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
@@ -707,6 +711,7 @@ func refresh_station(progress: GameProgress) -> void:
 	station_title.text = station_name
 	first_weapon_buttons.clear()
 	smith_shop_buttons.clear()
+	vendor_buttons.clear()
 	for child in station_content.get_children():
 		station_content.remove_child(child)
 		child.queue_free()
@@ -745,7 +750,7 @@ func refresh_station(progress: GameProgress) -> void:
 		if smith_tab == 0:
 			_smith_shop(progress)
 		else:
-			_add_description("Forja · Ouro %d · fabricar ou aprimorar até +3.\nMateriais: somente os da mochila." % progress.gold)
+			_add_description("Seu ouro: %d · materiais da mochila\nFabrique equipamentos ou melhore até +3." % progress.gold)
 			for id: String in RPGRules.EQUIPMENT:
 				_add_equipment(id, progress, station_content, false)
 	elif station_name == "Baú":
@@ -754,23 +759,18 @@ func refresh_station(progress: GameProgress) -> void:
 			_add_row(item, "%d/%d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar", int(progress.bag.get(item, 0)) > 0, int(progress.chest.get(item, 0)) > 0)
 		_add_page_navigation(GameProgress.ITEMS.size(), progress)
 	elif station_name == "Vendedor":
-		_add_description("Ouro %d · Compra %d · Venda %d" % [progress.gold, GameProgress.BUY_PRICE, GameProgress.SELL_PRICE])
-		_add_description("Coletas: venda por ouro.")
+		_add_description("Seu ouro: %d" % progress.gold)
 		var available_items: Array[String] = []
 		for item: String in GameProgress.SELL_ITEMS:
-			if int(progress.bag.get(item, 0)) > 0:
-				available_items.append(item)
+			if int(progress.bag.get(item,0)) > 0: available_items.append(item)
 		available_items.sort_custom(func(a: String, b: String) -> bool:
-			var a_resource := not GameProgress.TRADE_ITEMS.has(a)
-			var b_resource := not GameProgress.TRADE_ITEMS.has(b)
-			return a_resource and not b_resource if a_resource != b_resource else GameProgress.SELL_ITEMS.find(a) < GameProgress.SELL_ITEMS.find(b)
-		)
+			var resource_a := not GameProgress.TRADE_ITEMS.has(a)
+			var resource_b := not GameProgress.TRADE_ITEMS.has(b)
+			return resource_a and not resource_b if resource_a != resource_b else GameProgress.SELL_ITEMS.find(a) < GameProgress.SELL_ITEMS.find(b))
 		for item: String in GameProgress.TRADE_ITEMS:
-			if not available_items.has(item):
-				available_items.append(item)
-		for item: String in _page_items(available_items):
-			_add_row(item, "x%d" % progress.bag.get(item, 0), "Comprar", "Vender", GameProgress.TRADE_ITEMS.has(item) and progress.gold >= GameProgress.BUY_PRICE, int(progress.bag.get(item, 0)) > 0)
-		_add_page_navigation(available_items.size(), progress)
+			if not available_items.has(item): available_items.append(item)
+		for item: String in _page_items(available_items): _vendor_item(item,progress)
+		_add_page_navigation(available_items.size(),progress)
 
 func _page_items(items: Array) -> Array:
 	var start := station_page * ITEMS_PER_PAGE
@@ -781,9 +781,9 @@ func _add_page_navigation(count: int, progress: GameProgress) -> void:
 	var row := HBoxContainer.new()
 	station_content.add_child(row)
 	var previous := Button.new()
-	previous.text = "◀"
+	previous.text = "Anterior"
 	previous.disabled = station_page == 0
-	previous.custom_minimum_size = Vector2(48, 40)
+	previous.custom_minimum_size = Vector2(70, 44)
 	previous.pressed.connect(func():
 		station_page -= 1
 		refresh_station(progress)
@@ -795,9 +795,9 @@ func _add_page_navigation(count: int, progress: GameProgress) -> void:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
 	var following := Button.new()
-	following.text = "▶"
+	following.text = "Próxima"
 	following.disabled = station_page >= total - 1
-	following.custom_minimum_size = Vector2(48, 40)
+	following.custom_minimum_size = Vector2(70, 44)
 	following.pressed.connect(func():
 		station_page += 1
 		refresh_station(progress)
@@ -863,17 +863,9 @@ func _input(event: InputEvent) -> void:
 	if rpg_panel.visible:
 		if _activate_touch_button(rpg_panel.close_button, event.position):
 			return
-		# A swipe starting over a talent must scroll, not inspect that node.
-		if rpg_panel.tab == 2 and rpg_panel.scroll.get_global_rect().has_point(event.position):
-			var tree_buttons: Dictionary = rpg_panel.talent_tree.buttons if is_instance_valid(rpg_panel.talent_tree) else rpg_panel.sword_tree.buttons if is_instance_valid(rpg_panel.sword_tree) else {}
-			for button: Button in tree_buttons.values():
-				if button.is_visible_in_tree() and button.get_global_rect().has_point(event.position):
-					inventory_touch_card = button
-					inventory_touch_origin = event.position
-					inventory_touch_dragged = false
-					_begin_scroll(rpg_panel.scroll,event)
-					get_viewport().set_input_as_handled()
-					return
+		if rpg_panel.scroll.get_global_rect().has_point(event.position):
+			_defer_menu_touch(rpg_panel.content,rpg_panel.scroll,event)
+			return
 		if not _touch_buttons(rpg_panel, event.position):
 			_begin_scroll(rpg_panel.scroll, event)
 		get_viewport().set_input_as_handled()
@@ -913,13 +905,13 @@ func _input(event: InputEvent) -> void:
 			_begin_scroll(station_scroll, event)
 		get_viewport().set_input_as_handled()
 		return
-	if station_name == "Ferreiro":
-		if _activate_touch_button(station_close_button, event.position):
-			return
-		if not _touch_buttons(station_panel, event.position):
-			_begin_scroll(station_scroll, event)
+	if station_name in ["Ferreiro","Vendedor"]:
+		if _activate_touch_button(station_close_button,event.position): return
+		if station_scroll.get_global_rect().has_point(event.position):
+			_defer_menu_touch(station_content,station_scroll,event)
 		get_viewport().set_input_as_handled()
 		return
+
 	if _activate_touch_button(station_close_button, event.position):
 		return
 	if not station_scroll.get_global_rect().has_point(event.position):
@@ -931,6 +923,24 @@ func _input(event: InputEvent) -> void:
 			if node is Button and _activate_touch_button(node, event.position):
 				return
 	_begin_scroll(station_scroll, event)
+	get_viewport().set_input_as_handled()
+
+func _button_under(node: Node, point: Vector2) -> Button:
+	if node is Control and node.clip_contents and not node.get_global_rect().has_point(point): return null
+	if node is Button:
+		return node if not node.disabled and node.is_visible_in_tree() and node.get_global_rect().has_point(point) else null
+	var children := node.get_children()
+	children.reverse()
+	for child: Node in children:
+		var button := _button_under(child,point)
+		if button != null: return button
+	return null
+
+func _defer_menu_touch(content: Control, scroll: ScrollContainer, event: InputEventScreenTouch) -> void:
+	inventory_touch_card = _button_under(content,event.position)
+	inventory_touch_origin = event.position
+	inventory_touch_dragged = false
+	_begin_scroll(scroll,event)
 	get_viewport().set_input_as_handled()
 
 func _activate_touch_button(button: Button, position: Vector2) -> bool:
@@ -1118,10 +1128,11 @@ func _smith_tabs(progress: GameProgress) -> void:
 	station_content.add_child(tabs)
 	for index in range(2):
 		var tab := Button.new()
-		tab.text = "Loja · ouro" if index == 0 else "Forja · materiais"
+		tab.text = "Comprar armas" if index == 0 else "Fabricar / melhorar"
+		tab.add_theme_font_size_override("font_size",14)
 		tab.custom_minimum_size.y = 44
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tab.disabled = smith_tab == index
+		DiaryTheme.select(tab,smith_tab == index)
 		tab.pressed.connect(func():
 			smith_tab = index
 			smith_shop_selected = ""
@@ -1137,6 +1148,8 @@ func _smith_shop(progress: GameProgress) -> void:
 		var chosen: String = smith_shop_selected
 		var cost := GameProgress.starter_weapon_price(chosen)
 		_add_description("Comprar %s por %d ouro?\nSerá equipada · Saldo restante: %d ouro." % [RPGRules.EQUIPMENT[chosen].name,cost,progress.gold-cost])
+		var stats := ArsenalRules.effective(progress,chosen)
+		_add_description("%s\nDano %d · alcance %.0f px\n%.2f ataques/s" % [WEAPON_STYLES[chosen],stats.damage,stats.reach,1.0/stats.interval])
 		var confirm := Button.new()
 		confirm.text = "Confirmar · %d ouro" % cost
 		confirm.custom_minimum_size.y = 48
@@ -1144,6 +1157,7 @@ func _smith_shop(progress: GameProgress) -> void:
 		confirm.pressed.connect(func(): station_action.emit("buy_starter",chosen))
 		station_content.add_child(confirm)
 		smith_shop_buttons["confirm"] = confirm
+		_focus_station_action.call_deferred(confirm)
 		var cancel := Button.new()
 		cancel.text = "Voltar às armas"
 		cancel.custom_minimum_size.y = 48
@@ -1153,46 +1167,65 @@ func _smith_shop(progress: GameProgress) -> void:
 		station_content.add_child(cancel)
 		smith_shop_buttons["back"] = cancel
 		return
-	_add_description("Loja de armas iniciais · Ouro disponível: %d\nAqui você só precisa de ouro. Cada arma é comprada uma vez." % progress.gold)
+	_add_description("Seu ouro: %d · compra sem materiais" % progress.gold)
 	for id: String in ArsenalRules.CATEGORIES:
 		_smith_shop_weapon(id,progress)
 
+func _focus_station_action(button: Button) -> void:
+	await get_tree().process_frame
+	if is_instance_valid(button) and station_panel.visible:
+		station_scroll.ensure_control_visible(button)
+
 func _smith_shop_weapon(id: String, progress: GameProgress) -> void:
-	var item: Dictionary = RPGRules.EQUIPMENT[id]
 	var price := GameProgress.starter_weapon_price(id)
 	var owned := progress.equipment.has(id)
 	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,DiaryTheme.WOOD,6,1))
+	card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,Color("#bea16a"),6,1))
 	station_content.add_child(card)
-	var content := VBoxContainer.new()
-	card.add_child(content)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation",3)
+	card.add_child(box)
 	var header := HBoxContainer.new()
-	content.add_child(header)
+	box.add_child(header)
 	header.add_child(ITEM_ICON.new(id))
-	var title := DiaryTheme.label("%s · %s" % [item.name,TalentRules.CLASSES[id]],13)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var title := DiaryTheme.label("%s · %s" % [RPGRules.EQUIPMENT[id].name,TalentRules.CLASSES[id]],13)
 	header.add_child(title)
-	var details := DiaryTheme.label("%s\nPreço: %d ouro · sem materiais" % [WEAPON_STYLES[id],price],12)
-	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	content.add_child(details)
 	var button := Button.new()
-	button.custom_minimum_size.y = 48
-	if progress.equipped.Arma == id:
-		button.text = "Equipada"
-	elif owned:
-		button.text = "Já possui · Mochila"
-	elif progress.gold < price:
-		button.text = "Faltam %d ouro" % (price-progress.gold)
-	else:
-		button.text = "Comprar · %d ouro" % price
+	button.custom_minimum_size.y = 44
+	button.text = "Equipada" if progress.equipped.Arma == id else "Já está na mochila" if owned else "Faltam %d ouro" % (price-progress.gold) if progress.gold < price else "Comprar · %d ouro" % price
 	button.disabled = owned or not progress.can_buy_starter_weapon(id)
 	button.pressed.connect(func():
 		smith_shop_selected = id
 		station_scroll.scroll_vertical = 0
 		refresh_station(progress))
-	content.add_child(button)
+	box.add_child(button)
 	smith_shop_buttons[id] = button
+
+func _vendor_item(item: String, progress: GameProgress) -> void:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,Color("#bea16a"),6,1))
+	station_content.add_child(card)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation",3)
+	card.add_child(box)
+	var header := HBoxContainer.new()
+	box.add_child(header)
+	header.add_child(ITEM_ICON.new(item))
+	header.add_child(DiaryTheme.label("%s · na mochila: %d" % [item,progress.bag.get(item,0)],13))
+	var actions := HBoxContainer.new()
+	box.add_child(actions)
+	for action: String in ["Comprar","Vender"]:
+		if action == "Comprar" and not GameProgress.TRADE_ITEMS.has(item): continue
+		var button := Button.new()
+		button.name = action+item
+		button.text = "%s 1 · %d ouro" % [action,GameProgress.BUY_PRICE if action == "Comprar" else GameProgress.SELL_PRICE]
+		button.custom_minimum_size.y = 44
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size",13)
+		button.disabled = progress.gold < GameProgress.BUY_PRICE if action == "Comprar" else int(progress.bag.get(item,0)) <= 0
+		button.pressed.connect(func(): station_action.emit(action,item))
+		actions.add_child(button)
+		vendor_buttons[action+":"+item] = button
 
 func _first_weapon_button(key: String, caption: String, callback: Callable) -> Button:
 	var button := Button.new()
@@ -1292,3 +1325,4 @@ func set_boss(boss: TowerGuardian) -> void:
 		boss_name.text = "Guardião da Mata · Fase %d\nHP %d/%d" % [2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
 		boss_bar.max_value = boss.health.maximum
 		boss_bar.value = boss.health.current
+

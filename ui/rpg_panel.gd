@@ -27,6 +27,12 @@ var attribute_grid: GridContainer
 var mastery_grid: GridContainer
 var allow_respec := false
 var ability_buttons: Dictionary = {}
+var skill_section := 0
+var skill_choice := ""
+var skill_section_buttons: Array[Button] = []
+var skill_catalog_buttons: Dictionary = {}
+var skill_detail: VBoxContainer
+var skill_catalog: VBoxContainer
 var passive_buttons: Dictionary = {}
 var specialization_buttons: Dictionary = {}
 
@@ -97,6 +103,10 @@ func refresh(value: GameProgress) -> void:
 	ability_buttons.clear()
 	passive_buttons.clear()
 	specialization_buttons.clear()
+	skill_section_buttons.clear()
+	skill_catalog_buttons.clear()
+	skill_detail = null
+	skill_catalog = null
 	prof_tabs.clear()
 	for child in content.get_children():
 		content.remove_child(child)
@@ -139,7 +149,7 @@ func refresh(value: GameProgress) -> void:
 	for i in range(tabs.get_child_count()): DiaryTheme.select(tabs.get_child(i),(tab == 2 and i == 1) or (tab == 1 and i == 2))
 
 func _talent_page() -> void:
-	var compact := talent_weapon == "espada" and prof_section == 1
+	var compact := true
 	_category_selector(compact)
 	var level := progress.talents.level(talent_weapon)
 	_heading("%s · PROFICIÊNCIA %d / %d" % [ArsenalRules.category_name(talent_weapon).to_upper(),level,TalentRules.MAX_PROFICIENCY])
@@ -158,7 +168,8 @@ func _talent_page() -> void:
 	content.add_child(sections)
 	for i in range(2):
 		var button := Button.new()
-		button.text = ["Treinamento · %d" % progress.talents.mastery_points(talent_weapon),"Árvore · %d" % progress.skill_points()][i]
+		button.text = ["Treinar arma","Árvore de talentos"][i]
+		button.add_theme_font_size_override("font_size",14)
 		button.custom_minimum_size.y = 44
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(func():
@@ -204,12 +215,13 @@ func _talent_page() -> void:
 	reset.disabled = not allow_respec or progress.abilities.talents[talent_weapon].is_empty() and progress.abilities.grades[talent_weapon].is_empty()
 	reset.pressed.connect(func(): action_requested.emit("reset_tree",talent_weapon,0))
 	content.add_child(reset)
-	_label("Verde: aprendido · claro: disponível · apagado: bloqueado.\nTalentos custam pontos gerais. Passivas, especialização e Maestria são gratuitas. Valores provisórios.")
+	_label("Verde: aprendido · claro: disponível · apagado: bloqueado.\nTalentos custam pontos de talento. Passivas, especialização e Maestria são gratuitas. Valores provisórios.")
 	_talent_description()
 
 
 func _sword_evolution_page() -> void:
 	var prof := progress.talents.level("espada")
+	_label("Pontos de talento disponíveis: %d" % progress.skill_points())
 	var tree := SwordEvolutionTree.new(progress,sword_selection)
 	tree.node_selected.connect(func(kind: String, id: String):
 		sword_selection = kind+":"+id
@@ -287,7 +299,8 @@ func _sword_evolution_page() -> void:
 		if kind == "normal":
 			var grade: int = progress.abilities.grades.espada.get(id,1)
 			var improve := Button.new()
-			improve.text = "Melhorar técnica · 1 ponto geral" if grade < 4 else "Grau máximo"
+			improve.text = "Melhorar · 1 ponto de talento" if grade < 4 else "Grau máximo"
+			improve.add_theme_font_size_override("font_size",14)
 			improve.custom_minimum_size.y = 44
 			improve.disabled = not allow_respec or prof < required or grade >= 4 or progress.skill_points() < 1
 			improve.pressed.connect(func(): action_requested.emit("skill","espada:"+id,grade))
@@ -304,7 +317,7 @@ func _sword_evolution_page() -> void:
 		var learned: bool = progress.abilities.talents.espada.has(id)
 		var ready: bool = rule.parent.is_empty() or progress.abilities.talents.espada.has(rule.parent)
 		var buy := Button.new()
-		buy.text = "Aprendido" if learned else "Aprender · 1 ponto geral"
+		buy.text = "Aprendido" if learned else "Aprender · 1 ponto de talento"
 		buy.custom_minimum_size.y = 44
 		buy.disabled = not allow_respec or learned or not ready or prof < required or progress.skill_points() < 1
 		buy.pressed.connect(func(): action_requested.emit("talent","espada:"+id,0))
@@ -350,8 +363,8 @@ func _show_sword_node() -> void:
 		scroll.ensure_control_visible(sword_tree.buttons[sword_selection])
 
 func _mastery_page() -> void:
-	_heading("TREINAMENTO DA ARMA · %d PONTOS DISPONÍVEIS" % progress.talents.mastery_points(talent_weapon))
-	_label("+1 ponto por nível de proficiência. Cada categoria tem seu próprio saldo.")
+	_heading("Pontos da %s: %d disponíveis" % [ArsenalRules.category_name(talent_weapon),progress.talents.mastery_points(talent_weapon)])
+	_label("Ganhe 1 ponto ao subir a proficiência desta arma.")
 	mastery_grid = GridContainer.new()
 	mastery_grid.columns = 2 if size.x >= 620 else 1
 	mastery_grid.add_theme_constant_override("h_separation",8)
@@ -363,7 +376,8 @@ func _mastery_page() -> void:
 		var card := _card(mastery_grid)
 		var row := HBoxContainer.new()
 		card.add_child(row)
-		var name_label := DiaryTheme.label("%s · %d/%d" % [stat,invested,rule.cap],13)
+		var names := {"Dano":"Bônus no ataque básico","Dano Especial":"Bônus nas técnicas","Crítico":"Chance crítica","Dano Crítico":"Dano crítico"}
+		var name_label := DiaryTheme.label(names[stat],13)
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		row.add_child(name_label)
@@ -374,8 +388,11 @@ func _mastery_page() -> void:
 		button.pressed.connect(func(): action_requested.emit("mastery",talent_weapon+":"+stat,invested))
 		row.add_child(button)
 		mastery_buttons[stat] = button
-		var descriptions := {"Dano":"+1% por ponto · somente ataques básicos.","Dano Especial":"+1,25% por ponto · somente dano de técnicas.","Crítico":"+1% por ponto · chance base 5%.","Dano Crítico":"+3% por ponto · multiplicador base 150%."}
-		_label(descriptions[stat],card)
+		var base := 5.0 if stat == "Crítico" else 150.0 if stat == "Dano Crítico" else 0.0
+		var current := base+invested*float(rule.step)*100
+		var next := base+mini(invested+1,int(rule.cap))*float(rule.step)*100
+		_label("Investidos: %d / %d\nAgora: %s%% · com +1: %s%%" % [invested,rule.cap,str(snappedf(current,0.01)),str(snappedf(next,0.01))],card)
+
 	var refund := Button.new()
 	refund.name = "ResetMastery"
 	refund.text = "Redistribuir Treinamento\nGrátis na área segura"
@@ -385,7 +402,7 @@ func _mastery_page() -> void:
 	content.add_child(refund)
 	var bonus := progress.talents.mastery_bonuses(talent_weapon)
 	_label("Básicos +%.1f%% · Técnicas +%.1f%%\nCrítico %.1f%% · Dano crítico %.0f%%" % [(bonus.automatic+bonus.basic)*100,(bonus.automatic+bonus.special)*100,bonus.critical_chance*100,bonus.critical_multiplier*100],_card())
-	_label("Dano real evolui a arma: 1 XP a cada 10 HP removidos. Frações são guardadas. Valores de teste.")
+	_label("Os bônus de treino só valem com esta categoria equipada.")
 
 func _reflow_stats() -> void:
 	if is_instance_valid(attribute_grid): attribute_grid.columns = 2 if size.x >= 620 else 1
@@ -424,7 +441,7 @@ func _label(text: String, destination: Container = null, heading: bool = false) 
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	(destination if destination != null else content).add_child(label)
 
-func _category_selector(compact: bool = false) -> void:
+func _category_selector(compact: bool = true) -> void:
 	if not compact: _heading("PROFICIÊNCIAS DAS ARMAS")
 	var weapons := HBoxContainer.new()
 	weapons.add_theme_constant_override("separation",4)
@@ -456,90 +473,139 @@ func _category_selector(compact: bool = false) -> void:
 		DiaryTheme.select(button,id == talent_weapon)
 
 func _skills_page() -> void:
-	_heading(progress.active_class().to_upper()+" · CLASSE ATIVA")
-	_label("Arma: "+RPGRules.EQUIPMENT.get(progress.equipped.Arma,{}).get("name","Sem arma"))
 	_category_selector()
 	var category := talent_weapon
 	var catalog: Dictionary = AbilityRules.CATEGORIES[category]
 	var prof := progress.talents.level(category)
 	var build: Dictionary = progress.abilities.loadouts[category]
-	_heading("%s · PROFICIÊNCIA %d / %d" % [TalentRules.CLASSES[category],prof,TalentRules.MAX_PROFICIENCY])
-	_label("Personalização gratuita no acampamento." if allow_respec else "Somente consulta. Volte à área segura para personalizar.")
-	_label("Skill 1 · %s\nSkill 2 · %s\nSkill 3 · %s" % [catalog.skill1.name,_skill_name(category,build.skills[0]),_skill_name(category,build.skills[1])],_card())
-	_label("Dash universal e poção separados. Ataque básico automático. PC: 1, 2 e 3 ativam os três slots.")
-	_heading("TÉCNICAS · %d PONTOS GERAIS" % progress.skill_points())
-	for rule: Dictionary in catalog.normal+[catalog.ultimate]:
-		var card := _card()
-		var ultimate: bool = rule.id == catalog.ultimate.id
-		var grade := int(progress.abilities.grades[category].get(rule.id,1))
-		_label(rule.name.to_upper()+ (" · ULTIMATE" if ultimate else " · GRAU %d / 4" % grade),card,true)
-		var effect := AbilityRules.effect(rule.id,grade)
-		_label("Proficiência %d · %s" % [rule.prof,("Carga %d / 100 · 1 ponto por 10 HP válidos" % progress.abilities.charge[category]) if ultimate else "Recarga %.0fs · %s" % [rule.cooldown,"defesa" if rule.type == "defense" else "dano mágico" if rule.type == "magical" else "dano físico"]],card)
-		var row := HBoxContainer.new()
-		card.add_child(row)
+	_heading("%s · proficiência %d / %d" % [TalentRules.CLASSES[category],prof,TalentRules.MAX_PROFICIENCY])
+	_label("Trocas grátis no acampamento." if allow_respec else "Somente consulta · troque habilidades no acampamento.")
+	var summary := _card()
+	_label("EQUIPADAS NESTA CATEGORIA",summary,true)
+	_label("Skill 1: %s · fixa\nSkill 2: %s\nSkill 3: %s" % [catalog.skill1.name,_skill_name(category,build.skills[0]),_skill_name(category,build.skills[1])],summary)
+	var sections := HBoxContainer.new()
+	content.add_child(sections)
+	for index in range(3):
+		var button := Button.new()
+		button.text = ["Técnicas","Passivas","Estilo"][index]
+		button.add_theme_font_size_override("font_size",14)
+		button.custom_minimum_size.y = 44
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		DiaryTheme.select(button,skill_section == index)
+		button.pressed.connect(func():
+			skill_section = index
+			skill_choice = ""
+			refresh(progress)
+			scroll.scroll_vertical = 0)
+		sections.add_child(button)
+		skill_section_buttons.append(button)
+	skill_catalog = VBoxContainer.new()
+	skill_catalog.add_theme_constant_override("separation",4)
+	content.add_child(skill_catalog)
+	var entries: Array = catalog.normal+[catalog.ultimate] if skill_section == 0 else catalog.passives if skill_section == 1 else []
+	if skill_section == 2:
+		for id: String in catalog.specializations:
+			entries.append({"id":id,"name":AbilityRules.SPECIALIZATIONS[id].name,"prof":18})
+	if entries.filter(func(rule: Dictionary): return rule.id == skill_choice).is_empty(): skill_choice = entries[0].id
+	for rule: Dictionary in entries:
+		var button := Button.new()
+		var equipped: bool = build.skills.has(rule.id) if skill_section == 0 else build.passives.has(rule.id) if skill_section == 1 else build.specialization == rule.id
+		var state := "Bloqueada · prof. %d" % rule.prof if prof < int(rule.prof) else "Equipada" if equipped else "Disponível · prof. %d" % rule.prof
+		button.text = "%s\n%s" % [rule.name,state]
+		button.add_theme_font_size_override("font_size",13)
+		button.custom_minimum_size.y = 52
+		DiaryTheme.select(button,skill_choice == rule.id)
+		button.pressed.connect(func():
+			skill_choice = rule.id
+			refresh(progress)
+			_focus_skill_detail.call_deferred())
+		skill_catalog.add_child(button)
+		skill_catalog_buttons[rule.id] = button
+	for rule: Dictionary in entries:
+		if rule.id == skill_choice:
+			_skill_details(category,rule,prof,build)
+	var back := Button.new()
+	back.name = "ReturnToSkillList"
+	back.text = "Voltar à lista"
+	back.custom_minimum_size.y = 44
+	back.pressed.connect(func(): scroll.ensure_control_visible(skill_catalog_buttons[skill_choice]))
+	content.add_child(back)
+
+func _focus_skill_detail() -> void:
+	await get_tree().process_frame
+	if is_instance_valid(skill_detail):
+		var card: Control = skill_detail.get_parent()
+		scroll.scroll_vertical = roundi(card.position.y)
+
+func _skill_details(category: String, rule: Dictionary, prof: int, build: Dictionary) -> void:
+	skill_detail = _card()
+	var ultimate: bool = rule.id == AbilityRules.CATEGORIES[category].ultimate.id
+	var grade: int = progress.abilities.grades[category].get(rule.id,1)
+	_label(rule.name,skill_detail,true)
+	_label("Requer proficiência %d%s" % [rule.prof," · desbloqueada" if prof >= int(rule.prof) else " · bloqueada"],skill_detail)
+	if skill_section == 0:
+		_label("Ultimate · carga %d / 100. Ocupa Skill 2 ou 3." % progress.abilities.charge[category] if ultimate else "Grau %d / 4 · recarga %.0fs" % [grade,rule.cooldown],skill_detail)
+		if not ultimate:
+			var effect := AbilityRules.effect(rule.id,grade)
+			_label("Defesa temporária · duração %.1fs" % float(effect.get("duration",0)) if rule.type == "defense" else "Potência base: %.2fx · dano %s\nAlcance base: %.0f px" % [rule.power,"mágico" if rule.type == "magical" else "físico",float(effect.get("reach",0))],skill_detail)
 		for slot in range(2):
 			var button := Button.new()
-			button.text = ("Equipado · " if build.skills[slot] == rule.id else "Equipar · ")+"Skill %d" % (slot+2)
+			button.text = ("Equipada na " if build.skills[slot] == rule.id else "Equipar na ")+"Skill %d" % (slot+2)
 			button.custom_minimum_size.y = 44
-			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.disabled = not allow_respec or prof < int(rule.prof) or build.skills[slot] == rule.id
 			button.pressed.connect(func(): action_requested.emit("equip_skill",category+":"+rule.id,slot))
-			row.add_child(button)
+			skill_detail.add_child(button)
 			ability_buttons[rule.id+":"+str(slot)] = button
 		if not ultimate:
 			var improve := Button.new()
-			improve.text = "Melhorar grau · 1 ponto" if grade < 4 else "Grau máximo"
+			improve.text = "Melhorar · 1 ponto de talento" if grade < 4 else "Grau máximo"
+			improve.add_theme_font_size_override("font_size",14)
 			improve.custom_minimum_size.y = 44
 			improve.disabled = not allow_respec or prof < int(rule.prof) or grade >= 4 or progress.skill_points() < 1
 			improve.pressed.connect(func(): action_requested.emit("skill",category+":"+rule.id,grade))
-			card.add_child(improve)
+			skill_detail.add_child(improve)
 			ability_buttons[rule.id+":grade"] = improve
-	_heading("DUAS PASSIVAS")
-	for rule: Dictionary in catalog.passives:
-		var card := _card()
-		_label("%s · Proficiência %d" % [rule.name,rule.prof],card,true)
-		_label(AbilityRules.DESCRIPTIONS[rule.id],card)
-		var row := HBoxContainer.new()
-		card.add_child(row)
+		_label("Pontos de talento disponíveis: %d" % progress.skill_points(),skill_detail)
+	elif skill_section == 1:
+		_label(AbilityRules.DESCRIPTIONS[rule.id],skill_detail)
 		for slot in range(2):
 			var button := Button.new()
-			button.text = ("Equipada · " if build.passives[slot] == rule.id else "Equipar · ")+"Passiva %d" % (slot+1)
+			button.text = ("Equipada na " if build.passives[slot] == rule.id else "Equipar na ")+"Passiva %d" % (slot+1)
 			button.custom_minimum_size.y = 44
-			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			button.disabled = not allow_respec or prof < int(rule.prof) or build.passives[slot] == rule.id
 			button.pressed.connect(func(): action_requested.emit("equip_passive",category+":"+rule.id,slot))
-			row.add_child(button)
+			skill_detail.add_child(button)
 			passive_buttons[rule.id+":"+str(slot)] = button
-	_heading("ESPECIALIZAÇÃO · PROFICIÊNCIA 18")
-	for id: String in catalog.specializations:
-		var info: Dictionary = AbilityRules.SPECIALIZATIONS[id]
-		var card := _card()
-		_label(info.name+ (" · ATIVA" if build.specialization == id else ""),card,true)
-		_label(info.description,card)
+		_label("Equipadas: %s / %s" % [_passive_name(category,build.passives[0]),_passive_name(category,build.passives[1])],skill_detail)
+	else:
+		_label(AbilityRules.SPECIALIZATIONS[rule.id].description,skill_detail)
 		var button := Button.new()
-		button.text = "Ativa" if build.specialization == id else "Escolher gratuitamente"
+		button.text = "Estilo ativo" if build.specialization == rule.id else "Escolher estilo · grátis"
 		button.custom_minimum_size.y = 44
-		button.disabled = not allow_respec or prof < 18 or build.specialization == id
-		button.pressed.connect(func(): action_requested.emit("specialization",category+":"+id,0))
-		card.add_child(button)
-		specialization_buttons[id] = button
-	_heading("MAESTRIA 30 · "+catalog.mastery)
-	_label(("DESBLOQUEADA · " if prof >= 30 else "Bloqueada · ")+AbilityRules.MASTERY_HELP[category]+"\nAutomática, mesmo sem Ultimate equipada.",_card())
-	for type: String in ["equip_skill","equip_passive"]:
+		button.disabled = not allow_respec or prof < 18 or build.specialization == rule.id
+		button.pressed.connect(func(): action_requested.emit("specialization",category+":"+rule.id,0))
+		skill_detail.add_child(button)
+		specialization_buttons[rule.id] = button
+		var catalog: Dictionary = AbilityRules.CATEGORIES[category]
+		_label("Maestria: "+catalog.mastery,skill_detail,true)
+		_label(("Automática · " if prof >= 30 else "Proficiência 30 · ")+AbilityRules.MASTERY_HELP[category],skill_detail)
+	if skill_section < 2:
 		for slot in range(2):
-			var button := Button.new()
-			button.text = "Limpar %s %d" % ["Skill" if type == "equip_skill" else "Passiva",slot+2 if type == "equip_skill" else slot+1]
-			button.custom_minimum_size.y = 44
-			button.disabled = not allow_respec
-			button.pressed.connect(func(): action_requested.emit(type,category+":",slot))
-			content.add_child(button)
+			var clear := Button.new()
+			clear.text = "Limpar Skill %d" % (slot+2) if skill_section == 0 else "Limpar Passiva %d" % (slot+1)
+			clear.custom_minimum_size.y = 44
+			clear.disabled = not allow_respec
+			clear.pressed.connect(func(): action_requested.emit("equip_skill" if skill_section == 0 else "equip_passive",category+":",slot))
+			skill_detail.add_child(clear)
 	var refund := Button.new()
-	refund.text = "Redistribuir talentos e graus · grátis"
-	refund.custom_minimum_size.y = 44
+	refund.text = "Redistribuir talentos e graus\nGrátis no acampamento"
+	refund.custom_minimum_size.y = 52
 	refund.disabled = not allow_respec
 	refund.pressed.connect(func(): action_requested.emit("reset_tree",category,0))
-	content.add_child(refund)
+	skill_detail.add_child(refund)
 
 func _skill_name(category: String, id: String) -> String:
-	return AbilityRules.active_skill(category,id).get("name","Vazio")
+	return AbilityRules.active_skill(category,id).get("name","Vazia · escolha uma técnica")
 
+func _passive_name(category: String, id: String) -> String:
+	return AbilityRules.passive(category,id).get("name","Vazia")

@@ -1,3 +1,9 @@
+## Clareza dos menus — aprovada em 15/10/2026
+Conforme CLAREZA_MENUS_MOBILE.md e pedido para ajustar Ferreiro, Vendedor,
+Habilidades e Treinamento: reduzir texto repetido, explicitar preços e pontos,
+separar catálogos e mostrar ações no detalhe selecionado. Preservar todas as
+transações, regras, preços e dados. Publicar somente no TESTE.
+
 ## Interface da Espada — aprovada em 15/10/2026
 Conforme INTERFACE_ESPADA_DIARIO.md e pedido “Vamos colocar a nova interface”:
 aplicar pergaminho, ícones e conexões da referência 77175.png ao primeiro passe
@@ -245,4 +251,5 @@ Aprovados conforme TALENTOS_DIARIO_V2.md: proficiência abre caminhos, nível ge
 
 ## Etapa 2 aprovada em 12/10/2026
 O contrato em `docs/decisions/PROGRESSAO_ETAPA2.md` substitui as habilidades e árvores antigas. Ultimate ocupa opcionalmente Skill 2 ou 3, Maestria 30 é automática e Domínio permanece separado.
+
 

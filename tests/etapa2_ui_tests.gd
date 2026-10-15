@@ -29,10 +29,25 @@ static func run_world(suite: SceneTree) -> void:
 			main.player.apply_progression(p)
 			main.player.health.current = 70
 			panel.tab = 1
+			panel.skill_section = 0
+			panel.skill_choice = catalog.normal[0].id
 			panel.talent_weapon = category
 			main._toggle_character()
 			await suite.frames()
-			suite.check(panel.ability_buttons.size() == 3*catalog.normal.size()+2 and panel.passive_buttons.size() == 2*catalog.passives.size() and panel.specialization_buttons.size() == 2 and panel.category_buttons.size() == 5,"complete class skills/passives/spec UI "+category+str(resolution))
+			suite.check(panel.skill_catalog_buttons.size() == catalog.normal.size()+1 and panel.ability_buttons.size() == 3 and panel.category_buttons.size() == 5,"technique catalogue and selected actions "+category+str(resolution))
+			panel.skill_section = 1
+			panel.skill_choice = catalog.passives[0].id
+			panel.refresh(p)
+			suite.check(panel.skill_catalog_buttons.size() == catalog.passives.size() and panel.passive_buttons.size() == 2,"complete passive catalogue and selected slot actions "+category)
+			panel.skill_section = 2
+			panel.skill_choice = catalog.specializations[0]
+			panel.refresh(p)
+			suite.check(panel.skill_catalog_buttons.size() == 2 and panel.specialization_buttons.size() == 1,"both styles remain selectable "+category)
+			panel.skill_section = 0
+			panel.skill_choice = catalog.normal[0].id
+			panel.refresh(p)
+			await suite.frames()
+
 			var before := p.skill_points()
 			var id: String = catalog.normal[0].id
 			var button: Button = panel.ability_buttons[id+":0"]
@@ -61,7 +76,12 @@ static func run_world(suite: SceneTree) -> void:
 			main._rpg_action("equip_skill",category+":",0)
 			main._rpg_action("skill",category+":"+id,1)
 			main._rpg_action("specialization",category+":"+catalog.specializations[0],0)
-			suite.check(panel.ability_buttons[id+":grade"].disabled and panel.specialization_buttons[catalog.specializations[0]].disabled and p.to_json() == saved,"exploration blocks UI and forged personalization commands "+category+str(resolution))
+			var ability_locked: bool = panel.ability_buttons[id+":grade"].disabled
+			panel.skill_section = 2
+			panel.skill_choice = catalog.specializations[0]
+			panel.refresh(p)
+			suite.check(ability_locked and panel.specialization_buttons[catalog.specializations[0]].disabled and p.to_json() == saved,"exploration blocks UI and forged personalization commands "+category+str(resolution))
+
 			suite.check(panel.get_global_rect().end.x <= resolution.x+1 and panel.get_global_rect().end.y <= resolution.y+1 and panel.close_button.size.y >= 44,"complete class diary and close fit both orientations "+category+str(resolution))
 			main._toggle_character()
 	var restored := GameProgress.new()
@@ -69,3 +89,4 @@ static func run_world(suite: SceneTree) -> void:
 	main.queue_free()
 	await suite.frames()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)
+

@@ -1,3 +1,11 @@
+## Menus de serviços e configuração
+GameHUD usa cartões compactos de loja/venda e altura maior para os serviços.
+Os handlers originais continuam recebendo as mesmas ações e IDs. A detecção
+recursiva de botão no scroll adia o toque até o release, cancelando arrastos.
+RPGPanel separa o catálogo em técnicas/passivas/estilo e monta ações somente
+para a seleção. Cabeçalhos distinguem pontos da arma e de talento; estatísticas
+de treino vêm dos mesmos dados. Sem mudança de modelo de dados ou save v11.
+
 ## Espada — interface de nós do diário
 SwordEvolutionTree mantém os IDs do primeiro passe e apresenta cartões com
 PixelItemIcon do atlas existente, faixas de proficiência e estados reais de
@@ -388,4 +396,5 @@ AbilityRules define as identidades individuais das cinco armas, técnicas, passi
 PlayerActor delega Skill 1/2/3 a ClassCombat e espelha os timers para apresentação. AutoAttack e PlayerProjectile conservam tipo, categoria e origem no hit. EnemyActor limita o crédito ao HP disponível e ao orçamento vital, emite recibo descartável e deduplica eventos. Main consome o recibo uma vez, encaminha proficiência e carga elegível e rejeita epoch/andar/tentativa inválidos. Os Guardiões compartilham somente o relógio dos novos status; os avisos e ataques existentes ficam intactos.
 
 GameProgress valida completamente os formatos antigos antes de migrar, mantém Domínio/proficiência e calcula pontos gerais por orçamento. O payload v10 possui campos legados vazios e AbilityState validado; originais são backups imutáveis no filesystem e journal. Diary/HUD emitem comandos com identificador/slot e os handlers verificam camp/trial e versão esperada do grau. Critérios e comparação reproduzível: docs/qa/PROGRESSAO_ETAPA2.md.
+
 
