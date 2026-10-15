@@ -69,7 +69,7 @@ func _run() -> void:
 	root.add_child(hud)
 	hud.station_action.connect(func(action: String,item: String): requests.append([action,item]))
 	hud.rpg_action.connect(func(action: String,id: String,value: int): requests.append([action,id,value]))
-	for resolution: Vector2i in [Vector2i(360,640),Vector2i(390,700),Vector2i(844,390),Vector2i(1366,768)]:
+	for resolution: Vector2i in [Vector2i(360,640),Vector2i(390,844),Vector2i(844,390),Vector2i(1366,768)]:
 		root.size = resolution
 		root.content_scale_size = resolution
 		hud.size = Vector2(resolution)
@@ -85,6 +85,9 @@ func _run() -> void:
 		await capture(prefix+"ferreiro")
 		await tap(hud,hud.smith_shop_buttons.arco,hud.station_scroll)
 		check(hud.smith_shop_selected == "arco" and p.to_json() == snapshot,"selecting weapon never spends gold "+prefix)
+		check(hud.smith_shop_buttons.has("purchase") and not hud.smith_shop_buttons.has("confirm"),"selection opens comparison before confirmation "+prefix)
+		await capture(prefix+"comparacao")
+		await tap(hud,hud.smith_shop_buttons.purchase,hud.station_scroll)
 		await capture(prefix+"compra")
 		requests.clear()
 		await tap(hud,hud.smith_shop_buttons.confirm,hud.station_scroll)
@@ -94,6 +97,7 @@ func _run() -> void:
 		await frames()
 		check(hud.vendor_buttons.has("Vender:Ervas") and not hud.vendor_buttons.has("Comprar:Ervas"),"gathered resources have sell action without impossible purchase "+prefix)
 		check(str(GameProgress.SELL_PRICE) in hud.vendor_buttons["Vender:Ervas"].text,"sale button states actual gold price "+prefix)
+		check(hud.vendor_tabs.size() == 2 and hud.vendor_tab == 0,"vendor separates buying and selling "+prefix)
 		await capture(prefix+"vendedor")
 		requests.clear()
 		await swipe(hud,hud.vendor_buttons["Vender:Ervas"],hud.station_scroll)
@@ -110,7 +114,7 @@ func _run() -> void:
 		hud.show_character(p)
 		panel.scroll.scroll_vertical = 0
 		await frames()
-		check(panel.skill_catalog_buttons.size() == AbilityRules.CATEGORIES.espada.normal.size()+1 and panel.ability_buttons.size() == 3,"all sword techniques remain in selectable catalogue "+prefix)
+		check(panel.skill_catalog_buttons.size() == AbilityRules.CATEGORIES.espada.normal.size()+1 and panel.ability_buttons.size() == 3 and panel.skill_slots.size() == 3,"all sword techniques remain in selectable catalogue "+prefix)
 		await capture(prefix+"habilidades")
 		await tap(hud,panel.skill_catalog_buttons.guarda_reativa,panel.scroll)
 		check(panel.skill_choice == "guarda_reativa" and panel.ability_buttons.has("guarda_reativa:0"),"selecting entry opens its actual slot actions "+prefix)
@@ -142,3 +146,4 @@ func _run() -> void:
 		check(p.to_json() == snapshot,"all reading and selection preserve v11 snapshot "+prefix)
 	print("MENU_CLARITY_RESULT: %d checks, %d failures" % [checks,failures])
 	quit(1 if failures > 0 else 0)
+

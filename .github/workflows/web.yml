@@ -108,7 +108,7 @@ jobs:
           sudo apt-get install -y -qq xvfb libgl1-mesa-dri
           QA_MENU_CLARITY_DIR="$PWD/build/menu-clarity-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 95s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/menu_clarity_tests.gd 2>&1 | tee /tmp/menu-clarity-render.log
           grep -E '^MENU_CLARITY_RESULT: [0-9]+ checks, 0 failures$' /tmp/menu-clarity-render.log
-          test "$(find build/menu-clarity-qa -name '*.png' | wc -l)" -eq 32
+          test "$(find build/menu-clarity-qa -name '*.png' | wc -l)" -eq 36
       - name: Save clear menu screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -471,5 +471,6 @@ jobs:
           path: loading-live-qa/
           if-no-files-found: error
           retention-days: 14
+
 
 

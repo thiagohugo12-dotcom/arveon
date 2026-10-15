@@ -33,6 +33,9 @@ var skill_section_buttons: Array[Button] = []
 var skill_catalog_buttons: Dictionary = {}
 var skill_detail: VBoxContainer
 var skill_catalog: VBoxContainer
+var page_title: Label
+var diary_return: Button
+var skill_slots: Array[Button] = []
 var passive_buttons: Dictionary = {}
 var specialization_buttons: Dictionary = {}
 
@@ -42,9 +45,16 @@ func _ready() -> void:
 	DiaryArt.skin(self)
 	var column := VBoxContainer.new()
 	add_child(column)
-	var title := DiaryTheme.label("Diário do Explorador",26)
-	title.add_theme_font_override("font",DiaryTheme.heading_font())
-	column.add_child(title)
+	var header := HBoxContainer.new()
+	column.add_child(header)
+	page_title = DiaryTheme.label("Diário do Explorador",26)
+	page_title.add_theme_font_override("font",DiaryTheme.heading_font())
+	header.add_child(page_title)
+	var exit := Button.new()
+	exit.text = "×"
+	exit.custom_minimum_size = Vector2(44,44)
+	exit.pressed.connect(func(): closed.emit())
+	header.add_child(exit)
 	var navigation := HBoxContainer.new()
 	column.add_child(navigation)
 	for i in range(3):
@@ -78,7 +88,8 @@ func _ready() -> void:
 	var footer := HBoxContainer.new()
 	column.add_child(footer)
 	var character := Button.new()
-	character.text = "Personagem"
+	character.text = "Voltar ao diário"
+	diary_return = character
 	character.custom_minimum_size.y = 44
 	character.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	character.pressed.connect(func():
@@ -91,6 +102,13 @@ func _ready() -> void:
 
 func refresh(value: GameProgress) -> void:
 	progress = value
+	var focused_page := tab == 1 or tab == 2 and prof_section == 0
+	page_title.text = "Habilidades" if tab == 1 else "Treinamento" if tab == 2 and prof_section == 0 else "Diário do Explorador"
+	add_theme_stylebox_override("panel",DiaryTheme.piece("frame",16 if focused_page else 22))
+	tabs.visible = not focused_page
+	diary_return.visible = focused_page
+	close_button.visible = not focused_page
+	skill_slots.clear()
 	talent_tree = null
 	sword_detail = null
 	sword_tree = null
@@ -166,6 +184,7 @@ func _talent_page() -> void:
 	if not compact: _label(xp_text)
 	var sections := HBoxContainer.new()
 	content.add_child(sections)
+	sections.visible = prof_section != 0
 	for i in range(2):
 		var button := Button.new()
 		button.text = ["Treinar arma","Árvore de talentos"][i]
@@ -363,8 +382,9 @@ func _show_sword_node() -> void:
 		scroll.ensure_control_visible(sword_tree.buttons[sword_selection])
 
 func _mastery_page() -> void:
-	_heading("Pontos desta arma: %d disponíveis" % progress.talents.mastery_points(talent_weapon))
-	_label("Ganhe 1 ponto ao subir a proficiência desta arma.")
+	var points := _card()
+	points.get_parent().add_theme_stylebox_override("panel",DiaryTheme.box(Color("#d9e4bb"),DiaryTheme.GREEN,8,1))
+	_label("%d pontos desta arma disponíveis" % progress.talents.mastery_points(talent_weapon),points,true)
 	mastery_grid = GridContainer.new()
 	mastery_grid.columns = 2 if size.x >= 620 else 1
 	mastery_grid.add_theme_constant_override("h_separation",8)
@@ -376,34 +396,42 @@ func _mastery_page() -> void:
 		var card := _card(mastery_grid)
 		var row := HBoxContainer.new()
 		card.add_child(row)
-		var names := {"Dano":"Bônus no ataque básico","Dano Especial":"Bônus nas técnicas","Crítico":"Chance crítica","Dano Crítico":"Dano crítico"}
-		var name_label := DiaryTheme.label(names[stat],13)
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		row.add_child(name_label)
-		var button := Button.new()
-		button.text = "+1"
-		button.custom_minimum_size = Vector2(52,44)
-		button.disabled = not allow_respec or progress.talents.mastery_points(talent_weapon) < 1 or invested >= int(rule.cap)
-		button.pressed.connect(func(): action_requested.emit("mastery",talent_weapon+":"+stat,invested))
-		row.add_child(button)
-		mastery_buttons[stat] = button
+		var icon := PixelItemIcon.new({"Dano":talent_weapon,"Dano Especial":"Essência","Crítico":"Acessório","Dano Crítico":"maestria"}[stat])
+		icon.framed = false
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(icon)
+		var text := VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(text)
+		var names := {"Dano":"Ataque básico","Dano Especial":"Dano de técnicas","Crítico":"Chance crítica","Dano Crítico":"Dano crítico"}
+		_label(names[stat],text,true)
 		var base := 5.0 if stat == "Crítico" else 150.0 if stat == "Dano Crítico" else 0.0
 		var current := base+invested*float(rule.step)*100
 		var next := base+mini(invested+1,int(rule.cap))*float(rule.step)*100
-		_label("Investidos: %d / %d\nAgora: %s%% · com +1: %s%%" % [invested,rule.cap,String.num(current,2).replace(".",","),String.num(next,2).replace(".",",")],card)
-
+		_label("%s%% → %s%%" % [String.num(current,2).replace(".",","),String.num(next,2).replace(".",",")],text)
+		_label("%d / %d pontos" % [invested,rule.cap],text)
+		var button := Button.new()
+		button.text = "+1"
+		button.custom_minimum_size = Vector2(44,48)
+		button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		button.disabled = not allow_respec or progress.talents.mastery_points(talent_weapon) < 1 or invested >= int(rule.cap)
+		button.pressed.connect(func(): action_requested.emit("mastery",talent_weapon+":"+stat,invested))
+		DiaryTheme.primary(button)
+		row.add_child(button)
+		mastery_buttons[stat] = button
+	_label("Cada +1 usa um ponto desta arma.\nAlterações gratuitas na área segura." if allow_respec else "Somente consulta · volte ao acampamento para treinar.")
 	var refund := Button.new()
 	refund.name = "ResetMastery"
-	refund.text = "Redistribuir Treinamento\nGrátis na área segura"
-	refund.custom_minimum_size.y = 52
+	refund.text = "Redistribuir pontos"
+	refund.custom_minimum_size.y = 44
 	refund.disabled = not allow_respec or progress.talents.mastery_points(talent_weapon) >= progress.talents.level(talent_weapon)-1
 	refund.pressed.connect(func(): action_requested.emit("reset_mastery",talent_weapon,0))
 	content.add_child(refund)
-	var bonus := progress.talents.mastery_bonuses(talent_weapon)
-	_label("Básicos +%.1f%% · Técnicas +%.1f%%\nCrítico %.1f%% · Dano crítico %.0f%%" % [(bonus.automatic+bonus.basic)*100,(bonus.automatic+bonus.special)*100,bonus.critical_chance*100,bonus.critical_multiplier*100],_card())
-	_label("Os bônus de treino só valem com esta categoria equipada.")
-	if size.x > size.y: _focus_training.call_deferred()
+	var tree := Button.new()
+	tree.text = "Árvore de talentos"
+	tree.custom_minimum_size.y = 44
+	tree.pressed.connect(func(): prof_section = 1; refresh(progress); scroll.scroll_vertical = 0)
+	content.add_child(tree)
 
 func _focus_training() -> void:
 	await get_tree().process_frame
@@ -464,6 +492,7 @@ func _category_selector(compact: bool = true) -> void:
 		weapons.add_child(button)
 		category_buttons[id] = button
 		var icon := PixelItemIcon.new(id)
+		icon.framed = false
 		icon.position = Vector2(7,7)
 		button.add_child(icon)
 		var number := DiaryTheme.label("%d · +%d" % [progress.talents.level(id),progress.talents.mastery_points(id)],10)
@@ -485,10 +514,45 @@ func _skills_page() -> void:
 	var prof := progress.talents.level(category)
 	var build: Dictionary = progress.abilities.loadouts[category]
 	_heading("%s · proficiência %d / %d" % [TalentRules.CLASSES[category],prof,TalentRules.MAX_PROFICIENCY])
-	_label("Trocas grátis no acampamento." if allow_respec else "Somente consulta · troque habilidades no acampamento.")
-	var summary := _card()
-	_label("EQUIPADAS NESTA CATEGORIA",summary,true)
-	_label("Skill 1: %s · fixa\nSkill 2: %s\nSkill 3: %s" % [catalog.skill1.name,_skill_name(category,build.skills[0]),_skill_name(category,build.skills[1])],summary)
+	if not allow_respec: _label("Somente consulta · alterações no acampamento.")
+	_heading("Equipadas")
+	var slots := HBoxContainer.new()
+	slots.add_theme_constant_override("separation",4)
+	content.add_child(slots)
+	for index in range(3):
+		var id: String = catalog.skill1.id if index == 0 else build.skills[index-1]
+		var button := Button.new()
+		button.custom_minimum_size = Vector2(0,100)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.tooltip_text = "Skill 1 fixa" if index == 0 else "Selecione uma técnica para este espaço"
+		button.pressed.connect(func():
+			if index == 0: return
+			skill_section = 0
+			if not id.is_empty(): skill_choice = id
+			refresh(progress)
+			_focus_skill_catalog.call_deferred())
+		slots.add_child(button)
+		skill_slots.append(button)
+		var box := VBoxContainer.new()
+		box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		box.offset_left = 5
+		box.offset_right = -5
+		box.offset_top = 5
+		box.offset_bottom = -5
+		box.add_theme_constant_override("separation",2)
+		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.add_child(box)
+		var label := DiaryTheme.label("Skill %d%s" % [index+1," · fixa" if index == 0 else ""],12)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(label)
+		var icon := PixelItemIcon.new(_ability_icon(id,category))
+		icon.custom_minimum_size = Vector2(30,30)
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		icon.visible = not id.is_empty()
+		box.add_child(icon)
+		var name_label := DiaryTheme.label(catalog.skill1.name if index == 0 else _skill_name(category,id) if not id.is_empty() else "Vazia",12)
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		box.add_child(name_label)
 	var sections := HBoxContainer.new()
 	content.add_child(sections)
 	for index in range(3):
@@ -517,7 +581,13 @@ func _skills_page() -> void:
 		var button := Button.new()
 		var equipped: bool = build.skills.has(rule.id) if skill_section == 0 else build.passives.has(rule.id) if skill_section == 1 else build.specialization == rule.id
 		var state := "Bloqueada · prof. %d" % rule.prof if prof < int(rule.prof) else "Equipada" if equipped else "Disponível · prof. %d" % rule.prof
-		button.text = "%s\n%s" % [rule.name,state]
+		button.text = "        %s\n        %s" % [rule.name,state]
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var icon := PixelItemIcon.new(_ability_icon(rule.id,category))
+		icon.custom_minimum_size = Vector2(26,26)
+		icon.size = Vector2(26,26)
+		icon.position = Vector2(8,13)
+		button.add_child(icon)
 		button.add_theme_font_size_override("font_size",13)
 		button.custom_minimum_size.y = 52
 		DiaryTheme.select(button,skill_choice == rule.id)
@@ -536,7 +606,7 @@ func _skills_page() -> void:
 	back.custom_minimum_size.y = 44
 	back.pressed.connect(func(): scroll.ensure_control_visible(skill_catalog_buttons[skill_choice]))
 	content.add_child(back)
-	if size.x > size.y: _focus_skill_catalog.call_deferred()
+
 
 func _focus_skill_catalog() -> void:
 	await get_tree().process_frame
@@ -560,12 +630,14 @@ func _skill_details(category: String, rule: Dictionary, prof: int, build: Dictio
 		if not ultimate:
 			var effect := AbilityRules.effect(rule.id,grade)
 			_label("Defesa temporária · duração %.1fs" % float(effect.get("duration",0)) if rule.type == "defense" else "Potência base: %.2fx · dano %s\nAlcance base: %.0f px" % [rule.power,"mágico" if rule.type == "magical" else "físico",float(effect.get("reach",0))],skill_detail)
-		for slot in range(2):
+		var preferred := 1 if not str(build.skills[0]).is_empty() and str(build.skills[1]).is_empty() else 0
+		for slot: int in [preferred,1-preferred]:
 			var button := Button.new()
 			button.text = ("Equipada na " if build.skills[slot] == rule.id else "Equipar na ")+"Skill %d" % (slot+2)
 			button.custom_minimum_size.y = 44
 			button.disabled = not allow_respec or prof < int(rule.prof) or build.skills[slot] == rule.id
 			button.pressed.connect(func(): action_requested.emit("equip_skill",category+":"+rule.id,slot))
+			if slot == preferred: DiaryTheme.primary(button)
 			skill_detail.add_child(button)
 			ability_buttons[rule.id+":"+str(slot)] = button
 		if not ultimate:
@@ -601,6 +673,15 @@ func _skill_details(category: String, rule: Dictionary, prof: int, build: Dictio
 		var catalog: Dictionary = AbilityRules.CATEGORIES[category]
 		_label("Maestria: "+catalog.mastery,skill_detail,true)
 		_label(("Automática · " if prof >= 30 else "Proficiência 30 · ")+AbilityRules.MASTERY_HELP[category],skill_detail)
+	var options := VBoxContainer.new()
+	options.visible = false
+	var more := Button.new()
+	more.text = "Mais opções · limpar / redistribuir"
+	more.custom_minimum_size.y = 44
+	more.add_theme_font_size_override("font_size",14)
+	more.pressed.connect(func(): options.visible = not options.visible)
+	skill_detail.add_child(more)
+	skill_detail.add_child(options)
 	if skill_section < 2:
 		for slot in range(2):
 			var clear := Button.new()
@@ -608,16 +689,22 @@ func _skill_details(category: String, rule: Dictionary, prof: int, build: Dictio
 			clear.custom_minimum_size.y = 44
 			clear.disabled = not allow_respec
 			clear.pressed.connect(func(): action_requested.emit("equip_skill" if skill_section == 0 else "equip_passive",category+":",slot))
-			skill_detail.add_child(clear)
+			options.add_child(clear)
 	var refund := Button.new()
 	refund.text = "Redistribuir talentos e graus\nGrátis no acampamento"
 	refund.custom_minimum_size.y = 52
 	refund.disabled = not allow_respec
 	refund.pressed.connect(func(): action_requested.emit("reset_tree",category,0))
-	skill_detail.add_child(refund)
+	options.add_child(refund)
 
 func _skill_name(category: String, id: String) -> String:
 	return AbilityRules.active_skill(category,id).get("name","Vazia · escolha uma técnica")
 
 func _passive_name(category: String, id: String) -> String:
 	return AbilityRules.passive(category,id).get("name","Vazia")
+
+
+func _ability_icon(id: String, category: String) -> String:
+	if "guarda" in id or "postura" in id or "defesa" in id: return "Armadura"
+	if "ancestral" in id: return "maestria"
+	return category

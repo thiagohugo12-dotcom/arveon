@@ -253,3 +253,11 @@ Aprovados conforme TALENTOS_DIARIO_V2.md: proficiência abre caminhos, nível ge
 O contrato em `docs/decisions/PROGRESSAO_ETAPA2.md` substitui as habilidades e árvores antigas. Ultimate ocupa opcionalmente Skill 2 ou 3, Maestria 30 é automática e Domínio permanece separado.
 
 
+
+
+
+## Layout dos quatro menus — aprovado em 15/10/2026
+Thiago aprovou a prancha visual e autorizou aplicar a composição dos menus
+Ferreiro, Vendedor, Habilidades e Treinamento. Contrato:
+LAYOUT_MENUS_APROVADO_20261015.md. Somente UI; economia, combate, progressão
+e save v11 preservados, publicação exclusiva em TESTE.

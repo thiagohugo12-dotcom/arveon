@@ -229,6 +229,8 @@ func _run() -> void:
 	hud._input(shop_touch)
 	check(main.progress.gold == 19 and main.progress.bag.get("Couro", 0) == 0, "vendor sells existing material into wallet")
 	await frames()
+	hud.vendor_tabs[1].pressed.emit()
+	await frames()
 	var vendor_buy: Button = hud.vendor_buttons["Comprar:Essência"]
 	hud.station_scroll.ensure_control_visible(vendor_buy)
 	await frames()
@@ -583,6 +585,7 @@ func _run() -> void:
 	print("RESULT: %d checks, %d failures" % [checks, failures])
 	CombatRules.random_roll_source = Callable()
 	quit(1 if failures > 0 else 0)
+
 
 
 

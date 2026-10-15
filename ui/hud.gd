@@ -97,6 +97,12 @@ var smith_tab := 0 # Loja (somente ouro) ou Forja (receitas)
 var smith_shop_selected := ""
 var smith_shop_buttons: Dictionary = {}
 var vendor_buttons: Dictionary = {}
+var vendor_tab := 0
+var vendor_tabs: Array[Button] = []
+var smith_confirm := false
+var smith_grid: GridContainer
+var station_wallet: Label
+var station_header_close: Button
 const FIRST_WEAPON_DESCRIPTION := "Todo aventureiro precisa de uma arma. Procure o Ferreiro no acampamento e escolha aquela que combina com seu estilo de combate."
 const WEAPON_STYLES := {
 	"espada":"Combate próximo e ágil, com sequências e contra-ataques.",
@@ -350,7 +356,19 @@ func _ready() -> void:
 	station_panel.add_child(column)
 	station_title = Label.new()
 	station_title.add_theme_font_size_override("font_size",17)
-	column.add_child(station_title)
+	var header := HBoxContainer.new()
+	column.add_child(header)
+	station_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(station_title)
+	station_wallet = DiaryTheme.label("",13)
+	station_wallet.size_flags_horizontal = Control.SIZE_SHRINK_END
+	station_wallet.autowrap_mode = TextServer.AUTOWRAP_OFF
+	header.add_child(station_wallet)
+	station_header_close = Button.new()
+	station_header_close.text = "×"
+	station_header_close.custom_minimum_size = Vector2(44,44)
+	station_header_close.pressed.connect(close_station)
+	header.add_child(station_header_close)
 	station_scroll = ScrollContainer.new()
 	station_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	station_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -509,10 +527,10 @@ func _layout() -> void:
 	station_title.add_theme_font_size_override("font_size",24 if service else 17)
 	if service: station_title.add_theme_font_override("font",DiaryTheme.heading_font())
 	else: station_title.remove_theme_font_override("font")
-	station_panel.size = Vector2(minf(560 if service else 340, size.x - margin.x - right_inset - 12), minf(620 if service else 320, size.y - margin.y - bottom_inset - 12))
+	station_panel.size = Vector2(minf(560 if service else 340, size.x - margin.x - right_inset - 12), minf(780 if service else 320, size.y - margin.y - bottom_inset - 12))
 	station_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",16) if service else _panel_style())
 	station_panel.position = (size - station_panel.size) * 0.5
-	rpg_panel.size = Vector2(minf(640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/diary_scale))
+	rpg_panel.size = Vector2(minf(640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(780, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
 	DiaryArt.skin(rpg_panel)
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
@@ -692,6 +710,8 @@ func show_station(name: String, progress: GameProgress) -> void:
 	first_weapon_page = 0
 	first_weapon_selected = ""
 	smith_tab = 0
+	smith_confirm = false
+	vendor_tab = 0
 	smith_shop_selected = ""
 	close_inventory()
 	station_panel.show()
@@ -712,6 +732,11 @@ func close_station() -> void:
 
 func refresh_station(progress: GameProgress) -> void:
 	station_title.text = station_name
+	station_wallet.text = "%d ouro" % progress.gold
+	station_wallet.visible = station_name in ["Ferreiro","Vendedor"]
+	station_header_close.visible = station_wallet.visible
+	smith_grid = null
+	vendor_tabs.clear()
 	first_weapon_buttons.clear()
 	station_content.add_theme_constant_override("separation",4 if station_name in ["Ferreiro","Vendedor"] else 8)
 	smith_shop_buttons.clear()
@@ -763,18 +788,7 @@ func refresh_station(progress: GameProgress) -> void:
 			_add_row(item, "%d/%d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar", int(progress.bag.get(item, 0)) > 0, int(progress.chest.get(item, 0)) > 0)
 		_add_page_navigation(GameProgress.ITEMS.size(), progress)
 	elif station_name == "Vendedor":
-		_add_description("Seu ouro: %d" % progress.gold)
-		var available_items: Array[String] = []
-		for item: String in GameProgress.SELL_ITEMS:
-			if int(progress.bag.get(item,0)) > 0: available_items.append(item)
-		available_items.sort_custom(func(a: String, b: String) -> bool:
-			var resource_a := not GameProgress.TRADE_ITEMS.has(a)
-			var resource_b := not GameProgress.TRADE_ITEMS.has(b)
-			return resource_a and not resource_b if resource_a != resource_b else GameProgress.SELL_ITEMS.find(a) < GameProgress.SELL_ITEMS.find(b))
-		for item: String in GameProgress.TRADE_ITEMS:
-			if not available_items.has(item): available_items.append(item)
-		for item: String in _page_items(available_items): _vendor_item(item,progress)
-		_add_page_navigation(available_items.size(),progress)
+		_vendor_shop(progress)
 
 func _page_items(items: Array) -> Array:
 	var start := station_page * ITEMS_PER_PAGE
@@ -910,7 +924,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if station_name in ["Ferreiro","Vendedor"]:
-		if _activate_touch_button(station_close_button,event.position): return
+		if _activate_touch_button(station_close_button,event.position) or _activate_touch_button(station_header_close,event.position): return
 		if station_scroll.get_global_rect().has_point(event.position):
 			_defer_menu_touch(station_content,station_scroll,event)
 		get_viewport().set_input_as_handled()
@@ -1132,7 +1146,7 @@ func _smith_tabs(progress: GameProgress) -> void:
 	station_content.add_child(tabs)
 	for index in range(2):
 		var tab := Button.new()
-		tab.text = "Comprar armas" if index == 0 else "Fabricar / melhorar"
+		tab.text = "Comprar" if index == 0 else "Forja"
 		tab.add_theme_font_size_override("font_size",14)
 		tab.custom_minimum_size.y = 44
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1145,35 +1159,65 @@ func _smith_tabs(progress: GameProgress) -> void:
 		tabs.add_child(tab)
 
 func _smith_shop(progress: GameProgress) -> void:
-	if not smith_shop_selected.is_empty():
-		if not ArsenalRules.CATEGORIES.has(smith_shop_selected):
-			smith_shop_selected = ""
-			return
-		var chosen: String = smith_shop_selected
+	if progress.equipment.has(smith_shop_selected): smith_confirm = false
+	if smith_confirm and ArsenalRules.CATEGORIES.has(smith_shop_selected):
+		var chosen := smith_shop_selected
 		var cost := GameProgress.starter_weapon_price(chosen)
-		_add_description("Comprar %s por %d ouro?\nSerá equipada · Saldo restante: %d ouro." % [RPGRules.EQUIPMENT[chosen].name,cost,progress.gold-cost])
-		var stats := ArsenalRules.effective(progress,chosen)
-		_add_description("%s\nDano %d · alcance %.0f px\n%.2f ataques/s" % [WEAPON_STYLES[chosen],stats.damage,stats.reach,1.0/stats.interval])
-		var confirm := Button.new()
-		confirm.text = "Confirmar · %d ouro" % cost
-		confirm.custom_minimum_size.y = 48
+		_add_description("Comprar %s por %d ouro?\nSerá equipada · saldo restante: %d ouro." % [RPGRules.EQUIPMENT[chosen].name,cost,progress.gold-cost])
+		var confirm := _shop_action("Confirmar · %d ouro" % cost,func(): station_action.emit("buy_starter",chosen))
 		confirm.disabled = not progress.can_buy_starter_weapon(chosen)
-		confirm.pressed.connect(func(): station_action.emit("buy_starter",chosen))
-		station_content.add_child(confirm)
+		DiaryTheme.primary(confirm)
 		smith_shop_buttons["confirm"] = confirm
-		_focus_station_action.call_deferred(confirm)
-		var cancel := Button.new()
-		cancel.text = "Voltar às armas"
-		cancel.custom_minimum_size.y = 48
-		cancel.pressed.connect(func():
-			smith_shop_selected = ""
+		var back := _shop_action("Voltar às armas",func():
+			smith_confirm = false
 			refresh_station(progress))
-		station_content.add_child(cancel)
-		smith_shop_buttons["back"] = cancel
+		smith_shop_buttons["back"] = back
 		return
-	_add_description("Seu ouro: %d · compra sem materiais" % progress.gold)
-	for id: String in ArsenalRules.CATEGORIES:
-		_smith_shop_weapon(id,progress)
+	_add_description("Armas iniciais")
+	smith_grid = GridContainer.new()
+	smith_grid.columns = 2
+	smith_grid.add_theme_constant_override("h_separation",6)
+	smith_grid.add_theme_constant_override("v_separation",6)
+	station_content.add_child(smith_grid)
+	for id: String in ArsenalRules.CATEGORIES: _smith_shop_weapon(id,progress)
+	if not ArsenalRules.CATEGORIES.has(smith_shop_selected): return
+	var chosen := smith_shop_selected
+	var detail := _service_card(station_content)
+	detail.add_child(DiaryTheme.label("%s · %s" % [RPGRules.EQUIPMENT[chosen].name,TalentRules.CLASSES[chosen]],16))
+	detail.add_child(DiaryTheme.label(WEAPON_STYLES[chosen],13))
+	var stats := ArsenalRules.effective(progress,chosen)
+	var row := HBoxContainer.new()
+	detail.add_child(row)
+	for value: String in ["Dano\n%d" % stats.damage,"Alcance\n%.0f" % stats.reach,"%s\natq/s" % String.num(1.0/stats.interval,2).replace(".",",")]:
+		var label := DiaryTheme.label(value,14)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		row.add_child(label)
+	var buy := _shop_action("Comprar por %d ouro" % GameProgress.starter_weapon_price(chosen),func():
+		smith_confirm = true
+		station_scroll.scroll_vertical = 0
+		refresh_station(progress))
+	buy.disabled = not progress.can_buy_starter_weapon(chosen)
+	DiaryTheme.primary(buy)
+	smith_shop_buttons["purchase"] = buy
+	_add_description("Confirmação antes da compra.")
+	_focus_station_action.call_deferred(buy)
+
+func _shop_action(caption: String, callback: Callable) -> Button:
+	var button := Button.new()
+	button.text = caption
+	button.custom_minimum_size.y = 44
+	button.pressed.connect(callback)
+	station_content.add_child(button)
+	return button
+
+func _service_card(parent: Container) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,Color("#bea16a"),8,1))
+	parent.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation",4)
+	panel.add_child(box)
+	return box
 
 func _focus_station_action(button: Button) -> void:
 	await get_tree().process_frame
@@ -1183,55 +1227,87 @@ func _focus_station_action(button: Button) -> void:
 func _smith_shop_weapon(id: String, progress: GameProgress) -> void:
 	var price := GameProgress.starter_weapon_price(id)
 	var owned := progress.equipment.has(id)
-	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,Color("#bea16a"),4,1))
-	station_content.add_child(card)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation",2)
-	card.add_child(box)
-	var header := HBoxContainer.new()
-	box.add_child(header)
-	var icon := ITEM_ICON.new(id)
-	icon.custom_minimum_size = Vector2(24,24)
-	header.add_child(icon)
-	var title := DiaryTheme.label("%s · %s" % [RPGRules.EQUIPMENT[id].name,TalentRules.CLASSES[id]],13)
-	header.add_child(title)
 	var button := Button.new()
-	button.custom_minimum_size.y = 44
-	button.text = "Equipada" if progress.equipped.Arma == id else "Já está na mochila" if owned else "Faltam %d ouro" % (price-progress.gold) if progress.gold < price else "Comprar · %d ouro" % price
-	button.disabled = owned or not progress.can_buy_starter_weapon(id)
+	button.custom_minimum_size = Vector2(0,86)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.disabled = owned
+	button.tooltip_text = TalentRules.CLASSES[id]
+	DiaryTheme.select(button,smith_shop_selected == id)
 	button.pressed.connect(func():
 		smith_shop_selected = id
-		station_scroll.scroll_vertical = 0
+		smith_confirm = false
 		refresh_station(progress))
-	box.add_child(button)
+	smith_grid.add_child(button)
+	var body := VBoxContainer.new()
+	body.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	body.offset_left = 6
+	body.offset_top = 5
+	body.offset_right = -6
+	body.offset_bottom = -5
+	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_theme_constant_override("separation",1)
+	button.add_child(body)
+	var icon := ITEM_ICON.new(id)
+	icon.custom_minimum_size = Vector2(36,36)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon.framed = false
+	body.add_child(icon)
+	for text: String in [ArsenalRules.category_name(id),"Equipada" if progress.equipped.Arma == id else "Na mochila" if owned else "%d ouro" % price]:
+		var label := DiaryTheme.label(text,13)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if smith_shop_selected == id: label.add_theme_color_override("font_color",Color("#fff0ce"))
+		body.add_child(label)
 	smith_shop_buttons[id] = button
 
-func _vendor_item(item: String, progress: GameProgress) -> void:
-	var card := PanelContainer.new()
-	card.add_theme_stylebox_override("panel",DiaryTheme.box(DiaryTheme.PAPER,Color("#bea16a"),6,1))
-	station_content.add_child(card)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation",3)
-	card.add_child(box)
-	var header := HBoxContainer.new()
-	box.add_child(header)
-	header.add_child(ITEM_ICON.new(item))
-	header.add_child(DiaryTheme.label("%s · na mochila: %d" % [item,progress.bag.get(item,0)],13))
-	var actions := HBoxContainer.new()
-	box.add_child(actions)
-	for action: String in ["Comprar","Vender"]:
-		if action == "Comprar" and not GameProgress.TRADE_ITEMS.has(item): continue
+func _vendor_shop(progress: GameProgress) -> void:
+	var tabs := HBoxContainer.new()
+	station_content.add_child(tabs)
+	for index in range(2):
 		var button := Button.new()
-		button.name = action+item
-		button.text = "%s 1 · %d ouro" % [action,GameProgress.BUY_PRICE if action == "Comprar" else GameProgress.SELL_PRICE]
-		button.custom_minimum_size.y = 44
+		button.text = "Vender" if index == 0 else "Comprar"
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size",13)
-		button.disabled = progress.gold < GameProgress.BUY_PRICE if action == "Comprar" else int(progress.bag.get(item,0)) <= 0
-		button.pressed.connect(func(): station_action.emit(action,item))
-		actions.add_child(button)
-		vendor_buttons[action+":"+item] = button
+		button.custom_minimum_size.y = 44
+		DiaryTheme.select(button,vendor_tab == index)
+		button.pressed.connect(func():
+			vendor_tab = index
+			station_scroll.scroll_vertical = 0
+			refresh_station(progress))
+		tabs.add_child(button)
+		vendor_tabs.append(button)
+	_add_description("Na sua mochila" if vendor_tab == 0 else "Materiais à venda")
+	var items: Array[String] = []
+	for item: String in GameProgress.SELL_ITEMS if vendor_tab == 0 else GameProgress.TRADE_ITEMS:
+		if vendor_tab == 1 or int(progress.bag.get(item,0)) > 0: items.append(item)
+	for item: String in items: _vendor_item(item,progress)
+	if items.is_empty(): _add_description("Nenhum material para vender.")
+	_add_description("O valor é por unidade.")
+
+func _vendor_item(item: String, progress: GameProgress) -> void:
+	var card := _service_card(station_content)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation",6)
+	card.add_child(row)
+	var icon := ITEM_ICON.new(item)
+	icon.framed = false
+	icon.custom_minimum_size = Vector2(32,32)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(icon)
+	var caption := VBoxContainer.new()
+	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(caption)
+	caption.add_child(DiaryTheme.label(item,14))
+	caption.add_child(DiaryTheme.label("%d na mochila" % progress.bag.get(item,0),12))
+	var action := "Comprar" if vendor_tab == 1 else "Vender"
+	var button := Button.new()
+	button.name = action+item
+	button.text = "%s 1 · %d ouro" % [action,GameProgress.BUY_PRICE if vendor_tab == 1 else GameProgress.SELL_PRICE]
+	button.custom_minimum_size = Vector2(112,44)
+	button.add_theme_font_size_override("font_size",14)
+	button.disabled = progress.gold < GameProgress.BUY_PRICE if vendor_tab == 1 else int(progress.bag.get(item,0)) <= 0
+	button.pressed.connect(func(): station_action.emit(action,item))
+	DiaryTheme.primary(button)
+	row.add_child(button)
+	vendor_buttons[action+":"+item] = button
 
 func _first_weapon_button(key: String, caption: String, callback: Callable) -> Button:
 	var button := Button.new()
@@ -1331,4 +1407,5 @@ func set_boss(boss: TowerGuardian) -> void:
 		boss_name.text = "Guardião da Mata · Fase %d\nHP %d/%d" % [2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
 		boss_bar.max_value = boss.health.maximum
 		boss_bar.value = boss.health.current
+
 
