@@ -90,6 +90,8 @@ func hit_modifiers(target: EnemyActor, source: String) -> Dictionary:
 	var basic := source == "basic"
 	if category == "espada":
 		if has_talent("sequencia_precisa") and basic and (combo+1)%3 == 0: scale += 0.15
+		if has_talent("ritmo_afiado") and basic and combo >= 3: scale += 0.08
+		if has_passive("instinto_veterano"): chance = minf(1.0,chance+0.06)
 		if specialization() == "duelista" and target.get_instance_id() == last_target and same_target_hits >= 3: scale += 0.12
 		if not basic and perfect_ready: chance = 1.0
 		if not basic and counter_left > 0 and has_talent("contra_ataque_fatal"): chance = 1.0
@@ -124,6 +126,8 @@ func receive(amount: int) -> int:
 		scale -= 0.30
 		counter_left = 3.0
 	if has_passive("postura_firme") and player.velocity.length_squared() < 4: scale -= 0.08
+	if has_passive("vontade_ancestral") and player.health.current < player.health.maximum*0.5: scale -= 0.10
+	if has_talent("bastiao_ancestral") and guard_left > 0: scale -= 0.08
 	if has_passive("pele_ferro") and player.health.current < player.health.maximum*0.5: scale -= 0.10
 	if has_passive("vigilancia") and counter_left > 0: scale -= 0.10
 	if has_passive("passos_leves") and moving_time >= 1.0: scale -= 0.08
@@ -164,6 +168,7 @@ func use(index: int) -> bool:
 		if specialization() == "colosso": barrier = ceili(player.health.maximum*0.12)
 	else:
 		var power := float(rule.get("power",effect.get("power",1.0)))*(1+0.15*(grade-1))
+		if ultimate and category == "espada" and prof >= 60: power *= 1.20
 		if index == 0: power *= 1+0.03*int(progress.equipment[progress.equipped.Arma])
 		var hits := _execute(rule.id,effect,power,ultimate)
 		technique_hits += 1

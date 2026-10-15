@@ -17,11 +17,11 @@ func level(weapon: String) -> int:
 	return TalentRules.level_for_xp(int(xp.get(weapon,0)))
 
 func record_damage(weapon: String, effective: int) -> bool:
-	if not xp.has(weapon) or effective <= 0 or int(xp[weapon]) >= TalentRules.xp_floor(30): return false
+	if not xp.has(weapon) or effective <= 0 or int(xp[weapon]) >= TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY): return false
 	var damage_units := int(damage_remainder[weapon])+effective
 	@warning_ignore("integer_division")
-	xp[weapon] = mini(TalentRules.xp_floor(30), int(xp[weapon])+damage_units/TalentRules.DAMAGE_PER_XP)
-	damage_remainder[weapon] = damage_units%TalentRules.DAMAGE_PER_XP if int(xp[weapon]) < TalentRules.xp_floor(30) else 0
+	xp[weapon] = mini(TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY), int(xp[weapon])+damage_units/TalentRules.DAMAGE_PER_XP)
+	damage_remainder[weapon] = damage_units%TalentRules.DAMAGE_PER_XP if int(xp[weapon]) < TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY) else 0
 	return true
 
 func mastery_points(weapon: String) -> int:
@@ -96,12 +96,12 @@ static func from_save(value: Variant, points: int, legacy: bool = false) -> Tale
 	for weapon: String in ArsenalRules.CATEGORIES:
 		var amount: Variant = value.xp.get(weapon)
 		var nodes: Variant = value.learned.get(weapon)
-		var cap := 8700 if legacy else TalentRules.xp_floor(30)
+		var cap := 8700 if legacy else TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY)
 		if not amount is float or amount != floorf(amount) or amount < 0 or amount > cap or not nodes is Array or nodes.size() > TalentRules.NODES.size(): return null
 		result.xp[weapon] = floori(float(amount)*0.4) if legacy else int(amount)
 		if not legacy:
 			var remainder: Variant = value.damage_remainder.get(weapon)
-			if not remainder is float or remainder != floorf(remainder) or remainder < 0 or remainder >= TalentRules.DAMAGE_PER_XP or (int(amount) == TalentRules.xp_floor(30) and remainder != 0): return null
+			if not remainder is float or remainder != floorf(remainder) or remainder < 0 or remainder >= TalentRules.DAMAGE_PER_XP or (int(amount) == TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY) and remainder != 0): return null
 			result.damage_remainder[weapon] = int(remainder)
 			var distribution: Variant = value.mastery.get(weapon)
 			if not distribution is Dictionary or distribution.size() != 4: return null

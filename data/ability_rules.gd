@@ -13,9 +13,12 @@ const CATEGORIES := {
 		"normal": [
 			{"id":"corte_crescente","name":"Corte Crescente","prof":3,"cooldown":7.0,"power":1.45,"type":"physical"},
 			{"id":"guarda_reativa","name":"Guarda Reativa","prof":8,"cooldown":12.0,"power":0.0,"type":"defense"},
-			{"id":"estocada_precisa","name":"Estocada Precisa","prof":25,"cooldown":10.0,"power":1.80,"type":"physical"}],
+			{"id":"estocada_precisa","name":"Estocada Precisa","prof":25,"cooldown":10.0,"power":1.80,"type":"physical"},
+			{"id":"ruptura_ancestral","name":"Ruptura Ancestral","prof":40,"cooldown":14.0,"power":2.25,"type":"physical"}],
 		"ultimate":{"id":"danca_laminas","name":"Dança das Lâminas","prof":15,"type":"physical"},
-		"passives":[{"id":"fio_afiado","name":"Fio Afiado","prof":5},{"id":"ritmo_combate","name":"Ritmo de Combate","prof":12},{"id":"postura_firme","name":"Postura Firme","prof":20}],
+		"passives":[{"id":"fio_afiado","name":"Fio Afiado","prof":5},{"id":"ritmo_combate","name":"Ritmo de Combate","prof":12},{"id":"postura_firme","name":"Postura Firme","prof":20},
+			{"id":"instinto_veterano","name":"Instinto Veterano","prof":35},
+			{"id":"vontade_ancestral","name":"Vontade Ancestral","prof":50}],
 		"specializations":["duelista","guardiao_lamina"],
 		"mastery":"Lâmina Perfeita"},
 	"machado": {
@@ -55,7 +58,9 @@ const CATEGORIES := {
 		"passives":[{"id":"canalizacao","name":"Canalização","prof":5},{"id":"foco_arcano","name":"Foco Arcano","prof":12},{"id":"guarda_eter","name":"Guarda do Éter","prof":20}],
 		"specializations":["arcanista","guardiao_espiritual"],"mastery":"Convergência Arcana"}}
 const TALENTS := {
-	"espada":[{"id":"sequencia_precisa","prof":10,"parent":""},{"id":"contra_ataque_fatal","prof":20,"parent":"sequencia_precisa"},{"id":"guarda_aperfeicoada","prof":10,"parent":""},{"id":"postura_equilibrada","prof":20,"parent":"guarda_aperfeicoada"}],
+	"espada":[{"id":"sequencia_precisa","prof":10,"parent":""},{"id":"contra_ataque_fatal","prof":20,"parent":"sequencia_precisa"},{"id":"guarda_aperfeicoada","prof":10,"parent":""},{"id":"postura_equilibrada","prof":20,"parent":"guarda_aperfeicoada"},
+		{"id":"ritmo_afiado","prof":45,"parent":"sequencia_precisa"},
+		{"id":"bastiao_ancestral","prof":55,"parent":"postura_equilibrada"}],
 	"machado":[{"id":"impacto_crescente","prof":10,"parent":""},{"id":"finalizador","prof":20,"parent":"impacto_crescente"},{"id":"corpo_ferro","prof":10,"parent":""},{"id":"presenca_imponente","prof":20,"parent":"corpo_ferro"}],
 	"lanca":[{"id":"alcance_ideal","prof":10,"parent":""},{"id":"ponta_letal","prof":20,"parent":"alcance_ideal"},{"id":"posicao_firme","prof":10,"parent":""},{"id":"recuo_tatico","prof":20,"parent":"posicao_firme"}],
 	"arco":[{"id":"primeiro_disparo","prof":10,"parent":""},{"id":"mira_continua","prof":20,"parent":"primeiro_disparo"},{"id":"distancia_segura","prof":10,"parent":""},{"id":"evasao_agil","prof":20,"parent":"distancia_segura"}],
@@ -104,6 +109,7 @@ const EFFECTS := {
 	"corte_crescente":{"shape":"cone","reach":140.0,"dot":-0.15},
 	"guarda_reativa":{"shape":"guard","duration":3.0},
 	"estocada_precisa":{"shape":"line","reach":155.0,"width":22.0},
+	"ruptura_ancestral":{"shape":"line","reach":205.0,"width":40.0},
 	"golpe_devastador":{"shape":"cone","reach":125.0,"dot":0.1},
 	"quebra_guarda":{"shape":"cone","reach":120.0,"dot":0.0,"mark":0.18},
 	"impacto_brutal":{"shape":"disk","reach":135.0,"control":0.7},
@@ -142,6 +148,8 @@ const DESCRIPTIONS := {
 	"fio_afiado":"Críticos deixam uma abertura para o próximo ataque.",
 	"ritmo_combate":"A cada três básicos válidos, reduz recargas normais em 0,3s.",
 	"postura_firme":"Parado, recebe 8% menos dano.",
+	"instinto_veterano":"Ataques com Espada recebem +6 pontos percentuais de chance crítica.",
+	"vontade_ancestral":"Abaixo de metade do HP, recebe 10% menos dano.",
 	"golpe_pesado":"Básicos interrompem brevemente inimigos comuns.",
 	"pele_ferro":"Abaixo de metade da vida, recebe 10% menos dano.",
 	"executor":"Causa 20% mais dano a inimigos abaixo de 30% de HP.",
@@ -158,6 +166,8 @@ const DESCRIPTIONS := {
 	"contra_ataque_fatal":"Técnicas na janela de contra-ataque são críticas.",
 	"guarda_aperfeicoada":"Guarda Reativa dura mais um segundo.",
 	"postura_equilibrada":"A guarda reduz mais 5% do dano recebido.",
+	"ritmo_afiado":"Ritmo avançado: após três básicos, ataques básicos causam 8% mais dano.",
+	"bastiao_ancestral":"Enquanto a guarda está ativa, recebe 8% menos dano adicional.",
 	"impacto_crescente":"Básicos sucessivos no mesmo alvo aumentam o impacto.",
 	"finalizador":"Técnicas causam mais dano a alvos abaixo de 20% de HP.",
 	"corpo_ferro":"Acertar uma técnica concede guarda curta.",
@@ -176,6 +186,7 @@ const DESCRIPTIONS := {
 	"protecao_mistica":"A barreira reduz mais 10% do dano recebido."}
 const TALENT_NAMES := {
 	"sequencia_precisa":"Sequência Precisa","contra_ataque_fatal":"Contra-ataque Fatal","guarda_aperfeicoada":"Guarda Aperfeiçoada","postura_equilibrada":"Postura Equilibrada",
+	"ritmo_afiado":"Ritmo Afiado","bastiao_ancestral":"Bastião Ancestral",
 	"impacto_crescente":"Impacto Crescente","finalizador":"Finalizador","corpo_ferro":"Corpo de Ferro","presenca_imponente":"Presença Imponente",
 	"alcance_ideal":"Alcance Ideal","ponta_letal":"Ponta Letal","posicao_firme":"Posição Firme","recuo_tatico":"Recuo Tático",
 	"primeiro_disparo":"Primeiro Disparo","mira_continua":"Mira Contínua","distancia_segura":"Distância Segura","evasao_agil":"Evasão Ágil",
