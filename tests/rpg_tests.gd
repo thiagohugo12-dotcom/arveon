@@ -212,7 +212,7 @@ static func _interface(suite, main) -> void:
 		var button := _button_with_text(hud.rpg_panel.content, "+1")
 		touch.position = button.global_position + button.size * 0.5
 		var before := p.attribute_points()
-		hud._input(touch)
+		preload("res://tests/mobile_polish_tests.gd").tap(hud,button)
 		suite.check(p.attribute_points() == before - 1, "touch allocates real attribute within available budget %s" % size)
 		await suite.frames()
 		touch.position = hud.rpg_panel.close_button.global_position + hud.rpg_panel.close_button.size * 0.5
@@ -298,6 +298,9 @@ static func _interface(suite, main) -> void:
 	forge_touch.index = 15
 	forge_touch.pressed = true
 	forge_touch.position = forge_button.global_position + forge_button.size * 0.5
+	forge_touch.pressed = true
+	hud._input(forge_touch)
+	forge_touch.pressed = false
 	hud._input(forge_touch)
 	suite.check(p.equipment.has("machado") and p.gold == 80 and p.adventures.forjar == 1, "mobile smith button crafts through existing wallet and inventory")
 	hud.close_station()
@@ -309,6 +312,9 @@ static func _interface(suite, main) -> void:
 	hud.rpg_panel.scroll.scroll_vertical += maxi(0,roundi(improvement.global_position.y-hud.rpg_panel.scroll.global_position.y-4))
 	await suite.frames()
 	forge_touch.position = improvement.global_position + improvement.size * 0.5
+	forge_touch.pressed = true
+	hud._input(forge_touch)
+	forge_touch.pressed = false
 	hud._input(forge_touch)
 	suite.check(p.abilities.grades.espada.corte_crescente == 2 and p.skill_points() == 0 and player.skill_ranks[1] == 2, "touch skill screen spends one earned point and applies upgraded rank")
 	preload("res://tests/etapa2_fixtures.gd").reset(player)
@@ -319,3 +325,4 @@ static func _interface(suite, main) -> void:
 	reload.save_path = p.save_path
 	main._save_progress()
 	suite.check(reload.load_save() and reload.attributes == p.attributes and reload.equipment == p.equipment, "touch build and equipment survive full save reload")
+
