@@ -363,7 +363,7 @@ func _show_sword_node() -> void:
 		scroll.ensure_control_visible(sword_tree.buttons[sword_selection])
 
 func _mastery_page() -> void:
-	_heading("Pontos da %s: %d disponíveis" % [ArsenalRules.category_name(talent_weapon),progress.talents.mastery_points(talent_weapon)])
+	_heading("Pontos desta arma: %d disponíveis" % progress.talents.mastery_points(talent_weapon))
 	_label("Ganhe 1 ponto ao subir a proficiência desta arma.")
 	mastery_grid = GridContainer.new()
 	mastery_grid.columns = 2 if size.x >= 620 else 1

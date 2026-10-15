@@ -349,8 +349,7 @@ func _ready() -> void:
 	var column := VBoxContainer.new()
 	station_panel.add_child(column)
 	station_title = Label.new()
-	station_title.add_theme_font_size_override("font_size", 24)
-	station_title.add_theme_font_override("font",DiaryTheme.heading_font())
+	station_title.add_theme_font_size_override("font_size",17)
 	column.add_child(station_title)
 	station_scroll = ScrollContainer.new()
 	station_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -507,6 +506,9 @@ func _layout() -> void:
 	actions[3].position = Vector2(size.x-right_inset-56,size.y-bottom_inset-184)
 	interact_button.position = Vector2(size.x * 0.5 - 60, size.y - bottom_inset - (185 if size.y > size.x else 67))
 	var service := station_name in ["Ferreiro","Vendedor"]
+	station_title.add_theme_font_size_override("font_size",24 if service else 17)
+	if service: station_title.add_theme_font_override("font",DiaryTheme.heading_font())
+	else: station_title.remove_theme_font_override("font")
 	station_panel.size = Vector2(minf(560 if service else 340, size.x - margin.x - right_inset - 12), minf(620 if service else 320, size.y - margin.y - bottom_inset - 12))
 	station_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",16) if service else _panel_style())
 	station_panel.position = (size - station_panel.size) * 0.5
@@ -781,9 +783,9 @@ func _add_page_navigation(count: int, progress: GameProgress) -> void:
 	var row := HBoxContainer.new()
 	station_content.add_child(row)
 	var previous := Button.new()
-	previous.text = "Anterior"
+	previous.text = "Anterior" if station_name == "Vendedor" else "◀"
 	previous.disabled = station_page == 0
-	previous.custom_minimum_size = Vector2(70, 44)
+	previous.custom_minimum_size = Vector2(70,44) if station_name == "Vendedor" else Vector2(48,40)
 	previous.pressed.connect(func():
 		station_page -= 1
 		refresh_station(progress)
@@ -795,9 +797,9 @@ func _add_page_navigation(count: int, progress: GameProgress) -> void:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
 	var following := Button.new()
-	following.text = "Próxima"
+	following.text = "Próxima" if station_name == "Vendedor" else "▶"
 	following.disabled = station_page >= total - 1
-	following.custom_minimum_size = Vector2(70, 44)
+	following.custom_minimum_size = Vector2(70,44) if station_name == "Vendedor" else Vector2(48,40)
 	following.pressed.connect(func():
 		station_page += 1
 		refresh_station(progress)
