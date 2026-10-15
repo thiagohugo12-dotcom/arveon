@@ -1129,14 +1129,13 @@ func _smith_tabs(progress: GameProgress) -> void:
 		tabs.add_child(tab)
 
 func _smith_shop(progress: GameProgress) -> void:
-	_add_description("Loja de armas iniciais · Ouro disponível: %d\nAqui você só precisa de ouro. Cada arma é comprada uma vez." % progress.gold)
 	if not smith_shop_selected.is_empty():
 		if not ArsenalRules.CATEGORIES.has(smith_shop_selected):
 			smith_shop_selected = ""
 			return
 		var chosen: String = smith_shop_selected
 		var cost := GameProgress.starter_weapon_price(chosen)
-		_add_description("Comprar %s por %d ouro?\nSerá equipada automaticamente. Saldo após compra: %d ouro." % [RPGRules.EQUIPMENT[chosen].name,cost,progress.gold-cost])
+		_add_description("Comprar %s por %d ouro?\nSerá equipada · Saldo restante: %d ouro." % [RPGRules.EQUIPMENT[chosen].name,cost,progress.gold-cost])
 		var confirm := Button.new()
 		confirm.text = "Confirmar · %d ouro" % cost
 		confirm.custom_minimum_size.y = 48
@@ -1153,6 +1152,7 @@ func _smith_shop(progress: GameProgress) -> void:
 		station_content.add_child(cancel)
 		smith_shop_buttons["back"] = cancel
 		return
+	_add_description("Loja de armas iniciais · Ouro disponível: %d\nAqui você só precisa de ouro. Cada arma é comprada uma vez." % progress.gold)
 	for id: String in ArsenalRules.CATEGORIES:
 		_smith_shop_weapon(id,progress)
 
