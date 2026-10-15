@@ -28,7 +28,8 @@ static func run_world(suite: SceneTree) -> void:
 	for category: String in AbilityRules.CATEGORIES:
 		p.equipment[category] = 3
 		p.equipped.Arma = category
-		p.talents.xp[category] = TalentRules.xp_floor(30)
+		var category_prof := 40 if category == "espada" else 30
+		p.talents.xp[category] = TalentRules.xp_floor(category_prof)
 		player.apply_progression(p)
 		player.class_combat.clear_effects()
 		p.abilities.death_reset()
@@ -40,7 +41,7 @@ static func run_world(suite: SceneTree) -> void:
 		var after := enemy.health.current
 		suite.check(not player.use_skill(0) and enemy.health.current == after,"Skill 1 cannot double-activate "+category)
 		for technique: Dictionary in AbilityRules.CATEGORIES[category].normal:
-			p.abilities.select_skill(category,0,technique.id,30,true)
+			p.abilities.select_skill(category,0,technique.id,category_prof,true)
 			p.abilities.death_reset()
 			player.class_combat.clear_effects()
 			before = enemy.health.current
@@ -52,12 +53,12 @@ static func run_world(suite: SceneTree) -> void:
 				suite.check(enemy.health.current < before,"normal technique deals actual category damage "+technique.id)
 			var remaining := float(p.abilities.cooldowns[category][technique.id])
 			p.abilities.select_skill(category,0,"",30,true)
-			p.abilities.select_skill(category,1,technique.id,30,true)
+			p.abilities.select_skill(category,1,technique.id,category_prof,true)
 			player.apply_progression(p)
 			suite.check(not player.use_skill(2) and p.abilities.cooldowns[category][technique.id] == remaining,"moving a technique preserves its real cooldown "+technique.id)
 			p.abilities.select_skill(category,1,"",30,true)
 			for grade in range(2,5):
-				suite.check(p.abilities.improve(category,technique.id,30,p.skill_points(),true),"grade purchase "+technique.id+str(grade))
+				suite.check(p.abilities.improve(category,technique.id,category_prof,p.skill_points(),true),"grade purchase "+technique.id+str(grade))
 			suite.check(not p.abilities.improve(category,technique.id,30,p.skill_points(),true),"normal technique caps at grade four "+technique.id)
 		var ultimate: Dictionary = AbilityRules.CATEGORIES[category].ultimate
 		p.abilities.select_skill(category,0,ultimate.id,30,true)

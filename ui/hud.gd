@@ -864,8 +864,9 @@ func _input(event: InputEvent) -> void:
 		if _activate_touch_button(rpg_panel.close_button, event.position):
 			return
 		# A swipe starting over a talent must scroll, not inspect that node.
-		if rpg_panel.tab == 2 and is_instance_valid(rpg_panel.talent_tree) and rpg_panel.scroll.get_global_rect().has_point(event.position):
-			for button: Button in rpg_panel.talent_tree.buttons.values():
+		if rpg_panel.tab == 2 and rpg_panel.scroll.get_global_rect().has_point(event.position):
+			var tree_buttons: Dictionary = rpg_panel.talent_tree.buttons if is_instance_valid(rpg_panel.talent_tree) else rpg_panel.sword_tree.buttons if is_instance_valid(rpg_panel.sword_tree) else {}
+			for button: Button in tree_buttons.values():
 				if button.is_visible_in_tree() and button.get_global_rect().has_point(event.position):
 					inventory_touch_card = button
 					inventory_touch_origin = event.position
