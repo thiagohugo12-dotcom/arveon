@@ -143,7 +143,7 @@ func _node_card(entry: Dictionary) -> VBoxContainer:
 	var earned := state in ["Aprendido","Equipado","Automática","Inicial","Escolhido"]
 	var blocked := state in ["Bloqueado","Requer talento","Sem pontos"]
 	var card := VBoxContainer.new()
-	card.custom_minimum_size = Vector2(110,146)
+	card.custom_minimum_size = Vector2(110,132)
 	card.add_theme_constant_override("separation",2)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cards[key] = card
@@ -186,7 +186,7 @@ func _node_card(entry: Dictionary) -> VBoxContainer:
 	center.add_child(button)
 	buttons[key] = button
 	var caption := DiaryTheme.label(entry.name,12)
-	caption.custom_minimum_size = Vector2(110,32)
+	caption.custom_minimum_size = Vector2(110,20)
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	card.add_child(caption)
 	var badge := DiaryTheme.label(TYPE_TEXT[kind],10)

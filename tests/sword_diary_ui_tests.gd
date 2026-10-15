@@ -82,6 +82,8 @@ func _run() -> void:
 		tap(hud,locked)
 		await frames()
 		check(panel.sword_selection == "supreme:ascensao_lamina" and p.to_json() == saved,"touch inspects a locked node without changing save "+prefix)
+		var detail_title: Control = panel.sword_detail.get_child(0)
+		check(panel.scroll.get_global_rect().has_point(detail_title.get_global_rect().get_center()),"selected detail starts at its title in both orientations "+prefix)
 		await capture(prefix+"detalhes")
 		var back: Button = panel.find_child("ReturnToSwordNode",true,false)
 		check(back != null and back.custom_minimum_size.y >= 44,"details provide accessible return action "+prefix)

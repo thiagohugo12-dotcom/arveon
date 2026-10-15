@@ -139,17 +139,21 @@ func refresh(value: GameProgress) -> void:
 	for i in range(tabs.get_child_count()): DiaryTheme.select(tabs.get_child(i),(tab == 2 and i == 1) or (tab == 1 and i == 2))
 
 func _talent_page() -> void:
-	_category_selector()
+	var compact := talent_weapon == "espada" and prof_section == 1
+	_category_selector(compact)
 	var level := progress.talents.level(talent_weapon)
 	_heading("%s · PROFICIÊNCIA %d / %d" % [ArsenalRules.category_name(talent_weapon).to_upper(),level,TalentRules.MAX_PROFICIENCY])
-	_label("%s%s" % [TalentRules.CLASSES[talent_weapon]," · classe ativa" if progress.active_category() == talent_weapon else " · bônus guardados até equipar"])
+	if not compact:
+		_label("%s%s" % [TalentRules.CLASSES[talent_weapon]," · classe ativa" if progress.active_category() == talent_weapon else " · bônus guardados até equipar"])
 	var bar := ProgressBar.new()
 	bar.custom_minimum_size.y = 8
 	bar.show_percentage = false
 	bar.max_value = TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level) if level < TalentRules.MAX_PROFICIENCY else 1
 	bar.value = int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level) if level < TalentRules.MAX_PROFICIENCY else 1
 	content.add_child(bar)
-	_label("XP %d / %d · +%.1f%% dano da categoria" % [int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level),TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level),(level-1)*0.5] if level < TalentRules.MAX_PROFICIENCY else "Proficiência máxima · +29,5% dano da categoria")
+	var xp_text := "XP %d / %d · +%.1f%% dano da categoria" % [int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level),TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level),(level-1)*0.5] if level < TalentRules.MAX_PROFICIENCY else "Proficiência máxima · +29,5% dano da categoria"
+	bar.tooltip_text = xp_text
+	if not compact: _label(xp_text)
 	var sections := HBoxContainer.new()
 	content.add_child(sections)
 	for i in range(2):
@@ -206,16 +210,17 @@ func _talent_page() -> void:
 
 func _sword_evolution_page() -> void:
 	var prof := progress.talents.level("espada")
-	_label("Habilidades, passivas e talentos · toque nos ícones para ver detalhes.")
 	var tree := SwordEvolutionTree.new(progress,sword_selection)
 	tree.node_selected.connect(func(kind: String, id: String):
 		sword_selection = kind+":"+id
 		refresh(progress)
 		if sword_detail != null:
-			scroll.call_deferred("ensure_control_visible",sword_detail)
+			_show_sword_detail.call_deferred()
 	)
 	content.add_child(tree)
 	sword_tree = tree
+	if size.x > size.y:
+		_show_sword_node.call_deferred()
 	sword_detail = _card()
 	var pair := sword_selection.split(":")
 	var kind := pair[0] if pair.size() == 2 else "skill1"
@@ -332,6 +337,18 @@ func _sword_evolution_page() -> void:
 	content.add_child(reset)
 	_label("Skill 1 fixa · Skill 2 e 3 configuráveis · 2 passivas equipáveis · Maestrias automáticas.")
 
+func _show_sword_detail() -> void:
+	# Layout must finish before resolving the card position in content coordinates.
+	await get_tree().process_frame
+	if is_instance_valid(sword_detail):
+		var card: Control = sword_detail.get_parent()
+		scroll.scroll_vertical = roundi(card.position.y)
+
+func _show_sword_node() -> void:
+	await get_tree().process_frame
+	if is_instance_valid(sword_tree) and sword_tree.buttons.has(sword_selection):
+		scroll.ensure_control_visible(sword_tree.buttons[sword_selection])
+
 func _mastery_page() -> void:
 	_heading("TREINAMENTO DA ARMA · %d PONTOS DISPONÍVEIS" % progress.talents.mastery_points(talent_weapon))
 	_label("+1 ponto por nível de proficiência. Cada categoria tem seu próprio saldo.")
@@ -407,14 +424,14 @@ func _label(text: String, destination: Container = null, heading: bool = false) 
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	(destination if destination != null else content).add_child(label)
 
-func _category_selector() -> void:
-	_heading("PROFICIÊNCIAS DAS ARMAS")
+func _category_selector(compact: bool = false) -> void:
+	if not compact: _heading("PROFICIÊNCIAS DAS ARMAS")
 	var weapons := HBoxContainer.new()
 	weapons.add_theme_constant_override("separation",4)
 	content.add_child(weapons)
 	for id: String in ArsenalRules.CATEGORIES:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(44,56)
+		button.custom_minimum_size = Vector2(44,44 if compact else 56)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.tooltip_text = ArsenalRules.category_name(id)
 		button.pressed.connect(func():
@@ -432,7 +449,10 @@ func _category_selector() -> void:
 		number.autowrap_mode = TextServer.AUTOWRAP_OFF
 		number.add_theme_color_override("font_color",Color("#fff0cf") if id == talent_weapon else DiaryTheme.INK)
 		number.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		button.add_child(number)
+		if compact:
+			number.free()
+		else:
+			button.add_child(number)
 		DiaryTheme.select(button,id == talent_weapon)
 
 func _skills_page() -> void:
