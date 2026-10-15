@@ -206,9 +206,7 @@ func _talent_page() -> void:
 
 func _sword_evolution_page() -> void:
 	var prof := progress.talents.level("espada")
-	_heading("EVOLUÇÃO DA ESPADA  ·  %d / %d" % [prof,TalentRules.MAX_PROFICIENCY])
-	_label("Uma árvore reúne técnicas, passivas e talentos. Toque em um nó para aprender, equipar ou aprimorar.")
-	_label("Treinamento: pontos desta arma · Talentos/graus: pontos gerais do personagem.")
+	_label("Habilidades, passivas e talentos · toque nos ícones para ver detalhes.")
 	var tree := SwordEvolutionTree.new(progress,sword_selection)
 	tree.node_selected.connect(func(kind: String, id: String):
 		sword_selection = kind+":"+id
@@ -317,9 +315,18 @@ func _sword_evolution_page() -> void:
 			button.disabled = not allow_respec or prof < 18 or loadout.specialization == style
 			button.pressed.connect(func(): action_requested.emit("specialization","espada:"+style,0))
 			sword_detail.add_child(button)
+	var back := Button.new()
+	back.name = "ReturnToSwordNode"
+	back.text = "Voltar ao nó selecionado"
+	back.custom_minimum_size.y = 44
+	back.pressed.connect(func():
+		if is_instance_valid(sword_tree) and sword_tree.buttons.has(sword_selection):
+			scroll.ensure_control_visible(sword_tree.buttons[sword_selection])
+	)
+	content.add_child(back)
 	var reset := Button.new()
-	reset.text = "Redistribuir talentos e graus · grátis no acampamento"
-	reset.custom_minimum_size.y = 44
+	reset.text = "Redistribuir talentos e graus\nGrátis no acampamento"
+	reset.custom_minimum_size.y = 52
 	reset.disabled = not allow_respec or (progress.abilities.talents.espada.is_empty() and progress.abilities.grades.espada.is_empty())
 	reset.pressed.connect(func(): action_requested.emit("reset_tree","espada",0))
 	content.add_child(reset)
@@ -515,3 +522,4 @@ func _skills_page() -> void:
 
 func _skill_name(category: String, id: String) -> String:
 	return AbilityRules.active_skill(category,id).get("name","Vazio")
+

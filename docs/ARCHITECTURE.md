@@ -1,3 +1,11 @@
+## Espada — interface de nós do diário
+SwordEvolutionTree mantém os IDs do primeiro passe e apresenta cartões com
+PixelItemIcon do atlas existente, faixas de proficiência e estados reais de
+AbilityState. PathLink redesenha somente ao redimensionar. As linhas organizam
+o percurso; requisitos continuam em AbilityRules. RPGPanel preserva ações e
+validações e oferece retorno ao nó após o detalhe. O HUD mantém seu handler de
+toque ao soltar e distinção de arrasto. Nenhuma mudança em combate ou save v11.
+
 ## Carregamento Web — artes aprovadas em 15/10/2026
 A injeção pós-exportação valida as duas fontes por hash e publica arquivos
 com identidade de conteúdo. Picture/contain preservam a composição e o progress
@@ -380,3 +388,4 @@ AbilityRules define as identidades individuais das cinco armas, técnicas, passi
 PlayerActor delega Skill 1/2/3 a ClassCombat e espelha os timers para apresentação. AutoAttack e PlayerProjectile conservam tipo, categoria e origem no hit. EnemyActor limita o crédito ao HP disponível e ao orçamento vital, emite recibo descartável e deduplica eventos. Main consome o recibo uma vez, encaminha proficiência e carga elegível e rejeita epoch/andar/tentativa inválidos. Os Guardiões compartilham somente o relógio dos novos status; os avisos e ataques existentes ficam intactos.
 
 GameProgress valida completamente os formatos antigos antes de migrar, mantém Domínio/proficiência e calcula pontos gerais por orçamento. O payload v10 possui campos legados vazios e AbilityState validado; originais são backups imutáveis no filesystem e journal. Diary/HUD emitem comandos com identificador/slot e os handlers verificam camp/trial e versão esperada do grau. Critérios e comparação reproduzível: docs/qa/PROGRESSAO_ETAPA2.md.
+

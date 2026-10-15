@@ -98,6 +98,26 @@ jobs:
           godot --headless --path . --script res://tests/perf_probe.gd 2>&1 | tee /tmp/perf.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/perf.log; then exit 1; fi
           grep '^PERF_PROBE:' /tmp/perf.log
+      - name: Validate and capture Sword diary interface
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/progressao-etapa2'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 65s godot --headless --path . --script res://tests/sword_diary_ui_tests.gd 2>&1 | tee /tmp/sword-diary-headless.log
+          grep -E '^SWORD_DIARY_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-diary-headless.log
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          QA_SWORD_DIARY_DIR="$PWD/build/sword-diary-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 65s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/sword_diary_ui_tests.gd 2>&1 | tee /tmp/sword-diary-render.log
+          grep -E '^SWORD_DIARY_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-diary-render.log
+          test "$(find build/sword-diary-qa -name '*.png' | wc -l)" -eq 16
+      - name: Save Sword diary screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sword-diary-qa
+          path: build/sword-diary-qa/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Render mobile layouts in software GL
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         shell: bash
@@ -432,3 +452,4 @@ jobs:
           path: loading-live-qa/
           if-no-files-found: error
           retention-days: 14
+

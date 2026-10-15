@@ -1,3 +1,10 @@
+## Interface da Espada — aprovada em 15/10/2026
+Conforme INTERFACE_ESPADA_DIARIO.md e pedido “Vamos colocar a nova interface”:
+aplicar pergaminho, ícones e conexões da referência 77175.png ao primeiro passe
+da Espada já existente, preservando seus marcos até 60 e regras atuais.
+Toque mostra requisitos/ações; rolagem e retorno ao nó funcionam no celular.
+Somente TESTE; sem novos efeitos, custos, moedas ou migração de save v11.
+
 ## Skills 1 V2 - integracao aprovada em 14/10/2026
 Thiago aprovou o preview 55617e3 com "pronto, gostei" e "pode integrar".
 Escolheu explicitamente "Preparacao completa antes do impacto": startup de
@@ -238,3 +245,4 @@ Aprovados conforme TALENTOS_DIARIO_V2.md: proficiência abre caminhos, nível ge
 
 ## Etapa 2 aprovada em 12/10/2026
 O contrato em `docs/decisions/PROGRESSAO_ETAPA2.md` substitui as habilidades e árvores antigas. Ultimate ocupa opcionalmente Skill 2 ou 3, Maestria 30 é automática e Domínio permanece separado.
+
