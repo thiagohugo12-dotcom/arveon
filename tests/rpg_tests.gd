@@ -285,7 +285,11 @@ static func _interface(suite, main) -> void:
 	p.add_item("Pedras", 4)
 	main._interact()
 	await suite.frames()
-	var forge_box := hud.station_content.get_child(2).get_child(0) as VBoxContainer
+	# Ferreiro now opens the gold-only Loja; switch to Forja for the legacy recipe regression.
+	var forge_tab := hud.station_content.get_child(0).get_child(1) as Button
+	forge_tab.pressed.emit()
+	await suite.frames()
+	var forge_box := hud.station_content.get_child(3).get_child(0) as VBoxContainer
 	suite.check((forge_box.get_child(2) as Label).text.contains("35 ouro") and (forge_box.get_child(1) as Label).text.contains("Atual:"), "smith shows actual price and equipment comparison before craft action")
 	var forge_button := forge_box.get_child(3) as Button
 	hud.station_scroll.scroll_vertical += maxi(0, roundi(forge_button.global_position.y - hud.station_scroll.global_position.y - 32))
