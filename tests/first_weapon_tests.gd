@@ -88,6 +88,31 @@ func run() -> void:
 		var malformed: Dictionary = JSON.parse_string(valid)
 		malformed.introduction.weapon = "invalid"
 		check(not loaded.load_text(JSON.stringify(malformed)) and loaded.to_json() == valid,"invalid reward state rejected atomically "+id)
+		var shop_target := ""
+		for category: String in ArsenalRules.CATEGORIES:
+			if category != id and category != other:
+				shop_target = category
+				break
+		var shop_price := GameProgress.starter_weapon_price(shop_target)
+		check(shop_price > 0 and shop_price == int(RPGRules.EQUIPMENT[shop_target].gold),"shop prices come from approved equipment data "+id)
+		check(not loaded.can_buy_starter_weapon(shop_target) and not loaded.purchase_starter_weapon(shop_target,true),"gold-only shop rejects insufficient funds "+id)
+		loaded.gold = shop_price
+		var old_weapon: String = loaded.equipped.Arma
+		check(not loaded.purchase_starter_weapon(shop_target,false) and loaded.gold == shop_price and loaded.equipped.Arma == old_weapon,"shop rejects away-from-smith request "+id)
+		var before_bag := loaded.bag.duplicate(true)
+		check(loaded.can_buy_starter_weapon(shop_target) and loaded.purchase_starter_weapon(shop_target,true),"gold-only purchase accepts exact gold without any materials "+id)
+		check(loaded.gold == 0 and loaded.bag == before_bag and loaded.equipment[shop_target] == 0 and loaded.equipped.Arma == shop_target,"purchase spends only gold and equips starter +0 "+id)
+		check(not loaded.purchase_starter_weapon(shop_target,true) and loaded.gold == 0,"shop cannot charge twice for owned weapon "+id)
+		var shop_reloaded := GameProgress.new()
+		shop_reloaded.save_path = path
+		check(shop_reloaded.load_save() and shop_reloaded.gold == 0 and shop_reloaded.equipped.Arma == shop_target and shop_reloaded.equipment.has(id) and shop_reloaded.equipment.has(other),"v11 store transaction persists gold weapon and class together "+id)
+		var failed_shop := GameProgress.new()
+		failed_shop.save_path = "user://missing_shop_dir/blocked.json"
+		failed_shop.equipment = {id:0}
+		failed_shop.equipped.Arma = id
+		failed_shop.introduction = {"status":"complete","met_smith":true,"weapon":id}
+		failed_shop.gold = shop_price
+		check(not failed_shop.purchase_starter_weapon(shop_target,true) and failed_shop.gold == shop_price and failed_shop.equipped.Arma == id and not failed_shop.equipment.has(shop_target),"failed shop save rolls back gold equipment and class "+id)
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	var output := OS.get_environment("QA_RENDER_DIR")
 	if not output.is_empty():DirAccess.make_dir_recursive_absolute(output)
@@ -181,6 +206,27 @@ func run() -> void:
 		var reloaded := GameProgress.new()
 		reloaded.save_path = p.save_path
 		check(reloaded.load_save() and not reloaded.introduction_active() and reloaded.equipped.Arma == id,"actual completed runtime persists "+id)
+		var next_weapon := "arco" if id != "arco" else "cajado"
+		var shop_cost := GameProgress.starter_weapon_price(next_weapon)
+		p.gold = shop_cost
+		main.earned_gold = shop_cost
+		p.bag.clear()
+		main._save_progress()
+		player.position = SafeCamp.DISPLAY_STATIONS.Ferreiro
+		main._interact()
+		check(hud.station_panel.visible and hud.smith_tab == 0 and hud.smith_shop_buttons.size() == 5 and hud.smith_shop_buttons[id].disabled,"shop displays five starter categories and marks owned "+id)
+		check(not hud.smith_shop_buttons[next_weapon].disabled and "Comprar" in hud.smith_shop_buttons[next_weapon].text,"gold-only shop enables affordable second class "+id)
+		preload("res://tests/mobile_polish_tests.gd").tap(hud,hud.smith_shop_buttons[next_weapon])
+		await frames()
+		check(hud.smith_shop_selected == next_weapon and p.gold == shop_cost and not p.equipment.has(next_weapon),"touch enters confirmation without spending "+id)
+		preload("res://tests/mobile_polish_tests.gd").tap(hud,hud.smith_shop_buttons["confirm"])
+		await frames()
+		check(p.gold == 0 and p.equipment.has(next_weapon) and p.equipped.Arma == next_weapon and player.attack.weapon.category == next_weapon,"touch purchase spends gold and equips class "+id)
+		main._station_action("buy_starter",next_weapon)
+		check(p.gold == 0 and p.equipment.size() == 2,"repeated shop action cannot duplicate item or charge gold "+id)
+		var saved_shop := GameProgress.new()
+		saved_shop.save_path = p.save_path
+		check(saved_shop.load_save() and saved_shop.equipment.has(id) and saved_shop.equipment.has(next_weapon) and saved_shop.equipped.Arma == next_weapon and saved_shop.gold == 0,"actual smith shop saves equipped weapon and gold "+id)
 		main.queue_free()
 		await frames()
 	print("FIRST_WEAPON_RESULT: %d checks, %d failures" % [checks,failures])
