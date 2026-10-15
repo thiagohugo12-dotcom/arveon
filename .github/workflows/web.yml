@@ -197,6 +197,16 @@ jobs:
         run: node tools/inject-arveon-loading.mjs
       - name: Validate responsive loading without fake progress
         run: node tests/web_arveon_loading.mjs
+      - name: Capture approved loading artwork in real Chromium
+        run: timeout 180s node tests/web_loading_browser.mjs
+      - name: Save approved loading screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: approved-loading-qa
+          path: build/loading-qa/
+          if-no-files-found: error
+          retention-days: 14
       - name: Prepare isolated art sample entry
         run: node tools/build-art-sample.mjs
       - name: Prepare isolated sword review entry
@@ -408,3 +418,17 @@ jobs:
             fi
           fi
 
+      - name: Verify published loading screen and capture TESTE
+        env:
+          LOADING_WEB_DIR: web
+          LOADING_TEST_BASE_URL: https://grande-arvore-rpg-teste.vercel.app/
+          QA_LOADING_CAPTURE_DIR: loading-live-qa
+        run: timeout 180s node source/tests/web_loading_browser.mjs
+      - name: Save published loading screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: approved-loading-live-qa
+          path: loading-live-qa/
+          if-no-files-found: error
+          retention-days: 14

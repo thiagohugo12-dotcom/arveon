@@ -1,3 +1,11 @@
+## Carregamento Web — artes aprovadas em 15/10/2026
+A injeção pós-exportação valida as duas fontes por hash e publica arquivos
+com identidade de conteúdo. Picture/contain preservam a composição e o progress
+original mantém o onProgress do Godot. Dicas substituem somente o texto
+estático da arte. Manifesto e verificador público incluem os recursos visuais.
+Detalhes e diagnóstico: docs/decisions/LOADING_ARTES_APROVADAS_20261015.md.
+Sem dependência nova no jogo, alteração de gameplay ou save v11.
+
 ## Skills 1 V2 - integradas no Andar 1
 Skill1GameView adapta os atlas aprovados e herda todos os basicos. PlayerActor
 agenda uma startup transitoria antes da chamada original ClassCombat.use(0).

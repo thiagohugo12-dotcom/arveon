@@ -19,3 +19,17 @@ for (const name of ['index.html','index.pck']) {
   }
   if (!matched) throw Error(`Fixed TESTE alias does not serve the tested ${name} with cache disabled`);
 }
+
+const manifest=JSON.parse(await readFile('arveon-loading.json','utf8'));
+const manifestResponse=await fetch(new URL('arveon-loading.json',base),{cache:'no-store',signal:AbortSignal.timeout(30000)});
+if(!manifestResponse.ok||!(/no-store/.test(manifestResponse.headers.get('cache-control')||''))||JSON.stringify(await manifestResponse.json())!==JSON.stringify(manifest))throw Error('Published loading manifest is stale');
+for(const asset of [manifest.desktop,manifest.mobile,...manifest.resources]){
+  const response=await fetch(new URL(asset.file,base),{cache:'no-store',signal:AbortSignal.timeout(30000)});
+  if(!response.ok||sha(Buffer.from(await response.arrayBuffer()))!==asset.sha256||!(/immutable/.test(response.headers.get('cache-control')||'')))throw Error('Published loading resource mismatch '+asset.file);
+  console.log('TESTE_LOADING_MATCH: '+asset.file+' '+asset.sha256);
+}
+for(const old of ['arveon-desktop.avif','arveon-mobile.avif']){
+  const response=await fetch(new URL(old,base),{cache:'no-store',signal:AbortSignal.timeout(30000)});
+  if(response.ok)throw Error('Obsolete artwork is still published '+old);
+  console.log('TESTE_OLD_ART_REMOVED: '+old);
+}
