@@ -85,6 +85,8 @@ static func run_world(suite) -> void:
 		TOUCH._tap(hud,hud.rpg_panel.tabs.get_child(2))
 		await suite.frames()
 		suite.check(hud.rpg_panel.tab == 1 and snapshot == p.to_json(),"reading diary skills and planned proficiencies cannot mutate progression " + str(size))
+		TOUCH._tap(hud,hud.rpg_panel.diary_return)
+		await suite.frames()
 		TOUCH._tap(hud,hud.rpg_panel.tabs.get_child(0))
 		await suite.frames()
 		suite.check(hud.inventory_open and not hud.rpg_panel.visible and main.input_driver.blocked,"diary returns to bag without unblocking combat " + str(size))
@@ -94,3 +96,4 @@ static func run_world(suite) -> void:
 	await suite.frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)
+

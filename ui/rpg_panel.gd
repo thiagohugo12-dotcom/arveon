@@ -7,6 +7,8 @@ signal bag_requested
 var content: VBoxContainer
 var scroll: ScrollContainer
 var close_button: Button
+var header_close: Button
+var footer_close: Button
 var progress: GameProgress
 var tab := 0
 var tabs: HBoxContainer
@@ -51,6 +53,7 @@ func _ready() -> void:
 	page_title.add_theme_font_override("font",DiaryTheme.heading_font())
 	header.add_child(page_title)
 	var exit := Button.new()
+	header_close = exit
 	exit.text = "×"
 	exit.custom_minimum_size = Vector2(44,44)
 	exit.pressed.connect(func(): closed.emit())
@@ -99,6 +102,7 @@ func _ready() -> void:
 	footer.add_child(character)
 	close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(close_button)
+	footer_close = close_button
 
 func refresh(value: GameProgress) -> void:
 	progress = value
@@ -107,7 +111,9 @@ func refresh(value: GameProgress) -> void:
 	add_theme_stylebox_override("panel",DiaryTheme.piece("frame",16 if focused_page else 22))
 	tabs.visible = not focused_page
 	diary_return.visible = focused_page
-	close_button.visible = not focused_page
+	footer_close.visible = not focused_page
+	header_close.visible = focused_page
+	close_button = header_close if focused_page else footer_close
 	skill_slots.clear()
 	talent_tree = null
 	sword_detail = null
