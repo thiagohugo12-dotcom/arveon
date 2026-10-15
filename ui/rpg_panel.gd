@@ -593,6 +593,7 @@ func _skills_page() -> void:
 			style.content_margin_left = 42
 			button.add_theme_stylebox_override(style_name,style)
 		button.add_theme_color_override("font_color",Color("#fff0ce") if skill_choice == rule.id else DiaryTheme.INK)
+		button.add_theme_color_override("font_hover_color",Color("#fff0ce") if skill_choice == rule.id else DiaryTheme.INK)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var icon := PixelItemIcon.new(_ability_icon(rule.id,category))
 		icon.custom_minimum_size = Vector2(26,26)
