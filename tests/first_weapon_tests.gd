@@ -220,10 +220,9 @@ func run() -> void:
 		await frames()
 		check(hud.smith_shop_selected == next_weapon and p.gold == shop_cost and not p.equipment.has(next_weapon),"touch enters confirmation without spending "+id)
 		var confirm_btn: Button = hud.smith_shop_buttons["confirm"]
-		print("SHOP_TOUCH_BEFORE: %s · rect=%s · scroll=%s · visible=%s · disabled=%s · balance=%d" % [id,confirm_btn.get_global_rect(),hud.station_scroll.get_global_rect(),confirm_btn.is_visible_in_tree(),confirm_btn.disabled,p.gold])
+		check(hud.station_scroll.get_global_rect().encloses(confirm_btn.get_global_rect()) and not confirm_btn.disabled,"shop confirmation fits inside visible mobile scroll "+id)
 		preload("res://tests/mobile_polish_tests.gd").tap(hud,confirm_btn)
 		await frames()
-		print("SHOP_TOUCH_AFTER: %s · balance=%d · owned=%s · equipped=%s · attack_category=%s · selected=%s" % [id,p.gold,p.equipment.has(next_weapon),p.equipped.Arma,player.attack.weapon.category,hud.smith_shop_selected])
 		check(p.gold == 0 and p.equipment.has(next_weapon) and p.equipped.Arma == next_weapon and player.attack.weapon.category == next_weapon,"touch purchase spends gold and equips class "+id)
 		main._station_action("buy_starter",next_weapon)
 		check(p.gold == 0 and p.equipment.size() == 2,"repeated shop action cannot duplicate item or charge gold "+id)
