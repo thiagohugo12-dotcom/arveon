@@ -308,7 +308,12 @@ static func _interface(suite, main) -> void:
 	hud.rpg_panel.tab = 1
 	main._toggle_character()
 	await suite.frames()
-	var improvement := _button_with_text(hud.rpg_panel.content, "Melhorar")
+	var options_button := hud.rpg_panel.find_child("SkillOptions",true,false) as Button
+	hud.rpg_panel.scroll.ensure_control_visible(options_button)
+	await suite.frames()
+	preload("res://tests/mobile_polish_tests.gd").tap(hud,options_button)
+	await suite.frames()
+	var improvement := _button_with_text(hud.rpg_panel.content, "Melhorar ·")
 	hud.rpg_panel.scroll.scroll_vertical += maxi(0,roundi(improvement.global_position.y-hud.rpg_panel.scroll.global_position.y-4))
 	await suite.frames()
 	forge_touch.position = improvement.global_position + improvement.size * 0.5
@@ -325,4 +330,5 @@ static func _interface(suite, main) -> void:
 	reload.save_path = p.save_path
 	main._save_progress()
 	suite.check(reload.load_save() and reload.attributes == p.attributes and reload.equipment == p.equipment, "touch build and equipment survive full save reload")
+
 

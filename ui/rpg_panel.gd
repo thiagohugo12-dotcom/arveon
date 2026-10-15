@@ -521,14 +521,13 @@ func _skills_page() -> void:
 	var build: Dictionary = progress.abilities.loadouts[category]
 	_heading("%s · proficiência %d / %d" % [TalentRules.CLASSES[category],prof,TalentRules.MAX_PROFICIENCY])
 	if not allow_respec: _label("Somente consulta · alterações no acampamento.")
-	_heading("Equipadas")
 	var slots := HBoxContainer.new()
 	slots.add_theme_constant_override("separation",4)
 	content.add_child(slots)
 	for index in range(3):
 		var id: String = catalog.skill1.id if index == 0 else build.skills[index-1]
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0,100)
+		button.custom_minimum_size = Vector2(0,90)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.tooltip_text = "Skill 1 fixa" if index == 0 else "Selecione uma técnica para este espaço"
 		button.pressed.connect(func():
@@ -587,16 +586,20 @@ func _skills_page() -> void:
 		var button := Button.new()
 		var equipped: bool = build.skills.has(rule.id) if skill_section == 0 else build.passives.has(rule.id) if skill_section == 1 else build.specialization == rule.id
 		var state := "Bloqueada · prof. %d" % rule.prof if prof < int(rule.prof) else "Equipada" if equipped else "Disponível · prof. %d" % rule.prof
-		button.text = "        %s\n        %s" % [rule.name,state]
+		button.text = "%s\n%s" % [rule.name,state]
+		for style_name: String in ["normal","hover","pressed","disabled"]:
+			var style := DiaryTheme.piece("wood" if style_name == "pressed" else "green" if skill_choice == rule.id and style_name in ["normal","hover"] else "paper",6)
+			style.content_margin_left = 42
+			button.add_theme_stylebox_override(style_name,style)
+		button.add_theme_color_override("font_color",Color("#fff0ce") if skill_choice == rule.id else DiaryTheme.INK)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var icon := PixelItemIcon.new(_ability_icon(rule.id,category))
 		icon.custom_minimum_size = Vector2(26,26)
 		icon.size = Vector2(26,26)
-		icon.position = Vector2(8,13)
+		icon.position = Vector2(8,9)
 		button.add_child(icon)
 		button.add_theme_font_size_override("font_size",13)
-		button.custom_minimum_size.y = 52
-		DiaryTheme.select(button,skill_choice == rule.id)
+		button.custom_minimum_size.y = 44
 		button.pressed.connect(func():
 			skill_choice = rule.id
 			refresh(progress)
@@ -630,12 +633,12 @@ func _skill_details(category: String, rule: Dictionary, prof: int, build: Dictio
 	var ultimate: bool = rule.id == AbilityRules.CATEGORIES[category].ultimate.id
 	var grade: int = progress.abilities.grades[category].get(rule.id,1)
 	_label(rule.name,skill_detail,true)
-	_label("Requer proficiência %d%s" % [rule.prof," · desbloqueada" if prof >= int(rule.prof) else " · bloqueada"],skill_detail)
+	if skill_section != 0: _label("Proficiência %d · %s" % [rule.prof,"disponível" if prof >= int(rule.prof) else "bloqueada"],skill_detail)
 	if skill_section == 0:
-		_label("Ultimate · carga %d / 100. Ocupa Skill 2 ou 3." % progress.abilities.charge[category] if ultimate else "Grau %d / 4 · recarga %.0fs" % [grade,rule.cooldown],skill_detail)
+		_label("Ultimate · carga %d / 100. Ocupa Skill 2 ou 3." % progress.abilities.charge[category] if ultimate else "Prof. %d · Grau %d/4 · Recarga %.0fs" % [rule.prof,grade,rule.cooldown],skill_detail)
 		if not ultimate:
 			var effect := AbilityRules.effect(rule.id,grade)
-			_label("Defesa temporária · duração %.1fs" % float(effect.get("duration",0)) if rule.type == "defense" else "Potência base: %.2fx · dano %s\nAlcance base: %.0f px" % [rule.power,"mágico" if rule.type == "magical" else "físico",float(effect.get("reach",0))],skill_detail)
+			_label("Defesa temporária · duração %.1fs" % float(effect.get("duration",0)) if rule.type == "defense" else "%s · %s× · alcance %.0f px" % ["Mágico" if rule.type == "magical" else "Físico",String.num(rule.power,2).replace(".",","),float(effect.get("reach",0))],skill_detail)
 		var preferred := 1 if not str(build.skills[0]).is_empty() and str(build.skills[1]).is_empty() else 0
 		for slot: int in [preferred,1-preferred]:
 			var button := Button.new()
@@ -646,16 +649,6 @@ func _skill_details(category: String, rule: Dictionary, prof: int, build: Dictio
 			if slot == preferred: DiaryTheme.primary(button)
 			skill_detail.add_child(button)
 			ability_buttons[rule.id+":"+str(slot)] = button
-		if not ultimate:
-			var improve := Button.new()
-			improve.text = "Melhorar · 1 ponto de talento" if grade < 4 else "Grau máximo"
-			improve.add_theme_font_size_override("font_size",14)
-			improve.custom_minimum_size.y = 44
-			improve.disabled = not allow_respec or prof < int(rule.prof) or grade >= 4 or progress.skill_points() < 1
-			improve.pressed.connect(func(): action_requested.emit("skill",category+":"+rule.id,grade))
-			skill_detail.add_child(improve)
-			ability_buttons[rule.id+":grade"] = improve
-		_label("Pontos de talento disponíveis: %d" % progress.skill_points(),skill_detail)
 	elif skill_section == 1:
 		_label(AbilityRules.DESCRIPTIONS[rule.id],skill_detail)
 		for slot in range(2):
@@ -682,12 +675,23 @@ func _skill_details(category: String, rule: Dictionary, prof: int, build: Dictio
 	var options := VBoxContainer.new()
 	options.visible = false
 	var more := Button.new()
-	more.text = "Mais opções · limpar / redistribuir"
+	more.name = "SkillOptions"
+	more.text = "Melhorar / mais opções"
 	more.custom_minimum_size.y = 44
 	more.add_theme_font_size_override("font_size",14)
 	more.pressed.connect(func(): options.visible = not options.visible)
 	skill_detail.add_child(more)
 	skill_detail.add_child(options)
+	if skill_section == 0 and not ultimate:
+		var improve := Button.new()
+		improve.text = "Melhorar · 1 ponto de talento" if grade < 4 else "Grau máximo"
+		improve.add_theme_font_size_override("font_size",14)
+		improve.custom_minimum_size.y = 44
+		improve.disabled = not allow_respec or prof < int(rule.prof) or grade >= 4 or progress.skill_points() < 1
+		improve.pressed.connect(func(): action_requested.emit("skill",category+":"+rule.id,grade))
+		options.add_child(improve)
+		ability_buttons[rule.id+":grade"] = improve
+	_label("Pontos de talento disponíveis: %d" % progress.skill_points(),options)
 	if skill_section < 2:
 		for slot in range(2):
 			var clear := Button.new()

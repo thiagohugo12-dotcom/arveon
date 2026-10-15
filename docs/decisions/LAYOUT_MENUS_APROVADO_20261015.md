@@ -18,8 +18,8 @@ em cada linha. Rolagem preserva acesso ao catálogo completo, sem venda em lote.
 
 Habilidades: título direto, cinco categorias, três cartões dos espaços atuais,
 catálogo Técnicas/Passivas/Estilo e detalhe da seleção. As duas ações de equipar
-continuam explícitas; o espaço vazio vem primeiro. Limpar/redistribuir ficam em
-Mais opções. Retorno ao diário mantém Personagem, Mochila e Árvores acessíveis.
+continuam explícitas; o espaço vazio vem primeiro. Melhorar/limpar/redistribuir ficam em
+Melhorar / mais opções. Retorno ao diário mantém Personagem, Mochila e Árvores acessíveis.
 
 Treinamento: saldo da arma destacado, quatro cartões com ícone, valor atual,
 próximo valor e investimento, ação +1 à direita. Redistribuição e acesso à Árvore
