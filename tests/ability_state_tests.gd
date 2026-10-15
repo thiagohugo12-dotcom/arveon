@@ -4,7 +4,7 @@ static func run(suite: SceneTree) -> void:
 	var state := AbilityState.new()
 	var sword := AbilityRules.CATEGORIES.espada
 	var mage := AbilityRules.CATEGORIES.cajado
-	suite.check(AbilityRules.CATEGORIES.size() == 5 and sword.normal.size() == 3 and mage.passives.size() == 3,"etapa2 catalog has five classes, three normals and passives")
+	suite.check(AbilityRules.CATEGORIES.size() == 5 and sword.normal.size() == 4 and sword.passives.size() == 5 and mage.passives.size() == 3,"etapa2 catalog has five classes, three normals and passives")
 	suite.check(AbilityRules.skill1("espada").id == "talho_agil" and AbilityRules.skill1("cajado").type == "magical","skill1 identity and magical damage by individual starter weapon")
 	suite.check(not state.select_skill("espada",0,"corte_crescente",30,false) and not state.select_skill("espada",0,"guarda_reativa",3,true),"loadout edits require camp and proficiency")
 	suite.check(state.select_skill("espada",0,"corte_crescente",30,true) and state.select_skill("espada",1,"danca_laminas",30,true),"two selectable category skills, including optional ultimate")

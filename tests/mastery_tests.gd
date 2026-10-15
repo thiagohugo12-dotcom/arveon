@@ -7,7 +7,7 @@ static func run(suite: SceneTree) -> void:
 		p.equipment[weapon] = 0
 		p.equip(weapon)
 		suite.check(p.active_class() == TalentRules.CLASSES[weapon],"dynamic class follows equipped "+weapon)
-		p.talents.record_damage(weapon,TalentRules.xp_floor(30)+99999)
+		p.talents.record_damage(weapon,TalentRules.xp_floor(30)*TalentRules.DAMAGE_PER_XP)
 		suite.check(p.talents.level(weapon) == 30 and p.talents.mastery_points(weapon) == 29 and p.skill_points() == 39,"proficiency caps independently and grants mastery not talent points "+weapon)
 		for i in range(12): suite.check(p.talents.allocate_mastery(weapon,"Dano",i),"mastery basic allocation "+weapon+str(i))
 		suite.check(not p.talents.allocate_mastery(weapon,"Dano",12) and not p.talents.allocate_mastery(weapon,"Dano Especial",1),"mastery cap and stale tap rejected "+weapon)

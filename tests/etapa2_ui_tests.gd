@@ -32,7 +32,7 @@ static func run_world(suite: SceneTree) -> void:
 			panel.talent_weapon = category
 			main._toggle_character()
 			await suite.frames()
-			suite.check(panel.ability_buttons.size() == 11 and panel.passive_buttons.size() == 6 and panel.specialization_buttons.size() == 2 and panel.category_buttons.size() == 5,"complete class skills/passives/spec UI "+category+str(resolution))
+			suite.check(panel.ability_buttons.size() == 3*catalog.normal.size()+2 and panel.passive_buttons.size() == 2*catalog.passives.size() and panel.specialization_buttons.size() == 2 and panel.category_buttons.size() == 5,"complete class skills/passives/spec UI "+category+str(resolution))
 			var before := p.skill_points()
 			var id: String = catalog.normal[0].id
 			var button: Button = panel.ability_buttons[id+":0"]

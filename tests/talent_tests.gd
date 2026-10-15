@@ -38,8 +38,8 @@ static func run(suite: SceneTree) -> void:
 	poor.xp = RPGRules.xp_floor(2)
 	poor.talents.xp.espada = TalentRules.xp_floor(20)
 	suite.check(poor.learn_talent("espada","sequencia_precisa",true) and not poor.learn_talent("espada","contra_ataque_fatal",true) and not poor.improve_skill("espada:corte_crescente",true),"no point duplication across grades and talents")
-	p.talents.xp.espada = TalentRules.xp_floor(30)
-	suite.check(not p.talents.record_damage("espada",1),"proficiency still caps at thirty")
+	p.talents.xp.espada = TalentRules.xp_floor(60)
+	suite.check(not p.talents.record_damage("espada",1),"proficiency caps at sixty")
 
 static func run_world(suite: SceneTree) -> void:
 	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
@@ -68,10 +68,10 @@ static func run_world(suite: SceneTree) -> void:
 	await suite.frames()
 	var panel: RPGPanel = main.hud.rpg_panel
 	panel.prof_section = 1
-	panel.talent_selection = "sequencia_precisa"
+	panel.sword_selection = "talent:sequencia_precisa"
 	panel.refresh(main.progress)
 	await suite.frames()
-	var node: Button = panel.talent_tree.buttons.guarda_aperfeicoada
+	var node: Button = panel.sword_tree.buttons["talent:guarda_aperfeicoada"]
 	panel.scroll.ensure_control_visible(node)
 	await suite.frames()
 	var scroll_before := panel.scroll.scroll_vertical
@@ -89,12 +89,12 @@ static func run_world(suite: SceneTree) -> void:
 	touch.position = drag.position
 	main.hud._input(touch)
 	await suite.frames()
-	suite.check(panel.talent_selection == "sequencia_precisa" and panel.scroll.scroll_vertical > scroll_before,"swiping over talent scrolls without opening details")
+	suite.check(panel.sword_selection == "talent:sequencia_precisa" and panel.scroll.scroll_vertical > scroll_before,"swiping over talent scrolls without opening details")
 	panel.scroll.ensure_control_visible(node)
 	await suite.frames()
 	preload("res://tests/tower_trial_tests.gd")._tap(main.hud,node)
 	await suite.frames()
-	suite.check(panel.talent_selection == "guarda_aperfeicoada" and main.input_driver.blocked and not panel.talent_buy.disabled and panel.scroll.get_global_rect().has_point(panel.talent_buy.get_global_rect().get_center()),"touch inspects talent reveals purchase action and blocks gameplay")
+	suite.check(panel.sword_selection == "talent:guarda_aperfeicoada" and main.input_driver.blocked and not panel.talent_buy.disabled and panel.scroll.get_global_rect().has_point(panel.talent_buy.get_global_rect().get_center()),"touch inspects talent reveals purchase action and blocks gameplay")
 	var hp_before: int = main.player.health.current
 	preload("res://tests/tower_trial_tests.gd")._tap(main.hud,panel.talent_buy)
 	await suite.frames()

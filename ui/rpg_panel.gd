@@ -15,7 +15,10 @@ var talent_selection := "corte"
 var talent_tree: TalentTree
 var talent_detail: Label
 var talent_buy: Button
-var prof_section := 0 # Domain / existing tree.
+var sword_selection := "skill1:talho_agil"
+var sword_detail: VBoxContainer
+var sword_tree: SwordEvolutionTree
+var prof_section := 1 # Abrir diretamente a árvore visual; Treinamento continua acessível.
 var mastery_buttons: Dictionary = {}
 var attribute_buttons: Dictionary = {}
 var category_buttons: Dictionary = {}
@@ -83,6 +86,9 @@ func _ready() -> void:
 func refresh(value: GameProgress) -> void:
 	progress = value
 	talent_tree = null
+	sword_detail = null
+	sword_tree = null
+	talent_buy = null
 	attribute_grid = null
 	mastery_grid = null
 	mastery_buttons.clear()
@@ -135,20 +141,20 @@ func refresh(value: GameProgress) -> void:
 func _talent_page() -> void:
 	_category_selector()
 	var level := progress.talents.level(talent_weapon)
-	_heading("%s · PROFICIÊNCIA %d / 30" % [ArsenalRules.category_name(talent_weapon).to_upper(),level])
+	_heading("%s · PROFICIÊNCIA %d / %d" % [ArsenalRules.category_name(talent_weapon).to_upper(),level,TalentRules.MAX_PROFICIENCY])
 	_label("%s%s" % [TalentRules.CLASSES[talent_weapon]," · classe ativa" if progress.active_category() == talent_weapon else " · bônus guardados até equipar"])
 	var bar := ProgressBar.new()
 	bar.custom_minimum_size.y = 8
 	bar.show_percentage = false
-	bar.max_value = TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level) if level < 30 else 1
-	bar.value = int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level) if level < 30 else 1
+	bar.max_value = TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level) if level < TalentRules.MAX_PROFICIENCY else 1
+	bar.value = int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level) if level < TalentRules.MAX_PROFICIENCY else 1
 	content.add_child(bar)
-	_label("XP %d / %d · +%.1f%% dano da categoria" % [int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level),TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level),(level-1)*0.5] if level < 30 else "Proficiência máxima · +14,5% dano da categoria")
+	_label("XP %d / %d · +%.1f%% dano da categoria" % [int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level),TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level),(level-1)*0.5] if level < TalentRules.MAX_PROFICIENCY else "Proficiência máxima · +29,5% dano da categoria")
 	var sections := HBoxContainer.new()
 	content.add_child(sections)
 	for i in range(2):
 		var button := Button.new()
-		button.text = ["Domínio · %d" % progress.talents.mastery_points(talent_weapon),"Talentos · %d" % progress.skill_points()][i]
+		button.text = ["Treinamento · %d" % progress.talents.mastery_points(talent_weapon),"Árvore · %d" % progress.skill_points()][i]
 		button.custom_minimum_size.y = 44
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(func():
@@ -161,6 +167,9 @@ func _talent_page() -> void:
 		DiaryTheme.select(button,prof_section == i)
 	if prof_section == 0:
 		_mastery_page()
+		return
+	if talent_weapon == "espada":
+		_sword_evolution_page()
 		return
 	_heading("ÁRVORE · %d PONTOS DE TALENTO" % progress.skill_points())
 	_label("Nível do personagem dá pontos. Proficiência abre os caminhos.")
@@ -208,6 +217,7 @@ func _sword_evolution_page() -> void:
 			scroll.call_deferred("ensure_control_visible",sword_detail)
 	)
 	content.add_child(tree)
+	sword_tree = tree
 	sword_detail = _card()
 	var pair := sword_selection.split(":")
 	var kind := pair[0] if pair.size() == 2 else "skill1"
@@ -296,6 +306,7 @@ func _sword_evolution_page() -> void:
 		buy.disabled = not allow_respec or learned or not ready or prof < required or progress.skill_points() < 1
 		buy.pressed.connect(func(): action_requested.emit("talent","espada:"+id,0))
 		sword_detail.add_child(buy)
+		talent_buy = buy
 	elif kind == "specialization":
 		for style: String in AbilityRules.CATEGORIES.espada.specializations:
 			var item: Dictionary = AbilityRules.SPECIALIZATIONS[style]
@@ -315,7 +326,7 @@ func _sword_evolution_page() -> void:
 	_label("Skill 1 fixa · Skill 2 e 3 configuráveis · 2 passivas equipáveis · Maestrias automáticas.")
 
 func _mastery_page() -> void:
-	_heading("DOMÍNIO · %d PONTOS DISPONÍVEIS" % progress.talents.mastery_points(talent_weapon))
+	_heading("TREINAMENTO DA ARMA · %d PONTOS DISPONÍVEIS" % progress.talents.mastery_points(talent_weapon))
 	_label("+1 ponto por nível de proficiência. Cada categoria tem seu próprio saldo.")
 	mastery_grid = GridContainer.new()
 	mastery_grid.columns = 2 if size.x >= 620 else 1
@@ -343,7 +354,7 @@ func _mastery_page() -> void:
 		_label(descriptions[stat],card)
 	var refund := Button.new()
 	refund.name = "ResetMastery"
-	refund.text = "Redistribuir Domínio\nGrátis na área segura"
+	refund.text = "Redistribuir Treinamento\nGrátis na área segura"
 	refund.custom_minimum_size.y = 52
 	refund.disabled = not allow_respec or progress.talents.mastery_points(talent_weapon) >= progress.talents.level(talent_weapon)-1
 	refund.pressed.connect(func(): action_requested.emit("reset_mastery",talent_weapon,0))
@@ -425,7 +436,7 @@ func _skills_page() -> void:
 	var catalog: Dictionary = AbilityRules.CATEGORIES[category]
 	var prof := progress.talents.level(category)
 	var build: Dictionary = progress.abilities.loadouts[category]
-	_heading("%s · PROFICIÊNCIA %d / 30" % [TalentRules.CLASSES[category],prof])
+	_heading("%s · PROFICIÊNCIA %d / %d" % [TalentRules.CLASSES[category],prof,TalentRules.MAX_PROFICIENCY])
 	_label("Personalização gratuita no acampamento." if allow_respec else "Somente consulta. Volte à área segura para personalizar.")
 	_label("Skill 1 · %s\nSkill 2 · %s\nSkill 3 · %s" % [catalog.skill1.name,_skill_name(category,build.skills[0]),_skill_name(category,build.skills[1])],_card())
 	_label("Dash universal e poção separados. Ataque básico automático. PC: 1, 2 e 3 ativam os três slots.")
