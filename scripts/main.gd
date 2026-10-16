@@ -559,6 +559,18 @@ func _toggle_map() -> void:
 		hud.show_map(progress)
 
 func _rpg_action(action: String, id: String, expected: int) -> void:
+	if action == "enter_training":
+		if not hud.rpg_panel.visible or not player.health.is_alive() or transitioning or trial.active() or hud.save_panel.visible:
+			hud.show_notice("O Modo Treino só pode ser iniciado fora da Torre.")
+			return
+		# Commit the normal campaign snapshot before leaving. Training never
+		# reads it: returning to main.tscn loads the saved snapshot afresh.
+		_save_progress()
+		if progress.save_blocked or not progress.save():
+			hud.show_notice("Save indisponível. Progresso preservado; treino não iniciado.")
+			return
+		get_tree().change_scene_to_file("res://scenes/training.tscn")
+		return
 	if not player.health.is_alive():
 		return
 	var success := false

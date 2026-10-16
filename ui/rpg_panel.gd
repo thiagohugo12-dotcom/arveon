@@ -167,6 +167,13 @@ func refresh(value: GameProgress) -> void:
 		var values := progress.combat_stats()
 		_heading("COMBATE")
 		_label("Base física %d · Base mágica %d\nAtaque básico %d · Crítico %.1f%%\nHP %d · Movimento %.1f · Armadura %d\nResistência %.1f%% · Intervalo −%.1f%%" % [values.physical,values.magical,values.damage,values.critical_chance*100,values.hp,values.speed,values.armor,values.resistance*100,(1.0-values.basic_interval_factor)*100], _card())
+		var enter_training := Button.new()
+		enter_training.text = "⚔ Modo Treino · tudo liberado"
+		enter_training.custom_minimum_size.y = 52
+		enter_training.tooltip_text = "Testar armas, habilidades e Ultimates sem afetar o save real."
+		enter_training.pressed.connect(func(): action_requested.emit("enter_training","",0))
+		content.add_child(enter_training)
+		_label("Treino independente: proficiência 60, nível 100 e todas as armas. Sem salvar XP, itens ou alterações.",_card())
 	elif tab == 1:
 		_skills_page()
 	else:
