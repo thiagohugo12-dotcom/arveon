@@ -27,7 +27,7 @@ static func run(suite: SceneTree) -> void:
 	suite.check(vfx.active_id == SwordSkillVfx.ESTOCADA and vfx.direction == Vector2.UP and vfx.reach == 155.0, "thrust effect uses current aim and the exact combat reach")
 	vfx.play_skill(SwordSkillVfx.KAMUSARI, Vector2.RIGHT, wave)
 	suite.check(vfx.active_id == SwordSkillVfx.KAMUSARI and vfx.reach == 320.0 and vfx.duration > 0.4, "Kamusari animates one frontal red energy wave")
-	vfx._process(2.0)
+	vfx._process(4.0) # guard lasts 3s; exhaust both timers before asserting cleanup
 	suite.check(vfx.active_id.is_empty() and vfx.guard_left == 0.0, "temporary sword presentation completes without leaving persistent state")
 	vfx.clear()
 	caster.queue_free()
