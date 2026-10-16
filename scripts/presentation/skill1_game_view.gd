@@ -36,10 +36,10 @@ func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> 
 	if not id in ["guarda_reativa", "estocada_precisa", "danca_laminas"]: return
 	var actor: Node2D = get_parent()
 	sword_pose = id
-	sword_pose_duration = 0.44 if id == "danca_laminas" else 0.32
-	sword_pose_time = sword_pose_duration
 	sword_pose_row = SwordActorView.direction_row(aim)
 	sword_technique.cast(id, actor.global_position, aim, guard_time)
+	sword_pose_duration = sword_technique.duration
+	sword_pose_time = sword_pose_duration
 	sword_technique.z_index = clampi(roundi(actor.global_position.y) + 100, -4096, 4096)
 	skill_left = 0.0
 	queue_redraw()
@@ -48,10 +48,10 @@ func play_sword_counter(aim: Vector2) -> void:
 	if not is_instance_valid(sword_technique) or sword_technique.kind != "guarda_reativa": return
 	var actor := get_parent() as Node2D
 	sword_pose = "guarda_reativa"
-	sword_pose_time = 0.26
-	sword_pose_duration = 0.26
 	sword_pose_row = SwordActorView.direction_row(aim)
 	sword_technique.counter(actor.global_position, aim)
+	sword_pose_duration = sword_technique.remaining
+	sword_pose_time = sword_pose_duration
 	queue_redraw()
 
 func clear_sword_technique() -> void:

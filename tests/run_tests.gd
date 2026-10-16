@@ -42,6 +42,7 @@ func _run() -> void:
 	preload("res://tests/etapa2_save_tests.gd").run(self)
 	preload("res://tests/etapa2_progression_tests.gd").run(self)
 	preload("res://tests/sword_evolution_tests.gd").run(self)
+	preload("res://tests/sword_technique_timing_tests.gd").run(self)
 	var health := Health.new()
 	root.add_child(health)
 	health.initialize(10)
@@ -586,7 +587,3 @@ func _run() -> void:
 	print("RESULT: %d checks, %d failures" % [checks, failures])
 	CombatRules.random_roll_source = Callable()
 	quit(1 if failures > 0 else 0)
-
-
-
-
