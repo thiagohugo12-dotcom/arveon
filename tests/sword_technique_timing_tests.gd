@@ -24,3 +24,4 @@ static func run(suite) -> void:
 	for sample in [[0.01, 3], [0.46, 4], [0.84, 5]]:
 		effect.counter_elapsed = float(sample[0])
 		suite.check(effect._frame() == int(sample[1]), "guard block and counter match approved order")
+	effect.free()
