@@ -103,22 +103,29 @@ func frame_rect(frame: int) -> Rect2:
 	var scale_factor := BODY_HEIGHT / float(heights[frame])
 	return Rect2(Vector2(0,12) - feet[frame] * scale_factor, Vector2.ONE * CELL * scale_factor)
 
-func _draw_feathered_frame(atlas: Texture2D, target: Rect2, source: Rect2) -> void:
-	# The supplied red VFX reaches the atlas cell edges. Fade its outer strip
-	# with canvas vertex alpha so the cut never ends in a hard rectangular seam.
-	var grid := [0.0,0.12,0.88,1.0]
-	for y in range(3):
-		for x in range(3):
-			var points := PackedVector2Array()
-			var uv := PackedVector2Array()
-			var colors := PackedColorArray()
-			for corner: Vector2i in [Vector2i(x,y),Vector2i(x+1,y),Vector2i(x+1,y+1),Vector2i(x,y+1)]:
-				var unit := Vector2(grid[corner.x],grid[corner.y])
-				points.append(target.position + unit * target.size)
-				uv.append((source.position + unit * source.size) / atlas.get_size())
-				var edge := corner.x == 0 or corner.x == 3 or corner.y == 0 or corner.y == 3
-				colors.append(Color(1,1,1,0.0 if edge else 1.0))
-			draw_polygon(points, colors, uv, atlas)
+func source_outline(frame: int) -> PackedVector2Array:
+	# These illustrations are not a regular atlas: attack tips cross into the
+	# next column. Trace the complete effect and exclude the neighboring body.
+	if frame == 3 and kind == "danca_laminas":
+		return PackedVector2Array([Vector2(0,0),Vector2(512,0),Vector2(650,260),Vector2(675,285),Vector2(650,310),Vector2(512,390),Vector2(512,512),Vector2(0,512)])
+	if frame == 3 and kind == "estocada_precisa":
+		return PackedVector2Array([Vector2(0,0),Vector2(512,0),Vector2(512,212),Vector2(630,225),Vector2(630,270),Vector2(512,285),Vector2(512,512),Vector2(0,512)])
+	if frame == 4 and kind == "danca_laminas":
+		return PackedVector2Array([Vector2(55,405),Vector2(80,350),Vector2(140,300),Vector2(125,260),Vector2(170,230),Vector2(210,215),Vector2(165,150),Vector2(130,40),Vector2(480,0),Vector2(610,100),Vector2(610,512),Vector2(55,512)])
+	if frame == 4 and kind == "estocada_precisa":
+		return PackedVector2Array([Vector2(25,390),Vector2(50,330),Vector2(120,270),Vector2(95,210),Vector2(155,160),Vector2(180,120),Vector2(610,0),Vector2(610,512),Vector2(25,512)])
+	if frame == 4 and kind == "guarda_reativa":
+		return PackedVector2Array([Vector2(0,0),Vector2(610,0),Vector2(610,512),Vector2(0,512)])
+	return PackedVector2Array()
+
+func _draw_complete_frame(atlas: Texture2D, target: Rect2, source: Rect2, outline: PackedVector2Array) -> void:
+	var points := PackedVector2Array()
+	var uv := PackedVector2Array()
+	var scale_factor := target.size.x / CELL
+	for point in outline:
+		points.append(target.position + point * scale_factor)
+		uv.append((source.position + point) / atlas.get_size())
+	draw_polygon(points, PackedColorArray([Color.WHITE]), uv, atlas)
 
 func _draw() -> void:
 	if remaining <= 0.0: return
@@ -142,6 +149,7 @@ func _draw() -> void:
 		source = Rect2(source.position + crop.position, crop.size)
 	# The reference faces right. Mirroring preserves its poses for leftward casts.
 	if direction.x < -0.3: draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
-	if kind == "danca_laminas": _draw_feathered_frame(atlas, target, source)
-	else: draw_texture_rect_region(atlas, target, source)
+	var outline := source_outline(frame)
+	if outline.is_empty(): draw_texture_rect_region(atlas, target, source)
+	else: _draw_complete_frame(atlas, target, source, outline)
 	draw_set_transform(Vector2.ZERO)

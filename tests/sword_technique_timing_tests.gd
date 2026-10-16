@@ -36,4 +36,11 @@ static func run(suite) -> void:
 	effect.remaining = 0.22
 	effect._process(0.23)
 	suite.check(effect.remaining == 0.0, "late guard counter finishes without leaving a stuck replacement body")
+	for id: String in ["estocada_precisa","guarda_reativa","danca_laminas"]:
+		effect.kind = id
+		var impact_outline := effect.source_outline(4)
+		suite.check(Geometry2D.triangulate_polygon(impact_outline).size() > 0 and Geometry2D.is_point_in_polygon(Vector2(550,280),impact_outline), id + " preserves the impact beyond the old 512 px cell")
+		if id != "guarda_reativa":
+			var stroke_outline := effect.source_outline(3)
+			suite.check(Geometry2D.triangulate_polygon(stroke_outline).size() > 0 and Geometry2D.is_point_in_polygon(Vector2(600,250),stroke_outline), id + " preserves the complete forward stroke")
 	effect.free()
