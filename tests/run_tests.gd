@@ -567,6 +567,7 @@ func _run() -> void:
 	await preload("res://tests/save_tests.gd").run_world(self, main)
 	main.queue_free()
 	await frames()
+	await preload("res://tests/training_mode_tests.gd").run(self,scene,test_path)
 	await preload("res://tests/combat_feedback_tests.gd").run(self)
 	await preload("res://tests/tower_tests.gd").run_world(self)
 	await preload("res://tests/tower_trial_tests.gd").run_world(self)

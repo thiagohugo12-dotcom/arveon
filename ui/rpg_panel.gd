@@ -167,6 +167,14 @@ func refresh(value: GameProgress) -> void:
 		var values := progress.combat_stats()
 		_heading("COMBATE")
 		_label("Base física %d · Base mágica %d\nAtaque básico %d · Crítico %.1f%%\nHP %d · Movimento %.1f · Armadura %d\nResistência %.1f%% · Intervalo −%.1f%%" % [values.physical,values.magical,values.damage,values.critical_chance*100,values.hp,values.speed,values.armor,values.resistance*100,(1.0-values.basic_interval_factor)*100], _card())
+		_heading("MODO TREINO")
+		if progress.training_mode:
+			_label("Sessão temporária · nada daqui é salvo. Troque de arma na Mochila e configure skills livremente.")
+			_training_button("Recarregar skills e Ultimates", "training_refill")
+			_training_button("Encerrar treino · voltar ao personagem", "training_exit")
+		else:
+			_label("Experimente as cinco armas, habilidades e talentos sem alterar seu save.")
+			_training_button("Entrar no modo treino", "training_start")
 	elif tab == 1:
 		_skills_page()
 	else:
@@ -722,3 +730,10 @@ func _ability_icon(id: String, category: String) -> String:
 	if "guarda" in id or "postura" in id or "defesa" in id: return "Armadura"
 	if "ancestral" in id: return "maestria"
 	return category
+
+func _training_button(caption: String, action: String) -> void:
+	var button := Button.new()
+	button.text = caption
+	button.custom_minimum_size.y = 48
+	button.pressed.connect(func(): action_requested.emit(action,"",0))
+	content.add_child(button)

@@ -57,6 +57,7 @@ var disk_writes := 0
 var browser := BrowserSave.new()
 
 var save_path: String = "user://andar1_progress.json"
+var training_mode := false # Disposable practice session; never written to a journal.
 var bag: Dictionary = {}
 var chest: Dictionary = {}
 var gold: int = 0
@@ -362,6 +363,7 @@ func _valid_text(text: String) -> bool:
 	return candidate.load_text(text)
 
 func save(require_journal: bool = false) -> bool:
+	if training_mode: return true
 	if save_blocked:
 		return false
 	var text := to_json()

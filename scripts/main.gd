@@ -134,6 +134,9 @@ func _process(delta: float) -> void:
 		hud.set_rpg_status(progress, player)
 	if not player.health.is_alive():
 		return
+	if progress.training_mode:
+		hud.minimap.update_player(player.global_position)
+		return
 	if trial.active():
 		_process_trial(delta)
 		return
@@ -327,6 +330,9 @@ func _on_player_died() -> void:
 		return
 	input_driver.reset()
 	input_driver.blocked = false
+	if progress.training_mode:
+		hud.set_progress(earned_xp, earned_gold, defeated_count, "Treino encerrado · Reiniciar retorna ao personagem")
+		return
 	var lost := progress.death_loss()
 	hud.set_progress(earned_xp, earned_gold, defeated_count,
 		"Perdeu 1 " + lost + " da mochila; baú protegido" if not lost.is_empty() else "Baú protegido · sem material na mochila")
@@ -543,7 +549,7 @@ func _toggle_character() -> void:
 	elif player.health.is_alive() and not hud.inventory_open and not hud.station_panel.visible and not hud.map_panel.visible:
 		input_driver.reset()
 		input_driver.blocked = true
-		hud.rpg_panel.allow_respec = not trial.active() and SafeCamp.in_clearance(player.global_position)
+		hud.rpg_panel.allow_respec = progress.training_mode or not trial.active() and SafeCamp.in_clearance(player.global_position)
 		hud.show_character(progress)
 
 func _toggle_map() -> void:
@@ -558,12 +564,26 @@ func _toggle_map() -> void:
 		input_driver.blocked = true
 		hud.show_map(progress)
 
+
 func _rpg_action(action: String, id: String, expected: int) -> void:
+	if action == "training_start":
+		_start_training()
+		return
+	if action == "training_exit" and progress.training_mode:
+		get_tree().reload_current_scene()
+		return
+	if action == "training_refill" and progress.training_mode:
+		TrainingMode.refill(progress)
+		player._cancel_skill1()
+		player._sync_skill_cooldowns()
+		hud.rpg_panel.refresh(progress)
+		hud.show_notice("Skills e Ultimates recarregadas no treino")
+		return
 	if not player.health.is_alive():
 		return
 	var success := false
 	if hud.rpg_panel.visible:
-		var at_camp := not trial.active() and SafeCamp.in_clearance(player.global_position)
+		var at_camp := progress.training_mode or not trial.active() and SafeCamp.in_clearance(player.global_position)
 		if not at_camp: return
 		if action == "attribute": success = progress.allocate_attribute(id)
 		elif action == "skill":
@@ -599,6 +619,45 @@ func _rpg_action(action: String, id: String, expected: int) -> void:
 	elif hud.station_panel.visible:
 		hud.refresh_station(progress)
 	hud.show_notice("Equipamento fabricado/aprimorado" if action == "forge" else "Personagem atualizado")
+
+
+func _start_training() -> void:
+	if progress.training_mode or transitioning or trial.active() or not player.health.is_alive(): return
+	# Checkpoint the real character before switching to a disposable build.
+	_save_progress()
+	if not progress.save() or progress.save_blocked:
+		hud.show_notice("Salve seu personagem antes de iniciar o treino")
+		return
+	progress.browser.detach()
+	progress = TrainingMode.create()
+	earned_xp = progress.xp
+	earned_gold = progress.gold
+	defeated_count = 0
+	known_level = progress.level()
+	mission.enabled = false
+	collected_materials = progress.bag
+	hud.close_character()
+	input_driver.reset()
+	input_driver.blocked = false
+	player.position = Vector2(930,750)
+	player.last_direction = Vector2.RIGHT
+	player.view.set_facing(Vector2.RIGHT)
+	player.apply_progression(progress,true)
+	enemy.set_physics_process(false)
+	enemy.awake = true
+	enemy.position = player.position+Vector2(65,0)
+	enemy.home_position = enemy.position
+	enemy.health.initialize(1000000)
+	for actor in get_tree().get_nodes_in_group("damageable_enemies"):
+		if actor != enemy: actor.queue_free()
+	hud.minimap.progress = progress
+	exploration_view.progress = progress
+	hud.set_health(player.health.current,player.health.maximum)
+	hud.set_progress(earned_xp,earned_gold,defeated_count,"Alvo de treino à direita")
+	_update_floor_identity()
+	_refresh_mission()
+	hud.set_rpg_status(progress,player)
+	hud.show_notice("Modo treino · 5 armas e proficiência 60 · nada será salvo")
 
 func _adapt_orientation() -> void:
 	var window := get_window()
@@ -653,6 +712,9 @@ func _start_guardian() -> void:
 	hud.show_notice("Guardião: evite as áreas douradas. Desafio opcional!")
 
 func _refresh_mission() -> void:
+	if progress.training_mode:
+		hud.set_mission("MODO TREINO · sem salvar\nTroque arma na Mochila · habilidades no Diário")
+		return
 	hud.set_mission(progress.introduction_summary() if progress.introduction_active() else trial.summary() if trial.active() else mission.summary() + "\n" + progress.adventure_summary())
 
 func _clear_combat_actors() -> void:
@@ -816,6 +878,9 @@ func _notification(what: int) -> void:
 			_save_progress()
 
 func _open_record() -> void:
+	if progress.training_mode:
+		hud.show_notice("Treino temporário · registro normal preservado")
+		return
 	if transitioning or not player.health.is_alive():
 		return
 	hud.close_inventory()
@@ -954,7 +1019,7 @@ func _update_floor_identity() -> void:
 	tower_view.queue_redraw()
 	exploration_view.visual_v2 = theme_v2
 	exploration_view.queue_redraw()
-	hud.heading.text = "Mata · Andar %d" % progress.ascension.current_floor
+	hud.heading.text = "TREINO · Andar %d" % progress.ascension.current_floor if progress.training_mode else "Mata · Andar %d" % progress.ascension.current_floor
 	hud.minimap.queue_redraw()
 
 func _travel_floor(destination: int) -> void:
