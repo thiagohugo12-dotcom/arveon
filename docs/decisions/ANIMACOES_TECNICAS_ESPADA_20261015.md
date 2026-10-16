@@ -28,3 +28,7 @@ O ritmo acima foi rejeitado no jogo por ser grande, lento e mal executado. A rev
 Cada pose tem registro próprio pelos pés e corpo normalizado a 60 px, correspondente ao explorador. O renderer redesenha o corpo ao entrar/sair da sequência, acompanha a profundidade do personagem em movimento e elimina faíscas de células vizinhas da recuperação. O corte vermelho dissipa nas bordas do atlas com alpha de vértices, evitando um recorte retangular; sem shader ou nova arte. O início do treino foi movido para a clareira leste, para não esconder jogador/alvo sob uma copa.
 
 Conferência local: quadros das três técnicas renderizados pelo Godot/OpenGL no cenário real de treino, comparados ao explorador normal. As regras de combate continuam independentes da apresentação.
+
+## Correção do recorte — 16/10/2026
+
+A borda suavizada continuava escondendo a ponta do golpe. O atlas fornecido possui efeitos que atravessam a grade de 512 px. O renderer passa a usar contornos de origem por quadro: inclui a extensão da Estocada e do Kamusari e a explosão completa das três técnicas, excluindo o corpo do quadro vizinho. A ponta do Kamusari termina antes dos pixels da próxima pose. Retirado o fade que mascarava o recorte. Conferência em capturas do cenário real e teste dos contornos além da antiga borda de 512 px.
