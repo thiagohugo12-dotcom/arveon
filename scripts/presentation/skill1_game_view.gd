@@ -2,7 +2,7 @@ class_name Skill1GameView
 extends "res://scripts/demos/skill1_actor_view.gd"
 ## Reuses the approved review presentation; combat remains owned by PlayerActor.
 var ground_effect: Node2D
-var sword_technique: Node2D
+var sword_technique: SwordTechniqueEffect
 var sword_pose := ""
 var sword_pose_time := 0.0
 var sword_pose_duration := 0.32
@@ -47,7 +47,8 @@ func play_sword_counter(aim: Vector2) -> void:
 	sword_pose_time = 0.26
 	sword_pose_duration = 0.26
 	sword_pose_row = SwordActorView.direction_row(aim)
-	sword_technique.counter(get_parent().global_position,aim)
+	var actor := get_parent() as Node2D
+	sword_technique.counter(actor.global_position,aim)
 	queue_redraw()
 
 func clear_sword_technique() -> void:

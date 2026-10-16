@@ -1,3 +1,4 @@
+class_name SwordTechniqueEffect
 extends Node2D
 ## Sword technique feedback only. Damage, reach and cooldown remain in ClassCombat.
 var kind := ""
@@ -13,7 +14,7 @@ func cast(id: String, at: Vector2, aim: Vector2, guard_time: float = 0.0) -> voi
 	global_position = at
 	duration = guard_time if id == "guarda_reativa" else (0.44 if id == "danca_laminas" else 0.29)
 	remaining = duration
-	guard_follow = get_parent().get_parent() if id == "guarda_reativa" else null
+	guard_follow = get_parent().get_parent() as Node2D if id == "guarda_reativa" else null
 	bursts = 0
 	queue_redraw()
 
