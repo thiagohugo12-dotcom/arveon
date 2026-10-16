@@ -214,7 +214,7 @@ try {
   check(JSON.stringify(abilitiesReload.abilities)===JSON.stringify(abilities.abilities),'actual Web reload preserves paused cooldowns charges and builds without offline gains');
   const preservedJournal=await evaluate(`localStorage.getItem(${JSON.stringify(KEY)})`);
   await call('Page.navigate',{url:origin+'/amostra-mata/index.html'});
-  await until('document.documentElement.dataset.mataSample === "ready"',45000);
+  await until('document.documentElement?.dataset.mataSample === "ready"',45000);
   check(await evaluate('document.title === "Mata — amostra artística"'),'separate exported art scene starts instead of Main');
   await delay(1500);
   check(await evaluate(`localStorage.getItem(${JSON.stringify(KEY)})`)==preservedJournal,'art sample does not modify the player save');
