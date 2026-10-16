@@ -3,6 +3,10 @@ extends "res://scripts/demos/skill1_actor_view.gd"
 ## Reuses approved skill presentation; combat remains owned by PlayerActor.
 var ground_effect: Node2D
 var sword_technique: SwordTechniqueEffect
+var sword_pose := ""
+var sword_pose_time := 0.0
+var sword_pose_duration := 0.32
+var sword_pose_row := 3
 
 func _ready() -> void:
 	ground_effect = preload("res://scripts/demos/skill1_ground_effect.gd").new()
@@ -31,6 +35,10 @@ func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> 
 	if skill_category != "espada" or not village_scale or not is_instance_valid(sword_technique): return
 	if not id in ["guarda_reativa", "estocada_precisa", "danca_laminas"]: return
 	var actor: Node2D = get_parent()
+	sword_pose = id
+	sword_pose_duration = 0.44 if id == "danca_laminas" else 0.32
+	sword_pose_time = sword_pose_duration
+	sword_pose_row = SwordActorView.direction_row(aim)
 	sword_technique.cast(id, actor.global_position, aim, guard_time)
 	sword_technique.z_index = clampi(roundi(actor.global_position.y) + 100, -4096, 4096)
 	skill_left = 0.0
@@ -39,12 +47,26 @@ func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> 
 func play_sword_counter(aim: Vector2) -> void:
 	if not is_instance_valid(sword_technique) or sword_technique.kind != "guarda_reativa": return
 	var actor := get_parent() as Node2D
+	sword_pose = "guarda_reativa"
+	sword_pose_time = 0.26
+	sword_pose_duration = 0.26
+	sword_pose_row = SwordActorView.direction_row(aim)
 	sword_technique.counter(actor.global_position, aim)
 	queue_redraw()
 
 func clear_sword_technique() -> void:
+	sword_pose = ""
+	sword_pose_time = 0.0
 	if is_instance_valid(sword_technique): sword_technique.clear()
 	queue_redraw()
+
+func _process(delta: float) -> void:
+	super._process(delta)
+	if not village_scale:
+		clear_sword_technique()
+	elif sword_pose_time > 0.0:
+		sword_pose_time = maxf(0.0, sword_pose_time - delta)
+		if sword_pose_time <= 0.0: sword_pose = ""
 
 func _draw_explorer(tint: Color) -> void:
 	if skill_category == "espada" and village_scale and is_instance_valid(sword_technique) and sword_technique.remaining > 0.0:

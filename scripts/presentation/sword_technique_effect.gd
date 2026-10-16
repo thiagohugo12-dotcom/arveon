@@ -12,6 +12,7 @@ var remaining := 0.0
 var duration := 0.72
 var guard_follow: Node2D
 var counter_elapsed := -1.0
+var bursts := 0 # Compatibility with the existing guard feedback contract.
 
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -24,6 +25,7 @@ func cast(id: String, at: Vector2, aim: Vector2, guard_time: float = 0.0) -> voi
 	remaining = duration
 	guard_follow = get_parent().get_parent() as Node2D
 	counter_elapsed = -1.0
+	bursts = 0
 	queue_redraw()
 
 func counter(at: Vector2, aim: Vector2) -> void:
@@ -31,6 +33,7 @@ func counter(at: Vector2, aim: Vector2) -> void:
 	global_position = at
 	direction = aim.normalized() if not aim.is_zero_approx() else Vector2.RIGHT
 	counter_elapsed = 0.0
+	bursts = 1
 	queue_redraw()
 
 func clear() -> void:
@@ -38,6 +41,7 @@ func clear() -> void:
 	remaining = 0.0
 	guard_follow = null
 	counter_elapsed = -1.0
+	bursts = 0
 	queue_redraw()
 
 func _process(delta: float) -> void:
