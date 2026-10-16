@@ -1,13 +1,12 @@
-# Animações de três técnicas da Espada — 15/10/2026
+# Sequências das técnicas da Espada — 16/10/2026
 
-Status: IMPLEMENTADO, conforme as três referências aprovadas enviadas por Thiago.
+Status: sprites refeitos para seguir os seis quadros das três referências do jogador.
 
-- Guarda Reativa: postura e aro azul durante a guarda; impacto visual curto ao receber um golpe protegido.
-- Estocada Precisa: postura de espada e rastro azul em linha na direção do golpe.
-- Kamusari: novo nome exibido para a Ultimate da Espada, com corte vermelho amplo.
-- O identificador persistente da Ultimate continua `danca_laminas` para preservar os saves v11.
-- As referências enviadas são quadros de direção artística, não atlas de sprites isolados. A apresentação reutiliza o atlas aprovado da Espada e efeitos leves desenhados pela Godot.
-- `ClassCombat` continua executando o mesmo dano, área, proteção, custo e tempo de recarga. A animação inicia somente após a execução autorizada. A guarda não ganha novo contra-ataque de dano; apenas feedback visual ao bloquear.
-- Recursos das outras quatro armas e as missões continuam inalterados.
+- Estocada Precisa: postura, preparação baixa, avanço curto com rastros azuis, estocada reta, faísca amarela no contato e recuperação.
+- Guarda Reativa: postura, elevação da espada, aro azul persistente durante a proteção, faísca ao bloquear, corte azul reativo e recuperação. A reação visual depende de um golpe efetivamente recebido durante a guarda.
+- Kamusari (`danca_laminas` no identificador persistente): energia vermelha na preparação, carregamento, crescente, corte amplo, explosão de impacto e recuperação.
+- Os três atlas PNG têm transparência e seis quadros em grade 3 × 2. O ator não é desenhado novamente durante a sequência, pois cada quadro já inclui seu corpo. O filtro de textura é nearest.
+- `ClassCombat` continua responsável pelo mesmo dano, área, proteção, custo e recarga. Os quadros não alteram colisão, proficiência ou save v11. O contra-ataque da Guarda permanece apenas visual.
+- Na direção horizontal esquerda, a apresentação espelha a arte. As poses foram aprovadas como referência voltada para a direita; em ataques verticais, a apresentação preserva a orientação artística lateral. Uma futura arte direcional exigirá atlas próprios.
 
-Validar em viewport vertical, horizontal, desktop e export Web no TESTE.
+Fonte visual: as três pranchas de seis quadros aprovadas na conversa, usadas como referência direta para os novos sprites. Não há dependência dos quadros em tempo de execução.

@@ -1,82 +1,71 @@
 class_name SwordTechniqueEffect
 extends Node2D
-## Sword technique feedback only. Damage, reach and cooldown remain in ClassCombat.
+## Presentation only: ClassCombat owns damage, reach, cooldowns and guard timing.
+const ESTOCADA: Texture2D = preload("res://assets/art/sword_techniques/estocada_precisa.png")
+const GUARDA: Texture2D = preload("res://assets/art/sword_techniques/guarda_reativa.png")
+const KAMUSARI: Texture2D = preload("res://assets/art/sword_techniques/kamusari.png")
+const CELL := 512.0
+
 var kind := ""
 var direction := Vector2.RIGHT
 var remaining := 0.0
-var duration := 0.32
+var duration := 0.72
 var guard_follow: Node2D
-var bursts := 0
+var counter_elapsed := -1.0
+
+func _ready() -> void:
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 func cast(id: String, at: Vector2, aim: Vector2, guard_time: float = 0.0) -> void:
 	kind = id
 	direction = aim.normalized() if not aim.is_zero_approx() else Vector2.RIGHT
 	global_position = at
-	duration = guard_time if id == "guarda_reativa" else (0.44 if id == "danca_laminas" else 0.29)
+	duration = maxf(0.1, guard_time) if id == "guarda_reativa" else (0.78 if id == "danca_laminas" else 0.66)
 	remaining = duration
-	guard_follow = get_parent().get_parent() as Node2D if id == "guarda_reativa" else null
-	bursts = 0
+	guard_follow = get_parent().get_parent() as Node2D
+	counter_elapsed = -1.0
 	queue_redraw()
 
 func counter(at: Vector2, aim: Vector2) -> void:
-	if kind != "guarda_reativa" or remaining <= 0: return
+	if kind != "guarda_reativa" or remaining <= 0.0: return
 	global_position = at
 	direction = aim.normalized() if not aim.is_zero_approx() else Vector2.RIGHT
-	bursts = 1
+	counter_elapsed = 0.0
 	queue_redraw()
 
 func clear() -> void:
 	kind = ""
 	remaining = 0.0
 	guard_follow = null
-	bursts = 0
+	counter_elapsed = -1.0
 	queue_redraw()
 
 func _process(delta: float) -> void:
-	if remaining <= 0: return
-	remaining = maxf(0.0,remaining-delta)
-	if kind == "guarda_reativa" and is_instance_valid(guard_follow):
-		global_position = guard_follow.global_position
-	if remaining == 0: clear()
+	if remaining <= 0.0: return
+	remaining = maxf(0.0, remaining - delta)
+	if is_instance_valid(guard_follow): global_position = guard_follow.global_position
+	if counter_elapsed >= 0.0: counter_elapsed += delta
+	if remaining <= 0.0: clear()
 	else: queue_redraw()
 
+func _frame() -> int:
+	if kind == "guarda_reativa":
+		if counter_elapsed >= 0.0:
+			return 3 if counter_elapsed < 0.10 else (4 if counter_elapsed < 0.29 else 5)
+		var elapsed := duration - remaining
+		return 0 if elapsed < 0.09 else (1 if elapsed < 0.19 else 2)
+	var progress := 1.0 - remaining / duration
+	return mini(5, int(progress * 6.0))
+
 func _draw() -> void:
-	if remaining <= 0: return
-	var progress := 1.0-remaining/duration
-	if kind == "estocada_precisa":
-		# The visible blue edge follows the existing 155 px line, 22 px width.
-		var head := 155.0*minf(1.0,progress*4.0)
-		var fade := minf(1.0,remaining/0.16)
-		var side := direction.orthogonal()
-		for width in [7.0,4.0,2.0]:
-			draw_line((direction*18.0+side*width).round(),(direction*head+side*width).round(),Color(0.14,0.55,0.96,0.34*fade),2.0,false)
-			draw_line((direction*18.0-side*width).round(),(direction*head-side*width).round(),Color(0.14,0.55,0.96,0.34*fade),2.0,false)
-		draw_line((direction*20.0).round(),(direction*head).round(),Color(0.9,0.98,1.0,fade),4.0,false)
-		for i in range(3):
-			var point := direction*(head-5.0-i*9.0)+side*float(i-1)*3.0
-			draw_rect(Rect2(point.round(),Vector2(4,2)),Color(0.5,0.86,1.0,fade))
-	elif kind == "guarda_reativa":
-		var pulse := minf(1.0,progress*8.0)
-		var blue := Color(0.22,0.65,1.0,0.5*pulse)
-		for i in range(20):
-			var start := Vector2.RIGHT.rotated(i*TAU/20.0)*26.0
-			var end := Vector2.RIGHT.rotated((i+1)*TAU/20.0)*26.0
-			draw_line(start.round(),end.round(),blue,2.0,false)
-		if bursts > 0:
-			var side := direction.orthogonal()
-			for i in range(4):
-				draw_line((direction*15.0+side*(i-2)*3.0).round(),(direction*(32.0+i*4.0)+side*(i-2)*4.0).round(),Color(1.0,0.87,0.45,0.85),2.0,false)
-			bursts = 0
-	elif kind == "danca_laminas":
-		# Crimson sweeping arcs stay inside the existing 150 px disk.
-		var fade := minf(1.0,remaining/0.22)
-		var sweep := minf(1.0,progress*4.0)
-		for layer in range(3):
-			var radius := (46.0+float(layer)*45.0)*sweep
-			var color := Color(0.95,0.12+0.12*layer,0.19,fade*(0.92-0.19*layer))
-			for i in range(13):
-				var a := direction.angle()-1.15+float(i)*2.3/13.0+progress*0.35
-				var b := direction.angle()-1.15+float(i+1)*2.3/13.0+progress*0.35
-				draw_line((Vector2.RIGHT.rotated(a)*radius).round(),(Vector2.RIGHT.rotated(b)*radius).round(),color,5.0-float(layer),false)
-		var tip := direction*minf(150.0,150.0*sweep)
-		draw_line((direction*22.0).round(),tip.round(),Color(1.0,0.88,0.75,fade),3.0,false)
+	if remaining <= 0.0: return
+	var atlas: Texture2D = GUARDA if kind == "guarda_reativa" else (KAMUSARI if kind == "danca_laminas" else ESTOCADA)
+	var frame := _frame()
+	var side := 224.0 if kind == "danca_laminas" else 192.0
+	# The character's feet are near 85% of the source cell height.
+	var target := Rect2(-side * 0.5, -side * 0.84, side, side)
+	var source := Rect2(float(frame % 3) * CELL, float(floori(frame / 3.0)) * CELL, CELL, CELL)
+	# The reference faces right. Mirroring preserves its poses for leftward casts.
+	if direction.x < -0.3: draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+	draw_texture_rect_region(atlas, target, source)
+	draw_set_transform(Vector2.ZERO)
