@@ -51,6 +51,8 @@ func guard_impact() -> void:
 	queue_redraw()
 
 func clear() -> void:
+	if active_id.is_empty() and remaining <= 0.0 and guard_left <= 0.0 and guard_impact_left <= 0.0:
+		return
 	active_id = ""
 	remaining = 0.0
 	guard_left = 0.0
