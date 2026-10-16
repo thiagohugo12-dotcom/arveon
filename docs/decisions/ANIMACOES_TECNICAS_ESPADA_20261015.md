@@ -32,3 +32,9 @@ Conferência local: quadros das três técnicas renderizados pelo Godot/OpenGL n
 ## Correção do recorte — 16/10/2026
 
 A borda suavizada continuava escondendo a ponta do golpe. O atlas fornecido possui efeitos que atravessam a grade de 512 px. O renderer passa a usar contornos de origem por quadro: inclui a extensão da Estocada e do Kamusari e a explosão completa das três técnicas, excluindo o corpo do quadro vizinho. A ponta do Kamusari termina antes dos pixels da próxima pose. Retirado o fade que mascarava o recorte. Conferência em capturas do cenário real e teste dos contornos além da antiga borda de 512 px.
+
+## Identidade do explorador — 16/10/2026
+
+O teste da transição confirmou que os atlas da referência substituíam o explorador por outro desenho. A revisão mantém sempre os pixels do personagem original: pernas de PEOPLE e poses articuladas do atlas aprovado de ataque básico. Os efeitos usam novos arquivos irmãos `estocada_precisa_fx.png`, `guarda_reativa_fx.png` e `kamusari_fx.png`, editados com ImageGen para remover exclusivamente pessoas e armas das três imagens e reconstruir os rastros atrás delas. Os originais foram preservados.
+
+As camadas de energia ficam atrás do corpo nativo, respeitando sua profundidade; poses mudam ao longo dos mesmos seis quadros. Somente os efeitos giram nos ataques verticais, e o explorador usa sua arte direcional normal. O teste renderizado `sword_identity_capture.gd` compara os pixels opacos do rosto/cabelo às poses originais em 72 combinações (3 técnicas × 6 quadros × 4 direções), sem aceitar o personagem das referências. Esse teste roda no CI junto da renderização GL. Mecânicas, recargas e save v11 preservados.

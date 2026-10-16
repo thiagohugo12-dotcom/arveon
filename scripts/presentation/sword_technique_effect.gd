@@ -1,9 +1,9 @@
 class_name SwordTechniqueEffect
 extends Node2D
 ## Presentation only: ClassCombat owns damage, reach, cooldowns and guard timing.
-const ESTOCADA: Texture2D = preload("res://assets/art/sword_techniques/estocada_precisa.png")
-const GUARDA: Texture2D = preload("res://assets/art/sword_techniques/guarda_reativa.png")
-const KAMUSARI: Texture2D = preload("res://assets/art/sword_techniques/kamusari.png")
+const ESTOCADA: Texture2D = preload("res://assets/art/sword_techniques/estocada_precisa_fx.png")
+const GUARDA: Texture2D = preload("res://assets/art/sword_techniques/guarda_reativa_fx.png")
+const KAMUSARI: Texture2D = preload("res://assets/art/sword_techniques/kamusari_fx.png")
 const CELL := 512.0
 const ESTOCADA_FRAMES := [0.04, 0.06, 0.035, 0.045, 0.055, 0.10]
 const GUARDA_FRAMES := [0.05, 0.07, 0.0, 0.045, 0.075, 0.10]
@@ -74,7 +74,7 @@ func _process(delta: float) -> void:
 	elapsed += delta
 	if is_instance_valid(guard_follow):
 		global_position = guard_follow.global_position
-		z_index = clampi(roundi(global_position.y) + 100, -4096, 4096)
+		z_index = clampi(roundi(global_position.y) + 99, -4096, 4096)
 	if counter_elapsed >= 0.0:
 		counter_elapsed += delta
 		if counter_elapsed >= GUARDA_FRAMES[3] + GUARDA_FRAMES[4] + GUARDA_FRAMES[5] and elapsed < guard_time:
@@ -95,7 +95,7 @@ func _frame() -> int:
 	return 5
 
 func replaces_body() -> bool:
-	return remaining > 0.0 and not (kind == "guarda_reativa" and _frame() == 2)
+	return false # All three atlases contain only VFX; the original explorer is always drawn.
 
 func frame_rect(frame: int) -> Rect2:
 	var feet: Array = GUARDA_FEET if kind == "guarda_reativa" else (KAMUSARI_FEET if kind == "danca_laminas" else ESTOCADA_FEET)
@@ -140,15 +140,15 @@ func _draw() -> void:
 		draw_set_transform(Vector2.ZERO)
 		return
 	var target := frame_rect(frame)
+	if frame >= 3 and frame <= 4: target.position.y += 8.0 if kind == "guarda_reativa" else 14.0
 	var source := Rect2(float(frame % 3) * CELL, float(floori(frame / 3.0)) * CELL, CELL, CELL)
-	if kind == "guarda_reativa" and frame == 5:
-		# Exclude sparks that spill into this cell from its neighboring impact pose.
-		var crop := Rect2(120,80,392,340)
-		var scale_factor := target.size.x / CELL
-		target = Rect2(target.position + crop.position * scale_factor, crop.size * scale_factor)
-		source = Rect2(source.position + crop.position, crop.size)
-	# The reference faces right. Mirroring preserves its poses for leftward casts.
-	if direction.x < -0.3: draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
+	# Direction now applies only to energy; the original explorer keeps its
+	# matching four-direction body art and never gets rotated with the overlay.
+	if absf(direction.y) > absf(direction.x):
+		var pivot := Vector2(0,-24)
+		var angle := direction.angle()
+		draw_set_transform(pivot-pivot.rotated(angle),angle)
+	elif direction.x < 0.0: draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1.0, 1.0))
 	var outline := source_outline(frame)
 	if outline.is_empty(): draw_texture_rect_region(atlas, target, source)
 	else: _draw_complete_frame(atlas, target, source, outline)
