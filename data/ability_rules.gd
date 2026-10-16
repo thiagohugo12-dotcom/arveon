@@ -15,7 +15,7 @@ const CATEGORIES := {
 			{"id":"guarda_reativa","name":"Guarda Reativa","prof":8,"cooldown":12.0,"power":0.0,"type":"defense"},
 			{"id":"estocada_precisa","name":"Estocada Precisa","prof":25,"cooldown":10.0,"power":1.80,"type":"physical"},
 			{"id":"ruptura_ancestral","name":"Ruptura Ancestral","prof":40,"cooldown":14.0,"power":2.25,"type":"physical"}],
-		"ultimate":{"id":"danca_laminas","name":"Dança das Lâminas","prof":15,"type":"physical"},
+		"ultimate":{"id":"danca_laminas","name":"Kamusari","prof":15,"type":"physical"},
 		"passives":[{"id":"fio_afiado","name":"Fio Afiado","prof":5},{"id":"ritmo_combate","name":"Ritmo de Combate","prof":12},{"id":"postura_firme","name":"Postura Firme","prof":20},
 			{"id":"instinto_veterano","name":"Instinto Veterano","prof":35},
 			{"id":"vontade_ancestral","name":"Vontade Ancestral","prof":50}],
@@ -122,7 +122,8 @@ const EFFECTS := {
 	"onda_arcana":{"shape":"disk","reach":170.0},
 	"selo_mistico":{"shape":"disk","reach":220.0,"mark":0.15,"control":0.5},
 	"barreira_espiritual":{"shape":"guard","duration":5.0},
-	"danca_laminas":{"shape":"disk","reach":150.0,"power":0.85,"hits":4},
+	# Stable ID for v11 saves; Kamusari is one powerful frontal energy cut.
+	"danca_laminas":{"shape":"cone","reach":320.0,"dot":0.48,"power":3.4,"hits":1},
 	"furia_machado":{"shape":"buff","duration":8.0},
 	"muralha_lancas":{"shape":"cone","reach":250.0,"dot":0.1,"power":3.5,"control":1.0},
 	"chuva_flechas":{"shape":"disk","reach":320.0,"power":3.2},

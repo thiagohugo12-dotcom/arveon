@@ -11,7 +11,7 @@ const ROWS := [
 	[{"kind":"passive","id":"fio_afiado","prof":5,"name":"Fio Afiado"}, {"kind":"talent","id":"guarda_aperfeicoada","prof":10,"name":"Guarda Aperfeiçoada"}],
 	[{"kind":"talent","id":"sequencia_precisa","prof":10,"name":"Sequência Precisa"}, {"kind":"specialization","id":"escolha","prof":18,"name":"Especialização"}],
 	[{"kind":"passive","id":"ritmo_combate","prof":12,"name":"Ritmo de Combate"}, {"kind":"passive","id":"postura_firme","prof":20,"name":"Postura Firme"}],
-	[{"kind":"ultimate","id":"danca_laminas","prof":15,"name":"Dança das Lâminas"}, {"kind":"talent","id":"postura_equilibrada","prof":20,"name":"Postura Equilibrada"}],
+	[{"kind":"ultimate","id":"danca_laminas","prof":15,"name":"Kamusari"}, {"kind":"talent","id":"postura_equilibrada","prof":20,"name":"Postura Equilibrada"}],
 	[{"kind":"talent","id":"contra_ataque_fatal","prof":20,"name":"Contra-ataque Fatal"}, {}],
 	[{"kind":"normal","id":"estocada_precisa","prof":25,"name":"Estocada Precisa"}, {}],
 	[{"kind":"mastery","id":"lamina_perfeita","prof":30,"name":"Lâmina Perfeita"}, {}],

@@ -29,7 +29,7 @@ Implementação na branch \`feat/progressao-etapa2\`, sem modificar \`main\`.
 - As cinco categorias reconhecem limite 60; o catálogo de desbloqueios **após 30 foi expandido somente para Espada**, conforme o escopo aprovado.
 - **Pontos gerais** ainda financiam talentos e graus, e **Treinamento da Arma** ainda financia os quatro atributos do antigo Domínio. A unificação de moedas deve ser tratada em migração posterior, não alterada silenciosamente neste passe.
 - Os quatro atributos de Treinamento mantêm seus limites anteriores; acima da proficiência 45 podem restar pontos não alocáveis. Corrigir durante redesenho final dos pontos exclusivos de arma.
-- O ataque especial visual estilo Kamusari ainda não foi produzido; a Maestria Suprema usa a Ultimate jogável atual, sem fingir ter uma nova animação.
+- A Ultimate da Espada usa o nome visível **Kamusari** e animação de corte frontal vermelho. O ID interno `danca_laminas` permanece para manter a compatibilidade dos saves v11. O antigo disco de quatro golpes foi substituído por corte frontal único, alcance 320 px, multiplicador 3,4x provisório, sem alterar carga, desbloqueio ou slots. Guarda Reativa e Estocada Precisa recebem apresentação exclusiva com o corpo da Espada já aprovado e efeitos visuais sem colisão.
 - O mapa, os controles mobile, slots existentes e a localização do armazenamento Web não mudaram.
 
 ## Aceitação

@@ -300,7 +300,7 @@ func _sword_evolution_page() -> void:
 			desc = AbilityRules.MASTERY_HELP.espada+"\nAutomática. Não exige equipar a Ultimate."
 		"supreme":
 			title = "ASCENSÃO DA LÂMINA · MAESTRIA SUPREMA 60"
-			desc = "Automática: a Ultimate Dança das Lâminas causa 20% mais dano a partir da proficiência 60."
+			desc = "Automática: a Ultimate Kamusari causa 20% mais dano a partir da proficiência 60."
 	if title.is_empty():
 		title = "Escolha um marco da árvore"
 	_label(title,sword_detail,true)
