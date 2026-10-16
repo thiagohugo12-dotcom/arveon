@@ -10,3 +10,13 @@ Status: sprites refeitos para seguir os seis quadros das três referências do j
 - Na direção horizontal esquerda, a apresentação espelha a arte. As poses foram aprovadas como referência voltada para a direita; em ataques verticais, a apresentação preserva a orientação artística lateral. Uma futura arte direcional exigirá atlas próprios.
 
 Fonte visual: as três pranchas de seis quadros aprovadas na conversa, usadas como referência direta para os novos sprites. Não há dependência dos quadros em tempo de execução.
+
+## Ritmo aprovado em 16/10/2026
+
+Thiago avaliou a prévia reproduzível dos seis quadros e autorizou colocá-la no jogo. A apresentação usa os mesmos intervalos da prévia, em segundos:
+
+- Estocada Precisa: 0,55 / 0,35 / 0,26 / 0,33 / 0,42 / 0,62.
+- Guarda Reativa: 0,50 / 0,38 / aro durante a janela real de proteção / 0,45 no bloqueio / 0,38 no contra-ataque / 0,65 na recuperação. Sem bloqueio, a guarda passa direto do aro à recuperação.
+- Kamusari: 0,50 / 0,55 / 0,26 / 0,39 / 0,42 / 0,72.
+
+Os tempos são somente visuais. Dano, recargas, duração da proteção, colisões e save v11 continuam sob suas regras existentes. Publicação limitada ao TESTE fixo, conforme o contrato anterior do projeto.
