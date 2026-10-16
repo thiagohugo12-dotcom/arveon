@@ -7,6 +7,7 @@ var sword_pose := ""
 var sword_pose_time := 0.0
 var sword_pose_duration := 0.32
 var sword_pose_row := 3
+var sword_body_hidden := false
 
 func _ready() -> void:
 	ground_effect = preload("res://scripts/demos/skill1_ground_effect.gd").new()
@@ -58,10 +59,15 @@ func clear_sword_technique() -> void:
 	sword_pose = ""
 	sword_pose_time = 0.0
 	if is_instance_valid(sword_technique): sword_technique.clear()
+	sword_body_hidden = false
 	queue_redraw()
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	var hide_body := is_instance_valid(sword_technique) and sword_technique.replaces_body()
+	if hide_body != sword_body_hidden:
+		sword_body_hidden = hide_body
+		queue_redraw()
 	if not village_scale:
 		clear_sword_technique()
 	elif sword_pose_time > 0.0:
@@ -69,7 +75,7 @@ func _process(delta: float) -> void:
 		if sword_pose_time <= 0.0: sword_pose = ""
 
 func _draw_explorer(tint: Color) -> void:
-	if skill_category == "espada" and village_scale and is_instance_valid(sword_technique) and sword_technique.remaining > 0.0:
+	if skill_category == "espada" and village_scale and is_instance_valid(sword_technique) and sword_technique.replaces_body():
 		# The six-frame atlas includes the complete explorer, so do not draw a second body.
 		return
 	super._draw_explorer(tint)

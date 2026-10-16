@@ -20,3 +20,11 @@ Thiago avaliou a prévia reproduzível dos seis quadros e autorizou colocá-la n
 - Kamusari: 0,50 / 0,55 / 0,26 / 0,39 / 0,42 / 0,72.
 
 Os tempos são somente visuais. Dano, recargas, duração da proteção, colisões e save v11 continuam sob suas regras existentes. Publicação limitada ao TESTE fixo, conforme o contrato anterior do projeto.
+
+## Correção de escala e ritmo — 16/10/2026
+
+O ritmo acima foi rejeitado no jogo por ser grande, lento e mal executado. A revisão usa Estocada em 0,335 s e Kamusari em 0,485 s, com antecipação curta, golpe rápido e recuperação. A Guarda prepara em 0,12 s, mostra o corpo normal durante sua proteção real de 3 s e reage em 0,22 s; depois volta ao aro enquanto houver proteção.
+
+Cada pose tem registro próprio pelos pés e corpo normalizado a 60 px, correspondente ao explorador. O renderer redesenha o corpo ao entrar/sair da sequência, acompanha a profundidade do personagem em movimento e elimina faíscas de células vizinhas da recuperação. O corte vermelho dissipa nas bordas do atlas com alpha de vértices, evitando um recorte retangular; sem shader ou nova arte. O início do treino foi movido para a clareira leste, para não esconder jogador/alvo sob uma copa.
+
+Conferência local: quadros das três técnicas renderizados pelo Godot/OpenGL no cenário real de treino, comparados ao explorador normal. As regras de combate continuam independentes da apresentação.
