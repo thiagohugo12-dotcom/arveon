@@ -250,6 +250,8 @@ jobs:
         run: node tools/build-art-sample.mjs
       - name: Prepare isolated sword review entry
         run: node tools/build-sword-demo.mjs
+      - name: Prepare isolated sword animation review
+        run: node tools/build-sword-animation-review.mjs
       - name: Prepare isolated bow review entry
         run: node tools/build-bow-demo.mjs
       - name: Prepare isolated staff review entry

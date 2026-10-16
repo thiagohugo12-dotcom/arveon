@@ -1,6 +1,15 @@
 {
   "headers": [
     {
+      "source": "/amostra-animacoes-espada/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
       "source": "/amostra-espada/(.*)",
       "headers": [
         {
@@ -81,6 +90,10 @@
     {
       "source": "/amostra-mata",
       "destination": "/amostra-mata/index.html"
+    },
+    {
+      "source": "/amostra-animacoes-espada",
+      "destination": "/amostra-animacoes-espada/index.html"
     }
   ]
 }
