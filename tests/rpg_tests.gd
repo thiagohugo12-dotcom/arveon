@@ -166,8 +166,10 @@ static func _gameplay(suite, main) -> void:
 	suite.check(not player.use_skill(1) and target.health.current == after_technique,"technique cannot reactivate during its cooldown")
 	player.health.initialize(100)
 	suite.check(player.use_skill(2) and player.class_combat.guard_left == 3.0,"Guarda Reativa replaces old Fury with a category defense technique")
+	suite.check((player.view as Skill1GameView).sword_technique.kind == "guarda_reativa" and (player.view as Skill1GameView).sword_pose_time > 0, "sword guard displays its dedicated stance and shield without changing combat")
 	player.receive_damage(8)
 	suite.check(player.health.current == 94,"reactive guard grants bounded damage resistance without healing")
+	suite.check((player.view as Skill1GameView).sword_technique.bursts == 1, "blocked hit triggers a visual counter spark exactly once")
 	driver.blocked = true
 	player._physics_process(7.0)
 	suite.check(player.class_combat.guard_left == 0.0 and player.skill_cooldowns[2] > 0.0,"guard expires while its identifier cooldown remains")

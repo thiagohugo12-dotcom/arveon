@@ -125,6 +125,8 @@ func receive(amount: int) -> int:
 	if guard_left > 0:
 		scale -= 0.30
 		counter_left = 3.0
+		if category == "espada" and player.view is Skill1GameView:
+			(player.view as Skill1GameView).play_sword_counter(player.last_direction)
 	if has_passive("postura_firme") and player.velocity.length_squared() < 4: scale -= 0.08
 	if has_passive("vontade_ancestral") and player.health.current < player.health.maximum*0.5: scale -= 0.10
 	if has_talent("bastiao_ancestral") and guard_left > 0: scale -= 0.08
@@ -188,7 +190,10 @@ func use(index: int) -> bool:
 			barrier = maxi(barrier,10+player.spirit)
 			counter_left = 3.0
 	if index > 0 and not ultimate: perfect_ready = false
-	player.view.play_skill(2 if ultimate else mini(index,1))
+	if category == "espada" and player.view is Skill1GameView and rule.id in ["guarda_reativa","estocada_precisa","danca_laminas"]:
+		(player.view as Skill1GameView).play_sword_technique(rule.id,player.last_direction,guard_left)
+	else:
+		player.view.play_skill(2 if ultimate else mini(index,1))
 	player.skill_used.emit(index)
 	return true
 
