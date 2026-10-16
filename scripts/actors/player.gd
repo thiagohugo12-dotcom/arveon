@@ -8,6 +8,7 @@ signal skill_used(index: int)
 @onready var dash: DashMotor = $DashMotor
 @onready var attack: AutoAttack = $AutoAttack
 @onready var view: ActorView = $View
+@onready var sword_skill_vfx: SwordSkillVfx = $SwordSkillVfx
 var input_driver: InputDriver
 var progress: GameProgress
 var class_combat := ClassCombat.new()
@@ -62,6 +63,7 @@ func _ready() -> void:
 	health.changed.connect(view.set_health)
 	health.died.connect(_on_died)
 	attack.attacked.connect(_on_attack)
+	skill_used.connect(_on_sword_skill_used)
 	health.initialize(stats.max_hp)
 
 func _physics_process(delta: float) -> void:
@@ -73,6 +75,7 @@ func _physics_process(delta: float) -> void:
 	attack.damage_scale = 1.0
 	view.set_fury(fury_left > 0.0)
 	if not health.is_alive() or input_driver == null:
+		_clear_sword_skills()
 		_cancel_skill1()
 		_clear_sword_visual()
 		_clear_bow_visual()
@@ -82,6 +85,7 @@ func _physics_process(delta: float) -> void:
 		view.set_moving(false)
 		return
 	if input_driver.blocked:
+		_clear_sword_skills()
 		_cancel_skill1()
 		_clear_sword_visual()
 		_clear_bow_visual()
@@ -104,6 +108,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	view.set_moving(velocity.length_squared() > 1.0)
+	if SafeCamp.in_clearance(global_position): _clear_sword_skills()
 	_tick_skill1(delta)
 	_prepare_sword_visual()
 	_prepare_bow_visual()
@@ -204,9 +209,30 @@ func _prepare_sword_visual() -> void:
 	else:
 		sword_view.cancel_preparation()
 
+func _clear_sword_skills() -> void:
+	if is_instance_valid(sword_skill_vfx):
+		sword_skill_vfx.clear()
+	if view is Skill1GameView:
+		(view as Skill1GameView).clear_sword_special()
+
+func _on_sword_skill_used(index: int) -> void:
+	if index not in [1, 2] or progress == null or progress.active_category() != "espada":
+		return
+	if not view is Skill1GameView or not view.village_scale:
+		return
+	var id: String = progress.abilities.loadouts.espada.skills[index - 1]
+	if id not in [SwordSkillVfx.GUARDA, SwordSkillVfx.ESTOCADA, SwordSkillVfx.KAMUSARI]:
+		return
+	var effect := AbilityRules.effect(id, int(progress.abilities.grades.espada.get(id, 1)))
+	(view as Skill1GameView).play_sword_special(id, last_direction)
+	if is_instance_valid(sword_skill_vfx):
+		sword_skill_vfx.play_skill(id, last_direction, effect, class_combat.guard_left)
+
 func receive_damage(amount: int, damage_type: String = "physical") -> void:
 	if SafeCamp.in_clearance(global_position) or not health.is_alive() or amount <= 0:
 		return
+	if is_instance_valid(sword_skill_vfx) and progress != null and progress.active_category() == "espada" and class_combat.guard_left > 0.0:
+		sword_skill_vfx.guard_impact()
 	var reduced := RPGRules.received_damage(amount,damage_type,armor,resistance)
 	reduced = class_combat.receive(reduced) if progress != null else reduced
 	var before := health.current
@@ -240,7 +266,9 @@ func apply_progression(value: GameProgress, initial: bool = false) -> void:
 		view.configure(attack.weapon.category)
 	elif view is Skill1GameView and view.skill_config.is_empty():
 		view.configure(attack.weapon.category)
-	if not _uses_sword_visual(): _clear_sword_visual()
+	if not _uses_sword_visual():
+		_clear_sword_visual()
+		_clear_sword_skills()
 	if not _uses_bow_visual(): _clear_bow_visual()
 	if not _uses_staff_visual(): _clear_staff_visual()
 	_sync_melee_weapon()
@@ -328,6 +356,7 @@ func _on_attack(target: Node2D) -> void:
 		view.play_attack(target.global_position-global_position)
 
 func _on_died() -> void:
+	_clear_sword_skills()
 	_cancel_skill1()
 	_clear_melee_visual()
 	_clear_staff_visual()
