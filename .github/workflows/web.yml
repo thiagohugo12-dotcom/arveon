@@ -193,6 +193,14 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:|FIRST_WEAPON_FAIL:' /tmp/first-weapon-render.log; then exit 1; fi
           grep -E '^FIRST_WEAPON_RESULT: [0-9]+ checks, 0 failures$' /tmp/first-weapon-render.log
           test "$(find build/first-weapon-qa -name '*.png' | wc -l)" -eq 8
+      - name: Verify original explorer identity during sword techniques
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 35s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/sword_identity_capture.gd 2>&1 | tee /tmp/sword-identity.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/sword-identity.log; then exit 1; fi
+          grep '^SWORD_IDENTITY_RESULT: 72 checks, 0 failures$' /tmp/sword-identity.log
       - name: Probe bounded Skill 1 effects in software GL
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         shell: bash
@@ -471,3 +479,6 @@ jobs:
           path: loading-live-qa/
           if-no-files-found: error
           retention-days: 14
+
+
+
