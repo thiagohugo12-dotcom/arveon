@@ -324,7 +324,7 @@ jobs:
     name: Preview proposed Godot Web changes
     needs: web
     if: >-
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'feat/andar1-v020-primeiro-passe' || github.head_ref == 'feat/progressao-etapa2')) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'feat/andar1-v020-primeiro-passe' || github.head_ref == 'feat/progressao-etapa2' || github.head_ref == 'feat/modo-treino-livre-20261015')) ||
       (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe' || github.ref == 'refs/heads/feat/progressao-etapa2'))
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -375,6 +375,26 @@ jobs:
           ')"
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
+          # Isolated training preview: no fixed TESTE alias and NEVER production.
+          if [[ "$PREVIEW_BRANCH" == "feat/modo-treino-livre-20261015" ]]; then
+            PREVIEW_URL="$preview_url" node --input-type=module -e '
+              import {readFile} from "node:fs/promises";
+              import {createHash} from "node:crypto";
+              const base = process.env.PREVIEW_URL;
+              const hash = b => createHash("sha256").update(b).digest("hex");
+              for (const path of ["index.html","index.pck"]) {
+                const expected = hash(await readFile(path));
+                const response = await fetch(new URL(path,base),{cache:"no-store",signal:AbortSignal.timeout(30000)});
+                if(!response.ok || hash(Buffer.from(await response.arrayBuffer())) !== expected) {
+                  throw Error("Isolated training preview mismatch: "+path);
+                }
+                console.log("TREINO_PREVIEW_MATCH:",path,expected);
+              }
+            '
+            echo "[Modo Treino — Preview isolado]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Alias fixo de TESTE e PRODUÇÃO preservados." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           if [[ -f ../source/tools/skill1-review.json ]]; then
             skill1_status="$(node --input-type=module -e '
               import { readFileSync } from "node:fs";
