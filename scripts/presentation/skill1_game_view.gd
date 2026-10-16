@@ -1,12 +1,18 @@
 class_name Skill1GameView
 extends "res://scripts/demos/skill1_actor_view.gd"
 ## Reuses approved skill presentation; combat remains owned by PlayerActor.
+const TECHNIQUE_POSES := {
+	"estocada_precisa": [0,0,1,1,1,5],
+	"guarda_reativa": [0,1,1,1,1,5],
+	"danca_laminas": [0,0,1,1,1,5]
+}
 var ground_effect: Node2D
 var sword_technique: SwordTechniqueEffect
 var sword_pose := ""
 var sword_pose_time := 0.0
 var sword_pose_duration := 0.32
 var sword_pose_row := 3
+var displayed_technique_frame := -1
 
 func _ready() -> void:
 	ground_effect = preload("res://scripts/demos/skill1_ground_effect.gd").new()
@@ -36,11 +42,11 @@ func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> 
 	if not id in ["guarda_reativa", "estocada_precisa", "danca_laminas"]: return
 	var actor: Node2D = get_parent()
 	sword_pose = id
-	sword_pose_duration = 0.44 if id == "danca_laminas" else 0.32
-	sword_pose_time = sword_pose_duration
 	sword_pose_row = SwordActorView.direction_row(aim)
 	sword_technique.cast(id, actor.global_position, aim, guard_time)
-	sword_technique.z_index = clampi(roundi(actor.global_position.y) + 100, -4096, 4096)
+	sword_pose_duration = sword_technique.duration
+	sword_pose_time = sword_pose_duration
+	sword_technique.z_index = clampi(roundi(actor.global_position.y) + 99, -4096, 4096)
 	skill_left = 0.0
 	queue_redraw()
 
@@ -48,20 +54,25 @@ func play_sword_counter(aim: Vector2) -> void:
 	if not is_instance_valid(sword_technique) or sword_technique.kind != "guarda_reativa": return
 	var actor := get_parent() as Node2D
 	sword_pose = "guarda_reativa"
-	sword_pose_time = 0.26
-	sword_pose_duration = 0.26
 	sword_pose_row = SwordActorView.direction_row(aim)
 	sword_technique.counter(actor.global_position, aim)
+	sword_pose_duration = sword_technique.remaining
+	sword_pose_time = sword_pose_duration
 	queue_redraw()
 
 func clear_sword_technique() -> void:
 	sword_pose = ""
 	sword_pose_time = 0.0
 	if is_instance_valid(sword_technique): sword_technique.clear()
+	displayed_technique_frame = -1
 	queue_redraw()
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	var technique_frame := sword_technique._frame() if is_instance_valid(sword_technique) and sword_technique.remaining > 0.0 else -1
+	if technique_frame != displayed_technique_frame:
+		displayed_technique_frame = technique_frame
+		queue_redraw()
 	if not village_scale:
 		clear_sword_technique()
 	elif sword_pose_time > 0.0:
@@ -70,6 +81,15 @@ func _process(delta: float) -> void:
 
 func _draw_explorer(tint: Color) -> void:
 	if skill_category == "espada" and village_scale and is_instance_valid(sword_technique) and sword_technique.remaining > 0.0:
-		# The six-frame atlas includes the complete explorer, so do not draw a second body.
+		var frame := sword_technique._frame()
+		if sword_technique.kind == "guarda_reativa" and frame == 2:
+			super._draw_explorer(tint)
+			return
+		# The approved basic atlas is built from the exact PEOPLE pixels. Reuse
+		# its articulated upper body and normal walking legs for every technique.
+		var pose: int = TECHNIQUE_POSES[sword_technique.kind][frame]
+		var legs := anim_frame if walking or settle_left > 0 else 0
+		draw_texture_rect_region(VillageActorArt.PEOPLE,Rect2(-32,0,64,16),Rect2(legs*32,sword_pose_row*40+32,32,8),tint)
+		draw_texture_rect_region(SwordActorView.SWORD,Rect2(-80,-104,160,160),Rect2(pose*80,sword_pose_row*80,80,80),tint)
 		return
 	super._draw_explorer(tint)

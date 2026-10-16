@@ -639,7 +639,8 @@ func _start_training() -> void:
 	hud.close_character()
 	input_driver.reset()
 	input_driver.blocked = false
-	player.position = Vector2(930,750)
+	# The east clearing keeps the explorer and target visible below the canopies.
+	player.position = Vector2(900,440)
 	player.last_direction = Vector2.RIGHT
 	player.view.set_facing(Vector2.RIGHT)
 	player.apply_progression(progress,true)
