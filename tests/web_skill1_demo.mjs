@@ -183,7 +183,8 @@ try{
   check(errors.length===0,'no Web runtime errors: '+errors.join('\n'));
   console.log(`WEB_SKILL1_RESULT: ${checks} checks, 0 failures`);
 }finally{
-  if(socket?.readyState===1){try{await call('Browser.close');}catch{}socket.close();}
-  if(chrome?.exitCode===null){await Promise.race([new Promise(r=>chrome.once('exit',r)),delay(3000)]);if(chrome.exitCode===null)chrome.kill();}
+  if(socket?.readyState===1){try{await Promise.race([call('Browser.close'),delay(2000)]);}catch{}socket.close();}
+  if(chrome?.exitCode===null){chrome.kill('SIGTERM');await Promise.race([new Promise(r=>chrome.once('exit',r)),delay(3000)]);if(chrome.exitCode===null)chrome.kill('SIGKILL');}
+  server.closeAllConnections();
   server.close();
 }
