@@ -116,7 +116,7 @@ func _draw_estocada(progress: float) -> void:
 	])
 	draw_colored_polygon(tip, Color(BLUE.r, BLUE.g, BLUE.b, 0.85 * opacity))
 	for streak in [-1.0, 1.0]:
-		var offset := side * streak * (11.0 + progress * 8.0)
+		var offset: Vector2 = side * float(streak) * (11.0 + progress * 8.0)
 		draw_line((tail + offset - direction * 10.0).round(), (head - direction * 24.0 + offset).round(), Color(BLUE.r, BLUE.g, BLUE.b, 0.54 * opacity), 2.0, false)
 
 func _draw_kamusari(progress: float) -> void:
