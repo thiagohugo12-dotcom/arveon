@@ -7,7 +7,7 @@ static func run(suite: SceneTree) -> void:
 		p.equipment[weapon] = 0
 		p.equip(weapon)
 		suite.check(p.active_class() == TalentRules.CLASSES[weapon],"dynamic class follows equipped "+weapon)
-		p.talents.record_damage(weapon,TalentRules.xp_floor(30)+99999)
+		p.talents.record_damage(weapon,TalentRules.xp_floor(30)*TalentRules.DAMAGE_PER_XP)
 		suite.check(p.talents.level(weapon) == 30 and p.talents.mastery_points(weapon) == 29 and p.skill_points() == 39,"proficiency caps independently and grants mastery not talent points "+weapon)
 		for i in range(12): suite.check(p.talents.allocate_mastery(weapon,"Dano",i),"mastery basic allocation "+weapon+str(i))
 		suite.check(not p.talents.allocate_mastery(weapon,"Dano",12) and not p.talents.allocate_mastery(weapon,"Dano Especial",1),"mastery cap and stale tap rejected "+weapon)
@@ -36,6 +36,7 @@ static func run(suite: SceneTree) -> void:
 		for level in range(1,31):
 			var old: Dictionary = JSON.parse_string(p.to_json())
 			old.version = old_version
+			old.rpg.skills = preload("res://tests/etapa2_fixtures.gd").legacy_skills(p)
 			old.talents.erase("mastery")
 			old.talents.erase("damage_remainder")
 			for weapon: String in ArsenalRules.CATEGORIES:
@@ -48,6 +49,7 @@ static func run(suite: SceneTree) -> void:
 	# Existing temporary tree and legacy ranks survive migration together.
 	var old: Dictionary = JSON.parse_string(p.to_json())
 	old.version = 7
+	old.rpg.skills = preload("res://tests/etapa2_fixtures.gd").legacy_skills(p)
 	old.rpg.attributes = {"Força":3,"Vitalidade":2,"Agilidade":7,"Espírito":4}
 	old.rpg.skills["Corte Circular"] = 3
 	old.talents.erase("mastery")
@@ -56,7 +58,7 @@ static func run(suite: SceneTree) -> void:
 	old.talents.learned.espada = ["corte","vigor","guarda","investida","furia","especializacao"]
 	# Other categories must also use the old curve.
 	for weapon: String in ["machado","lanca","arco","cajado"]: old.talents.xp[weapon] = 8700
-	suite.check(restored.load_text(JSON.stringify(old)) and restored.talents.level("espada") == 18 and restored.talents.spent() == 6 and restored.skills["Corte Circular"] == 3 and restored.attribute_points() == 69,"v7 preserves acquired tree ranks and exact Agility refund")
+	suite.check(restored.load_text(JSON.stringify(old)) and restored.talents.level("espada") == 18 and restored.talents.spent() == 0 and restored.skills.is_empty() and restored.skill_points() == 39 and restored.attribute_points() == 69,"v7 refunds all replaced nodes and global skills exactly once, preserves Agility refund")
 	var raw := JSON.stringify(old)
 	var envelope := JSON.stringify({"format":"grande-arvore-rpg-save","archive_version":1,"payload":raw,"sha256":raw.sha256_text()})
 	var path := "user://qa_progression_migration_%d.json" % Time.get_ticks_usec()
@@ -69,10 +71,19 @@ static func run(suite: SceneTree) -> void:
 	suite.check(imported.import_backup(envelope,true) and imported.to_json() == original,"repeated old import refunds once and never adds rewards")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
+	var reset_sample := GameProgress.new()
+	reset_sample.talents.xp.espada = TalentRules.xp_floor(10)
+	suite.check(reset_sample.talents.allocate_mastery("espada","Crítico",0),"allocate category Domain before respec")
+	var before_other: Dictionary = reset_sample.talents.mastery.machado.duplicate(true)
+	suite.check(reset_sample.talents.reset_mastery("espada") and reset_sample.talents.mastery_points("espada") == 9 and reset_sample.talents.mastery.machado == before_other,"Domain reset refunds only selected category")
+	suite.check(not reset_sample.talents.reset_mastery("espada"),"empty Domain reset rejected")
+	suite.check(reset_sample.load_text(reset_sample.to_json()) and reset_sample.talents.mastery_points("espada") == 9,"Domain reallocation persists after save roundtrip")
+
 static func run_world(suite: SceneTree) -> void:
 	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
 	var path := "user://qa_effective_damage_%d.json" % Time.get_ticks_usec()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",path)
+	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	suite.root.add_child(main)
 	main.set_process(false)
@@ -144,19 +155,20 @@ static func run_world(suite: SceneTree) -> void:
 		suite.check(target.health.current == before-int(expected.damage) and target.view.damage_critical,"actual basic critical damage and feedback "+category)
 		await suite.frames()
 	CombatRules.random_roll_source = func(): return 0.99
-	# Current techniques retain physical scaling, even with the magical staff.
-	main.progress.talents.xp.cajado = TalentRules.xp_floor(18)
+	# Staff Skill 1 now follows magical Spirit scaling and special Domain.
+	main.progress.talents.xp.cajado = TalentRules.xp_floor(25)
 	main.progress.talents.mastery.cajado["Dano Especial"] = 12
+	main.progress.abilities.select_skill("cajado",1,"barreira_espiritual",25,true)
 	main.player.apply_progression(main.progress)
 	var base_stats: Dictionary = main.progress.combat_stats()
 	var hp_before := target.health.current
-	main.player.skill_cooldowns[0] = 0
+	preload("res://tests/etapa2_fixtures.gd").reset(main.player)
 	main.player.use_skill(0)
-	var expected_skill := CombatRules.resolve(base_stats.physical,1+base_stats.automatic+base_stats.special,1.4,base_stats.critical_chance,base_stats.critical_multiplier,0.99)
-	suite.check(target.health.current == hp_before-int(expected_skill.damage),"staff keeps existing physical technique, with special mastery but no Spirit leakage")
-	main.player.skill_cooldowns[2] = 0
-	main.player.use_skill(2)
-	suite.check(main.player.fury_left == 6 and main.player.attack.damage_scale == 1.3,"special mastery does not increase Fury duration or its buff magnitude")
+	preload("res://tests/etapa2_fixtures.gd").finish_skill1(main.player)
+	for shot: PlayerProjectile in preload("res://tests/arsenal_combat_tests.gd").shots(main): shot._physics_process(0.3)
+	var expected_skill := CombatRules.resolve(base_stats.magical,1+base_stats.automatic+base_stats.special,1.45,base_stats.critical_chance,base_stats.critical_multiplier,0.99)
+	suite.check(target.health.current == hp_before-int(expected_skill.damage),"staff Orbe Arcano scales with magical Spirit and special Domain")
+	suite.check(main.player.use_skill(2) and main.player.class_combat.barrier > 0 and main.player.class_combat.guard_left == 5.0,"staff barrier absorbs damage instead of invoking a global Fury")
 	main.queue_free()
 	await suite.frames()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)

@@ -2,7 +2,7 @@ class_name TalentRules
 extends RefCounted
 
 # Provisional values approved as an adjustable first playable tree (ADR).
-const MAX_PROFICIENCY := 30
+const MAX_PROFICIENCY := 60
 const DAMAGE_PER_XP := 10 # Provisional: carry every fractional unit between hits/saves.
 const CLASSES := {"espada":"Espadachim","machado":"Guerreiro de Machado","lanca":"Lanceiro","arco":"Arqueiro","cajado":"Místico"}
 const MASTERY := {"Dano":{"cap":12,"step":0.01},"Dano Especial":{"cap":12,"step":0.0125},"Crítico":{"cap":10,"step":0.01},"Dano Crítico":{"cap":10,"step":0.03}}

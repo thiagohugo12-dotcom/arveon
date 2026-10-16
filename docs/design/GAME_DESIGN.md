@@ -1,4 +1,75 @@
+## Clareza dos menus — aprovada em 15/10/2026
+Conforme CLAREZA_MENUS_MOBILE.md e pedido para ajustar Ferreiro, Vendedor,
+Habilidades e Treinamento: reduzir texto repetido, explicitar preços e pontos,
+separar catálogos e mostrar ações no detalhe selecionado. Preservar todas as
+transações, regras, preços e dados. Publicar somente no TESTE.
+
+## Interface da Espada — aprovada em 15/10/2026
+Conforme INTERFACE_ESPADA_DIARIO.md e pedido “Vamos colocar a nova interface”:
+aplicar pergaminho, ícones e conexões da referência 77175.png ao primeiro passe
+da Espada já existente, preservando seus marcos até 60 e regras atuais.
+Toque mostra requisitos/ações; rolagem e retorno ao nó funcionam no celular.
+Somente TESTE; sem novos efeitos, custos, moedas ou migração de save v11.
+
+## Skills 1 V2 - integracao aprovada em 14/10/2026
+Thiago aprovou o preview 55617e3 com "pronto, gostei" e "pode integrar".
+Escolheu explicitamente "Preparacao completa antes do impacto": startup de
+0.24-0.36s conforme arma, seguido de uma unica execucao original. Caminhada
+permitida; dano, alcance, cooldown e projeteis mantidos. Publicar somente no
+TESTE fixo apos validacao. Basicos, Skills 2/3, Ultimates e save v11 preservados.
+
+## Skills 1 - atuacao corporal V2 autorizada
+Pedido do usuario: movimentos reais de corpo, apoio, antecipacao e recuperacao
+conforme referencia das cinco armas. Preview isolado, sem alterar combate ou
+basicos. Conforme docs/decisions/SKILLS1_V1.md; avaliacao visual pendente.
+
 # Game Design — fundação v0.1
+## Skills 1 V1 - autorizadas em 14/10/2026
+Conforme SKILLS1_V1.md: cinco etapas independentes com commit/testes,
+animacoes exclusivas de Skill 1 e um preview isolado. Preservar os cinco
+basicos, ClassCombat/AbilityRules, progressao, Skill 2/3 e Ultimates.
+Nao publicar no TESTE fixo antes da aprovacao visual.
+
+## Machado e Lanca V1 - integracao aprovada em 14/10/2026
+Thiago aprovou as demonstracoes com "implemente". Integrar os mesmos sprites
+no ataque basico do jogo e publicar somente no TESTE apos os testes.
+Preservar Espada, Arco, Cajado, caminhada, Skills, regras e save v11.
+
+## Machado e Lanca V1 - desenvolvimento autorizado em 14/10/2026
+Thiago autorizou as duas armas restantes. Conforme ANIMACAO_MACHADO_LANCA_V1.md,
+criar demonstracoes isoladas com golpe amplo/estocada, preservando regras,
+explorador e armas aprovadas. Integracao apos avaliacao visual.
+
+## Cajado V1 - integracao aprovada em 14/10/2026
+Thiago aprovou visualmente com "coloque no jogo". Integrar o atlas existente
+ao ataque basico do Andar 1 e publicar somente no TESTE apos validacao.
+Preservar Espada, Arco, caminhada, Skills, regras e save v11.
+
+## Cajado V1 — demonstração autorizada em 14/10/2026
+Conforme ANIMACAO_CAJADO_V1.md: criar apenas apresentação do básico do Místico
+em preview isolado, com braços curtos, canalização e orbe verde-azulado.
+Preservar espada, arco, caminhada, regras e save v11. TESTE fixo/produção
+permanecem na versão aprovada. Integração depende de aprovação visual.
+
+## Arco V1 — integração autorizada em 14/10/2026
+Conforme ANIMACAO_ARCO_V1.md: encurtar braços nas quatro direções do atlas
+existente e integrar o básico no Andar 1. Publicar somente no TESTE fixo após
+validação. Preservar espada, caminhada, regras, atributos, Skills e save v11.
+Machado/Lança/Cajado aguardam aprovação; produção fora do escopo.
+
+## Espada V1 — integração aprovada em 13/10/2026
+Conforme ANIMACAO_ESPADA_V1.md e “aprovado, pode colocar” de Thiago:
+aplicar o ataque de espada aprovado ao explorador do Andar 1 e ao TESTE fixo,
+preservando caminhada, regras, feedback, outras armas e saves v11.
+Demonstração comparativa mantida; produção e outras animações fora do escopo.
+
+## Primeira arma — aprovada em 13/10/2026
+Conforme PRIMEIRA_ARMA.md e pedido completo de Thiago: novos personagens
+começam desarmados e seguem O Primeiro Passo até o Ferreiro. Uma das cinco
+armas iniciais é escolhida gratuitamente, equipada e salva uma única vez.
+Sem XP/ouro adicionais. Outras armas continuam fabricáveis; personagens
+existentes ficam isentos. Save v11 preserva v1–10 e seus dados.
+
 ## Progressão — Etapa 1, aprovada em 12/10/2026
 Conforme PROGRESSAO_ETAPA1.md e pedido completo de Thiago: seis atributos,
 classes por categoria equipada, proficiência 1–30 por dano efetivo, domínio
@@ -176,3 +247,17 @@ Não alterar main/PRODUÇÃO, mecânicas, mapas, personagens ou persistência.
 
 ## Árvores e livro ilustrado — 12/10/2026
 Aprovados conforme TALENTOS_DIARIO_V2.md: proficiência abre caminhos, nível geral dá pontos. O orçamento de habilidades existente é compartilhado com talentos. Técnicas adquiridas são preservadas. Primeiro recorte aperfeiçoa os três efeitos existentes e adiciona passivas por categoria; valores provisórios no ADR. Novas técnicas e seleção dos dois slots ainda pendentes. Save v7 migra v1–6.
+
+
+## Etapa 2 aprovada em 12/10/2026
+O contrato em `docs/decisions/PROGRESSAO_ETAPA2.md` substitui as habilidades e árvores antigas. Ultimate ocupa opcionalmente Skill 2 ou 3, Maestria 30 é automática e Domínio permanece separado.
+
+
+
+
+
+## Layout dos quatro menus — aprovado em 15/10/2026
+Thiago aprovou a prancha visual e autorizou aplicar a composição dos menus
+Ferreiro, Vendedor, Habilidades e Treinamento. Contrato:
+LAYOUT_MENUS_APROVADO_20261015.md. Somente UI; economia, combate, progressão
+e save v11 preservados, publicação exclusiva em TESTE.

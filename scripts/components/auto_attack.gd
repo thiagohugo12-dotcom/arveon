@@ -13,9 +13,10 @@ var critical_multiplier := 1.5
 var damage_type := "physical"
 const EMPTY_SEARCH_INTERVAL := 0.08
 var search_left := 0.0
+var armed := true
 
 func tick(delta: float, origin: Node2D) -> void:
-	if SafeCamp.in_clearance(origin.global_position):
+	if not armed or SafeCamp.in_clearance(origin.global_position):
 		return
 	cooldown_left = maxf(0.0, cooldown_left - delta)
 	search_left = maxf(0.0, search_left - delta)
@@ -33,17 +34,21 @@ func tick(delta: float, origin: Node2D) -> void:
 	cooldown_left = weapon.interval
 	search_left = 0.0
 	attacked.emit(target)
-	var hit := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale,critical_chance,critical_multiplier,CombatRules.roll())
+	var modifiers := {"scale":1.0,"chance":critical_chance,"charge_scale":1.0}
+	if origin is PlayerActor and origin.progress != null and target is EnemyActor: modifiers = origin.class_combat.hit_modifiers(target,"basic")
+	var roll := CombatRules.roll()
+	var hit := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale*float(modifiers.scale),float(modifiers.chance),critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > critical_chance else -1.0)
+	var eligible := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale*float(modifiers.charge_scale),float(modifiers.chance),critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > critical_chance else -1.0)
 	var hit_damage: int = hit.damage
 	var event := CombatRules.next_event()
 	if weapon.projectile_kind.is_empty():
-		if target is EnemyActor: target.receive_damage(hit_damage,weapon.category,event,damage_type,hit.critical)
+		if target is EnemyActor: target.receive_damage(hit_damage,weapon.category,event,damage_type,hit.critical,false,"basic",eligible.damage)
 		else: target.receive_damage(hit_damage)
 	else:
-		projectile_requested.emit(origin, target, {"damage": hit_damage, "kind": weapon.projectile_kind, "speed": weapon.projectile_speed, "reach": weapon.reach, "category":weapon.category,"event":event,"damage_type":damage_type,"critical":hit.critical})
+		projectile_requested.emit(origin, target, {"damage": hit_damage, "kind": weapon.projectile_kind, "speed": weapon.projectile_speed, "reach": weapon.reach, "category":weapon.category,"event":event,"damage_type":damage_type,"critical":hit.critical,"ultimate":false,"source":"basic","eligible_damage":eligible.damage})
 
 func select_target(origin: Node2D) -> Node2D:
-	if weapon == null:
+	if not armed or weapon == null:
 		return null
 	var selected: Node2D = null
 	var best_distance: float = weapon.reach * weapon.reach

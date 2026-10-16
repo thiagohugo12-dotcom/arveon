@@ -20,7 +20,18 @@
           const current = storage.getItem(KEY);
           if (!replace && current !== expected) return 'conflict';
           if (current === text) return 'ok';
-          if (current !== null) storage.setItem(PREVIOUS, current);
+          if (current !== null) {
+            // Immutable historical source, separate from rotating recovery mirror.
+            let outer;
+            try { outer = JSON.parse(current); } catch (_) { outer = {}; }
+            const payload = typeof outer.payload === 'string' ? JSON.parse(outer.payload) : outer;
+            if (Number.isInteger(payload.version) && payload.version > 0 && payload.version < 11) {
+              const original = KEY + '.v' + payload.version + '.original';
+              if (storage.getItem(original) === null) storage.setItem(original, current);
+              if (storage.getItem(original) === null) return 'storage';
+            }
+            storage.setItem(PREVIOUS, current);
+          }
           storage.setItem(KEY, text);
           if (storage.getItem(KEY) !== text) return 'storage';
           expected = text;

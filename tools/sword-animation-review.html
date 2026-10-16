@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ARVÉON — prévia das animações da espada</title>
+<style>
+  :root{color-scheme:dark;font-family:Georgia,serif;background:#151b17;color:#f7e6bf}
+  *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -10%,#314736,#151b17 70%);padding:calc(18px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+  main{max-width:1250px;margin:auto}header{display:flex;align-items:end;justify-content:space-between;gap:18px;border-bottom:2px solid #a77b48;padding:0 0 14px}h1{font-size:clamp(29px,4vw,50px);margin:0;letter-spacing:.025em}.eyebrow{font:700 12px system-ui;letter-spacing:.19em;color:#e5ab69;text-transform:uppercase}.sub{font:16px/1.4 system-ui;color:#d7c9ac;margin:8px 0 0}.status{font:700 12px/1.3 system-ui;color:#f4d993;background:#4b3226;border:1px solid #bc854b;padding:9px 12px;border-radius:3px;white-space:nowrap}
+  .tabs{display:flex;gap:8px;margin:20px 0 14px;overflow:auto;padding-bottom:4px}.tab{white-space:nowrap;min-height:48px;padding:10px 17px;background:#263d31;border:2px solid #73593a;color:#ead7ac;font:700 16px Georgia;cursor:pointer}.tab[aria-selected=true]{background:#bd975b;color:#231b15;border-color:#ffdda0}.tab:focus-visible,button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid #fff3ae;outline-offset:2px}
+  .columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}.panel{background:#eedbb3;color:#2e261d;border:6px double #8c5e34;box-shadow:0 9px 0 #0b100c,0 16px 30px #0007;min-width:0;padding:15px}.panel h2{font-size:25px;margin:0 0 6px}.hint{font:14px/1.45 system-ui;color:#4d4334;margin:0 0 12px}.arena{background-color:#34352c;background-image:linear-gradient(45deg,#3b3b2f 25%,transparent 25%),linear-gradient(-45deg,#3b3b2f 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#3b3b2f 75%),linear-gradient(-45deg,transparent 75%,#3b3b2f 75%);background-size:32px 32px;background-position:0 0,0 16px,16px -16px,-16px 0;border:4px solid #664f36;aspect-ratio:16/9;display:grid;place-items:center;overflow:hidden}
+  canvas{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}.frameinfo{display:flex;justify-content:space-between;gap:12px;font:700 14px system-ui;margin:12px 0}.timeline{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}.step{min-height:42px;padding:6px 3px;border:2px solid #93754b;background:#e8cb91;color:#3a2d20;font:700 12px system-ui;cursor:pointer}.step[aria-current=step]{background:#24533b;color:#fff6d9;border-color:#142c20}
+  .controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:13px}button{touch-action:manipulation}.control{min-height:44px;border:2px solid #4a3322;background:#2c513a;color:#fff4da;padding:7px 13px;font:700 15px Georgia;cursor:pointer}.control.secondary{background:#f4e6c5;color:#35271a}.control:disabled{opacity:.5;cursor:default}.speed{display:flex;align-items:center;gap:7px;margin-left:auto;font:700 13px system-ui}.speed select{height:44px;border:2px solid #795633;background:#fff0cb;color:#302216;font:700 15px system-ui}
+  .reference{display:block;width:100%;height:auto;border:3px solid #654b34;background:#171818}.ref-link{display:block;text-align:right;margin-top:8px;color:#244b38;font:700 14px system-ui}.note{margin-top:16px;background:#1d3025;border:1px solid #96784a;padding:13px 16px;font:14px/1.5 system-ui;color:#e8d8b9}.note strong{color:#ffd799}.muted{color:#c6b79b}footer{font:13px/1.45 system-ui;color:#bfb096;margin-top:18px}
+  @media(max-width:780px){header{display:block}.status{display:inline-block;margin-top:12px}.columns{grid-template-columns:1fr}.panel{padding:10px}.panel h2{font-size:22px}.tabs{margin-top:14px}.arena{aspect-ratio:4/3}.step{font-size:11px}.speed{margin-left:0}.reference{max-height:65vh;object-fit:contain}}
+</style>
+</head>
+<body>
+<main>
+  <header><div><div class="eyebrow">ARVÉON · Ascensão Ancestral</div><h1>Prévia das técnicas da Espada</h1><p class="sub">Assista ao movimento antes de decidir o que ajustar.</p></div><span class="status">EM ANÁLISE · aguardando sua avaliação</span></header>
+  <nav class="tabs" aria-label="Escolher técnica">
+    <button class="tab" data-id="estocada" aria-selected="true">Estocada Precisa</button>
+    <button class="tab" data-id="guarda" aria-selected="false">Guarda Reativa</button>
+    <button class="tab" data-id="kamusari" aria-selected="false">Kamusari</button>
+  </nav>
+  <div class="columns">
+    <section class="panel" aria-label="Animação">
+      <h2 id="title">Estocada Precisa</h2><p class="hint" id="description"></p>
+      <div class="arena"><canvas id="preview" width="640" height="360" aria-label="Quadro da animação em reprodução"></canvas></div>
+      <div class="frameinfo"><span id="frame-label">Quadro 1 de 6</span><span id="beat"></span></div>
+      <div class="timeline" id="timeline" aria-label="Selecionar quadro"></div>
+      <div class="controls"><button class="control" id="play">Pausar</button><button class="control secondary" id="prev" aria-label="Quadro anterior">◀</button><button class="control secondary" id="next" aria-label="Próximo quadro">▶</button><button class="control secondary" id="restart">Repetir</button><button class="control secondary" id="mirror">Direção: direita</button><label class="speed">Velocidade <select id="speed"><option value=".5">0,5×</option><option value="1" selected>1×</option><option value="1.5">1,5×</option></select></label></div>
+    </section>
+    <section class="panel" aria-label="Referência original">
+      <h2>Referência enviada</h2><p class="hint">A prancha original permanece inteira para comparar pose, trajetória e cores.</p>
+      <a id="reference-link" href="ref-estocada.png" target="_blank" rel="noopener"><img id="reference" class="reference" src="ref-estocada.png" alt="Prancha original de seis quadros da Estocada Precisa"></a><a class="ref-link" id="open-original" href="ref-estocada.png" target="_blank" rel="noopener">Abrir referência em tamanho original ↗</a>
+    </section>
+  </div>
+  <aside class="note"><strong>Como avaliar:</strong> compare os seis quadros e a animação em movimento com a referência. A Guarda mostra um bloqueio simulado após a postura defensiva; no jogo, essa reação só aparece quando há um golpe recebido. Esta é uma página de revisão visual, sem alterar progresso ou salvar dados.</aside>
+  <footer>Os sprites nesta prévia são os mesmos arquivos usados pelo jogo. A prévia não representa aprovação das artes.</footer>
+</main>
+<script>
+const skills={
+  estocada:{name:'Estocada Precisa',sprite:'estocada_precisa.png',ref:'ref-estocada.png',description:'Avanço curto, estocada azul em linha reta e faísca de contato.',beats:['Postura','Preparação','Avanço','Estocada','Impacto','Recuperação'],times:[140,130,115,155,140,300]},
+  guarda:{name:'Guarda Reativa',sprite:'guarda_reativa.png',ref:'ref-guarda.png',description:'Espada erguida, aro de proteção, bloqueio e resposta azul.',beats:['Postura','Preparação','Guarda ativa','Bloqueio simulado','Contra-ataque','Recuperação'],times:[140,160,1050,160,180,330]},
+  kamusari:{name:'Kamusari',sprite:'kamusari.png',ref:'ref-kamusari.png',description:'Energia vermelha, corte amplo, impacto em área e recuperação.',beats:['Preparação','Carregamento','Início do corte','Corte Kamusari','Impacto','Recuperação'],times:[150,155,120,175,150,360]}
+};
+const $=id=>document.getElementById(id), canvas=$('preview'), ctx=canvas.getContext('2d',{alpha:true});
+let id='estocada',frame=0,playing=true,mirror=false,speed=1,elapsed=0,last=0,loadToken=0,img=new Image();
+ctx.imageSmoothingEnabled=false;
+function loadSkill(next){
+  id=next;frame=0;elapsed=0;playing=true;$('play').textContent='Pausar';
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.id===id)));
+  const s=skills[id];$('title').textContent=s.name;$('description').textContent=s.description;
+  $('reference').src=s.ref;$('reference').alt='Prancha original de seis quadros da '+s.name;
+  $('reference-link').href=s.ref;$('open-original').href=s.ref;
+  const token=++loadToken;img=new Image();img.onload=()=>{if(token===loadToken)draw()};img.src=s.sprite;
+  refresh();
+}
+function draw(){
+  ctx.clearRect(0,0,640,360);
+  if(!img.complete||!img.naturalWidth)return;
+  const x=(frame%3)*512,y=Math.floor(frame/3)*512;
+  ctx.save();if(mirror){ctx.translate(640,0);ctx.scale(-1,1)}
+  const side=id==='kamusari'?250:224;
+  // The source pose's feet align near the lower edge of each atlas cell.
+  ctx.drawImage(img,x,y,512,512,320-side/2,185-side*.84,side,side);
+  ctx.restore();
+}
+function refresh(){
+  $('frame-label').textContent='Quadro '+(frame+1)+' de 6';$('beat').textContent=skills[id].beats[frame];
+  $('timeline').innerHTML=skills[id].beats.map((beat,i)=>'<button class="step" type="button" data-frame="'+i+'" aria-current="'+(frame===i?'step':'false')+'" aria-label="Quadro '+(i+1)+': '+beat+'">'+(i+1)+'. '+beat+'</button>').join('');
+  draw();
+}
+function step(n){frame=(n+6)%6;elapsed=0;refresh()}
+function loop(t){if(!last)last=t;const dt=Math.min(80,t-last);last=t;if(playing&&img.complete&&img.naturalWidth){elapsed+=dt*speed;const span=skills[id].times[frame];if(elapsed>=span){elapsed%=span;step(frame+1)}}requestAnimationFrame(loop)}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>loadSkill(b.dataset.id)));
+$('timeline').addEventListener('click',e=>{const b=e.target.closest('[data-frame]');if(b){playing=false;$('play').textContent='Reproduzir';step(Number(b.dataset.frame))}});
+$('play').addEventListener('click',()=>{playing=!playing;$('play').textContent=playing?'Pausar':'Reproduzir'});
+$('prev').addEventListener('click',()=>{playing=false;$('play').textContent='Reproduzir';step(frame-1)});
+$('next').addEventListener('click',()=>{playing=false;$('play').textContent='Reproduzir';step(frame+1)});
+$('restart').addEventListener('click',()=>{step(0);playing=true;$('play').textContent='Pausar'});
+$('mirror').addEventListener('click',()=>{mirror=!mirror;$('mirror').textContent='Direção: '+(mirror?'esquerda':'direita');draw()});
+$('speed').addEventListener('change',e=>{speed=Number(e.target.value)});
+loadSkill(id);requestAnimationFrame(loop);
+</script>
+</body>
+</html>

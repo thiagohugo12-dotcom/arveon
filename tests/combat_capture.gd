@@ -38,6 +38,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
 	var save_path := "user://qa_combat_%d.json" % Time.get_ticks_usec()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", save_path)
+	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
 	main.set_process(false)
@@ -119,7 +120,8 @@ func _run() -> void:
 		main.enemy.view.previous_damage_left = 0.0
 		main.player.attack.cooldown_left = 0.0
 		main.player.attack.search_left = 0.0
-		main.player.skill_cooldowns[0] = 0.0
+		preload("res://tests/etapa2_fixtures.gd").reset(main.player)
+		main.player.last_direction = Vector2.LEFT
 		main.hud.set_rpg_status(main.progress, main.player)
 		await _frames()
 		main.player._physics_process(0.0)
@@ -129,8 +131,9 @@ func _run() -> void:
 		skill.position = main.hud.actions[0].get_global_rect().get_center()
 		main.hud.actions[0]._input(skill)
 		main.hud.actions[0]._input(skill)
-		_check(main.enemy.health.current == 19 and main.player.skill_cooldowns[0] > 0.0, "touch skill responds once alongside separate basic hit %s" % resolution)
-		_check(main.enemy.view.damage_amount == 17 and main.enemy.view.previous_damage_amount == 12, "two rapid intentional hits retain distinct labels %s" % resolution)
+		preload("res://tests/etapa2_fixtures.gd").finish_skill1(main.player)
+		_check(main.enemy.health.current == 20 and main.player.skill_cooldowns[0] > 0.0, "touch skill responds once alongside separate basic hit %s" % resolution)
+		_check(main.enemy.view.damage_amount == 16 and main.enemy.view.previous_damage_amount == 12, "two rapid intentional hits retain distinct labels %s" % resolution)
 		skill.pressed = false
 		main.hud.actions[0]._input(skill)
 		main.enemy.view._process(0.055)

@@ -27,6 +27,7 @@ static func run_state(suite) -> void:
 	for version in range(1, 6):
 		var legacy := saved.duplicate(true)
 		legacy.version = version
+		legacy.rpg.skills = preload("res://tests/etapa2_fixtures.gd").legacy_skills(progress)
 		legacy.rpg.attributes = preload("res://tests/progression_tests.gd").legacy_attributes(progress.attributes)
 		legacy.erase("ascension")
 		if version == 4:
@@ -35,6 +36,7 @@ static func run_state(suite) -> void:
 		suite.check(loaded.load_save() and loaded.ascension.defeats["1"] == 23 and loaded.gold == 17 and loaded.kills == 23, "v%d migration credits previous real Mata kills without changing rewards" % version)
 	var old_many := saved.duplicate(true)
 	old_many.version = 5
+	old_many.rpg.skills = preload("res://tests/etapa2_fixtures.gd").legacy_skills(progress)
 	old_many.rpg.attributes = preload("res://tests/progression_tests.gd").legacy_attributes(progress.attributes)
 	old_many.kills = 99
 	old_many.erase("ascension")
@@ -67,6 +69,7 @@ static func run_world(suite) -> void:
 	var old_path := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
 	var path := "user://qa_tower_world_%d.json" % Time.get_ticks_usec()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", path)
+	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	suite.root.add_child(main)
 	main.set_process(false)

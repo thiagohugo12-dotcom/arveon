@@ -6,7 +6,11 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 9
+const SAVE_VERSION := 11
+# Legacy-format mode remains only for migration fixtures. Runtime uses v10.
+var etapa2_enabled := true
+var abilities := AbilityState.new()
+var migration_refund := 0
 const ATTRIBUTES := RPGRules.ATTRIBUTES
 const MAX_LEVEL := RPGRules.MAX_LEVEL
 const POINTS_PER_LEVEL := 2
@@ -18,6 +22,7 @@ var talents := TalentProgress.new()
 var floor_states: Dictionary = {}
 
 func _init() -> void:
+	if etapa2_enabled: skills = {}
 	for id in range(1,6):
 		floor_states[str(id)] = _empty_floor()
 
@@ -52,6 +57,7 @@ var disk_writes := 0
 var browser := BrowserSave.new()
 
 var save_path: String = "user://andar1_progress.json"
+var training_mode := false # Disposable practice session; never written to a journal.
 var bag: Dictionary = {}
 var chest: Dictionary = {}
 var gold: int = 0
@@ -68,6 +74,37 @@ var skills: Dictionary = {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral
 # Recipe IDs are unique inventory identities; equipping never removes ownership.
 var equipment: Dictionary = {"espada": 0}
 var equipped: Dictionary = {"Arma": "espada", "Armadura": "", "Acessório": ""}
+# Existing snapshots are exempt; only the no-save runtime starts the introduction.
+var introduction: Dictionary = {"status":"legacy","met_smith":false,"weapon":""}
+
+func begin_new_character() -> void:
+	equipment = {}
+	equipped = {"Arma":"","Armadura":"","Acessório":""}
+	introduction = {"status":"active","met_smith":false,"weapon":""}
+
+func introduction_active() -> bool:
+	return introduction.status == "active"
+
+func introduction_summary() -> String:
+	return "O Primeiro Passo\n" + ("✓ Encontre o Ferreiro\nEscolha sua primeira arma" if introduction.met_smith else "Encontre o Ferreiro\nEscolha sua primeira arma")
+
+func meet_smith() -> bool:
+	if not introduction_active() or introduction.met_smith: return false
+	introduction.met_smith = true
+	return true
+
+func claim_first_weapon(id: String, at_smith: bool) -> bool:
+	# Reward and completion share a single durable snapshot. No UI state grants items.
+	if not at_smith or save_blocked or not introduction_active() or not introduction.met_smith or not ArsenalRules.CATEGORIES.has(id) or not equipment.is_empty(): return false
+	var previous := introduction.duplicate()
+	equipment[id] = 0
+	equipped.Arma = id
+	introduction = {"status":"complete","met_smith":true,"weapon":id}
+	if save(true): return true
+	equipment.erase(id)
+	equipped.Arma = ""
+	introduction = previous
+	return false
 
 func level() -> int:
 	return RPGRules.level_for_xp(xp)
@@ -79,12 +116,14 @@ func attribute_points() -> int:
 	return maxi(0, (level() - 1) * 2 - spent)
 
 func skill_points() -> int:
+	if etapa2_enabled: return maxi(0,level()-1-abilities.spent())
 	var spent := 0
 	for value in skills.values():
 		spent += int(value) - 1
 	return maxi(0, level() - 1 - spent - talents.spent())
 
-func learn_talent(weapon: String, node: String) -> bool:
+func learn_talent(weapon: String, node: String, at_camp: bool = false) -> bool:
+	if etapa2_enabled: return abilities.learn_talent(weapon,node,talents.level(weapon),skill_points(),at_camp)
 	return talents.learn(weapon,node,skill_points())
 
 func active_class() -> String:
@@ -94,6 +133,10 @@ func active_category() -> String:
 	return ArsenalRules.weapon_category(equipped.Arma)
 
 func skill_rank(index: int) -> int:
+	if etapa2_enabled:
+		var category := active_category()
+		if index == 0 or category.is_empty(): return 1
+		return int(abilities.grades[category].get(abilities.loadouts[category].skills[index-1],1))
 	var rank := int(skills[RPGRules.SKILLS[index]])
 	var weapon := active_category()
 	for node: String in talents.learned.get(weapon,[]):
@@ -107,13 +150,17 @@ func allocate_attribute(name: String) -> bool:
 	attributes[name] = int(attributes[name]) + 1
 	return true
 
-func improve_skill(name: String) -> bool:
+func improve_skill(name: String, at_camp: bool = false) -> bool:
+	if etapa2_enabled:
+		var parts := name.split(":")
+		return parts.size() == 2 and abilities.improve(parts[0],parts[1],talents.level(parts[0]),skill_points(),at_camp)
 	if not RPGRules.SKILLS.has(name) or skill_points() < 1 or int(skills[name]) >= 3:
 		return false
 	skills[name] = int(skills[name]) + 1
 	return true
 
 func can_forge(id: String) -> bool:
+	if introduction_active(): return false
 	if not RPGRules.EQUIPMENT.has(id) or (equipment.has(id) and int(equipment[id]) >= 3):
 		return false
 	var cost := RPGRules.recipe(id, equipment.has(id), int(equipment.get(id, 0)))
@@ -136,6 +183,30 @@ func forge(id: String, expected_upgrade: int) -> bool:
 			bag.erase(item)
 	equipment[id] = expected_upgrade + 1
 	return true
+
+# Gold-only starter shop at the Ferreiro. The free first-weapon gift is separate.
+static func starter_weapon_price(id: String) -> int:
+	if not ArsenalRules.CATEGORIES.has(id): return -1
+	return int(RPGRules.EQUIPMENT[id].gold)
+
+func can_buy_starter_weapon(id: String) -> bool:
+	var price := starter_weapon_price(id)
+	return not introduction_active() and not save_blocked and price > 0 and not equipment.has(id) and gold >= price
+
+func purchase_starter_weapon(id: String, at_smith: bool) -> bool:
+	# The caller must verify the player is actually at the Ferreiro.
+	if not at_smith or not can_buy_starter_weapon(id): return false
+	var price := starter_weapon_price(id)
+	var previous_weapon: String = equipped.Arma
+	gold -= price
+	equipment[id] = 0
+	equipped.Arma = id
+	# One durable transaction: balance, ownership and active class.
+	if save(true): return true
+	gold += price
+	equipment.erase(id)
+	equipped.Arma = previous_weapon
+	return false
 
 func equip(id: String) -> bool:
 	if not equipment.has(id) or not RPGRules.EQUIPMENT.has(id) or level() < int(ArsenalRules.metadata(id).level):
@@ -167,7 +238,7 @@ func combat_stats() -> Dictionary:
 		result.physical += int(bonus.damage)
 		result.magical += int(bonus.damage) + int(bonus.spirit) * 2
 		for key: String in ["hp","speed","spirit","armor"]: result[key] += bonus[key]
-	var passive := talents.bonuses(active_category())
+	var passive := {"damage":0,"hp":0,"armor":0} if etapa2_enabled else talents.bonuses(active_category())
 	result.physical += int(passive.damage)
 	result.magical += int(passive.damage)
 	result.hp += int(passive.hp)
@@ -253,12 +324,15 @@ func death_loss() -> String:
 
 func to_json() -> String:
 	_store_floor()
-	return JSON.stringify({"version": SAVE_VERSION, "bag": bag, "chest": chest,
+	var payload := {"version": SAVE_VERSION if etapa2_enabled else 9, "bag": bag, "chest": chest,
 		"gold": gold, "xp": xp, "talents": talents.to_save(), "kills": kills, "mission_index": mission_index,
 		"mission_progress": mission_progress, "mission_completed": mission_completed,
 		"harvested_until": harvested_until, "opened_caches": opened_caches,
 		"discovered_pois": discovered_pois, "adventures": adventures, "ascension": ascension.to_save(), "floor_states": floor_states, "rpg": {"level": level(), "attributes": attributes,
-		"skills": skills, "equipment": equipment, "equipped": equipped, "equipment_meta": equipment_metadata()}})
+		"skills": {} if etapa2_enabled else skills, "equipment": equipment, "equipped": equipped, "equipment_meta": equipment_metadata()}}
+	if etapa2_enabled: payload["abilities"] = abilities.to_save()
+	if etapa2_enabled: payload["introduction"] = introduction
+	return JSON.stringify(payload)
 
 func _web_save() -> bool:
 	return OS.has_feature("web") and save_path == "user://andar1_progress.json"
@@ -288,7 +362,8 @@ func _valid_text(text: String) -> bool:
 	var candidate = get_script().new()
 	return candidate.load_text(text)
 
-func save() -> bool:
+func save(require_journal: bool = false) -> bool:
+	if training_mode: return true
 	if save_blocked:
 		return false
 	var text := to_json()
@@ -316,7 +391,7 @@ func save() -> bool:
 		if result != "ok":
 			save_blocked = result == "conflict"
 			save_status = "Outra aba alterou o save. Reabra o jogo nesta aba." if save_blocked else "Backup do navegador indisponível; exporte um arquivo."
-			if save_blocked:
+			if save_blocked or require_journal:
 				return false
 	if not _replace_file(save_path, text):
 		save_status = "Falha ao gravar; cópia anterior preservada."
@@ -540,8 +615,29 @@ func load_text(text: String) -> bool:
 		for rank: int in new_rpg.skills.values(): remaining -= rank-1
 		new_talents = TalentProgress.from_save(parsed.get("talents"),remaining,loaded_version < 9)
 		if new_talents == null: return false
+	var new_abilities := AbilityState.new()
+	if loaded_version >= 10:
+		for category: String in new_talents.learned:
+			if not new_talents.learned[category].is_empty(): return false
+		var levels := {}
+		for category: String in AbilityRules.CATEGORIES: levels[category] = new_talents.level(category)
+		new_abilities = AbilityState.from_save(parsed.get("abilities"),levels,RPGRules.level_for_xp(int(parsed.xp))-1)
+		if new_abilities == null: return false
+	var new_introduction := {"status":"legacy","met_smith":false,"weapon":""}
+	if loaded_version >= 11:
+		var intro: Variant = parsed.get("introduction")
+		if not intro is Dictionary or intro.size() != 3 or not intro.get("met_smith") is bool or not intro.get("status") is String or not intro.get("weapon") is String: return false
+		if intro.status not in ["active","complete","legacy"]: return false
+		if intro.status == "active":
+			if intro.weapon != "" or not new_rpg.equipment.is_empty() or new_rpg.equipped.Arma != "" or parsed.xp != 0 or parsed.kills != 0 or parsed.mission_index != 0 or parsed.mission_progress != 0 or parsed.mission_completed != 0: return false
+		elif intro.status == "complete":
+			if not intro.met_smith or not ArsenalRules.CATEGORIES.has(intro.weapon) or not new_rpg.equipment.has(intro.weapon): return false
+		elif intro.weapon != "" or intro.met_smith: return false
+		new_introduction = intro.duplicate()
 	# Commit all validated fields together; malformed trees cannot partially load.
+	introduction = new_introduction
 	talents = new_talents
+	abilities = new_abilities
 	floor_states = new_floors
 	adventures = new_adventures
 	ascension = new_ascension
@@ -560,6 +656,8 @@ func load_text(text: String) -> bool:
 	skills = new_rpg.skills
 	equipment = new_rpg.equipment
 	equipped = new_rpg.equipped
+	if loaded_version >= 10: etapa2_enabled = true
+	elif etapa2_enabled: migrate_etapa2()
 	return true
 
 func equipment_metadata() -> Dictionary:
@@ -575,7 +673,7 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 		if not value.get(field) is Dictionary:
 			return null
 	var attribute_names: Array = RPGRules.LEGACY_ATTRIBUTES if version < 8 else RPGRules.ATTRIBUTES
-	if value.attributes.size() != attribute_names.size() or value.skills.size() != 3 or value.equipped.size() != 3:
+	if value.attributes.size() != attribute_names.size() or value.skills.size() != (0 if version >= 10 else 3) or value.equipped.size() != 3:
 		return null
 	var attribute_spent := 0
 	var skill_spent := 0
@@ -586,7 +684,7 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 			return null
 		attribute_spent += int(amount)
 		if name != "Agilidade": result.attributes[name] = int(amount)
-	for name: String in RPGRules.SKILLS:
+	for name: String in (RPGRules.SKILLS if version < 10 else []):
 		var amount: Variant = value.skills.get(name)
 		if not _bounded_integer(amount, 1, 3):
 			return null
@@ -701,3 +799,42 @@ func adventure_summary() -> String:
 		if adventures[key] < ADVENTURES[key]:
 			return "%s %d/%d" % [names[key], adventures[key], ADVENTURES[key]]
 	return "Desafios do Andar 1 concluídos"
+
+func migrate_etapa2() -> int:
+	# Called only on a completely validated legacy snapshot. No currency grants,
+	# fivefold refunds or additive point wallets: available = earned - investments.
+	var refund := talents.spent()
+	for rank: int in skills.values(): refund += rank-1
+	for category: String in talents.learned: talents.learned[category].clear()
+	skills = {}
+	etapa2_enabled = true
+	migration_refund = refund
+	return refund
+
+func configure_ability(action: String, category: String, id: String, slot: int, at_camp: bool) -> bool:
+	if not at_camp or not AbilityRules.CATEGORIES.has(category): return false
+	var prof := talents.level(category)
+	match action:
+		"equip_skill":
+			if slot not in [0,1]: return false
+			if not id.is_empty() and not AbilityRules.available(category,id,prof): return false
+			var slots: Array = abilities.loadouts[category].skills
+			if not id.is_empty() and slots[1-slot] == id:
+				slots[1-slot] = slots[slot]
+				slots[slot] = id
+				return true
+			return abilities.select_skill(category,slot,id,prof,true)
+		"equip_passive":
+			if slot not in [0,1]: return false
+			var rule := AbilityRules.passive(category,id)
+			if not id.is_empty() and (rule.is_empty() or prof < int(rule.prof)): return false
+			var slots: Array = abilities.loadouts[category].passives
+			if not id.is_empty() and slots[1-slot] == id:
+				slots[1-slot] = slots[slot]
+				slots[slot] = id
+				return true
+			return abilities.select_passive(category,slot,id,prof,true)
+		"specialization": return abilities.set_specialization(category,id,prof,true)
+		"reset_tree": return abilities.refund(category,true)
+		"reset_mastery": return talents.reset_mastery(category)
+	return false

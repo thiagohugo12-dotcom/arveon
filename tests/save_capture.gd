@@ -18,6 +18,7 @@ func capture(name: String) -> void:
 
 func _run() -> void:
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", "user://qa_save_capture_%d.json" % Time.get_ticks_usec())
+	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	main.set_process(false)

@@ -18,6 +18,7 @@ var spike_points: Array[Vector2] = []
 var attack_hit := false
 
 func _physics_process(delta: float) -> void:
+	tick_ability_status(delta)
 	velocity = Vector2.ZERO
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive():
 		_clear_warning()

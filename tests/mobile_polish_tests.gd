@@ -14,6 +14,8 @@ static func run(suite, main) -> void:
 	var hud: GameHUD = main.hud
 	var player: PlayerActor = main.player
 	player.set_physics_process(false)
+	preload("res://tests/etapa2_fixtures.gd").unlock(main.progress)
+	player.apply_progression(main.progress)
 	player.health.initialize(player.stats.max_hp)
 	player.position = SafeCamp.RESPAWN
 	hud.restart.hide()
@@ -74,7 +76,7 @@ static func run(suite, main) -> void:
 		suite.check(main.input_driver.touch_direction.x > 0.0, "joystick movement reaches driver %s" % resolution)
 		for i in range(3):
 			player.charge_left = 0.0
-			player.skill_cooldowns[i] = 0.0
+			preload("res://tests/etapa2_fixtures.gd").reset(player)
 			hud.set_rpg_status(main.progress, player)
 			var skill := InputEventScreenTouch.new()
 			skill.index = 51
@@ -96,13 +98,16 @@ static func run(suite, main) -> void:
 	p.allocate_attribute("Vitalidade")
 	hud.set_rpg_status(p, player)
 	suite.check(hud.character_button.notification, "remaining talent points keep character notification after attributes are spent")
-	p.improve_skill("Corte Circular")
+	p.talents.xp.espada = TalentRules.xp_floor(3)
+	p.talents.allocate_mastery("espada","Dano",0)
+	p.talents.allocate_mastery("espada","Dano",1)
+	p.improve_skill("espada:corte_crescente",true)
 	hud.set_rpg_status(p,player)
 	suite.check(not hud.character_button.notification,"spending all character point budgets clears notification")
 	for i in range(3):
-		player.skill_cooldowns[i] = 0.0
+		preload("res://tests/etapa2_fixtures.gd").reset(player)
 	hud.set_rpg_status(p, player)
-	suite.check(hud.actions[0].caption.text.is_empty() and hud.actions[1].caption.text.is_empty() and hud.actions[2].caption.text.is_empty(), "ready touch skills show icons without keyboard numbers")
+	suite.check(hud.actions[0].caption.text.is_empty() and hud.actions[1].caption.text == "—" and hud.actions[2].caption.text == "—", "ready Skill 1 and empty slots have clear independent feedback")
 	main._toggle_map()
 	var escape := InputEventAction.new()
 	escape.action = "ui_cancel"
@@ -124,5 +129,5 @@ static func run(suite, main) -> void:
 	restored.save_path = path
 	suite.check(restored.load_save() and restored.save(), "v0.3.0 save loads and saves without migration loss")
 	var after := JSON.parse_string(FileAccess.get_file_as_string(path)) as Dictionary
-	suite.check(before == after and int(after.version) == GameProgress.SAVE_VERSION, "UI roundtrip preserves every current save field")
+	suite.check(before == after and int(after.version) == (GameProgress.SAVE_VERSION if p.etapa2_enabled else 9), "UI roundtrip preserves every current save field")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

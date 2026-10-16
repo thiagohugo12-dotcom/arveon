@@ -46,6 +46,7 @@ static func run(suite: SceneTree) -> void:
 		p.ascension.complete_forest_trial()
 	var old: Dictionary = JSON.parse_string(p.to_json())
 	old.version = 7
+	old.rpg.skills = preload("res://tests/etapa2_fixtures.gd").legacy_skills(p)
 	old.rpg.attributes = {"Força":3,"Vitalidade":2,"Agilidade":7,"Espírito":4}
 	old.talents = {"xp":{"espada":3100,"machado":590,"lanca":210,"arco":20,"cajado":8700},"learned":{"espada":["corte","vigor","guarda","investida","furia","especializacao"],"machado":[],"lanca":[],"arco":[],"cajado":[]}}
 	var raw := JSON.stringify(old)
@@ -61,7 +62,7 @@ static func run(suite: SceneTree) -> void:
 	restored.save_path = path
 	suite.check(restored.load_save() and restored.save() and FileAccess.get_file_as_string(path+".v7.original") == raw,"old v7 disk migration preserves byte-exact original")
 	suite.check(restored.ascension.campaign_completed and restored.ascension.current_floor == 5 and restored.floor_states == p.floor_states and restored.bag == p.bag and restored.chest == p.chest and restored.gold == 777,"migration preserves five floors exploration inventory and economy")
-	suite.check(restored.attribute_points() == 69 and restored.skills == p.skills and restored.equipment == p.equipment and restored.talents.level("espada") == 18 and restored.talents.level("cajado") == 30 and restored.talents.spent() == 6,"migration preserves acquired proficiency ranks and purchases with exact refund")
+	suite.check(restored.attribute_points() == 69 and restored.skills.is_empty() and restored.skill_points() == 39 and restored.equipment == p.equipment and restored.talents.level("espada") == 18 and restored.talents.level("cajado") == 30 and restored.talents.spent() == 0,"migration preserves proficiencies and refunds replaced purchases exactly once")
 	var imported: GameProgress = restored.preview_backup(archive)
 	suite.check(imported != null and imported.to_json() == restored.to_json(),"checksummed v7 archive and filesystem migration produce identical state")
 	for suffix: String in ["",".bak",".v7.original"]: DirAccess.remove_absolute(ProjectSettings.globalize_path(path+suffix))

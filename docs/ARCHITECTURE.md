@@ -1,4 +1,149 @@
+## Layout aprovado dos menus
+GameHUD organiza o Ferreiro em grade, seleção com comparação e confirmação
+separada; Vendedor tem abas e transações unitárias originais. Cabeçalhos curtos
+e fechamento fixo reutilizam o tema do diário. RPGPanel mostra espaços reais
+em cartões e treinamento compacto; manutenção fica em Mais opções. Catálogos,
+handlers e validações de GameProgress não mudam. Sem novo asset ou save.
+
+## Menus de serviços e configuração
+GameHUD usa cartões compactos de loja/venda e altura maior para os serviços.
+Os handlers originais continuam recebendo as mesmas ações e IDs. A detecção
+recursiva de botão no scroll adia o toque até o release, cancelando arrastos.
+RPGPanel separa o catálogo em técnicas/passivas/estilo e monta ações somente
+para a seleção. Cabeçalhos distinguem pontos da arma e de talento; estatísticas
+de treino vêm dos mesmos dados. Sem mudança de modelo de dados ou save v11.
+
+## Espada — interface de nós do diário
+SwordEvolutionTree mantém os IDs do primeiro passe e apresenta cartões com
+PixelItemIcon do atlas existente, faixas de proficiência e estados reais de
+AbilityState. PathLink redesenha somente ao redimensionar. As linhas organizam
+o percurso; requisitos continuam em AbilityRules. RPGPanel preserva ações e
+validações e oferece retorno ao nó após o detalhe. O HUD mantém seu handler de
+toque ao soltar e distinção de arrasto. Nenhuma mudança em combate ou save v11.
+
+## Carregamento Web — artes aprovadas em 15/10/2026
+A injeção pós-exportação valida as duas fontes por hash e publica arquivos
+com identidade de conteúdo. Picture/contain preservam a composição e o progress
+original mantém o onProgress do Godot. Dicas substituem somente o texto
+estático da arte. Manifesto e verificador público incluem os recursos visuais.
+Detalhes e diagnóstico: docs/decisions/LOADING_ARTES_APROVADAS_20261015.md.
+Sem dependência nova no jogo, alteração de gameplay ou save v11.
+
+## Skills 1 V2 - integradas no Andar 1
+Skill1GameView adapta os atlas aprovados e herda todos os basicos. PlayerActor
+agenda uma startup transitoria antes da chamada original ClassCombat.use(0).
+Apenas a View de jogo ativa esse caminho: a demonstracao mantem seu controlador
+isolado sem dupla preparacao. Sem alteracao em ClassCombat/AbilityRules/saves.
+Skill1GameProjectile reutiliza a arte especial da demo sobre PlayerProjectile;
+colisao, alvo, velocidade e budget originais. ImpactMarks compartilha os mesmos
+pixels com alvos de demo e filhos visuais dos monstros, sem trocar suas Views.
+GroundEffect e unico/reutilizado, em coordenadas de mundo e z abaixo dos atores.
+Outros andares e Skills 2/3 continuam no caminho original.
+
+## Skill 1 - poses de corpo inteiro V2
+Skill1BodyPose compartilha os landmarks em pixels com o baker e a origem visual
+de projeteis. Full-body inclui apoio dos pes parado; upper-body combina a acao
+com pernas originais durante caminhada. Transformacoes de pose sao rasterizadas
+no atlas, nunca aplicadas ao PlayerActor fisico. Core/basicos preservados.
+
+## Inspecao visual das Skills 1
+A demonstracao pode congelar PlayerActor e projeteis reais e avancar somente
+ActorView/efeitos em delta local (0.5x ou 1x). Execute/repeat nao chama combate,
+nao cria eventos nem adiciona PlayerProjectile ao grupo real. Desenhos aprovados
+sao reutilizados por wrappers exclusivamente visuais. Modo Combate separado
+preserva o caminho original e os testes existentes. Nenhum atlas foi alterado.
+
 # Arquitetura
+## Skills 1 V1 - preview isolado
+Skill1ActorView estende MeleeActorView sem alterar os cinco basicos.
+Apenas play_skill(0) usa os novos atlas; outros indices delegam ao original.
+Skill1ReviewDemo reutiliza os mundos/controles/alvos e executa PlayerActor.
+use_skill(0) sem reimplementar ClassCombat. A intencao de preparacao no
+preview antecede a chamada real, que resolve dano/projeteis imediatamente.
+Efeitos de area leem AbilityRules; nao possuem colisoes ou dano. Uma instancia
+por painel e reutilizada. Sem Main, journal ou saves. Politica skill1-review
+bloqueia TESTE fixo; nenhum basico/core de combate e modificado.
+
+## Machado/Lanca V1 - integracao aprovada
+MeleeActorView estende StaffActorView e compartilha os atlas/timing aprovados
+com as demonstracoes. Estado melee separado; trocar Machado/Lanca limpa a
+pose anterior e seleciona o atlas correto. PlayerActor antecipa o golpe
+apenas durante cooldown com alvo valido, e inicia a pose no sinal original.
+AutoAttack continua aplicando o dano imediato uma unica vez. Skills, saves,
+atributos e apresentacoes de Espada/Arco/Cajado permanecem intactos.
+A politica melee-review aprovada autoriza publicar somente no TESTE fixo.
+
+## Machado/Lanca V1 - demonstracoes
+MeleeReviewDemo estende a UI/mundos/alvos da demonstracao do Arco. Duas cenas
+selecionam a arma e seu perfil real; MeleeReviewView compartilha estado e
+pernas, mas cada atlas usa landmarks e movimentos diferentes. O rig herda
+a composicao aprovada do Cajado, com bracos compactos e cabeca sobre a arma.
+AutoAttack aplica dano imediato pelo caminho original. As demos nao
+inicializam Main nem o journal. A politica aprovada permite atualizar o TESTE.
+
+## Cajado V1 - integracao aprovada
+StaffActorView estende BowActorView, com estado separado para o cajado.
+StaffProjectile reaproveita a fisica e muda somente o desenho/origem visual.
+O atlas aprovado e compartilhado pelo jogo e demo, que usa adaptadores leves.
+PlayerActor antecipa durante cooldown e dispara pelo sinal original. Main
+seleciona StaffProjectile somente para basicos cajado/orbe no Andar 1.
+Skills, Ultimates, cenarios legados e todas as regras permanecem intactos.
+A aprovacao de Thiago permite atualizar exclusivamente o alias TESTE.
+
+## Cajado V1 - demonstracao isolada
+StaffAttackDemo herda a UI, controles, mundos e alvos de BowAttackDemo.
+StaffDemoView usa o atlas de oito poses/quatro direcoes, pernas originais
+e landmarks compartilhados com o rig. StaffDemoProjectile herda a fisica
+original e altera apenas desenho/offset visual; canalizacao antecipa somente
+a pose. Skills e Ultimates continuam com PlayerProjectile. Nenhum Main,
+save ou sistema de progressao e instanciado/modificado pelo demo.
+A politica staff-review passou a aprovada para integrar no TESTE.
+
+## Arco V1 — integração aprovada
+BowActorView estende SwordActorView sem alterar seus frames ou comportamento.
+As poses do arco usam estado independente; PlayerActor antecipa apenas durante
+cooldown e dispara a pose pelo mesmo sinal de AutoAttack. BowProjectile muda
+somente o desenho do básico no Andar 1; Skills e pisos legados usam a classe
+original. Troca de arma, morte, modais e área segura limpam as poses.
+O atlas existente foi ajustado apenas nas ancoragens/extensão dos braços e
+do arco. Personagem, dimensões, oito poses, pernas e cadência preservados.
+Publicação no TESTE autorizada em 14/10; política aprovada é validada antes
+de chamar o publicador do alias. Dados de save/progressão não mudam.
+
+## Demonstração do arco preservada
+BowAttackDemo cria dois mundos e perfis somente em memória. Antes usa
+PlayerActor/ActorView/PlayerProjectile; Agora usa subclasses exclusivas da
+demonstração para antecipar poses e deslocar somente o desenho da flecha.
+AutoAttack e PlayerProjectile continuam intactos, inclusive colisões e dano.
+Alvos de treino derivam de EnemyActor para exercitar impactos reais; nenhum
+recibo/recompensa é conectado à progressão. Sem Main ou journal de save.
+Atlas de oito quadros e quatro direções com pés em (40,52), escala inteira 2x,
+pernas originais independentes. Rig/baker não entram na exportação Web.
+A demonstração reutiliza as classes de apresentação integradas. A espada
+não é modificada; o modo Antes continua usando ActorView/PlayerProjectile.
+
+## Espada V1 — apresentação aprovada
+PlayerActor antecipa apenas poses durante o cooldown; o sinal original de
+AutoAttack inicia o corte, sem alterar dano ou cadência. SwordActorView substitui
+somente o corpo pelo atlas aprovado, mantendo pernas, sombras e feedback de
+ActorView. Ativo apenas com espada equipada na apresentação do Andar 1;
+demais armas e pisos preservam a apresentação anterior. Saves não mudam.
+
+## Introdução — save v11
+Main chama begin_new_character somente quando não existe save recuperável e
+a persistência não está bloqueada. GameProgress mantém dados legados como
+defaults de migração/fixtures; o runtime novo zera apenas o equipamento inicial.
+CommonMission.enabled pausa a missão comum; Main pausa os desafios e a Torre.
+AutoAttack.armed impede busca, dano, projéteis e animação sem categoria equipada.
+ClassCombat e HUD já aceitam categoria vazia e mantêm skills desativadas.
+
+GameProgress.claim_first_weapon valida visita e serviço, concede +0 e equipa,
+grava o snapshot completo e reverte a recompensa se a persistência falhar.
+Save v11 valida introdução antes de substituir qualquer campo. Formatos v1–10
+recebem legacy, incluindo personagens que tenham desequipado sua arma.
+Seleção/confirmador vivem no painel rolável do Ferreiro; nunca no save.
+ArsenalRules.effective compara itens não possuídos com upgrade zero, sem mutação.
+
 ## Progressão — Etapa 1 (save v9)
 RPGRules centraliza seis atributos e redução recebida física/mágica. GameProgress
 mantém dois pontos de atributos e um ponto compartilhado de talento por nível;
@@ -251,3 +396,13 @@ geometria; 2–5 usam integralmente o renderer anterior. Tema não entra no save
 ## Livro e talentos V2
 DiaryArt usa book_skin.png e items_skin.png gerados e preparados offline com nearest, cerca de 176 KB juntos. Masters preservados e excluídos do Web. Controles continuam separados da imagem. DiaryPaper garante papel opaco sem vazamento do cenário; a lombada é discreta. EquipmentBag usa 4 colunas em paisagem, 3 em retrato, com perfil compacto acima no celular.
 TalentRules separa dados e requisitos, TalentProgress controla XP por categoria e nós aprendidos. GameProgress v7 valida tudo antes de aplicar, compartilha pontos entre skills antigas e árvore e migra v1–6. A chave do journal Web permanece v6 intencionalmente para preservar armazenamento existente. EnemyActor emite weapon_hit somente após validar dano/alvo e antes do callback letal; Main registra proficiência. PlayerProjectile captura categoria na criação. Bônus passivos exigem arma equipada e apply_progression nunca cura. Técnicas somam um grau ao legado, máximo efetivo 4; base antiga continua 1–3.
+
+## Progressão Etapa 2 / save v10
+AbilityRules define as identidades individuais das cinco armas, técnicas, passivas, talentos e efeitos provisórios. AbilityState conserva builds, graus e relógios por categoria/ID, cargas e intervalo entre Ultimates. ClassCombat coordena geometria, barreiras, guarda, marca, sequências, especialização e Maestria; seus efeitos transitórios não curam ou se somam ao trocar categoria.
+
+PlayerActor delega Skill 1/2/3 a ClassCombat e espelha os timers para apresentação. AutoAttack e PlayerProjectile conservam tipo, categoria e origem no hit. EnemyActor limita o crédito ao HP disponível e ao orçamento vital, emite recibo descartável e deduplica eventos. Main consome o recibo uma vez, encaminha proficiência e carga elegível e rejeita epoch/andar/tentativa inválidos. Os Guardiões compartilham somente o relógio dos novos status; os avisos e ataques existentes ficam intactos.
+
+GameProgress valida completamente os formatos antigos antes de migrar, mantém Domínio/proficiência e calcula pontos gerais por orçamento. O payload v10 possui campos legados vazios e AbilityState validado; originais são backups imutáveis no filesystem e journal. Diary/HUD emitem comandos com identificador/slot e os handlers verificam camp/trial e versão esperada do grau. Critérios e comparação reproduzível: docs/qa/PROGRESSAO_ETAPA2.md.
+
+
+

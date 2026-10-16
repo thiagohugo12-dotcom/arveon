@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {join, resolve, extname} from 'node:path';
 import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 const profile = await mkdtemp(join(tmpdir(), 'grande-arvore-web-save-'));
 const archive = await readFile('build/web-save-fixture.json', 'utf8');
 const fixture = JSON.parse(archive);
@@ -51,11 +52,22 @@ async function until(expression, timeout=30000) {
   throw Error('Timeout: '+expression+'; '+errors.slice(-4).join('\n'));
 }
 async function start() {
-  process=spawn(processEnvChrome(),['--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=9333',`--user-data-dir=${profile}`,'about:blank'],{stdio:'ignore'});
+	// Avoid collisions with runner services; Chromium records its chosen port.
+  process=spawn(processEnvChrome(),['--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{stdio:['ignore','ignore','pipe']});
+  let startupDiagnostics='';
+  process.stderr.on('data', chunk=>{startupDiagnostics=(startupDiagnostics+chunk).slice(-6000);});
   process.on('error', e=>errors.push(String(e)));
   let target;
-  for(let i=0;i<100;i++){try{target=(await (await fetch('http://127.0.0.1:9333/json/list')).json()).find(x=>x.type==='page');if(target)break;}catch(_){} await delay(100);}
-  if(!target)throw Error('Chromium unavailable: '+errors.join('\n'));
+  for(let i=0;i<300;i++){
+    if(process.exitCode!==null) break;
+    try{
+      const port=Number((await readFile(join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0]);
+      target=(await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(x=>x.type==='page');
+      if(target)break;
+    }catch(_){}
+    await delay(100);
+  }
+  if(!target)throw Error('Chromium unavailable (exit '+process.exitCode+'): '+errors.join('\n')+'\n'+startupDiagnostics);
   socket=new WebSocket(target.webSocketDebuggerUrl);
   await new Promise(r=>socket.addEventListener('open',r,{once:true}));
   socket.addEventListener('message',e=>{
@@ -84,6 +96,24 @@ try {
   check(await evaluate('!!document.createElement("canvas").getContext("webgl2")'),'Chromium has WebGL2 for actual exported game');
   await game(); await until(`!!localStorage.getItem(${JSON.stringify(KEY)})`);
   check((await snapshot()).xp===0,'new exported game initializes a permanent save');
+  const introduction = await snapshot();
+  check(introduction.version===11 && introduction.introduction.status==='active' && introduction.rpg.equipped.Arma==='' && Object.keys(introduction.rpg.equipment).length===0,'actual Web new character starts unarmed with introduction');
+  await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
+  check((await snapshot()).introduction.status==='active' && Object.keys((await snapshot()).rpg.equipment).length===0,'actual Web pending choice survives reload without granting weapon');
+  await stop(); await start(); await game();
+  check((await snapshot()).introduction.status==='active' && Object.keys((await snapshot()).rpg.equipment).length===0,'browser close and reopen retains pending introduction');
+  await seed();
+  const chosen = structuredClone(introduction);
+  chosen.introduction={status:'complete',met_smith:true,weapon:'arco'};
+  chosen.rpg.equipment={arco:0}; chosen.rpg.equipped.Arma='arco';
+  chosen.rpg.equipment_meta={arco:arsenalPayload.rpg.equipment_meta.arco};
+  const chosenRaw=JSON.stringify(chosen);
+  const chosenArchive=JSON.stringify({format:'grande-arvore-rpg-save',archive_version:1,payload:chosenRaw,sha256:createHash('sha256').update(chosenRaw).digest('hex')});
+  await evaluate(`GrandeArvoreSave.write(${JSON.stringify(chosenArchive)},true)`);
+  await game();
+  check((await snapshot()).introduction.status==='complete' && (await snapshot()).rpg.equipped.Arma==='arco' && Object.keys((await snapshot()).rpg.equipment).length===1,'actual Web completed choice loads one equipped weapon');
+  await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
+  check((await snapshot()).introduction.status==='complete' && (await snapshot()).xp===0 && (await snapshot()).gold===0 && Object.keys((await snapshot()).rpg.equipment).length===1,'completed reward never duplicates on reload and grants no XP or gold');
   await seed();
   // Simulate the previous version's real IDBFS directory, without a journal.
   await evaluate(`localStorage.clear();(async()=>{
@@ -154,18 +184,37 @@ try {
   await seed();
   await evaluate(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(progressionArchive)})`);
   await game();
-  await until(`JSON.parse(JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).payload).version === 9`);
+  await until(`JSON.parse(JSON.parse(localStorage.getItem(${JSON.stringify(KEY)})).payload).version === 11`);
   const progression = await snapshot();
-  check(progression.version===9 && Object.keys(progression.rpg.attributes).length===6 && !('Agilidade' in progression.rpg.attributes) && progression.rpg.attributes.Mobilidade===0 && progression.rpg.attributes.Destreza===0,'actual Web migrates old Agility into unspent six-attribute budget');
-  check(progression.xp===progressionPayload.xp && progression.gold===777 && progression.rpg.attributes['Força']===3 && progression.rpg.skills['Corte Circular']===3 && progression.rpg.equipment.cajado===2,'actual Web preserves level wallet investments skills and gear during v7 migration');
-  check(progression.talents.xp.espada===1240 && progression.talents.xp.cajado===3480 && progression.talents.learned.espada.length===6 && progression.talents.mastery.espada.Dano===0,'actual Web migrates proficiency curve and learned tree without spending mastery');
+  check(progression.version===11 && Object.keys(progression.rpg.attributes).length===6 && !('Agilidade' in progression.rpg.attributes) && progression.rpg.attributes.Mobilidade===0 && progression.rpg.attributes.Destreza===0,'actual Web migrates old Agility into unspent six-attribute budget');
+  check(progression.xp===progressionPayload.xp && progression.gold===777 && progression.rpg.attributes['Força']===3 && Object.keys(progression.rpg.skills).length===0 && progression.abilities.loadouts.espada.skills.length===2 && progression.rpg.equipment.cajado===2,'actual Web preserves level wallet attributes gear and replaces legacy abilities safely');
+  check(progression.talents.xp.espada===1240 && progression.talents.xp.cajado===3480 && progression.talents.learned.espada.length===0 && progression.talents.mastery.espada.Dano===0,'actual Web migrates proficiency and refunds replaced tree without spending Domain');
   check(progression.ascension.campaign_completed && JSON.stringify(progression.floor_states)===JSON.stringify(progressionPayload.floor_states),'actual Web migration preserves all five conquered floors and exploration');
   await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
   const progressionReload = await snapshot();
   check(JSON.stringify(progressionReload.rpg)===JSON.stringify(progression.rpg) && JSON.stringify(progressionReload.talents)===JSON.stringify(progression.talents) && progressionReload.xp===progression.xp,'actual Web reload cannot duplicate Agility refunds mastery or talent progress');
+  check(await evaluate(`localStorage.getItem(${JSON.stringify(KEY + '.v7.original')})`) === progressionArchive,'browser migration keeps byte-exact original v7 independently of rotating mirror');
+  const abilityFixture=structuredClone(progression);
+  abilityFixture.abilities.loadouts.espada.skills=['danca_laminas','corte_crescente'];
+  abilityFixture.abilities.loadouts.cajado.skills=['onda_arcana','tempestade_arcana'];
+  abilityFixture.abilities.skill1_cooldowns.espada=4;
+  abilityFixture.abilities.cooldowns.espada={corte_crescente:5.5};
+  abilityFixture.abilities.charge.espada=42;
+  abilityFixture.abilities.charge.cajado=89;
+  const abilityPayload=JSON.stringify(abilityFixture);
+  const abilityArchive=JSON.stringify({format:'grande-arvore-rpg-save',archive_version:1,payload:abilityPayload,sha256:createHash('sha256').update(abilityPayload).digest('hex')});
+  await seed();
+  await evaluate(`localStorage.setItem(${JSON.stringify(KEY)},${JSON.stringify(abilityArchive)})`);
+  await game();
+  const abilities=await snapshot();
+  check(abilities.version===11 && abilities.abilities.charge.espada===42 && abilities.abilities.charge.cajado===89,'actual Web restores independent Ultimate bars and optional slots');
+  check(abilities.abilities.skill1_cooldowns.espada===4 && abilities.abilities.cooldowns.espada.corte_crescente===5.5,'inactive category cooldowns do not advance during active gameplay');
+  await call('Page.reload'); await until('location.pathname === "/index.html" && !!window.GrandeArvoreSave'); await delay(1500);
+  const abilitiesReload=await snapshot();
+  check(JSON.stringify(abilitiesReload.abilities)===JSON.stringify(abilities.abilities),'actual Web reload preserves paused cooldowns charges and builds without offline gains');
   const preservedJournal=await evaluate(`localStorage.getItem(${JSON.stringify(KEY)})`);
   await call('Page.navigate',{url:origin+'/amostra-mata/index.html'});
-  await until('document.documentElement.dataset.mataSample === "ready"',45000);
+  await until('document.documentElement?.dataset.mataSample === "ready"',45000);
   check(await evaluate('document.title === "Mata — amostra artística"'),'separate exported art scene starts instead of Main');
   await delay(1500);
   check(await evaluate(`localStorage.getItem(${JSON.stringify(KEY)})`)==preservedJournal,'art sample does not modify the player save');

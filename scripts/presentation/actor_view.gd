@@ -216,12 +216,7 @@ func _draw() -> void:
 	# Values above one brighten the existing sprite; the old <=1 tint darkened it.
 	var tint := Color(2.0, 1.75, 1.35) if flash_left > 0.0 else Color.WHITE
 	if appearance == 0:
-		# Held passing pose uses the approved appearance even when stopped.
-		var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
-		if village_scale:
-			VillageActorArt.person(self,_explorer_direction(),anim_frame if walking or settle_left > 0.0 else 0,Vector2.ZERO,tint)
-		else:
-			draw_texture_rect_region(EXPLORER_ATLAS,Rect2(-24,-32,48,48),Rect2(column*48,_explorer_direction()*48,48,48),tint)
+		_draw_explorer(tint)
 	else:
 		_draw_monster()
 	if elite and not village_scale:
@@ -251,6 +246,13 @@ func _draw() -> void:
 		px(-17,bar_y,34,4,LINE)
 		px(-16,bar_y+1,32.0*hp_ratio,2,Color("#8ce395"))
 
+func _draw_explorer(tint: Color) -> void:
+	# Presentation overrides replace only the body; shared feedback stays intact.
+	var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
+	if village_scale:
+		VillageActorArt.person(self,_explorer_direction(),anim_frame if walking or settle_left > 0.0 else 0,Vector2.ZERO,tint)
+	else:
+		draw_texture_rect_region(EXPLORER_ATLAS,Rect2(-24,-32,48,48),Rect2(column*48,_explorer_direction()*48,48,48),tint)
 
 func _monster_tone(value: String) -> Color:
 	var color := Color(value)

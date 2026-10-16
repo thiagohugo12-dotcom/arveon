@@ -13,16 +13,17 @@ const GOLD_REWARDS := [12, 10]
 var mission_index: int = 0
 var progress: int = 0
 var completed_count: int = 0
+var enabled := true
 
 func summary() -> String:
 	return "Missão comum: %s %d/%d" % [NAMES[mission_index], progress, TARGETS[mission_index]]
 
 func record_defeat() -> void:
-	if mission_index == 0:
+	if enabled and mission_index == 0:
 		_advance(1)
 
 func record_material(amount: int = 1) -> void:
-	if mission_index == 1 and amount > 0:
+	if enabled and mission_index == 1 and amount > 0:
 		_advance(amount)
 
 func _advance(amount: int) -> void:

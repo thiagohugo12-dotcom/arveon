@@ -66,3 +66,32 @@ test('visibility and pagehide listeners detach on scene reload', () => {
   listeners.get('pagehide')(); assert.equal(saves,2);
   detach(); assert.equal(listeners.size,0);
 });
+
+test('migration preserves immutable original independently of rotating mirror', () => {
+  const s = storage(), bridge = create(s);
+  const old = JSON.stringify({format:'grande-arvore-rpg-save',payload:JSON.stringify({version:9,gold:77})});
+  bridge.read(); bridge.write(old);
+  bridge.write(JSON.stringify({payload:JSON.stringify({version:10,gold:77})}));
+  bridge.write(JSON.stringify({payload:JSON.stringify({version:10,gold:99})}));
+  assert.equal(s.getItem(KEY+'.v9.original'),old);
+  assert.notEqual(s.getItem(PREVIOUS),old);
+});
+
+test('two pending tabs cannot commit two first weapon rewards', () => {
+  const s=storage(), first=create(s), stale=create(s);
+  const pending=JSON.stringify({payload:JSON.stringify({version:11,introduction:{status:'active',met_smith:true,weapon:''},rpg:{equipment:{}}})});
+  first.read(); first.write(pending); stale.read();
+  const chosen=id=>JSON.stringify({payload:JSON.stringify({version:11,introduction:{status:'complete',met_smith:true,weapon:id},rpg:{equipment:{[id]:0}}})});
+  assert.equal(first.write(chosen('arco')),'ok');
+  assert.equal(stale.write(chosen('cajado')),'conflict');
+  assert.equal(JSON.parse(JSON.parse(create(s).read()).payload).introduction.weapon,'arco');
+});
+
+test('v10 original survives v11 introduction exemption and later save', () => {
+  const s=storage(), bridge=create(s);bridge.read();
+  const old=JSON.stringify({payload:JSON.stringify({version:10,rpg:{equipment:{espada:2}}})});
+  bridge.write(old);
+  bridge.write(JSON.stringify({payload:JSON.stringify({version:11,introduction:{status:'legacy'},gold:0})}));
+  bridge.write(JSON.stringify({payload:JSON.stringify({version:11,introduction:{status:'legacy'},gold:5})}));
+  assert.equal(s.getItem(KEY+'.v10.original'),old);
+});

@@ -17,11 +17,11 @@ func level(weapon: String) -> int:
 	return TalentRules.level_for_xp(int(xp.get(weapon,0)))
 
 func record_damage(weapon: String, effective: int) -> bool:
-	if not xp.has(weapon) or effective <= 0 or int(xp[weapon]) >= TalentRules.xp_floor(30): return false
+	if not xp.has(weapon) or effective <= 0 or int(xp[weapon]) >= TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY): return false
 	var damage_units := int(damage_remainder[weapon])+effective
 	@warning_ignore("integer_division")
-	xp[weapon] = mini(TalentRules.xp_floor(30), int(xp[weapon])+damage_units/TalentRules.DAMAGE_PER_XP)
-	damage_remainder[weapon] = damage_units%TalentRules.DAMAGE_PER_XP if int(xp[weapon]) < TalentRules.xp_floor(30) else 0
+	xp[weapon] = mini(TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY), int(xp[weapon])+damage_units/TalentRules.DAMAGE_PER_XP)
+	damage_remainder[weapon] = damage_units%TalentRules.DAMAGE_PER_XP if int(xp[weapon]) < TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY) else 0
 	return true
 
 func mastery_points(weapon: String) -> int:
@@ -42,6 +42,18 @@ func mastery_bonuses(weapon: String) -> Dictionary:
 		"basic":int(values.get("Dano",0))*0.01,"special":int(values.get("Dano Especial",0))*0.0125,
 		"critical_chance":0.05+int(values.get("Crítico",0))*0.01,
 		"critical_multiplier":1.5+int(values.get("Dano Crítico",0))*0.03}
+
+func reset_mastery(weapon: String) -> bool:
+	if not mastery.has(weapon):
+		return false
+	var invested := 0
+	for amount: int in mastery[weapon].values():
+		invested += amount
+	if invested == 0:
+		return false
+	for stat: String in TalentRules.MASTERY:
+		mastery[weapon][stat] = 0
+	return true
 
 func reset_tree(weapon: String) -> bool:
 	if not learned.has(weapon) or learned[weapon].is_empty(): return false
@@ -84,12 +96,12 @@ static func from_save(value: Variant, points: int, legacy: bool = false) -> Tale
 	for weapon: String in ArsenalRules.CATEGORIES:
 		var amount: Variant = value.xp.get(weapon)
 		var nodes: Variant = value.learned.get(weapon)
-		var cap := 8700 if legacy else TalentRules.xp_floor(30)
+		var cap := 8700 if legacy else TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY)
 		if not amount is float or amount != floorf(amount) or amount < 0 or amount > cap or not nodes is Array or nodes.size() > TalentRules.NODES.size(): return null
 		result.xp[weapon] = floori(float(amount)*0.4) if legacy else int(amount)
 		if not legacy:
 			var remainder: Variant = value.damage_remainder.get(weapon)
-			if not remainder is float or remainder != floorf(remainder) or remainder < 0 or remainder >= TalentRules.DAMAGE_PER_XP or (int(amount) == TalentRules.xp_floor(30) and remainder != 0): return null
+			if not remainder is float or remainder != floorf(remainder) or remainder < 0 or remainder >= TalentRules.DAMAGE_PER_XP or (int(amount) == TalentRules.xp_floor(TalentRules.MAX_PROFICIENCY) and remainder != 0): return null
 			result.damage_remainder[weapon] = int(remainder)
 			var distribution: Variant = value.mastery.get(weapon)
 			if not distribution is Dictionary or distribution.size() != 4: return null

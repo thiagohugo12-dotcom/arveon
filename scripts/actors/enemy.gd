@@ -32,6 +32,11 @@ var invulnerable := false
 var _damage_events: Dictionary = {}
 var _proficiency_budget := -1
 var _hit_receipts: Dictionary = {}
+var _receipt_details: Dictionary = {}
+var control_left := 0.0
+var mark_left := 0.0
+var mark_category := ""
+var mark_bonus := 0.0
 
 func _ready() -> void:
 	home_position = global_position
@@ -58,7 +63,16 @@ func update_activity(player_position: Vector2) -> void:
 		awake = true
 		set_physics_process(true)
 
+func tick_ability_status(delta: float) -> void:
+	control_left = maxf(0,control_left-delta)
+	mark_left = maxf(0,mark_left-delta)
+
 func _physics_process(delta: float) -> void:
+	tick_ability_status(delta)
+	if control_left > 0:
+		velocity = Vector2.ZERO
+		view.set_moving(false)
+		return
 	contact_left = maxf(0.0, contact_left - delta)
 	special_left = maxf(0.0, special_left - delta)
 	velocity = Vector2.ZERO
@@ -191,13 +205,16 @@ func consume_hit_receipt(category: String, amount: int, event: int) -> bool:
 	_hit_receipts.erase(event)
 	return true
 
-func receive_damage(amount: int, category: String = "", event: int = 0, damage_type: String = "physical", critical: bool = false) -> void:
+func receive_damage(amount: int, category: String = "", event: int = 0, damage_type: String = "physical", critical: bool = false, ultimate: bool = false, source: String = "basic", eligible_damage: int = -1) -> void:
 	if amount <= 0 or invulnerable or not is_targetable() or damage_type not in ["physical","magical"]:
 		return
 	if event == 0: event = CombatRules.next_event()
 	if event < 0 or _damage_events.has(event): return
 	_damage_events[event] = true
 	if _proficiency_budget < 0: _proficiency_budget = health.maximum
+	if mark_left > 0 and mark_category == category:
+		amount = ceili(amount*(1.0+mark_bonus))
+		if eligible_damage >= 0: eligible_damage = ceili(eligible_damage*(1.0+mark_bonus))
 	var before := health.current
 	var effective := mini(amount,before)
 	var credit := mini(effective,_proficiency_budget)
@@ -205,8 +222,10 @@ func receive_damage(amount: int, category: String = "", event: int = 0, damage_t
 	# Emit before lethal callbacks so the defeat save includes this last hit.
 	if credit > 0 and ArsenalRules.CATEGORIES.has(category):
 		_hit_receipts[event] = [category,credit]
+		_receipt_details[event] = {"ultimate":ultimate,"source":source,"critical":critical,"charge":0 if ultimate else mini(credit,amount if eligible_damage < 0 else eligible_damage)}
 		weapon_hit.emit(category,credit,event)
 		_hit_receipts.erase(event)
+		_receipt_details.erase(event)
 	health.damage(amount)
 	view.show_damage(before - health.current,critical)
 
@@ -220,3 +239,17 @@ func _on_died() -> void:
 	defeated.emit(kind)
 	get_tree().create_timer(0.22).timeout.connect(queue_free)
 
+
+func hit_details(event: int) -> Dictionary:
+	return _receipt_details.get(event,{}).duplicate()
+
+func apply_control(duration: float) -> void:
+	# Guardians retain their approved telegraphs and are immune to interruption.
+	if kind == 4 or not is_targetable(): return
+	control_left = maxf(control_left,minf(1.0,duration))
+
+func apply_mark(category: String, bonus: float, duration: float) -> void:
+	if not is_targetable(): return
+	mark_category = category
+	mark_bonus = clampf(bonus,0,0.25)
+	mark_left = minf(duration,5.0)

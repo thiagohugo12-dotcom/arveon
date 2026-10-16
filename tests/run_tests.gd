@@ -38,6 +38,10 @@ func _run() -> void:
 	preload("res://tests/progression_tests.gd").run(self)
 	preload("res://tests/mastery_tests.gd").run(self)
 	preload("res://tests/progression_integration_tests.gd").run(self)
+	preload("res://tests/ability_state_tests.gd").run(self)
+	preload("res://tests/etapa2_save_tests.gd").run(self)
+	preload("res://tests/etapa2_progression_tests.gd").run(self)
+	preload("res://tests/sword_evolution_tests.gd").run(self)
 	var health := Health.new()
 	root.add_child(health)
 	health.initialize(10)
@@ -57,6 +61,10 @@ func _run() -> void:
 	check(dash.request(Vector2.ZERO, Vector2.UP, stats) and dash.direction == Vector2.UP, "stationary dash uses last direction")
 	dash.queue_free()
 	var scene := load("res://scenes/main.tscn") as PackedScene
+	# Existing regression scenarios represent an already armed legacy character.
+	var existing_character := GameProgress.new()
+	existing_character.save_path = test_path
+	check(existing_character.save(), "seed existing character for legacy gameplay regression")
 	var main := scene.instantiate()
 	root.add_child(main)
 	preload("res://tests/campaign_scaling_tests.gd").run(self, main)
@@ -208,19 +216,30 @@ func _run() -> void:
 	open_touch.pressed = false
 	hud.interact_button._input(open_touch)
 	await frames()
-	var vendor_sell := hud.station_content.get_child(2).get_child(2) as Button
+	var vendor_sell: Button = hud.vendor_buttons["Vender:Couro"]
+	hud.station_scroll.ensure_control_visible(vendor_sell)
+	await frames()
 	check(hud.station_panel.visible and not vendor_sell.disabled, "vendor exposes an enabled sell button for owned material")
 	var shop_touch := InputEventScreenTouch.new()
 	shop_touch.index = 6
 	shop_touch.pressed = true
 	shop_touch.position = vendor_sell.global_position + vendor_sell.size * 0.5
 	hud._input(shop_touch)
+	shop_touch.pressed = false
+	hud._input(shop_touch)
 	check(main.progress.gold == 19 and main.progress.bag.get("Couro", 0) == 0, "vendor sells existing material into wallet")
 	await frames()
-	var vendor_buy := hud.station_content.get_child(4).get_child(1) as Button
+	hud.vendor_tabs[1].pressed.emit()
+	await frames()
+	var vendor_buy: Button = hud.vendor_buttons["Comprar:Essência"]
+	hud.station_scroll.ensure_control_visible(vendor_buy)
+	await frames()
 	check(not vendor_buy.disabled, "vendor enables purchase with sufficient gold")
 	check(hud.station_scroll.get_global_rect().has_point(vendor_buy.global_position + vendor_buy.size * 0.5), "all vendor buttons fit the mobile viewport")
 	shop_touch.position = vendor_buy.global_position + vendor_buy.size * 0.5
+	shop_touch.pressed = true
+	hud._input(shop_touch)
+	shop_touch.pressed = false
 	hud._input(shop_touch)
 	check(main.progress.gold == 14 and main.progress.bag.get("Essência", 0) == 1, "vendor buy button exchanges gold for real material")
 	var overlap_touch := InputEventScreenTouch.new()
@@ -230,6 +249,9 @@ func _run() -> void:
 	hud.interact_button._input(overlap_touch)
 	check(hud.interact_button.touch_index == -1, "hidden interaction hitbox does not steal modal touch")
 	shop_touch.position = hud.station_close_button.global_position + hud.station_close_button.size * 0.5
+	shop_touch.pressed = true
+	hud._input(shop_touch)
+	shop_touch.pressed = false
 	hud._input(shop_touch)
 	check(not hud.station_panel.visible and not driver.blocked, "close button releases movement and closes shop")
 	main.progress.add_item("Essência", 2)
@@ -389,8 +411,8 @@ func _run() -> void:
 	player.position = SafeCamp.DISPLAY_STATIONS["Vendedor"] + Vector2(-30, 0)
 	main._interact()
 	await frames()
-	check(hud.station_content.get_child(2).get_child(0).text.contains("Ervas"), "vendor displays owned gathered resources on the first page")
-	check(hud.station_content.get_child(2).get_child(2) is Button and not (hud.station_content.get_child(2).get_child(2) as Button).disabled, "owned resource has an enabled sell button")
+	check(hud.vendor_buttons.has("Vender:Ervas"), "vendor displays owned gathered resources on the first page")
+	check(hud.vendor_buttons.has("Vender:Ervas") and not hud.vendor_buttons["Vender:Ervas"].disabled, "owned resource has an enabled sell button")
 	var sale_gold: int = main.progress.gold
 	main._station_action("Vender", "Ervas")
 	check(main.progress.gold == sale_gold + GameProgress.SELL_PRICE and main.progress.bag.get("Ervas", 0) == herbs_before, "vendor sells gathered resources through existing wallet (%d -> %d, bag %s)" % [sale_gold, main.progress.gold, main.progress.bag.get("Ervas", 0)])
@@ -545,6 +567,7 @@ func _run() -> void:
 	await preload("res://tests/save_tests.gd").run_world(self, main)
 	main.queue_free()
 	await frames()
+	await preload("res://tests/training_mode_tests.gd").run(self,scene,test_path)
 	await preload("res://tests/combat_feedback_tests.gd").run(self)
 	await preload("res://tests/tower_tests.gd").run_world(self)
 	await preload("res://tests/tower_trial_tests.gd").run_world(self)
@@ -557,8 +580,13 @@ func _run() -> void:
 	await preload("res://tests/progression_ui_tests.gd").run_world(self)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
 	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
+	await preload("res://tests/etapa2_combat_tests.gd").run_world(self)
+	await preload("res://tests/etapa2_ui_tests.gd").run_world(self)
+	await preload("res://tests/etapa2_campaign_tests.gd").run_world(self)
 	print("RESULT: %d checks, %d failures" % [checks, failures])
 	CombatRules.random_roll_source = Callable()
 	quit(1 if failures > 0 else 0)
+
+
 
 

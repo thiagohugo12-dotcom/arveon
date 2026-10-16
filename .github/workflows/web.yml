@@ -49,6 +49,42 @@ jobs:
           timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tests.log; then exit 1; fi
           grep -E '^RESULT: [0-9]+ checks, 0 failures$' /tmp/tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/first_weapon_tests.gd 2>&1 | tee /tmp/first-weapon-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|FIRST_WEAPON_FAIL:' /tmp/first-weapon-tests.log; then exit 1; fi
+          grep -E '^FIRST_WEAPON_RESULT: [0-9]+ checks, 0 failures$' /tmp/first-weapon-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/sword_demo_tests.gd 2>&1 | tee /tmp/sword-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SWORD_DEMO_FAIL:' /tmp/sword-tests.log; then exit 1; fi
+          grep -E '^SWORD_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/sword_game_tests.gd 2>&1 | tee /tmp/sword-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SWORD_GAME_FAIL:' /tmp/sword-game-tests.log; then exit 1; fi
+          grep -E '^SWORD_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/bow_demo_tests.gd 2>&1 | tee /tmp/bow-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|BOW_DEMO_FAIL:' /tmp/bow-tests.log; then exit 1; fi
+          grep -E '^BOW_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/bow-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/bow_game_tests.gd 2>&1 | tee /tmp/bow-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|BOW_GAME_FAIL:' /tmp/bow-game-tests.log; then exit 1; fi
+          grep -E '^BOW_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/bow-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/staff_demo_tests.gd 2>&1 | tee /tmp/staff-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|STAFF_DEMO_FAIL:' /tmp/staff-tests.log; then exit 1; fi
+          grep -E '^STAFF_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/staff-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/staff_game_tests.gd 2>&1 | tee /tmp/staff-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|STAFF_GAME_FAIL:' /tmp/staff-game-tests.log; then exit 1; fi
+          grep -E '^STAFF_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/staff-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/melee_demo_tests.gd 2>&1 | tee /tmp/melee-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|MELEE_DEMO_FAIL:' /tmp/melee-tests.log; then exit 1; fi
+          grep -E '^MELEE_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/melee-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/melee_game_tests.gd 2>&1 | tee /tmp/melee-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|MELEE_GAME_FAIL:' /tmp/melee-game-tests.log; then exit 1; fi
+          grep -E '^MELEE_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/melee-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/skill1_tests.gd 2>&1 | tee /tmp/skill1-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_FAIL:' /tmp/skill1-tests.log; then exit 1; fi
+          grep -E '^SKILL1_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-tests.log
+          timeout 90s godot --headless --path . --script res://tests/skill1_game_tests.gd 2>&1 | tee /tmp/skill1-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_GAME_FAIL:' /tmp/skill1-game-tests.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-game-tests.log
+          timeout 90s godot --headless --path . --script res://tests/skill1_inspection_tests.gd 2>&1 | tee /tmp/inspection-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|INSPECTION_FAIL:' /tmp/inspection-tests.log; then exit 1; fi
+          grep -E '^INSPECTION_RESULT: [0-9]+ checks, 0 failures$' /tmp/inspection-tests.log
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
@@ -62,6 +98,45 @@ jobs:
           godot --headless --path . --script res://tests/perf_probe.gd 2>&1 | tee /tmp/perf.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/perf.log; then exit 1; fi
           grep '^PERF_PROBE:' /tmp/perf.log
+      - name: Validate and capture clear service and diary menus
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 95s godot --headless --path . --script res://tests/menu_clarity_tests.gd 2>&1 | tee /tmp/menu-clarity-headless.log
+          grep -E '^MENU_CLARITY_RESULT: [0-9]+ checks, 0 failures$' /tmp/menu-clarity-headless.log
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          QA_MENU_CLARITY_DIR="$PWD/build/menu-clarity-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 95s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/menu_clarity_tests.gd 2>&1 | tee /tmp/menu-clarity-render.log
+          grep -E '^MENU_CLARITY_RESULT: [0-9]+ checks, 0 failures$' /tmp/menu-clarity-render.log
+          test "$(find build/menu-clarity-qa -name '*.png' | wc -l)" -eq 36
+      - name: Save clear menu screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: menu-clarity-qa
+          path: build/menu-clarity-qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Validate and capture Sword diary interface
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/progressao-etapa2'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 65s godot --headless --path . --script res://tests/sword_diary_ui_tests.gd 2>&1 | tee /tmp/sword-diary-headless.log
+          grep -E '^SWORD_DIARY_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-diary-headless.log
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          QA_SWORD_DIARY_DIR="$PWD/build/sword-diary-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 65s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/sword_diary_ui_tests.gd 2>&1 | tee /tmp/sword-diary-render.log
+          grep -E '^SWORD_DIARY_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-diary-render.log
+          test "$(find build/sword-diary-qa -name '*.png' | wc -l)" -eq 16
+      - name: Save Sword diary screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sword-diary-qa
+          path: build/sword-diary-qa/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Render mobile layouts in software GL
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         shell: bash
@@ -110,6 +185,28 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/progression-render.log; then exit 1; fi
           grep '^PROGRESSION_QA_RESULT: 0 failures$' /tmp/progression-render.log
           test "$(find build/progression-qa -name '*.png' | wc -l)" -eq 20
+          QA_RENDER_DIR="$PWD/build/etapa2-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/etapa2_capture.gd 2>&1 | tee /tmp/etapa2-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/etapa2-render.log; then exit 1; fi
+          grep '^ETAPA2_RENDER_RESULT: 0 failures$' /tmp/etapa2-render.log
+          test "$(find build/etapa2-qa -name '*.png' | wc -l)" -eq 40
+          QA_RENDER_DIR="$PWD/build/first-weapon-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/first_weapon_tests.gd 2>&1 | tee /tmp/first-weapon-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:|FIRST_WEAPON_FAIL:' /tmp/first-weapon-render.log; then exit 1; fi
+          grep -E '^FIRST_WEAPON_RESULT: [0-9]+ checks, 0 failures$' /tmp/first-weapon-render.log
+          test "$(find build/first-weapon-qa -name '*.png' | wc -l)" -eq 8
+      - name: Probe bounded Skill 1 effects in software GL
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_perf_probe.gd 2>&1 | tee /tmp/skill1-perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/skill1-perf.log; then exit 1; fi
+          grep -E '^SKILL1_PERF_RESULT: .*0 failures$' /tmp/skill1-perf.log
+          QA_RENDER_DIR="$PWD/build/skill1-game-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_game_tests.gd 2>&1 | tee /tmp/skill1-game-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_GAME_FAIL:' /tmp/skill1-game-render.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-game-render.log
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_game_perf.gd 2>&1 | tee /tmp/skill1-game-perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/skill1-game-perf.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_PERF_RESULT: .*0 failures$' /tmp/skill1-game-perf.log
       - name: Save rendered layout evidence
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         uses: actions/upload-artifact@v4
@@ -119,6 +216,9 @@ jobs:
             build/mobile-qa/
             build/diary-qa/
             build/progression-qa/
+            build/etapa2-qa/
+            build/first-weapon-qa/
+            build/skill1-game-qa/
           if-no-files-found: error
           retention-days: 14
       - name: Export Web
@@ -132,14 +232,52 @@ jobs:
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
+      - name: Install branded ARVÉON loading screen
+        run: node tools/inject-arveon-loading.mjs
+      - name: Validate responsive loading without fake progress
+        run: node tests/web_arveon_loading.mjs
+      - name: Capture approved loading artwork in real Chromium
+        run: timeout 180s node tests/web_loading_browser.mjs
+      - name: Save approved loading screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: approved-loading-qa
+          path: build/loading-qa/
+          if-no-files-found: error
+          retention-days: 14
       - name: Prepare isolated art sample entry
         run: node tools/build-art-sample.mjs
+      - name: Prepare isolated sword review entry
+        run: node tools/build-sword-demo.mjs
+      - name: Prepare isolated sword animation review
+        run: node tools/build-sword-animation-review.mjs
+      - name: Prepare isolated bow review entry
+        run: node tools/build-bow-demo.mjs
+      - name: Prepare isolated staff review entry
+        run: node tools/build-staff-demo.mjs
+      - name: Prepare isolated axe and spear reviews
+        run: node tools/build-melee-demos.mjs
+      - name: Prepare isolated Skill 1 review
+        run: node tools/build-skill1-demo.mjs
+      - name: Verify five Skills 1 in desktop and touch Chromium
+        run: timeout 150s node tests/web_skill1_demo.mjs
+      - name: Verify axe and spear with desktop and touch Chromium
+        run: |
+          MELEE_REVIEW_WEAPON=machado timeout 150s node tests/web_melee_demos.mjs
+          MELEE_REVIEW_WEAPON=lanca timeout 150s node tests/web_melee_demos.mjs
+      - name: Verify staff review in desktop and touch Chromium
+        run: timeout 150s node tests/web_staff_demo.mjs
+      - name: Verify bow review in desktop and touch Chromium
+        run: node tests/web_bow_demo.mjs
       - name: Verify actual Web persistence in Chromium
         shell: bash
         run: |
           set -euo pipefail
           timeout 150s node tests/web_save_browser.mjs 2>&1 | tee /tmp/web-save-browser.log
           grep '^WEB_SAVE_RESULT: [0-9]* checks, 0 failures$' /tmp/web-save-browser.log
+      - name: Verify sword review in desktop and touch Chromium
+        run: node tests/web_sword_demo.mjs
       - name: Save Web build (no deployment)
         uses: actions/upload-artifact@v4
         with:
@@ -188,8 +326,8 @@ jobs:
     name: Preview proposed Godot Web changes
     needs: web
     if: >-
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/andar1-v020-primeiro-passe') ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe')
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'feat/andar1-v020-primeiro-passe' || github.head_ref == 'feat/progressao-etapa2')) ||
+      (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe' || github.ref == 'refs/heads/feat/progressao-etapa2'))
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency:
@@ -237,10 +375,104 @@ jobs:
             if (result.status !== "ok" || result.deployment.readyState !== "READY" || result.deployment.target === "production") process.exit(1);
             console.log(result.deployment.url);
           ')"
-          PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
-          node ../source/tools/verify-test-build.mjs
           echo "Preview URL: $preview_url"
           echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
-          echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
-          echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f ../source/tools/skill1-review.json ]]; then
+            skill1_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/skill1-review.json","utf8"));
+              if(p.entry!=="amostra-skills1/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$skill1_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-skill1-preview.mjs
+            fi
+          elif [[ -f ../source/tools/melee-review.json ]]; then
+            melee_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/melee-review.json","utf8"));
+              if(p.entry!=="amostra-machado/index.html" || JSON.stringify(p.additionalEntries)!==JSON.stringify(["amostra-lanca/index.html"])) process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$melee_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-melee-preview.mjs
+            fi
+          elif [[ -f ../source/tools/staff-review.json ]]; then
+            staff_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/staff-review.json","utf8"));
+              if(p.entry!=="amostra-cajado/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$staff_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-staff-preview.mjs
+            fi
+          elif [[ -f ../source/tools/bow-review.json ]]; then
+            bow_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/bow-review.json","utf8"));
+              if(p.entry!=="amostra-arco/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$bow_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-bow-preview.mjs
+            fi
+          else
+            review_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p = JSON.parse(readFileSync("../source/tools/sword-review.json", "utf8"));
+              if (p.entry !== "amostra-espada/index.html") process.exit(1);
+              if (p.status === "awaiting-visual-approval" && p.fixedTestAlias === false) console.log("pending");
+              else if (p.status === "approved-in-game" && p.fixedTestAlias === true) console.log("approved");
+              else process.exit(1);
+            ')"
+            if [[ "$review_status" == "pending" ]]; then
+              # Fail closed: malformed/missing exported review data aborts; no alias call.
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-sword-preview.mjs
+              echo "[Espada V1 — demonstração isolada]($preview_url/amostra-espada/index.html)" >> "$GITHUB_STEP_SUMMARY"
+              echo "TESTE fixo preservado; aguardando aprovação visual." >> "$GITHUB_STEP_SUMMARY"
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+              echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
+              echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
+      - name: Verify published loading screen and capture TESTE
+        env:
+          LOADING_WEB_DIR: web
+          LOADING_TEST_BASE_URL: https://grande-arvore-rpg-teste.vercel.app/
+          QA_LOADING_CAPTURE_DIR: loading-live-qa
+        run: timeout 180s node source/tests/web_loading_browser.mjs
+      - name: Save published loading screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: approved-loading-live-qa
+          path: loading-live-qa/
+          if-no-files-found: error
+          retention-days: 14
+
+
 

@@ -7,6 +7,7 @@ var recover := 1.4
 var aim := Vector2.DOWN
 
 func _physics_process(delta: float) -> void:
+	tick_ability_status(delta)
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive():
 		_cancel_attack()
 		return

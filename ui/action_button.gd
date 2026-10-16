@@ -9,6 +9,8 @@ var caption: Label
 var icon := ""
 var recharge := 0.0
 var active := false
+var legend := ""
+var charge_fraction := -1.0
 var style: StyleBoxTexture
 var active_style: StyleBoxTexture
 
@@ -71,14 +73,17 @@ func _draw() -> void:
 	if not icon.is_empty():
 		var color: Color = {"cut":Color("#cbd7d0"),"charge":Color("#82c78c"),"fury":Color("#f1c655"),"dash":Color("#f1d9a0"),"potion":Color("#e3a58e")}.get(icon,Color("#e4dca6"))
 		var area := Rect2(Vector2(10,5),size-Vector2(20,22))
-		if icon == "cut": DiaryArt.icon(self,"espada",area)
+		if icon in AbilityRules.CATEGORIES: DiaryArt.icon(self,icon,area)
+		elif icon == "cut": DiaryArt.icon(self,"espada",area)
 		else: PixelIcon.illustrate(self,icon,area,color if enabled or active else color.darkened(0.3))
-		var text: String = {"cut":"Corte","charge":"Investida","fury":"Fúria","dash":"Dash","potion":"Poção"}.get(icon,"")
+		var text: String = legend if not legend.is_empty() else {"cut":"Skill 1","charge":"Técnica","fury":"Ultimate","dash":"Dash","potion":"Poção"}.get(icon,"")
 		var font := ThemeDB.fallback_font
 		var width := font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,10).x
 		draw_string(font,Vector2((size.x-width)/2,size.y-6),text,HORIZONTAL_ALIGNMENT_LEFT,-1,10,Color("#fff0ce"))
 		if recharge > 0.0:
 			draw_rect(Rect2(4, 4, size.x - 8, (size.y - 8) * recharge), Color("#0a171ec7"))
 			draw_rect(Rect2(4, size.y - 6, (size.x - 8) * (1.0 - recharge), 2), Color("#e2b969"))
+		if charge_fraction >= 0:
+			draw_rect(Rect2(4,size.y-5,(size.x-8)*charge_fraction,3),Color("#f0ca69"))
 		if not enabled and not active:
 			draw_rect(Rect2(4,4,size.x-8,size.y-8),Color(0.20,0.16,0.10,0.26))

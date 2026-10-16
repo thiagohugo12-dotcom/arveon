@@ -6,6 +6,7 @@ static func run_world(suite) -> void:
 	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
 	var path := "user://qa_arsenal_ui_%d.json" % Time.get_ticks_usec()
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",path)
+	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	suite.root.add_child(main)
 	main.set_process(false)
@@ -84,6 +85,8 @@ static func run_world(suite) -> void:
 		TOUCH._tap(hud,hud.rpg_panel.tabs.get_child(2))
 		await suite.frames()
 		suite.check(hud.rpg_panel.tab == 1 and snapshot == p.to_json(),"reading diary skills and planned proficiencies cannot mutate progression " + str(size))
+		TOUCH._tap(hud,hud.rpg_panel.diary_return)
+		await suite.frames()
 		TOUCH._tap(hud,hud.rpg_panel.tabs.get_child(0))
 		await suite.frames()
 		suite.check(hud.inventory_open and not hud.rpg_panel.visible and main.input_driver.blocked,"diary returns to bag without unblocking combat " + str(size))
@@ -93,3 +96,4 @@ static func run_world(suite) -> void:
 	await suite.frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)
+
