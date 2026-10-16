@@ -1,3 +1,12 @@
+## Espada — três habilidades aprovadas em 15/10/2026
+Guarda Reativa, Estocada Precisa e Ultimate **Kamusari** têm direção
+visual pixel art aprovada. Implementar animação da Espada e efeitos
+separados sem duplicar dano nem modificar a carga. Kamusari substitui
+o disco da antiga Dança das Lâminas por onda frontal; ID interno
+`danca_laminas` preservado para saves v11. Ver
+`docs/decisions/ESPADA_SKILLS_KAMUSARI_20261015.md`.
+TESTE somente após CI e validação; main/PRODUÇÃO protegidos.
+
 ## Clareza dos menus — aprovada em 15/10/2026
 Conforme CLAREZA_MENUS_MOBILE.md e pedido para ajustar Ferreiro, Vendedor,
 Habilidades e Treinamento: reduzir texto repetido, explicitar preços e pontos,
