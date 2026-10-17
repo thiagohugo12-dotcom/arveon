@@ -116,7 +116,7 @@ jobs:
           name: menu-clarity-qa
           path: build/menu-clarity-qa/
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 1
       - name: Validate and capture Sword diary interface
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/progressao-etapa2'
         shell: bash
@@ -136,7 +136,7 @@ jobs:
           name: sword-diary-qa
           path: build/sword-diary-qa/
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 1
       - name: Render mobile layouts in software GL
         if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
         shell: bash
@@ -228,7 +228,7 @@ jobs:
             build/first-weapon-qa/
             build/skill1-game-qa/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
       - name: Export Web
         shell: bash
         run: |
@@ -253,7 +253,7 @@ jobs:
           name: approved-loading-qa
           path: build/loading-qa/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
       - name: Prepare isolated art sample entry
         run: node tools/build-art-sample.mjs
       - name: Prepare isolated sword review entry
@@ -290,7 +290,7 @@ jobs:
           name: andar-1-web
           path: build/web/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
 
   deploy:
     name: Publish tested Web build to Vercel
@@ -478,7 +478,7 @@ jobs:
           name: approved-loading-live-qa
           path: loading-live-qa/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
 
 
 

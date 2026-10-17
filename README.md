@@ -5,6 +5,11 @@ Mata com visual simplificado: chão limpo, trilhas claras, atlas pixel art peque
 28 árvores e Torre destacada. Layout, serviços e cinco andares preservados.
 
 ## Abrir no Windows
+Para esta revisão local, use **Jogar.bat** na raiz do projeto ou **Revisar animacoes.bat**
+para inspecionar espada e Guardião. Os atalhos funcionam após clonar/extrair em outra
+pasta. Por padrão procuram Godot 4.5.1 em Downloads; a variável `ARVEON_GODOT`
+permite informar outro caminho. Cache `.godot`, builds e logs ficam fora do Git.
+
 1. Instale/extraia **Godot 4.5.1 Standard** (não .NET): https://godotengine.org/download/archive/4.5.1-stable/.
 2. Clone o repositório ou extraia este projeto em `C:\Projetos\grande-arvore-rpg`.
 3. No Project Manager: **Importar → project.godot → Importar e editar**.
