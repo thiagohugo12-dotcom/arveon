@@ -4,7 +4,7 @@ extends "res://scripts/demos/skill1_actor_view.gd"
 const TECHNIQUE_POSES := {
 	"estocada_precisa": [0,0,1,1,1,5],
 	"guarda_reativa": [0,1,1,1,1,5],
-	"danca_laminas": [0,0,1,1,1,5]
+	"danca_laminas": [0,0,1,2,3,5]
 }
 var ground_effect: Node2D
 var sword_technique: SwordTechniqueEffect
@@ -24,6 +24,7 @@ func seek_sword_technique(time: float) -> void:
 	queue_redraw()
 
 func _ready() -> void:
+	super._ready() # Original nearest filtering and initial foot position.
 	ground_effect = preload("res://scripts/demos/skill1_ground_effect.gd").new()
 	add_child(ground_effect)
 	ground_effect.top_level = true
@@ -58,6 +59,9 @@ func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> 
 	sword_pose = id
 	sword_pose_row = SwordActorView.direction_row(aim)
 	sword_technique.cast(id, actor.global_position, aim, guard_time)
+	if id == "danca_laminas":
+		var bonus:=20.0 if actor is PlayerActor and actor.class_combat.has_passive("alcance_treinado") else 0.0
+		sword_technique.real_reach=float(AbilityRules.effect(id).reach)+bonus
 	sword_pose_duration = sword_technique.duration
 	sword_pose_time = sword_pose_duration
 	sword_technique.z_index = clampi(roundi(actor.global_position.y) + 99, -4096, 4096)

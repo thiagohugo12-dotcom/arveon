@@ -216,6 +216,13 @@ func setup_cast() -> void:
 		player.set_physics_process(false)
 		player.view.set_process(false)
 		player.view.village_scale=true
+		if not p.updated and actor_kind == 0:
+			player.view.remove_child(player.view.sword_technique)
+			player.view.sword_technique.queue_free()
+			player.view.sword_technique=preload("res://scripts/demos/local_legacy_kamusari_effect.gd").new()
+			player.view.add_child(player.view.sword_technique)
+			player.view.sword_technique.top_level=true
+			player.view.sword_technique.z_as_relative=false
 		var driver:=InputDriver.new()
 		player.add_child(driver)
 		player.input_driver=driver

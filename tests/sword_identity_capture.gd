@@ -56,6 +56,7 @@ func run() -> void:
 				for i in range(3): await process_frame
 				await RenderingServer.frame_post_draw
 				var poses := [0,0,1,1,1,5] if id != "guarda_reativa" else [0,1,-1,1,1,5]
+				if id == "danca_laminas": poses=Skill1GameView.TECHNIQUE_POSES[id]
 				var match_ratio := head_match(root.get_texture().get_image(),people,sword,row,poses[frame])
 				checks += 1
 				if match_ratio < 0.99:

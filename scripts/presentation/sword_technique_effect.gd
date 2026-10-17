@@ -3,7 +3,6 @@ extends Node2D
 ## Presentation only: ClassCombat owns damage, reach, cooldowns and guard timing.
 const ESTOCADA: Texture2D = preload("res://assets/art/sword_techniques/estocada_precisa_fx.png")
 const GUARDA: Texture2D = preload("res://assets/art/sword_techniques/guarda_reativa_fx.png")
-const KAMUSARI: Texture2D = preload("res://assets/art/sword_techniques/kamusari_fx.png")
 const CELL := 512.0
 const ESTOCADA_FRAMES := SwordTechniqueTiming.FRAMES["estocada_precisa"]
 const GUARDA_FRAMES := [0.05, 0.07, 0.0, 0.045, 0.075, 0.10]
@@ -28,6 +27,45 @@ var bursts := 0 # Compatibility with the existing guard feedback contract.
 var guard_time := 0.0
 var elapsed := 0.0
 var externally_clocked := false
+var real_reach := 150.0
+
+static func ribbon(center: Vector2, radius: float, angle: float, span: float, width: float) -> PackedVector2Array:
+	# Continuous tapered curves: no texture cell or alpha cutout can clip a tail.
+	var points:=PackedVector2Array()
+	const SEGMENTS:=28
+	for i in range(SEGMENTS+1):
+		var t:=float(i)/SEGMENTS
+		var thickness:=width*pow(t,0.7)
+		points.append(center+Vector2.RIGHT.rotated(angle-span+t*span)*(radius-thickness))
+	for i in range(SEGMENTS,0,-1):
+		var t:=float(i)/SEGMENTS
+		points.append(center+Vector2.RIGHT.rotated(angle-span+t*span)*radius)
+	return points
+
+func _draw_kamusari() -> void:
+	var contact:=SwordTechniqueTiming.contact("danca_laminas")
+	var aim:=direction.angle()
+	if elapsed < contact:
+		var p:=clampf(elapsed/contact,0,1)
+		var angle:=aim-1.3+p*0.8
+		draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.9,4),Color("#a73339"))
+		draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.55,2),Color("#f1ae83"))
+		return
+	var progress:=clampf((elapsed-contact)/(duration-contact),0,1)
+	var alpha:=pow(1.0-progress,1.3)
+	var angle:=aim+0.35+progress*TAU
+	# Complete unchanged damage disk on contact; the blade still has a direction.
+	draw_arc(Vector2.ZERO,real_reach-2,0,TAU,72,Color(0.82,0.19,0.22,0.70*alpha),2,false)
+	draw_arc(Vector2.ZERO,real_reach-6,0,TAU,72,Color(0.98,0.58,0.39,0.30*alpha),1,false)
+	draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-2,angle,2.1,10*(1-progress)+2),Color(0.82,0.14,0.20,alpha))
+	draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-3,angle,1.65,4*(1-progress)+1),Color(1.0,0.69,0.48,alpha))
+	draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-4,angle,0.9,2),Color(1.0,0.94,0.77,alpha))
+	var blade_center:=Vector2(0,-24)
+	draw_colored_polygon(ribbon(blade_center,43,angle,1.9,7),Color(0.90,0.20,0.24,alpha))
+	draw_colored_polygon(ribbon(blade_center,42,angle,1.5,3),Color(1.0,0.91,0.73,alpha))
+	var cut_angle:=aim+0.35+progress*1.1
+	draw_colored_polygon(ribbon(blade_center,74,cut_angle,1.15,14),Color(0.88,0.13,0.21,alpha))
+	draw_colored_polygon(ribbon(blade_center,73,cut_angle,0.95,5),Color(1.0,0.92,0.77,alpha))
 
 static func frame_duration_total(frames: Array) -> float:
 	var total := 0.0
@@ -133,7 +171,10 @@ func _draw_complete_frame(atlas: Texture2D, target: Rect2, source: Rect2, outlin
 
 func _draw() -> void:
 	if remaining <= 0.0: return
-	var atlas: Texture2D = GUARDA if kind == "guarda_reativa" else (KAMUSARI if kind == "danca_laminas" else ESTOCADA)
+	if kind == "danca_laminas":
+		_draw_kamusari()
+		return
+	var atlas: Texture2D = GUARDA if kind == "guarda_reativa" else ESTOCADA
 	var frame := _frame()
 	if kind == "guarda_reativa" and frame == 2:
 		# Keep the normal walking body during the three-second protection window.
