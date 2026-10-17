@@ -47,6 +47,7 @@ static func run_world(suite: SceneTree) -> void:
 			before = enemy.health.current
 			player.health.current = 70
 			suite.check(player.use_skill(1),"normal technique executes "+technique.id)
+			preload("res://tests/etapa2_fixtures.gd").finish_technique(player)
 			if technique.type == "defense":
 				suite.check(player.class_combat.guard_left > 0 and player.health.current == 70,"defense provides a temporary effect without healing "+technique.id)
 			else:
@@ -67,6 +68,7 @@ static func run_world(suite: SceneTree) -> void:
 		before = enemy.health.current
 		suite.check(player.use_skill(1) and p.abilities.charge[category] == 0,"Ultimate executes and consumes independent bar "+category)
 		suite.check(p.abilities.charge[category] == 0 and not player.use_skill(1),"Ultimate own damage cannot recharge or reactivate "+category)
+		preload("res://tests/etapa2_fixtures.gd").finish_technique(player)
 		if ultimate.type == "buff": suite.check(player.class_combat.fury_left == 8,"axe Ultimate uses timed heavy-combat buff")
 		else: suite.check(enemy.health.current < before,"Ultimate deals real damage "+category)
 		p.abilities.death_reset()

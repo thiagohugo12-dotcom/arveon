@@ -328,6 +328,7 @@ func _on_attack(target: Node2D) -> void:
 		view.play_attack(target.global_position-global_position)
 
 func _on_died() -> void:
+	class_combat.cancel_technique()
 	_cancel_skill1()
 	_clear_melee_visual()
 	_clear_staff_visual()

@@ -18,6 +18,7 @@ var special_left := 0.0
 var charge_windup := 0.0
 var charge_left := 0.0
 var charge_direction := Vector2.ZERO
+var spine_windup := 0.0
 var strafe_sign := 1.0
 const AGGRO_ENTER := 245.0
 const AGGRO_EXIT := 375.0
@@ -68,6 +69,9 @@ func tick_ability_status(delta: float) -> void:
 	mark_left = maxf(0,mark_left-delta)
 
 func _physics_process(delta: float) -> void:
+	if is_instance_valid(target) and target.input_driver != null and target.input_driver.blocked:
+		view.set_moving(false)
+		return
 	tick_ability_status(delta)
 	if control_left > 0:
 		velocity = Vector2.ZERO
@@ -100,7 +104,7 @@ func _physics_process(delta: float) -> void:
 	match kind:
 		0, 3: _boar_behavior(delta, offset, distance)
 		1: _spider_behavior(offset, distance)
-		2: _cactus_behavior(offset, distance)
+		2: _cactus_behavior(offset, distance, delta)
 	var before := global_position
 	move_and_slide()
 	if SafeCamp.in_clearance(global_position) or (not arena_bounds.has_area() and global_position.distance_to(home_position) > MAX_CHASE_FROM_HOME):
@@ -112,6 +116,7 @@ func _physics_process(delta: float) -> void:
 		_try_contact(distance)
 
 func _return_home() -> void:
+	spine_windup = 0.0
 	view.set_warning(false)
 	var offset := home_position - global_position
 	if offset.length_squared() <= 64.0:
@@ -162,7 +167,12 @@ func _spider_behavior(offset: Vector2, distance: float) -> void:
 			strafe_sign *= -1.0
 			special_left = 1.25
 
-func _cactus_behavior(offset: Vector2, distance: float) -> void:
+func _cactus_behavior(offset: Vector2, distance: float, delta: float = 0.0) -> void:
+	if spine_windup > 0.0:
+		spine_windup = maxf(0.0,spine_windup-delta)
+		if spine_windup < 0.000001: spine_windup = 0.0
+		view.set_warning(spine_windup > 0)
+		if spine_windup == 0.0: _fire_cactus_spine()
 	if distance < 118.0:
 		velocity = -offset.normalized() * stats.move_speed * 0.72
 	elif distance > 205.0:
@@ -172,7 +182,7 @@ func _cactus_behavior(offset: Vector2, distance: float) -> void:
 	if distance <= 245.0 and special_left == 0.0:
 		view.set_warning(true)
 		special_left = 1.65
-		get_tree().create_timer(0.34).timeout.connect(_fire_cactus_spine)
+		spine_windup = 0.34
 	elif special_left < 1.28:
 		view.set_warning(false)
 
@@ -189,6 +199,7 @@ func _fire_cactus_spine() -> void:
 	view.play_attack()
 
 func _try_contact(distance: float) -> void:
+	if kind in [0,3] and charge_windup > 0.0: return
 	if distance > stats.contact_range or contact_left > 0.0:
 		return
 	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)

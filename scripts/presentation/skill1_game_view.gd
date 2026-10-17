@@ -14,6 +14,15 @@ var sword_pose_duration := 0.32
 var sword_pose_row := 3
 var displayed_technique_frame := -1
 
+func seek_sword_technique(time: float) -> void:
+	if not is_instance_valid(sword_technique) or not SwordTechniqueTiming.FRAMES.has(sword_technique.kind): return
+	sword_technique.externally_clocked = true
+	sword_technique.elapsed = time
+	sword_technique.remaining = maxf(0.0,sword_technique.duration-time)
+	sword_technique.queue_redraw()
+	sword_pose_time = sword_technique.remaining
+	queue_redraw()
+
 func _ready() -> void:
 	ground_effect = preload("res://scripts/demos/skill1_ground_effect.gd").new()
 	add_child(ground_effect)
@@ -27,7 +36,12 @@ func _ready() -> void:
 func clear_skill1() -> void:
 	super.clear_skill1()
 	if is_instance_valid(ground_effect): ground_effect.clear()
-	clear_sword_technique()
+	# Skill 1 cancellation must not clear a different technique paused by a menu.
+	# ClassCombat owns the latter's lifetime, death and equipment cancellation.
+
+func configure(category: String) -> void:
+	if category != skill_category: clear_sword_technique()
+	super.configure(category)
 
 func play_skill(index: int) -> void:
 	super.play_skill(index)
@@ -75,7 +89,7 @@ func _process(delta: float) -> void:
 		queue_redraw()
 	if not village_scale:
 		clear_sword_technique()
-	elif sword_pose_time > 0.0:
+	elif sword_pose_time > 0.0 and not sword_technique.externally_clocked:
 		sword_pose_time = maxf(0.0, sword_pose_time - delta)
 		if sword_pose_time <= 0.0: sword_pose = ""
 

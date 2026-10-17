@@ -40,10 +40,13 @@ func _physics_process(delta: float) -> void:
 				_begin_attack()
 		State.WINDUP:
 			action_left = maxf(0.0, action_left - delta)
+			if action_left < 0.000001: action_left = 0.0
 			if action_left == 0.0:
 				state = State.ACTIVE
 				action_left = [0.12, 0.45, 0.65][action]
 				view.play_attack()
+				# The root contact is the WINDUP -> ACTIVE event, shared with the pose.
+				if action == Action.ROOTS and roots_contains(target.global_position): _damage_once(18)
 		State.ACTIVE:
 			if action == Action.CHARGE:
 				var before := global_position

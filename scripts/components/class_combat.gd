@@ -1,6 +1,38 @@
 class_name ClassCombat
 extends RefCounted
 
+signal technique_impact(id: String, time: float)
+var technique: Dictionary = {}
+var technique_elapsed := 0.0
+var technique_did_hit := false
+
+func cancel_technique() -> void:
+	technique.clear()
+	technique_elapsed = 0.0
+	technique_did_hit = false
+	if is_instance_valid(player) and player.view is Skill1GameView:
+		player.view.clear_sword_technique()
+
+func _tick_technique(delta: float) -> void:
+	if technique.is_empty(): return
+	if not player.health.is_alive() or not player.attack.armed or progress.equipped.Arma != technique.weapon or progress.active_category() != "espada" or SafeCamp.in_clearance(player.global_position):
+		cancel_technique()
+		return
+	# Modal menus pause the same timeline, including damage and the visible pose.
+	if player.input_driver != null and player.input_driver.blocked: return
+	technique_elapsed = minf(SwordTechniqueTiming.duration(technique.id),technique_elapsed+maxf(0,delta))
+	if player.view is Skill1GameView:
+		player.view.seek_sword_technique(technique_elapsed)
+	if not technique_did_hit and technique_elapsed+0.000001 >= SwordTechniqueTiming.contact(technique.id):
+		technique_did_hit = true # Mark BEFORE callbacks, including lethal damage.
+		var consumed_perfect := perfect_ready
+		perfect_ready = bool(technique.perfect)
+		var hits := _execute(technique.id,technique.effect,technique.power,technique.ultimate,technique.direction)
+		perfect_ready = consumed_perfect
+		_after_technique(hits)
+		technique_impact.emit(technique.id,SwordTechniqueTiming.contact(technique.id))
+	if technique_elapsed >= SwordTechniqueTiming.duration(technique.id): cancel_technique()
+
 # Transient effects never refill HP. Persistent timers/charges live in AbilityState.
 var player: PlayerActor
 var progress: GameProgress
@@ -19,11 +51,13 @@ var moving_time := 0.0
 func bind(actor: PlayerActor, value: GameProgress) -> void:
 	player = actor
 	progress = value
+	if not technique.is_empty() and (progress.equipped.Arma != technique.weapon or progress != technique.progress): cancel_technique()
 	if category != progress.active_category():
 		clear_effects()
 		category = progress.active_category()
 
 func clear_effects() -> void:
+	cancel_technique()
 	combo = 0
 	last_target = 0
 	same_target_hits = 0
@@ -48,6 +82,7 @@ func mastery() -> bool:
 	return progress != null and progress.talents.level(category) >= 30
 
 func tick(delta: float) -> void:
+	_tick_technique(delta)
 	guard_left = maxf(0,guard_left-delta)
 	counter_left = maxf(0,counter_left-delta)
 	fury_left = maxf(0,fury_left-delta)
@@ -148,6 +183,7 @@ func receive(amount: int) -> int:
 
 func use(index: int) -> bool:
 	if progress == null or category.is_empty(): return false
+	if not technique.is_empty() and not technique_did_hit: return false
 	var state := progress.abilities
 	var prof := progress.talents.level(category)
 	var rule := AbilityRules.skill1(progress.equipped.Arma) if index == 0 else AbilityRules.active_skill(category,state.loadouts[category].skills[index-1])
@@ -159,6 +195,8 @@ func use(index: int) -> bool:
 	elif ultimate:
 		if prof < 15 or not state.use_ultimate(category,category): return false
 	elif not state.start_normal(category,rule.id,prof): return false
+	# A new accepted technique may replace recovery after contact, never before it.
+	if not technique.is_empty(): cancel_technique()
 	var grade := int(state.grades[category].get(rule.id,1))
 	var effect := AbilityRules.effect(rule.id,grade)
 	if effect.shape == "guard":
@@ -172,43 +210,50 @@ func use(index: int) -> bool:
 		var power := float(rule.get("power",effect.get("power",1.0)))*(1+0.15*(grade-1))
 		if ultimate and category == "espada" and prof >= 60: power *= 1.20
 		if index == 0: power *= 1+0.03*int(progress.equipment[progress.equipped.Arma])
-		var hits := _execute(rule.id,effect,power,ultimate)
-		technique_hits += 1
-		if specialization() == "colosso" and hits >= 2:
-			guard_left = maxf(guard_left,3.0)
-			barrier = maxi(barrier,ceili(player.health.maximum*0.08))
-		if has_talent("corpo_ferro") and hits > 0:
-			guard_left = maxf(guard_left,2.0)
-		if specialization() == "guardiao_espiritual" and hits > 0:
-			guard_left = maxf(guard_left,2.0)
-			barrier = maxi(barrier,8+player.spirit)
-		if has_talent("veu_espiritual") and hits > 0:
-			guard_left = maxf(guard_left,2.0)
-			barrier = maxi(barrier,6+player.spirit)
-		if mastery() and category == "cajado" and technique_hits%3 == 0:
-			guard_left = maxf(guard_left,3.0)
-			barrier = maxi(barrier,10+player.spirit)
-			counter_left = 3.0
+		if category == "espada" and SwordTechniqueTiming.FRAMES.has(rule.id):
+			technique = {"id":rule.id,"effect":effect.duplicate(true),"power":power,"ultimate":ultimate,"weapon":progress.equipped.Arma,"direction":player.last_direction.normalized(),"perfect":perfect_ready,"progress":progress}
+			technique_elapsed = 0
+			technique_did_hit = false
+		else:
+			_after_technique(_execute(rule.id,effect,power,ultimate))
 	if index > 0 and not ultimate: perfect_ready = false
 	if category == "espada" and player.view is Skill1GameView and rule.id in ["guarda_reativa","estocada_precisa","danca_laminas"]:
 		(player.view as Skill1GameView).play_sword_technique(rule.id,player.last_direction,guard_left)
+		if not technique.is_empty(): player.view.seek_sword_technique(0.0)
 	else:
 		player.view.play_skill(2 if ultimate else mini(index,1))
 	player.skill_used.emit(index)
 	return true
 
-func _execute(id: String, effect: Dictionary, power: float, ultimate: bool) -> int:
+func _after_technique(hits: int) -> void:
+	technique_hits += 1
+	if specialization() == "colosso" and hits >= 2:
+		guard_left = maxf(guard_left,3.0)
+		barrier = maxi(barrier,ceili(player.health.maximum*0.08))
+	if has_talent("corpo_ferro") and hits > 0: guard_left = maxf(guard_left,2.0)
+	if specialization() == "guardiao_espiritual" and hits > 0:
+		guard_left = maxf(guard_left,2.0)
+		barrier = maxi(barrier,8+player.spirit)
+	if has_talent("veu_espiritual") and hits > 0:
+		guard_left = maxf(guard_left,2.0)
+		barrier = maxi(barrier,6+player.spirit)
+	if mastery() and category == "cajado" and technique_hits%3 == 0:
+		guard_left = maxf(guard_left,3.0)
+		barrier = maxi(barrier,10+player.spirit)
+		counter_left = 3.0
+
+func _execute(id: String, effect: Dictionary, power: float, ultimate: bool, aim := Vector2.ZERO) -> int:
 	var hits := 0
 	var event := CombatRules.next_event()
 	var origin := player.global_position
-	var direction := player.last_direction.normalized()
+	var direction := player.last_direction.normalized() if aim.is_zero_approx() else aim
 	var reach := float(effect.reach)+(20.0 if has_passive("alcance_treinado") else 0.0)
 	var candidates := player.get_tree().get_nodes_in_group("damageable_enemies")
 	var nearest: EnemyActor = null
 	var nearest_squared := reach*reach
 	if effect.shape == "projectile":
 		for candidate in candidates:
-			if not candidate is EnemyActor or not candidate.is_targetable(): continue
+			if not candidate is EnemyActor or candidate.get_world_2d() != player.get_world_2d() or not candidate.is_targetable(): continue
 			var distance := origin.distance_squared_to(candidate.global_position)
 			if distance > nearest_squared or not _visible(candidate): continue
 			nearest = candidate
@@ -222,7 +267,7 @@ func _execute(id: String, effect: Dictionary, power: float, ultimate: bool) -> i
 			player.attack.projectile_requested.emit(player,nearest,{"damage":hit.damage,"kind":"orbe" if category == "cajado" else "flecha","speed":player.attack.weapon.projectile_speed,"reach":reach,"category":category,"event":event,"damage_type":player.attack.damage_type,"critical":hit.critical,"ultimate":ultimate,"source":id,"eligible_damage":eligible.damage})
 		return 1
 	for candidate in candidates:
-		if not candidate is EnemyActor or not candidate.is_targetable() or origin.distance_squared_to(candidate.global_position) > reach*reach or not _visible(candidate): continue
+		if not candidate is EnemyActor or candidate.get_world_2d() != player.get_world_2d() or not candidate.is_targetable() or origin.distance_squared_to(candidate.global_position) > reach*reach or not _visible(candidate): continue
 		var offset: Vector2 = candidate.global_position-origin
 		if effect.shape == "cone" and offset.normalized().dot(direction) < float(effect.get("dot",0.0)): continue
 		if effect.shape == "line" and (offset.dot(direction) < 0 or absf(offset.cross(direction)) > float(effect.get("width",30.0))): continue

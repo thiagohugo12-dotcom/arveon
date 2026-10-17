@@ -16,7 +16,9 @@ static func run(suite: SceneTree, scene: PackedScene, path: String) -> void:
 	var hp: int = main.enemy.health.current
 	practice.abilities.loadouts.espada.skills[0] = "estocada_precisa"
 	main.player.apply_progression(practice)
-	suite.check(main.player.use_skill(1) and main.enemy.health.current < hp and (main.player.view as Skill1GameView).sword_technique.kind == "estocada_precisa", "training uses actual sword technique and animation on target")
+	suite.check(main.player.use_skill(1) and main.enemy.health.current == hp and (main.player.view as Skill1GameView).sword_technique.kind == "estocada_precisa", "training starts the technique without premature damage")
+	preload("res://tests/etapa2_fixtures.gd").finish_technique(main.player)
+	suite.check(main.enemy.health.current < hp,"training technique damages at the shared contact event")
 	practice.abilities.cooldowns.espada.estocada_precisa = 5.0
 	practice.abilities.charge.espada = 0
 	TrainingMode.refill(practice)

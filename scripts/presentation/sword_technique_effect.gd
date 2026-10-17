@@ -5,9 +5,9 @@ const ESTOCADA: Texture2D = preload("res://assets/art/sword_techniques/estocada_
 const GUARDA: Texture2D = preload("res://assets/art/sword_techniques/guarda_reativa_fx.png")
 const KAMUSARI: Texture2D = preload("res://assets/art/sword_techniques/kamusari_fx.png")
 const CELL := 512.0
-const ESTOCADA_FRAMES := [0.04, 0.06, 0.035, 0.045, 0.055, 0.10]
+const ESTOCADA_FRAMES := SwordTechniqueTiming.FRAMES["estocada_precisa"]
 const GUARDA_FRAMES := [0.05, 0.07, 0.0, 0.045, 0.075, 0.10]
-const KAMUSARI_FRAMES := [0.07, 0.10, 0.045, 0.065, 0.075, 0.13]
+const KAMUSARI_FRAMES := SwordTechniqueTiming.FRAMES["danca_laminas"]
 # Each source pose was placed differently in its cell. Register the body at its
 # feet, then normalize its height to the original 60 px explorer silhouette.
 const BODY_HEIGHT := 60.0
@@ -27,6 +27,7 @@ var counter_elapsed := -1.0
 var bursts := 0 # Compatibility with the existing guard feedback contract.
 var guard_time := 0.0
 var elapsed := 0.0
+var externally_clocked := false
 
 static func frame_duration_total(frames: Array) -> float:
 	var total := 0.0
@@ -44,6 +45,7 @@ func cast(id: String, at: Vector2, aim: Vector2, guard_time: float = 0.0) -> voi
 	duration = self.guard_time + GUARDA_FRAMES[5] if id == "guarda_reativa" else (frame_duration_total(KAMUSARI_FRAMES) if id == "danca_laminas" else frame_duration_total(ESTOCADA_FRAMES))
 	remaining = duration
 	elapsed = 0.0
+	externally_clocked = false
 	guard_follow = get_parent().get_parent() as Node2D
 	counter_elapsed = -1.0
 	bursts = 0
@@ -70,8 +72,9 @@ func clear() -> void:
 
 func _process(delta: float) -> void:
 	if remaining <= 0.0: return
-	remaining = maxf(0.0, remaining - delta)
-	elapsed += delta
+	if not externally_clocked:
+		remaining = maxf(0.0, remaining - delta)
+		elapsed += delta
 	if is_instance_valid(guard_follow):
 		global_position = guard_follow.global_position
 		z_index = clampi(roundi(global_position.y) + 99, -4096, 4096)
@@ -83,6 +86,7 @@ func _process(delta: float) -> void:
 	else: queue_redraw()
 
 func _frame() -> int:
+	if SwordTechniqueTiming.FRAMES.has(kind): return SwordTechniqueTiming.frame(kind,elapsed)
 	if kind == "guarda_reativa":
 		if counter_elapsed >= 0.0:
 			return 3 if counter_elapsed < GUARDA_FRAMES[3] else (4 if counter_elapsed < GUARDA_FRAMES[3] + GUARDA_FRAMES[4] else 5)

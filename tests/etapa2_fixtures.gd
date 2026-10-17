@@ -24,3 +24,7 @@ static func legacy_skills(progress: GameProgress) -> Dictionary:
 static func finish_skill1(player: PlayerActor) -> void:
 	# Frozen-physics combat fixtures advance the explicitly approved startup.
 	if player.skill1_pending > 0: player._tick_skill1(player.skill1_pending)
+
+static func finish_technique(player: PlayerActor) -> void:
+	if not player.class_combat.technique.is_empty():
+		player.class_combat.tick(SwordTechniqueTiming.duration(player.class_combat.technique.id))

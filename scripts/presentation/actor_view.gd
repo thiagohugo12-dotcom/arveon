@@ -380,9 +380,6 @@ func _draw_damage_value(amount: int, remaining: float, at: Vector2, older := fal
 	var width := font.get_string_size(number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17).x
 	at += Vector2(-width * 0.5, -(DAMAGE_DURATION - remaining) * 24.0)
 	var readable := _readable_damage_position(at, width)
-	if older and not readable.is_equal_approx(at):
-		# Labels displaced by the same HUD panel must not collapse onto one line.
-		readable.y += 24.0
 	at = readable
 	draw_string_outline(font, at.floor(), number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, 4, Color("#17201c", alpha))
 	draw_string(font, at.floor(), number, HORIZONTAL_ALIGNMENT_LEFT, -1, 17, color)
@@ -392,10 +389,18 @@ func _readable_damage_position(at: Vector2, width: float) -> Vector2:
 		return at
 	var canvas := get_global_transform_with_canvas()
 	var bounds: Rect2 = canvas * Rect2(at - Vector2(4, 21), Vector2(width + 8, 26))
-	for blocker: Rect2 in damage_occluders:
-		if bounds.intersects(blocker):
-			var shift := Vector2(0, blocker.end.y + 3.0 - bounds.position.y)
-			at += canvas.affine_inverse().basis_xform(shift)
-			bounds.position += shift
-	return at
+	# Find a nearby free position in SCREEN coordinates; never cascade a label
+	# through panels to the bottom of the screen. Same bounds as the HUD.
+	var viewport_bounds := get_viewport_rect().grow(-4)
+	var offsets := [Vector2.ZERO,Vector2(0,-28),Vector2(-38,0),Vector2(38,0),Vector2(0,28),Vector2(-38,-28),Vector2(38,-28),Vector2(-38,28),Vector2(38,28),Vector2(0,-56),Vector2(-70,0),Vector2(70,0)]
+	for shift: Vector2 in offsets:
+		var candidate := Rect2(bounds.position+shift,bounds.size)
+		if not viewport_bounds.encloses(candidate): continue
+		var clear := true
+		for blocker: Rect2 in damage_occluders:
+			if candidate.intersects(blocker):
+				clear = false
+				break
+		if clear: return at+canvas.affine_inverse().basis_xform(shift)
+	return at # Crowded fallback stays attached to the target.
 

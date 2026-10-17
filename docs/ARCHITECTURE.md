@@ -53,6 +53,17 @@ nao cria eventos nem adiciona PlayerProjectile ao grupo real. Desenhos aprovados
 sao reutilizados por wrappers exclusivamente visuais. Modo Combate separado
 preserva o caminho original e os testes existentes. Nenhum atlas foi alterado.
 
+## Refinamento local de combate — 17/10/2026
+ClassCombat mantém uma técnica transitória com relógio físico, direção capturada
+e marcador de contato único. SwordTechniqueTiming é compartilhado com a view;
+nenhum estado novo é serializado. Estocada e Kamusari executam o mesmo _execute
+no contato, incluindo quatro acertos do Kamusari e validação de alvo/LOS.
+Morte/equipamento/área segura cancelam; menus pausam sem apagar a pose.
+A cena local_combat_review usa World2D separados para comparação e reconstrução
+determinística de inspeção. Só seus wrappers usam os novos atlas; Main e saves
+não participam. EnemyProjectile usa segmento percorrido; Mandacaru usa windup
+físico de 0,34 s. Sem novas dependências ou serviços.
+
 # Arquitetura
 ## Skills 1 V1 - preview isolado
 Skill1ActorView estende MeleeActorView sem alterar os cinco basicos.

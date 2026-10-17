@@ -1,3 +1,10 @@
+## Refinamento local de combate — autorizado em 17/10/2026
+Conforme `REFINAMENTO_LOCAL_COMBATE_20261017.md` e instrução completa de Thiago:
+sincronizar Estocada/Kamusari com o contato, preservar dano/recarga/alcance e
+velocidade, manter Kamusari circular e preparar poses do explorador, um ataque
+do Guardião e inimigos em revisão offline. Novas artes aguardam aprovação visual.
+Trabalho exclusivamente local: sem push, PR, Actions ou deployment.
+
 ## Clareza dos menus — aprovada em 15/10/2026
 Conforme CLAREZA_MENUS_MOBILE.md e pedido para ajustar Ferreiro, Vendedor,
 Habilidades e Treinamento: reduzir texto repetido, explicitar preços e pontos,
