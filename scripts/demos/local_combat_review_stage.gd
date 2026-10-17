@@ -25,6 +25,9 @@ func _draw() -> void:
 		else: draw_arc(origin,reach,0,TAU,64,edge,1,false)
 	elif kind == 1:
 		if technique == "guardian_idle": return
+		if technique in ["root_wave","seeds"]:
+			draw_arc(origin,TowerGuardian.WAVE_END if technique == "root_wave" else TowerGuardian.SEED_SPEED*0.90,0,TAU,64,Color("#ffe0a060"),1,false)
+			return
 		var pts := PackedVector2Array([origin])
 		for i in range(21): pts.append(origin+direction.rotated(deg_to_rad(-50+i*5))*TowerGuardian.ROOT_RANGE)
 		pts.append(origin)

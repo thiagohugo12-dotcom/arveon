@@ -4,6 +4,7 @@ const DIRECTIONS := [Vector2.DOWN,Vector2.UP,Vector2.LEFT,Vector2.RIGHT]
 const PLAYER := preload("res://scenes/actors/player.tscn")
 const ENEMY := preload("res://scenes/actors/enemy.tscn")
 const SWORD_ATTACKS := ["estocada_precisa","guarda_reativa","danca_laminas","corte_crescente","ruptura_ancestral"]
+const GUARDIAN_ATTACKS := ["guardian_idle","roots","spikes","charge","root_wave","seeds"]
 var actor_kind := 0
 var ability := "estocada_precisa"
 var direction_index := 3
@@ -70,7 +71,7 @@ func _ready() -> void:
 	controls.add_child(actor_choice)
 	attack_choice = OptionButton.new()
 	controls.add_child(attack_choice)
-	attack_choice.item_selected.connect(func(index: int): ability=SWORD_ATTACKS[index] if actor_kind == 0 else ("guardian_idle" if actor_kind == 1 and index == 0 else "roots"); rebuild())
+	attack_choice.item_selected.connect(func(index: int): ability=SWORD_ATTACKS[index] if actor_kind == 0 else GUARDIAN_ATTACKS[index] if actor_kind == 1 else "roots"; rebuild())
 	var directions := OptionButton.new()
 	direction_choice=directions
 	for label in ["Baixo","Cima","Esquerda","Direita"]: directions.add_item(label)
@@ -133,7 +134,7 @@ func _layout() -> void:
 	if size.x < 750 and is_instance_valid(comparison_button): comparison_button.button_pressed=false
 func _populate_attacks() -> void:
 	attack_choice.clear()
-	var names := ["Estocada Precisa","Guarda Reativa","Kamusari","Corte Crescente","Ruptura Ancestral"] if actor_kind == 0 else (["Repouso","Golpe frontal de raízes"] if actor_kind == 1 else ["Investida"] if actor_kind == 2 else ["Contato"] if actor_kind == 3 else ["Disparo de espinho"])
+	var names := ["Estocada Precisa","Guarda Reativa","Kamusari","Corte Crescente","Ruptura Ancestral"] if actor_kind == 0 else (["Repouso","Golpe frontal de raízes","Espinhos","Investida","Onda de Raízes","Sementes Ancestrais"] if actor_kind == 1 else ["Investida"] if actor_kind == 2 else ["Contato"] if actor_kind == 3 else ["Disparo de espinho"])
 	for label: String in names: attack_choice.add_item(label)
 	ability = "estocada_precisa" if actor_kind == 0 else "roots"
 	if actor_kind == 1: attack_choice.select(1)
@@ -174,6 +175,7 @@ func fit_panels() -> void:
 	# Fit the complete legal range, including tall canopy, without clipping tips.
 	var extent:=Vector2(400,400) if actor_kind == 0 else Vector2(340,320) if actor_kind == 1 else Vector2(540,540) if actor_kind == 4 else Vector2(240,240)
 	if actor_kind == 0 and ability == "ruptura_ancestral": extent=Vector2(500,500)
+	if actor_kind == 1 and ability in ["root_wave","seeds"]: extent=Vector2(500,500)
 	for p in panels:
 		var room: Vector2=p.container.size
 		p.camera.position=Vector2(1100,410 if actor_kind == 1 else 440)
@@ -201,6 +203,10 @@ func rebuild() -> void:
 	if actor_kind == 0 and SwordTechniqueEffect.EXTRA_DURATIONS.has(ability): duration=SwordTechniqueEffect.EXTRA_DURATIONS[ability]
 	contact_time=SwordTechniqueTiming.contact(ability) if actor_kind == 0 and SwordTechniqueTiming.FRAMES.has(ability) else (0.60 if actor_kind == 0 else 0.75 if actor_kind == 1 else 0.34 if actor_kind == 4 else 0.42 if actor_kind == 2 else 0.12)
 	if actor_kind == 0 and SwordTechniqueEffect.EXTRA_DURATIONS.has(ability): contact_time=0
+	if actor_kind == 1 and ability != "guardian_idle":
+		var action_index := GUARDIAN_ATTACKS.find(ability)-1
+		contact_time=TowerGuardian.WINDUPS[action_index]
+		duration=contact_time+TowerGuardian.ACTIVES[action_index]+1.0
 	seeking=true
 	slider.max_value=duration
 	seeking=false
@@ -241,7 +247,8 @@ func setup_cast() -> void:
 		enemy.position=Vector2(1100,440)+aim*65
 		if actor_kind == 1:
 			enemy.set_script(preload("res://scripts/actors/tower_guardian.gd"))
-			enemy.get_node("View").set_script(preload("res://scripts/demos/local_guardian_review_view.gd") if p.updated else preload("res://scripts/presentation/tower_guardian_view.gd"))
+			enemy.get_node("View").set_script(preload("res://scripts/demos/local_guardian_review_view.gd") if p.updated and ability in ["roots","guardian_idle"] else preload("res://scripts/presentation/tower_guardian_view.gd"))
+			enemy.get_node("View").legacy_body=not p.updated
 			enemy.kind=4
 			enemy.arena_bounds=Rect2(500,100,800,700)
 		elif actor_kind >= 2:
@@ -284,6 +291,7 @@ func setup_cast() -> void:
 				enemy.projectile_requested.connect(spawn_spine)
 			if actor_kind == 1:
 				enemy.recovery_left=0
+				enemy.action=maxi(0,GUARDIAN_ATTACKS.find(ability)-1)
 				if ability != "guardian_idle": enemy._begin_attack()
 			elif actor_kind == 2: enemy.charge_windup=0.42
 			elif actor_kind == 4:
@@ -381,9 +389,12 @@ func refresh_visuals() -> void:
 			enemy.view.warning=time < contact_time and ability != "guardian_idle"
 			enemy.view.attack_left=0.18 if time >= contact_time and time < contact_time+0.12 else 0
 			if actor_kind == 1:
-				enemy.view.telegraph_kind=0
+				enemy.view.telegraph_kind=maxi(0,GUARDIAN_ATTACKS.find(ability)-1)
 				enemy.view.telegraph_direction=aim
-				if p.updated:
+				if p.updated and ability != "guardian_idle":
+					enemy.view.warning=enemy.state in [TowerGuardian.State.WINDUP,TowerGuardian.State.ACTIVE]
+					enemy.view.hazards_active=enemy.state == TowerGuardian.State.ACTIVE
+				if p.updated and ability in ["roots","guardian_idle"]:
 					enemy.view.sample_time=-time-0.001 if ability == "guardian_idle" else time
 					enemy.view.sample_direction=aim
 			elif p.updated:

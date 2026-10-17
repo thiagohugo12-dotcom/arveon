@@ -1,3 +1,10 @@
+## Guardião da Mata — integração e duas habilidades autorizadas em 17/10/2026
+Thiago solicitou integrar o visual/animações do protótipo e criar duas habilidades.
+O chefe da Torre recebe Onda de Raízes (anel expansivo) e Sementes Ancestrais
+(três disparos em leque), ambos avisados e com dano único por execução.
+Balanceamento inicial provisório em GUARDIAO_LOCAL_CINCO_ATAQUES_20261017.md.
+Somente local. Chefe opcional, recompensas, progressão e save preservados.
+
 ## Refinamento local de combate — autorizado em 17/10/2026
 Conforme `REFINAMENTO_LOCAL_COMBATE_20261017.md` e instrução completa de Thiago:
 sincronizar Estocada/Kamusari com o contato, preservar dano/recarga/alcance e

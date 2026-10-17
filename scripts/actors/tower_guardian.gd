@@ -2,12 +2,22 @@ class_name TowerGuardian
 extends EnemyActor
 
 # Gameplay does not depend on the procedural view; replace View to upgrade art.
-enum Action { ROOTS, SPIKES, CHARGE }
+enum Action { ROOTS, SPIKES, CHARGE, ROOT_WAVE, SEEDS }
 enum State { APPROACH, WINDUP, ACTIVE, RECOVERY }
 const MAX_HP := 360
 const ROOT_RANGE := 90.0
 const SPIKE_RADIUS := 26.0
 const CHARGE_SPEED := 320.0
+const WINDUPS := [0.75,1.0,0.8,1.10,0.90]
+const ACTIVES := [0.12,0.45,0.65,0.65,0.90]
+const WAVE_START := 28.0
+const WAVE_END := 160.0
+const WAVE_HALF_WIDTH := 12.0
+const SEED_SPEED := 240.0
+const SEED_RADIUS := 12.0
+const SEED_ANGLES := [-PI/7.2,0.0,PI/7.2]
+var attack_origin := Vector2.ZERO
+var seed_blocked := [false,false,false]
 var action := Action.ROOTS
 var state := State.APPROACH
 var phase_two := false
@@ -22,6 +32,7 @@ func _physics_process(delta: float) -> void:
 	velocity = Vector2.ZERO
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive():
 		_clear_warning()
+		view.hazards_active = false
 		return
 	# Stop immediately on modal input, before Main pauses the next physics frame.
 	if target.input_driver != null and target.input_driver.blocked:
@@ -43,7 +54,7 @@ func _physics_process(delta: float) -> void:
 			if action_left < 0.000001: action_left = 0.0
 			if action_left == 0.0:
 				state = State.ACTIVE
-				action_left = [0.12, 0.45, 0.65][action]
+				action_left = ACTIVES[action]
 				view.play_attack()
 				# The root contact is the WINDUP -> ACTIVE event, shared with the pose.
 				if action == Action.ROOTS and roots_contains(target.global_position): _damage_once(18)
@@ -62,7 +73,11 @@ func _physics_process(delta: float) -> void:
 				for point in spike_points:
 					if point.distance_to(target.global_position) <= SPIKE_RADIUS:
 						_damage_once(16)
+			elif action in [Action.ROOT_WAVE,Action.SEEDS]:
+				var before := float(ACTIVES[action])-action_left
+				_apply_new_hazards(before,minf(float(ACTIVES[action]),before+delta))
 			action_left = maxf(0.0, action_left - delta)
+			if action_left < 0.000001: action_left = 0.0
 			if action_left == 0.0:
 				_finish_attack()
 		State.RECOVERY:
@@ -73,6 +88,30 @@ func _physics_process(delta: float) -> void:
 	view.set_moving(velocity.length_squared() > 1.0)
 	view.charge_length = CHARGE_SPEED * 0.65
 	view.queue_redraw()
+
+func wave_radius(time: float) -> float:
+	return lerpf(WAVE_START,WAVE_END,clampf(time/float(ACTIVES[Action.ROOT_WAVE]),0,1))
+
+func seed_position(index: int,time: float) -> Vector2:
+	var point := attack_origin+aim.rotated(SEED_ANGLES[index])*SEED_SPEED*time
+	return Vector2(clampf(point.x,arena_bounds.position.x+12,arena_bounds.end.x-12),clampf(point.y,arena_bounds.position.y+12,arena_bounds.end.y-12))
+
+func _apply_new_hazards(before: float,after: float) -> void:
+	if action == Action.ROOT_WAVE:
+		var distance := attack_origin.distance_to(target.global_position)
+		if distance >= wave_radius(before)-WAVE_HALF_WIDTH and distance <= wave_radius(after)+WAVE_HALF_WIDTH:
+			_damage_once(16)
+	elif action == Action.SEEDS:
+		for i in range(3):
+			if seed_blocked[i]: continue
+			var start := seed_position(i,before)
+			var end := seed_position(i,after)
+			var wall := get_world_2d().direct_space_state.intersect_ray(PhysicsRayQueryParameters2D.create(start,end,1))
+			if not wall.is_empty():
+				end=wall.position
+				seed_blocked[i]=true
+			var nearest := Geometry2D.get_closest_point_to_segment(target.global_position,start,end)
+			if nearest.distance_to(target.global_position) <= SEED_RADIUS: _damage_once(14)
 
 func roots_contains(point: Vector2) -> bool:
 	var offset := point - global_position
@@ -86,7 +125,9 @@ func _begin_attack() -> void:
 	aim = global_position.direction_to(target.global_position)
 	if aim.is_zero_approx():
 		aim = Vector2.DOWN
-	action_left = [0.75, 1.0, 0.8][action]
+	action_left = WINDUPS[action]
+	attack_origin = global_position
+	seed_blocked = [false,false,false]
 	spike_points.clear()
 	if action == Action.SPIKES:
 		for side in [0, -1, 1]:
@@ -112,10 +153,11 @@ func _finish_attack() -> void:
 	state = State.RECOVERY
 	# Missing a charge leaves a longer opening in both phases.
 	recovery_left = 1.4 if action == Action.CHARGE and not attack_hit else 1.0 * (0.8 if phase_two else 1.0)
-	action = (action + 1) % 3
+	action = (action + 1) % Action.size()
 
 func _clear_warning() -> void:
 	view.set_warning(false)
+	view.hazards_active = false
 	spike_points.clear()
 	view.spike_points = spike_points
 

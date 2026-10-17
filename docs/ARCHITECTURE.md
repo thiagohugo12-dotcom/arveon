@@ -1,3 +1,13 @@
+## Guardião da Mata local — 17/10/2026
+TowerGuardianView usa o atlas do protótipo nas quatro direções e oito poses;
+os quadros de preparação/contato/recuperação consultam o estado real do chefe.
+TowerGuardian acrescenta onda radial e sementes em leque à rotação existente.
+Contato varre o intervalo percorrido; uma ação causa no máximo um dano.
+Sementes consultam World e limites da arena; não criam projéteis persistentes.
+Avisos e efeitos ativos usam a mesma geometria/timeline da colisão.
+Main já instancia essa View; chefe opcional e saves permanecem independentes.
+A revisão offline permite selecionar repouso e os cinco ataques.
+
 ## Layout aprovado dos menus
 GameHUD organiza o Ferreiro em grade, seleção com comparação e confirmação
 separada; Vendedor tem abas e transações unitárias originais. Cabeçalhos curtos
