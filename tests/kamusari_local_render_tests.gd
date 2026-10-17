@@ -48,6 +48,26 @@ func run() -> void:
 						covered=covered or (pixel.a>0.20 and pixel.r>pixel.g*1.5 and pixel.r>pixel.b*1.4)
 				check(covered,"complete perimeter, including rear, row %d reach %d sample %d" % [row,reach,sample])
 			if reach == 170: image.save_png(output.path_join("efeito-dir%d.png" % row))
+		# The new crescent travels outward, independently of the intact area ring.
+		var distances: Array[float]=[]
+		for age: float in [0.025,0.11]:
+			actor.view.seek_sword_technique(SwordTechniqueTiming.contact("danca_laminas")+age)
+			for i in range(3): await process_frame
+			await RenderingServer.frame_post_draw
+			var image:=viewport.get_texture().get_image()
+			var farthest:=0.0
+			for distance in range(55,145):
+				var point:=Vector2(256,240)+aim*distance
+				for offset in range(-3,4):
+					var sample:=point+aim.orthogonal()*offset
+					var pixel:=image.get_pixel(roundi(sample.x),roundi(sample.y))
+					# Viewport RGB is premultiplied during fading; inspect relative
+					# warmth rather than requiring opaque white at both timestamps.
+					if pixel.a>0.2 and pixel.r>0.30 and pixel.g>pixel.r*0.55 and pixel.b>pixel.r*0.40: farthest=maxf(farthest,distance)
+			distances.append(farthest)
+			check(farthest>55,"forward slash visibly leaves sword in direction "+str(row))
+			image.save_png(output.path_join("frente-dir%d-%d.png" % [row,roundi(age*1000)]))
+		check(distances[1]>distances[0]+20,"forward slash travels outward instead of only orbiting")
 		# Every tapered stroke remains triangulable throughout the dissipating tail.
 		for i in range(20):
 			var p:=float(i)/20
@@ -92,7 +112,11 @@ func run() -> void:
 		fx.set_process(false)
 		var initial: Vector2=main.player.position
 		var dash_executed:=false
+		var should_hit:=false
 		for step in range(24):
+			if step == 12:
+				var ray:=PhysicsRayQueryParameters2D.create(main.player.position,main.enemy.position,1)
+				should_hit=main.player.get_world_2d().direct_space_state.intersect_ray(ray).is_empty() and main.player.position.distance_to(main.enemy.position)<=fx.real_reach
 			main.player._physics_process(1.0/60.0)
 			dash_executed=dash_executed or main.player.dash.active()
 			main.player.view._process(1.0/60.0)
@@ -107,7 +131,7 @@ func run() -> void:
 		if distance>25: moved_directions+=1
 		check(dash_executed,"actual Dash requested in all four directions, retaining scenery collisions")
 		print("KAM_DASH_DIRECTION: ",row," displacement=",distance)
-		check(hit_events == 4,"one activation retains exactly four configured Kamusari hits")
+		check(hit_events == (4 if should_hit else 0),"one activation retains four configured hits and respects real scenery LOS")
 	check(moved_directions>=2,"effect follows real displacement along both open directions of training lane")
 	main.queue_free()
 	await process_frame

@@ -24,3 +24,14 @@ O jogo completo ainda usava a apresentação bitmap aprovada anteriormente, enqu
 - 24 capturas antes e 24 depois no jogo completo, usando save temporário isolado.
 
 O BAT existente abre a correção ao reiniciar o jogo. Protótipos do Guardião e das outras técnicas permanecem aguardando aprovação. Nenhum push, PR, Actions ou deployment.
+
+## Ajuste seguinte — corte projetado para frente
+
+Thiago aprovou o dano em área e pediu que o ataque também saísse para a frente.
+Acrescentado um corte em crescente que nasce junto à espada e avança na direção
+capturada durante 0,14 s após o contato. O crescente possui duas pontas afuniladas
+e rastro curto, sem recorte de textura. A energia circular permanece. É somente
+apresentação: não há segundo projétil de dano, alcance novo ou acerto adicional.
+Teste renderizado ampliado: 394 verificações, zero falhas. Detecta o avanço real
+dos pixels do crescente em duas posições e quatro direções; mantém perímetro,
+movimento, Dash e acertos conforme a linha de visão real do cenário.

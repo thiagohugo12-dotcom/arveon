@@ -42,6 +42,18 @@ static func ribbon(center: Vector2, radius: float, angle: float, span: float, wi
 		points.append(center+Vector2.RIGHT.rotated(angle-span+t*span)*radius)
 	return points
 
+static func forward_crescent(center: Vector2, aim: float, radius: float, width: float) -> PackedVector2Array:
+	var points:=PackedVector2Array()
+	const SEGMENTS:=24
+	for i in range(SEGMENTS+1):
+		var t:=float(i)/SEGMENTS
+		points.append(center+Vector2.RIGHT.rotated(aim-0.95+t*1.9)*(radius-sin(t*PI)*width))
+	# Both tips taper to zero. Omit duplicate tip vertices to keep triangulation valid.
+	for i in range(SEGMENTS-1,0,-1):
+		var t:=float(i)/SEGMENTS
+		points.append(center+Vector2.RIGHT.rotated(aim-0.95+t*1.9)*radius)
+	return points
+
 func _draw_kamusari() -> void:
 	var contact:=SwordTechniqueTiming.contact("danca_laminas")
 	var aim:=direction.angle()
@@ -63,9 +75,15 @@ func _draw_kamusari() -> void:
 	var blade_center:=Vector2(0,-24)
 	draw_colored_polygon(ribbon(blade_center,43,angle,1.9,7),Color(0.90,0.20,0.24,alpha))
 	draw_colored_polygon(ribbon(blade_center,42,angle,1.5,3),Color(1.0,0.91,0.73,alpha))
-	var cut_angle:=aim+0.35+progress*1.1
-	draw_colored_polygon(ribbon(blade_center,74,cut_angle,1.15,14),Color(0.88,0.13,0.21,alpha))
-	draw_colored_polygon(ribbon(blade_center,73,cut_angle,0.95,5),Color(1.0,0.92,0.77,alpha))
+	# A separate visible slash launches FROM the blade and travels FORWARD.
+	# Presentation only: the original single circular contact still owns damage.
+	var launch:=clampf((elapsed-contact)/0.14,0,1)
+	var travel:=lerpf(30,real_reach-50,launch)
+	var wave_center:=Vector2(0,-16)+direction*travel
+	draw_colored_polygon(forward_crescent(wave_center,aim,34,15),Color(0.75,0.08,0.18,alpha))
+	draw_colored_polygon(forward_crescent(wave_center,aim,33,9),Color(1.0,0.35,0.30,alpha))
+	draw_colored_polygon(forward_crescent(wave_center,aim,31,5),Color(1.0,0.94,0.78,alpha))
+	draw_line(Vector2(0,-16)+direction*maxf(18,travel-35),wave_center+direction*18,Color(1,0.60,0.42,0.60*alpha),2,false)
 
 static func frame_duration_total(frames: Array) -> float:
 	var total := 0.0
