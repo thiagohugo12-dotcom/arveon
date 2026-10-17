@@ -42,55 +42,17 @@ static func ribbon(center: Vector2, radius: float, angle: float, span: float, wi
 		points.append(center+Vector2.RIGHT.rotated(angle-span+t*span)*radius)
 	return points
 
-static func projected_blade(aim: float, length: float, width: float) -> PackedVector2Array:
+static func forward_crescent(center: Vector2, aim: float, radius: float, width: float) -> PackedVector2Array:
 	var points:=PackedVector2Array()
 	const SEGMENTS:=24
 	for i in range(SEGMENTS+1):
 		var t:=float(i)/SEGMENTS
-		var point:=Vector2(-12,-width).bezier_interpolate(Vector2(length*0.40,-width),Vector2(length*0.85,-width*0.60),Vector2(length,0),t)
-		points.append(point.rotated(aim)+Vector2(0,-24))
-	for i in range(SEGMENTS-1,-1,-1):
+		points.append(center+Vector2.RIGHT.rotated(aim-0.95+t*1.9)*(radius-sin(t*PI)*width))
+	# Both tips taper to zero. Omit duplicate tip vertices to keep triangulation valid.
+	for i in range(SEGMENTS-1,0,-1):
 		var t:=float(i)/SEGMENTS
-		var point:=Vector2(-12,width).bezier_interpolate(Vector2(length*0.40,width),Vector2(length*0.85,width*0.60),Vector2(length,0),t)
-		points.append(point.rotated(aim)+Vector2(0,-24))
-	# Open swept tail forms the two scythe tips, rather than a closed oval blob.
-	points.append(Vector2(length*0.42,0).rotated(aim)+Vector2(0,-24))
+		points.append(center+Vector2.RIGHT.rotated(aim-0.95+t*1.9)*radius)
 	return points
-
-static func projected_wake(aim: float, length: float, side: float, width: float) -> PackedVector2Array:
-	var points:=PackedVector2Array()
-	const SEGMENTS:=24
-	for edge: float in [-1.0,1.0]:
-		for index in range(SEGMENTS+1):
-			var i:=index if edge<0 else SEGMENTS-index
-			# Keep the two tapered tips as single vertices.
-			if edge>0 and i in [0,SEGMENTS]: continue
-			var t:=float(i)/SEGMENTS
-			var thickness:=sin(t*PI)*3
-			var y:=side*sin(t*PI)*width+edge*thickness
-			points.append(Vector2(lerpf(-15,length,t),y).rotated(aim)+Vector2(0,-24))
-	return points
-
-func _draw_projected_cut(alpha: float) -> void:
-	# Reference: a connected, white-hot forward blade with flowing red edges.
-	# Geometry is authored separately from the existing explorer; no image crop.
-	var contact:=SwordTechniqueTiming.contact("danca_laminas")
-	var launch:=clampf((elapsed-(contact-0.045))/0.14,0,1)
-	var length:=lerpf(48,real_reach-26,launch)
-	var width:=lerpf(18,34,launch)
-	var aim:=direction.angle()
-	draw_colored_polygon(projected_wake(aim,length,-1,width*1.45),Color(0.98,0.12,0.20,alpha))
-	draw_colored_polygon(projected_wake(aim,length,1,width*1.45),Color(0.98,0.12,0.20,alpha))
-	draw_colored_polygon(projected_blade(aim,length,width),Color(0.70,0.035,0.12,alpha))
-	draw_colored_polygon(projected_blade(aim,length-2,width*0.85),Color(1.0,0.12,0.20,alpha))
-	draw_colored_polygon(projected_blade(aim,length-4,width*0.62),Color(1.0,0.48,0.49,alpha))
-	draw_colored_polygon(projected_blade(aim,length-7,width*0.48),Color(1.0,0.96,0.87,alpha))
-	draw_line(Vector2(12,0).rotated(aim)+Vector2(0,-24),Vector2(length*0.68,0).rotated(aim)+Vector2(0,-24),Color(1.0,0.93,0.84,alpha),3,false)
-	# Short tapered speed marks move along the same direction, with complete tails.
-	for side in [-1.0,1.0]:
-		var start:=Vector2(-8,side*12).rotated(aim)+Vector2(0,-24)
-		var end:=Vector2(length*0.70,side*width*0.38).rotated(aim)+Vector2(0,-24)
-		draw_line(start,end,Color(1.0,0.40,0.35,0.60*alpha),2,false)
 
 func _draw_kamusari() -> void:
 	var contact:=SwordTechniqueTiming.contact("danca_laminas")
@@ -100,7 +62,6 @@ func _draw_kamusari() -> void:
 		var angle:=aim-1.3+p*0.8
 		draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.9,4),Color("#a73339"))
 		draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.55,2),Color("#f1ae83"))
-		if elapsed>=contact-0.045: _draw_projected_cut(0.55+0.45*clampf((elapsed-contact+0.045)/0.045,0,1))
 		return
 	var progress:=clampf((elapsed-contact)/(duration-contact),0,1)
 	var alpha:=pow(1.0-progress,1.3)
@@ -114,7 +75,15 @@ func _draw_kamusari() -> void:
 	var blade_center:=Vector2(0,-24)
 	draw_colored_polygon(ribbon(blade_center,43,angle,1.9,7),Color(0.90,0.20,0.24,alpha))
 	draw_colored_polygon(ribbon(blade_center,42,angle,1.5,3),Color(1.0,0.91,0.73,alpha))
-	_draw_projected_cut(alpha)
+	# A separate visible slash launches FROM the blade and travels FORWARD.
+	# Presentation only: the original single circular contact still owns damage.
+	var launch:=clampf((elapsed-contact)/0.14,0,1)
+	var travel:=lerpf(30,real_reach-50,launch)
+	var wave_center:=Vector2(0,-16)+direction*travel
+	draw_colored_polygon(forward_crescent(wave_center,aim,34,15),Color(0.75,0.08,0.18,alpha))
+	draw_colored_polygon(forward_crescent(wave_center,aim,33,9),Color(1.0,0.35,0.30,alpha))
+	draw_colored_polygon(forward_crescent(wave_center,aim,31,5),Color(1.0,0.94,0.78,alpha))
+	draw_line(Vector2(0,-16)+direction*maxf(18,travel-35),wave_center+direction*18,Color(1,0.60,0.42,0.60*alpha),2,false)
 
 static func frame_duration_total(frames: Array) -> float:
 	var total := 0.0
@@ -218,7 +187,59 @@ func _draw_complete_frame(atlas: Texture2D, target: Rect2, source: Rect2, outlin
 		uv.append((source.position + point) / atlas.get_size())
 	draw_polygon(points, PackedColorArray([Color.WHITE]), uv, atlas)
 
+static func tapered_streak(start: Vector2, end: Vector2, width: float) -> PackedVector2Array:
+	var side := (end-start).normalized().orthogonal()*width
+	var middle := start.lerp(end,0.60)
+	return PackedVector2Array([start,middle-side,end,middle+side])
+
+func _draw_estocada() -> void:
+	var contact := SwordTechniqueTiming.contact("estocada_precisa")
+	var origin := Vector2(0,-24)
+	var aim := direction.angle()
+	if elapsed < contact-0.035:
+		var p := clampf(elapsed/(contact-0.035),0,1)
+		draw_colored_polygon(forward_crescent(origin,aim,24+p*6,2),Color(0.65,0.85,1,0.4+p*0.5))
+		return
+	var p := clampf((elapsed-contact+0.035)/(duration-contact+0.035),0,1)
+	var launch := clampf((elapsed-contact+0.035)/0.08,0,1)
+	var alpha := pow(1-p,1.2)
+	var length := lerpf(32,100,launch)
+	for side: float in [-1.0,0.0,1.0]:
+		var offset := direction.orthogonal()*side*9
+		var start := origin+direction*8+offset
+		var end := origin+direction*(length-absf(side)*13)+offset
+		draw_colored_polygon(tapered_streak(start,end,4),Color(0.12,0.50,1,alpha))
+		draw_colored_polygon(tapered_streak(start,end,1.5),Color(0.85,0.96,1,alpha))
+	if elapsed >= contact:
+		var center := origin+direction*92
+		var impact := clampf((elapsed-contact)/0.06,0,1)
+		for i in range(8):
+			var ray := Vector2.RIGHT.rotated(i*TAU/8+aim)
+			draw_colored_polygon(tapered_streak(center+ray*3,center+ray*(9+impact*13),1.6),Color(1,0.78,0.30,alpha))
+
+func _draw_guard() -> void:
+	var origin := Vector2(0,-24)
+	var aim := direction.angle()
+	var alpha := clampf(elapsed/0.12,0,1)*clampf(remaining/0.10,0,1)
+	# Whole curves are drawn in world space, without irregular atlas boundaries.
+	draw_arc(origin,35,0,TAU,64,Color(0.25,0.65,1,0.20*alpha),2,false)
+	draw_colored_polygon(forward_crescent(origin,aim,35,3),Color(0.55,0.88,1,0.85*alpha))
+	if counter_elapsed >= 0:
+		var p := clampf(counter_elapsed/0.22,0,1)
+		var center := origin+direction*30
+		for i in range(7):
+			var ray := Vector2.RIGHT.rotated(aim-1.3+i*2.6/6)
+			draw_colored_polygon(tapered_streak(center+ray*(4+p*10),center+ray*(10+p*23),1.5),Color(1,0.80,0.35,1-p))
+		draw_colored_polygon(ribbon(origin,40+p*10,aim-0.8+p*1.6,1.4,4*(1-p)+0.3),Color(0.55,0.88,1,1-p))
+
 func _draw() -> void:
+	if remaining <= 0.0: return
+	match kind:
+		"danca_laminas": _draw_kamusari()
+		"estocada_precisa": _draw_estocada()
+		"guarda_reativa": _draw_guard()
+
+func _draw_legacy_atlas() -> void:
 	if remaining <= 0.0: return
 	if kind == "danca_laminas":
 		_draw_kamusari()

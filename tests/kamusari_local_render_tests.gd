@@ -73,11 +73,38 @@ func run() -> void:
 			var p:=float(i)/20
 			var points:=SwordTechniqueEffect.ribbon(Vector2.ZERO,148,aim.angle()+p*TAU,2.1,10*(1-p)+2)
 			check(Geometry2D.triangulate_polygon(points).size()>0,"continuous ribbon has valid geometry")
-			var length:=lerpf(48,144,p)
-			var width:=lerpf(18,34,p)
-			check(Geometry2D.triangulate_polygon(SwordTechniqueEffect.projected_blade(aim.angle(),length,width)).size()>0,"reference blade has intact curved head and open tail")
-			for side: float in [-1.0,1.0]:
-				check(Geometry2D.triangulate_polygon(SwordTechniqueEffect.projected_wake(aim.angle(),length,side,width*1.45)).size()>0,"reference wake tips remain complete during travel")
+			check(Geometry2D.triangulate_polygon(SwordTechniqueEffect.forward_crescent(Vector2.ZERO,aim.angle(),34,15)).size()>0,"restored forward crescent has complete tapered tips")
+		# Inspect VFX alone: no foreign atlas fragment may appear behind the body.
+		actor.view.clear_sword_technique()
+		actor.view.visible=false
+		var isolated:=SwordTechniqueEffect.new()
+		viewport.add_child(isolated)
+		isolated.position=Vector2(256,256)
+		isolated.set_process(false)
+		isolated.direction=aim
+		for technique in ["estocada_precisa","guarda_reativa"]:
+			isolated.kind=technique
+			isolated.duration=0.335 if technique == "estocada_precisa" else 3.1
+			for stage in range(6):
+				isolated.elapsed=[0.02,0.08,0.14,0.17,0.23,0.32][stage]
+				isolated.remaining=isolated.duration-isolated.elapsed
+				isolated.counter_elapsed=-1 if stage<3 or technique == "estocada_precisa" else [0.0,0.07,0.16][stage-3]
+				isolated.queue_redraw()
+				for i in range(3): await process_frame
+				await RenderingServer.frame_post_draw
+				var image:=viewport.get_texture().get_image()
+				var stray:=0
+				var painted:=0
+				for x in range(130,382):
+					for y in range(130,382):
+						if image.get_pixel(x,y).a<0.03: continue
+						painted+=1
+						if (Vector2(x,y)-Vector2(256,232)).dot(aim)<-42: stray+=1
+				check(stray==0,"no clipped fragment behind "+technique+" direction "+str(row)+" stage "+str(stage))
+				check(painted>0,"whole effect remains visible "+technique)
+				image.save_png(output.path_join("inteiro-%s-dir%d-quadro%d.png" % [technique,row,stage]))
+		isolated.queue_free()
+		actor.view.visible=true
 	viewport.queue_free()
 	await process_frame
 	# Actual full game: movement and Dash while the original explorer casts.
