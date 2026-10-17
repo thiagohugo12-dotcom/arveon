@@ -217,7 +217,7 @@ func use(index: int) -> bool:
 		else:
 			_after_technique(_execute(rule.id,effect,power,ultimate))
 	if index > 0 and not ultimate: perfect_ready = false
-	if category == "espada" and player.view is Skill1GameView and rule.id in ["guarda_reativa","estocada_precisa","danca_laminas"]:
+	if category == "espada" and player.view is Skill1GameView and Skill1GameView.TECHNIQUE_POSES.has(rule.id):
 		(player.view as Skill1GameView).play_sword_technique(rule.id,player.last_direction,guard_left)
 		if not technique.is_empty(): player.view.seek_sword_technique(0.0)
 	else:

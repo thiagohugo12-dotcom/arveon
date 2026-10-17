@@ -28,6 +28,39 @@ var guard_time := 0.0
 var elapsed := 0.0
 var externally_clocked := false
 var real_reach := 150.0
+const EXTRA_DURATIONS := {"corte_crescente":0.30,"ruptura_ancestral":0.34}
+
+func _draw_passing_cut(alpha: float) -> void:
+	var contact := SwordTechniqueTiming.contact("danca_laminas")
+	var launch := clampf((elapsed-contact+0.045)/0.11,0,1)
+	var front := lerpf(72,real_reach-8,launch)
+	var origin := Vector2(0,-24)
+	var aim := direction.angle()
+	# A broad swept cut crosses the enemy, rather than hiding a small wave behind it.
+	for layer in range(3):
+		var width: float = [40.0,31.0,23.0][layer]
+		var rear: float = [-26.0,2.0,20.0][layer]
+		var points := PackedVector2Array()
+		for i in range(25):
+			var t := float(i)/24
+			var point := Vector2(rear,-width).bezier_interpolate(Vector2(front*0.45,-width),Vector2(front*0.85,-width*0.50),Vector2(front-layer*2,0),t)
+			points.append(origin+point.rotated(aim))
+		for i in range(23,-1,-1):
+			var t := float(i)/24
+			var point := Vector2(rear,width).bezier_interpolate(Vector2(front*0.45,width),Vector2(front*0.85,width*0.50),Vector2(front-layer*2,0),t)
+			points.append(origin+point.rotated(aim))
+		points.append(origin+Vector2(front*0.35,0).rotated(aim))
+		var color: Color = [Color(0.90,0.03,0.12,alpha),Color(1,0.32,0.34,alpha),Color(1,0.96,0.88,alpha)][layer]
+		draw_colored_polygon(points,color)
+	# Thin separated streaks carry the red tails through the moving head.
+	for side: float in [-1.0,1.0]:
+		var bend := origin+direction*(front*0.30)+direction.orthogonal()*side*(36+launch*7)
+		var tip := origin+direction*front
+		draw_colored_polygon(tapered_streak(origin-direction*18+direction.orthogonal()*side*12,bend,3),Color(0.95,0.06,0.14,alpha))
+		draw_colored_polygon(tapered_streak(bend,tip,6),Color(1,0.12,0.19,alpha))
+		draw_colored_polygon(tapered_streak(bend,tip,2.5),Color(1,0.90,0.81,alpha))
+	draw_colored_polygon(tapered_streak(origin+direction*8,origin+direction*front,5),Color(1,0.36,0.34,alpha))
+	draw_colored_polygon(tapered_streak(origin+direction*12,origin+direction*(front-3),2),Color(1,0.96,0.88,alpha))
 
 static func ribbon(center: Vector2, radius: float, angle: float, span: float, width: float) -> PackedVector2Array:
 	# Continuous tapered curves: no texture cell or alpha cutout can clip a tail.
@@ -62,6 +95,7 @@ func _draw_kamusari() -> void:
 		var angle:=aim-1.3+p*0.8
 		draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.9,4),Color("#a73339"))
 		draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.55,2),Color("#f1ae83"))
+		if elapsed >= contact-0.045: _draw_passing_cut(0.65+0.35*clampf((elapsed-contact+0.045)/0.045,0,1))
 		return
 	var progress:=clampf((elapsed-contact)/(duration-contact),0,1)
 	var alpha:=pow(1.0-progress,1.3)
@@ -75,15 +109,7 @@ func _draw_kamusari() -> void:
 	var blade_center:=Vector2(0,-24)
 	draw_colored_polygon(ribbon(blade_center,43,angle,1.9,7),Color(0.90,0.20,0.24,alpha))
 	draw_colored_polygon(ribbon(blade_center,42,angle,1.5,3),Color(1.0,0.91,0.73,alpha))
-	# A separate visible slash launches FROM the blade and travels FORWARD.
-	# Presentation only: the original single circular contact still owns damage.
-	var launch:=clampf((elapsed-contact)/0.14,0,1)
-	var travel:=lerpf(30,real_reach-50,launch)
-	var wave_center:=Vector2(0,-16)+direction*travel
-	draw_colored_polygon(forward_crescent(wave_center,aim,34,15),Color(0.75,0.08,0.18,alpha))
-	draw_colored_polygon(forward_crescent(wave_center,aim,33,9),Color(1.0,0.35,0.30,alpha))
-	draw_colored_polygon(forward_crescent(wave_center,aim,31,5),Color(1.0,0.94,0.78,alpha))
-	draw_line(Vector2(0,-16)+direction*maxf(18,travel-35),wave_center+direction*18,Color(1,0.60,0.42,0.60*alpha),2,false)
+	_draw_passing_cut(alpha)
 
 static func frame_duration_total(frames: Array) -> float:
 	var total := 0.0
@@ -99,6 +125,7 @@ func cast(id: String, at: Vector2, aim: Vector2, guard_time: float = 0.0) -> voi
 	global_position = at
 	self.guard_time = maxf(0.1, guard_time)
 	duration = self.guard_time + GUARDA_FRAMES[5] if id == "guarda_reativa" else (frame_duration_total(KAMUSARI_FRAMES) if id == "danca_laminas" else frame_duration_total(ESTOCADA_FRAMES))
+	if EXTRA_DURATIONS.has(id): duration=EXTRA_DURATIONS[id]
 	remaining = duration
 	elapsed = 0.0
 	externally_clocked = false
@@ -142,6 +169,7 @@ func _process(delta: float) -> void:
 	else: queue_redraw()
 
 func _frame() -> int:
+	if EXTRA_DURATIONS.has(kind): return mini(5,3+floori(elapsed/duration*3))
 	if SwordTechniqueTiming.FRAMES.has(kind): return SwordTechniqueTiming.frame(kind,elapsed)
 	if kind == "guarda_reativa":
 		if counter_elapsed >= 0.0:
@@ -201,7 +229,7 @@ func _draw_estocada() -> void:
 		draw_colored_polygon(forward_crescent(origin,aim,24+p*6,2),Color(0.65,0.85,1,0.4+p*0.5))
 		return
 	var p := clampf((elapsed-contact+0.035)/(duration-contact+0.035),0,1)
-	var launch := clampf((elapsed-contact+0.035)/0.08,0,1)
+	var launch := clampf((elapsed-contact+0.035)/0.035,0,1)
 	var alpha := pow(1-p,1.2)
 	var length := lerpf(32,100,launch)
 	for side: float in [-1.0,0.0,1.0]:
@@ -238,6 +266,21 @@ func _draw() -> void:
 		"danca_laminas": _draw_kamusari()
 		"estocada_precisa": _draw_estocada()
 		"guarda_reativa": _draw_guard()
+		"corte_crescente":
+			var p := clampf(elapsed/duration,0,1)
+			var alpha := pow(1-p,1.2)
+			var angle := direction.angle()-0.7+p*2.2
+			draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-4,angle,2.3,12*(1-p)+1),Color(0.15,0.75,0.72,alpha))
+			draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-5,angle,2.0,4*(1-p)+0.5),Color(0.85,1,0.92,alpha))
+		"ruptura_ancestral":
+			var p := clampf(elapsed/duration,0,1)
+			var alpha := pow(1-p,1.2)
+			var origin := Vector2(0,-18)
+			for side: float in [-1.0,0.0,1.0]:
+				var start := origin+direction*10+direction.orthogonal()*side*12
+				var end := origin+direction*(real_reach-absf(side)*15)+direction.orthogonal()*side*20
+				draw_colored_polygon(tapered_streak(start,end,6),Color(0.94,0.55,0.18,alpha))
+				draw_colored_polygon(tapered_streak(start,end,2),Color(1,0.95,0.72,alpha))
 
 func _draw_legacy_atlas() -> void:
 	if remaining <= 0.0: return

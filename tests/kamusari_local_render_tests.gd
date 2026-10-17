@@ -1,4 +1,9 @@
 extends SceneTree
+class PassingCut:
+	extends SwordTechniqueEffect
+	func _draw() -> void:
+		var p := clampf((elapsed-SwordTechniqueTiming.contact("danca_laminas"))/(duration-SwordTechniqueTiming.contact("danca_laminas")),0,1)
+		_draw_passing_cut(pow(1-p,1.3))
 var checks:=0
 var failures:=0
 var hit_events:=0
@@ -50,14 +55,25 @@ func run() -> void:
 			if reach == 170: image.save_png(output.path_join("efeito-dir%d.png" % row))
 		# The new crescent travels outward, independently of the intact area ring.
 		var distances: Array[float]=[]
+		# Isolate the forward layer: the area perimeter must not count as travel.
+		actor.view.visible=false
+		var passage:=PassingCut.new()
+		viewport.add_child(passage)
+		passage.position=Vector2(256,256)
+		passage.direction=aim
+		passage.real_reach=170
+		passage.duration=SwordTechniqueTiming.duration("danca_laminas")
+		passage.set_process(false)
 		for age: float in [0.025,0.11]:
 			actor.view.seek_sword_technique(SwordTechniqueTiming.contact("danca_laminas")+age)
+			passage.elapsed=SwordTechniqueTiming.contact("danca_laminas")+age
+			passage.queue_redraw()
 			for i in range(3): await process_frame
 			await RenderingServer.frame_post_draw
 			var image:=viewport.get_texture().get_image()
 			var farthest:=0.0
-			for distance in range(55,145):
-				var point:=Vector2(256,240)+aim*distance
+			for distance in range(55,181):
+				var point:=Vector2(256,232)+aim*distance
 				for offset in range(-3,4):
 					var sample:=point+aim.orthogonal()*offset
 					var pixel:=image.get_pixel(roundi(sample.x),roundi(sample.y))
@@ -67,7 +83,10 @@ func run() -> void:
 			distances.append(farthest)
 			check(farthest>55,"forward slash visibly leaves sword in direction "+str(row))
 			image.save_png(output.path_join("frente-dir%d-%d.png" % [row,roundi(age*1000)]))
+		print("KAM_FORWARD_TRAVEL: direction=",row," distances=",distances)
 		check(distances[1]>distances[0]+20,"forward slash travels outward instead of only orbiting")
+		passage.queue_free()
+		actor.view.visible=true
 		# Every tapered stroke remains triangulable throughout the dissipating tail.
 		for i in range(20):
 			var p:=float(i)/20

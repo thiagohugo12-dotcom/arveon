@@ -4,7 +4,9 @@ extends "res://scripts/demos/skill1_actor_view.gd"
 const TECHNIQUE_POSES := {
 	"estocada_precisa": [0,0,1,1,1,5],
 	"guarda_reativa": [0,1,1,1,1,5],
-	"danca_laminas": [0,0,1,2,3,5]
+	"danca_laminas": [0,0,1,2,3,5],
+	"corte_crescente": [0,1,2,3,4,5],
+	"ruptura_ancestral": [0,0,1,1,1,5]
 }
 var ground_effect: Node2D
 var sword_technique: SwordTechniqueEffect
@@ -54,12 +56,12 @@ func play_skill(index: int) -> void:
 
 func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> void:
 	if skill_category != "espada" or not village_scale or not is_instance_valid(sword_technique): return
-	if not id in ["guarda_reativa", "estocada_precisa", "danca_laminas"]: return
+	if not TECHNIQUE_POSES.has(id): return
 	var actor: Node2D = get_parent()
 	sword_pose = id
 	sword_pose_row = SwordActorView.direction_row(aim)
 	sword_technique.cast(id, actor.global_position, aim, guard_time)
-	if id == "danca_laminas":
+	if id in ["danca_laminas","corte_crescente","ruptura_ancestral"]:
 		var bonus:=20.0 if actor is PlayerActor and actor.class_combat.has_passive("alcance_treinado") else 0.0
 		sword_technique.real_reach=float(AbilityRules.effect(id).reach)+bonus
 	sword_pose_duration = sword_technique.duration

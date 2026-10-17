@@ -24,7 +24,7 @@ func run() -> void:
 		review.actor_kind=kind
 		review.actor_choice.select(kind)
 		review._populate_attacks()
-		var abilities: Array=["estocada_precisa","guarda_reativa","danca_laminas"] if kind == 0 else ["roots","guardian_idle"] if kind == 1 else ["roots"]
+		var abilities: Array=review.SWORD_ATTACKS if kind == 0 else ["roots","guardian_idle"] if kind == 1 else ["roots"]
 		for ability: String in abilities:
 			review.ability=ability
 			if kind == 0: review.attack_choice.select(abilities.find(ability))
@@ -33,9 +33,15 @@ func run() -> void:
 				review.direction_index=direction
 				review.rebuild()
 				review.seek(review.contact_time-0.001)
-				check(review.actual_contact_events == 0,"no early damage in review "+str(kind)+ability)
+				check(review.actual_contact_events == (1 if kind == 0 and review.contact_time == 0 else 0),"preserved contact timing in review "+str(kind)+ability)
 				review.seek(review.contact_time)
 				check(review.actual_contact_events == (0 if kind == 4 or ability == "guardian_idle" else 1),"real contact marker "+str(kind)+ability)
+				if kind == 0:
+					check(review.new_player.view.sword_technique.kind == ability,"real sword technique renderer is selected")
+					await capture("espada-%s-dir%d-contato" % [ability,direction])
+					review.seek(review.contact_time+0.045)
+					await capture("espada-%s-dir%d-passagem" % [ability,direction])
+					review.seek(review.contact_time)
 				if ability == "guardian_idle": check(not review.new_enemy.view.warning and review.new_enemy.view.sprite_frame() < 2,"idle is animated without attack warning")
 				if kind == 0 and ability != "guarda_reativa":
 					check(review.new_player.view.sword_technique._frame() == 3,"body/effect contact frame")

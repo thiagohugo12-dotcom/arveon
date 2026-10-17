@@ -3,6 +3,7 @@ extends Control
 const DIRECTIONS := [Vector2.DOWN,Vector2.UP,Vector2.LEFT,Vector2.RIGHT]
 const PLAYER := preload("res://scenes/actors/player.tscn")
 const ENEMY := preload("res://scenes/actors/enemy.tscn")
+const SWORD_ATTACKS := ["estocada_precisa","guarda_reativa","danca_laminas","corte_crescente","ruptura_ancestral"]
 var actor_kind := 0
 var ability := "estocada_precisa"
 var direction_index := 3
@@ -69,7 +70,7 @@ func _ready() -> void:
 	controls.add_child(actor_choice)
 	attack_choice = OptionButton.new()
 	controls.add_child(attack_choice)
-	attack_choice.item_selected.connect(func(index: int): ability=["estocada_precisa","guarda_reativa","danca_laminas"][index] if actor_kind == 0 else ("guardian_idle" if actor_kind == 1 and index == 0 else "roots"); rebuild())
+	attack_choice.item_selected.connect(func(index: int): ability=SWORD_ATTACKS[index] if actor_kind == 0 else ("guardian_idle" if actor_kind == 1 and index == 0 else "roots"); rebuild())
 	var directions := OptionButton.new()
 	direction_choice=directions
 	for label in ["Baixo","Cima","Esquerda","Direita"]: directions.add_item(label)
@@ -132,7 +133,7 @@ func _layout() -> void:
 	if size.x < 750 and is_instance_valid(comparison_button): comparison_button.button_pressed=false
 func _populate_attacks() -> void:
 	attack_choice.clear()
-	var names := ["Estocada Precisa","Guarda Reativa","Kamusari"] if actor_kind == 0 else (["Repouso","Golpe frontal de raízes"] if actor_kind == 1 else ["Investida"] if actor_kind == 2 else ["Contato"] if actor_kind == 3 else ["Disparo de espinho"])
+	var names := ["Estocada Precisa","Guarda Reativa","Kamusari","Corte Crescente","Ruptura Ancestral"] if actor_kind == 0 else (["Repouso","Golpe frontal de raízes"] if actor_kind == 1 else ["Investida"] if actor_kind == 2 else ["Contato"] if actor_kind == 3 else ["Disparo de espinho"])
 	for label: String in names: attack_choice.add_item(label)
 	ability = "estocada_precisa" if actor_kind == 0 else "roots"
 	if actor_kind == 1: attack_choice.select(1)
@@ -172,6 +173,7 @@ func create_panel(updated: bool) -> void:
 func fit_panels() -> void:
 	# Fit the complete legal range, including tall canopy, without clipping tips.
 	var extent:=Vector2(400,400) if actor_kind == 0 else Vector2(340,320) if actor_kind == 1 else Vector2(540,540) if actor_kind == 4 else Vector2(240,240)
+	if actor_kind == 0 and ability == "ruptura_ancestral": extent=Vector2(500,500)
 	for p in panels:
 		var room: Vector2=p.container.size
 		p.camera.position=Vector2(1100,410 if actor_kind == 1 else 440)
@@ -196,7 +198,9 @@ func rebuild() -> void:
 	direction_choice.select(direction_index)
 	duration=SwordTechniqueTiming.duration(ability) if actor_kind == 0 and SwordTechniqueTiming.FRAMES.has(ability) else (3.10 if actor_kind == 0 else 1.87 if actor_kind == 1 else 1.65 if actor_kind == 4 else 0.80 if actor_kind == 2 else 0.50)
 	if ability == "guardian_idle": duration=1.2
+	if actor_kind == 0 and SwordTechniqueEffect.EXTRA_DURATIONS.has(ability): duration=SwordTechniqueEffect.EXTRA_DURATIONS[ability]
 	contact_time=SwordTechniqueTiming.contact(ability) if actor_kind == 0 and SwordTechniqueTiming.FRAMES.has(ability) else (0.60 if actor_kind == 0 else 0.75 if actor_kind == 1 else 0.34 if actor_kind == 4 else 0.42 if actor_kind == 2 else 0.12)
+	if actor_kind == 0 and SwordTechniqueEffect.EXTRA_DURATIONS.has(ability): contact_time=0
 	seeking=true
 	slider.max_value=duration
 	seeking=false
@@ -266,6 +270,9 @@ func setup_cast() -> void:
 				new_enemy=enemy
 				player.class_combat.technique_impact.connect(func(_id: String,when: float): actual_contact_events+=1; actual_contact_time=when)
 				player.use_skill(1)
+				if SwordTechniqueEffect.EXTRA_DURATIONS.has(ability):
+					actual_contact_events=1
+					actual_contact_time=0
 			else:
 				old_view=player.view
 				old_view.play_sword_technique(ability,aim,3.0)
