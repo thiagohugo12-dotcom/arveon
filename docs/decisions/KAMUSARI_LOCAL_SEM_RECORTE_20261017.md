@@ -35,3 +35,24 @@ apresentação: não há segundo projétil de dano, alcance novo ou acerto adici
 Teste renderizado ampliado: 394 verificações, zero falhas. Detecta o avanço real
 dos pixels do crescente em duas posições e quatro direções; mantém perímetro,
 movimento, Dash e acertos conforme a linha de visão real do cenário.
+
+## Referência visual enviada pelo usuário
+
+Thiago enviou uma prancha de seis etapas e pediu o ataque projetado como nela,
+bem animado, preservando o personagem existente. A apresentação local foi
+ajustada para um corte com núcleo branco, camadas vermelhas, frente curva e
+cauda aberta em duas pontas. Rastros contínuos acompanham o crescimento do
+corte para frente. A execução começa nos últimos 0,045 s da preparação; o
+contato físico permanece em 0,215 s e a duração total continua 0,485 s.
+Energia circular, dano, alcance, cooldown e quatro acertos permanecem iguais.
+
+Somente o desenho do efeito foi alterado: nenhuma substituição do explorador,
+atlas de personagem ou arte do cenário. Geometria própria, sem recortar a
+prancha ou importar o personagem da referência. Versão normal e revisão local
+usam a mesma implementação. A referência foi preservada em
+`ARVEON/Revisoes/kamusari-local/referencia-usuario.png`.
+
+Validação final: 634 verificações renderizadas do efeito, movimento, geometria
+e avanço frontal, mais 72 de identidade, zero falhas. Capturas dos seis quadros
+nas quatro direções em `Revisoes/kamusari-local/referencia-aplicada/`.
+Continua exclusivamente local, sem push ou deployment.

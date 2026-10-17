@@ -73,6 +73,11 @@ func run() -> void:
 			var p:=float(i)/20
 			var points:=SwordTechniqueEffect.ribbon(Vector2.ZERO,148,aim.angle()+p*TAU,2.1,10*(1-p)+2)
 			check(Geometry2D.triangulate_polygon(points).size()>0,"continuous ribbon has valid geometry")
+			var length:=lerpf(48,144,p)
+			var width:=lerpf(18,34,p)
+			check(Geometry2D.triangulate_polygon(SwordTechniqueEffect.projected_blade(aim.angle(),length,width)).size()>0,"reference blade has intact curved head and open tail")
+			for side: float in [-1.0,1.0]:
+				check(Geometry2D.triangulate_polygon(SwordTechniqueEffect.projected_wake(aim.angle(),length,side,width*1.45)).size()>0,"reference wake tips remain complete during travel")
 	viewport.queue_free()
 	await process_frame
 	# Actual full game: movement and Dash while the original explorer casts.
