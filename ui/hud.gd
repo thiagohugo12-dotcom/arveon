@@ -32,9 +32,11 @@ var inventory_category := 0
 var diary_navigation: HBoxContainer
 var xp_bar: ProgressBar
 var menu_shade: ColorRect
+var damage_flash: ColorRect
 var mission_toggle: Button
 var mission_expanded := true
 var mission_text := ""
+var mission_hint := ""
 var introduction_hud := false
 var inventory_selected := ""
 var inventory_compare := false
@@ -56,6 +58,8 @@ var heart_icon: DiaryHeart
 var hp_bar: ProgressBar
 var progress_label: Label
 var mission_label: Label
+var mission_prefix: Label
+var mission_hint_label: Label
 var loot_label: Label
 var inventory_button: Button
 var character_button: PixelMenuButton
@@ -67,7 +71,8 @@ var map_title: Label
 var map_legend: Label
 var gold_label: Label
 var info_back: Panel
-var mission_back: Panel
+const MissionBannerScene = preload("res://ui/mission_banner.gd")
+var mission_back: Control
 var inventory_panel: PanelContainer
 var inventory_gold: Label
 var inventory_heading: Label
@@ -94,6 +99,10 @@ var first_weapon_page := 0
 var first_weapon_selected := ""
 var first_weapon_buttons: Dictionary = {}
 var smith_tab := 0 # Loja (somente ouro) ou Forja (receitas)
+var smith_instance_selected := ""
+var smith_craft_category := "espada"
+var smith_craft_rarity := "comum"
+var smith_use_seal := false
 var smith_shop_selected := ""
 var smith_shop_buttons: Dictionary = {}
 var vendor_buttons: Dictionary = {}
@@ -123,13 +132,19 @@ func _ready() -> void:
 	menu_shade.z_index = 9
 	menu_shade.hide()
 	add_child(menu_shade)
+	damage_flash = ColorRect.new()
+	damage_flash.color = Color("#d6534a",0.0)
+	damage_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	damage_flash.z_index = 5
+	damage_flash.hide()
+	add_child(damage_flash)
 	info_back = Panel.new()
 	info_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info_back.add_theme_stylebox_override("panel",DiaryTheme.box(Color.TRANSPARENT,Color.TRANSPARENT,0,0))
 	add_child(info_back)
-	mission_back = Panel.new()
+	mission_back = MissionBannerScene.new()
 	mission_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mission_back.add_theme_stylebox_override("panel", DiaryTheme.piece("paper",0))
 	add_child(mission_back)
 	gold_label = Label.new()
 	gold_label.add_theme_font_size_override("font_size", 11)
@@ -172,8 +187,26 @@ func _ready() -> void:
 	add_child(progress_label)
 	mission_label = Label.new()
 	mission_label.add_theme_font_size_override("font_size", 11)
+	mission_label.add_theme_color_override("font_color",Color("#fff5d2"))
+	mission_label.add_theme_color_override("font_outline_color",Color("#14231d"))
+	mission_label.add_theme_constant_override("outline_size",2)
 	mission_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(mission_label)
+	mission_prefix = Label.new()
+	mission_prefix.text = "MISSÃO ATUAL"
+	mission_prefix.add_theme_font_size_override("font_size",9)
+	mission_prefix.add_theme_color_override("font_color",Color("#ffd67c"))
+	mission_prefix.add_theme_color_override("font_outline_color",Color("#14231d"))
+	mission_prefix.add_theme_constant_override("outline_size",2)
+	mission_prefix.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(mission_prefix)
+	mission_hint_label = Label.new()
+	mission_hint_label.add_theme_font_size_override("font_size",9)
+	mission_hint_label.add_theme_color_override("font_color",Color("#e6c779"))
+	mission_hint_label.add_theme_color_override("font_outline_color",Color("#14231d"))
+	mission_hint_label.add_theme_constant_override("outline_size",2)
+	mission_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(mission_hint_label)
 	mission_toggle = Button.new()
 	mission_toggle.text = "−"
 	mission_toggle.tooltip_text = "Recolher / expandir missões"
@@ -185,6 +218,8 @@ func _ready() -> void:
 	add_child(mission_toggle)
 	loot_label = Label.new()
 	loot_label.add_theme_font_size_override("font_size", 11)
+	loot_label.add_theme_color_override("font_outline_color", Color("#302b21"))
+	loot_label.add_theme_constant_override("outline_size", 3)
 	loot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	loot_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(loot_label)
@@ -199,8 +234,11 @@ func _ready() -> void:
 	add_child(inventory_button)
 	character_button = PixelMenuButton.new()
 	character_button.glyph = "character"
-	character_button.tooltip_text = "Personagem · C"
-	character_button.pressed.connect(func(): character_toggled.emit())
+	character_button.tooltip_text = "Ficha do personagem · C"
+	character_button.pressed.connect(func():
+		rpg_panel.tab = 0
+		character_toggled.emit()
+	)
 	add_child(character_button)
 	map_button = PixelMenuButton.new()
 	map_button.glyph = "map"
@@ -328,6 +366,7 @@ func _ready() -> void:
 	for i in range(3):
 		actions[i].enabled = true
 		actions[i].activated.connect(func(): skill_pressed.emit(i))
+	actions[4].activated.connect(func(): skill_pressed.emit(3))
 	for i in [3, 4]:
 		actions[i].hide()
 		actions[i].enabled = false
@@ -336,16 +375,24 @@ func _ready() -> void:
 	actions[3].title = "Poção"
 	actions[3].tooltip_text = "Poções ainda não disponíveis"
 	actions[3].set_caption("")
+	actions[4].icon = "fury"
+	actions[4].title = "Ultimate"
+	actions[4].tooltip_text = "Ultimate"
+	actions[4].set_caption("")
 	for i in [0, 1, 2, 5]:
 		actions[i].icon = ["cut", "charge", "fury", "", "", "dash"][i]
 		actions[i].tooltip_text = ["Skill 1", "Skill 2", "Skill 3", "", "", "Dash"][i]
 		actions[i].set_caption("")
 	interact_button = TouchActionButton.new()
 	interact_button.title = "Interagir"
-	interact_button.size = Vector2(120, 52)
+	interact_button.size = Vector2(96, 44)
 	interact_button.visible = false
-	interact_button.activated.connect(func(): interact_pressed.emit())
+	interact_button.activated.connect(func():
+		dismiss_interaction()
+		interact_pressed.emit()
+	)
 	add_child(interact_button)
+	interact_button.caption.add_theme_font_size_override("font_size",11)
 	station_panel = PanelContainer.new()
 	station_panel.z_index = 10
 	station_panel.visible = false
@@ -416,6 +463,7 @@ func _ready() -> void:
 	add_child(restart)
 	boss_name = Label.new()
 	boss_name.add_theme_font_size_override("font_size", 12)
+	boss_name.add_theme_color_override("font_color", Color("#fff0c3"))
 	boss_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	boss_name.hide()
 	add_child(boss_name)
@@ -451,6 +499,9 @@ func _layout() -> void:
 		var button: Button = [inventory_button, character_button, map_button][i]
 		button.position = Vector2(menu_x + i * 48, margin.y)
 		button.size = Vector2(44, 44)
+	if not inventory_button.visible:
+		character_button.position = Vector2(menu_x, margin.y)
+		map_button.position = Vector2(menu_x + 48, margin.y)
 	minimap.position = Vector2(size.x - right_inset - minimap.size.x, margin.y + 50)
 	var information_width := minf(192, menu_x - margin.x - 8)
 	info_back.position = margin
@@ -470,26 +521,38 @@ func _layout() -> void:
 	progress_label.size = Vector2(information_width - 12, 16)
 	xp_bar.position = margin + Vector2(6,48)
 	xp_bar.size = Vector2(information_width-12,4)
-	var mission_width := minf(232, minimap.position.x - margin.x - 8)
+	var mission_width := minf(220, minimap.position.x - margin.x - 8)
 	mission_back.position = margin + Vector2(0, 86)
-	mission_back.size = Vector2(mission_width,86 if introduction_hud and mission_expanded else 56 if mission_expanded or boss_name.visible else 44)
+	var mission_has_hint := not mission_hint.is_empty() and not boss_name.visible
+	mission_back.size = Vector2(mission_width,58 if boss_name.visible else 48 if mission_has_hint else 34)
 	# Landscape places the two readable panels in one top strip, leaving the
 	# workshop visible below. Portrait retains its separate, full-width rows.
 	if size.x >= 600 and size.x > size.y:
 		mission_back.position = margin + Vector2(information_width+8,0)
-		mission_back.size.x = minf(232,menu_x-mission_back.position.x-8)
+		mission_back.size.x = minf(220,menu_x-mission_back.position.x-8)
 		mission_width = mission_back.size.x
-	mission_label.position = mission_back.position + Vector2(6, 3)
-	mission_label.size = mission_back.size - Vector2(12, 6)
-	mission_label.size.x -= 38
+	if mission_has_hint:
+		mission_prefix.position = mission_back.position + Vector2(38, 5)
+		mission_prefix.size = Vector2(mission_width-47, 11)
+		mission_label.position = mission_back.position + Vector2(38, 17)
+		mission_label.size = Vector2(mission_width-47, 15)
+		mission_hint_label.position = mission_back.position + Vector2(38, 33)
+		mission_hint_label.size = Vector2(mission_width-47, 12)
+	else:
+		mission_prefix.position = mission_back.position + Vector2(38, 3)
+		mission_prefix.size = Vector2(mission_width-47, 11)
+		mission_label.position = mission_back.position + Vector2(38, 15)
+		mission_label.size = Vector2(mission_width-47, 15)
+		mission_hint_label.position = Vector2(-1000,-1000)
+		mission_hint_label.size = Vector2.ZERO
 	mission_toggle.position = mission_back.position + Vector2(mission_back.size.x-44,0)
 	mission_toggle.size = Vector2(44,44)
-	mission_toggle.visible = not boss_name.visible
+	mission_toggle.visible = false
 	mission_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	boss_name.position = mission_label.position
+	boss_name.position = mission_back.position + Vector2(10, 4)
 	boss_name.size = Vector2(mission_width - 12, 30)
-	boss_bar.position = mission_back.position + Vector2(6, 38)
-	boss_bar.size = Vector2(mission_width - 12, 7)
+	boss_bar.position = mission_back.position + Vector2(10, 43)
+	boss_bar.size = Vector2(mission_width - 20, 7)
 	loot_label.position = Vector2(margin.x, margin.y + 146)
 	if size.x >= 600 and size.x > size.y:
 		loot_label.position.y = margin.y+80
@@ -500,16 +563,19 @@ func _layout() -> void:
 	map_panel.position = (size - map_panel.size) * 0.5
 	save_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(350, size.y - margin.y - bottom_inset - 12))
 	save_panel.position = (size - save_panel.size) * 0.5
-	# Large landscape displays use their real pixel budget for the diary, while
-	# world/camera scale and minimum physical touch size remain unchanged.
+	# The character diary keeps its physical size in landscape. The older
+	# inventory grid retains its compatibility scale because its fixed card grid
+	# is still measured in that coordinate space.
 	var diary_scale := 1.0
+	var inventory_scale := 1.0
 	var window_size := get_window().size
 	if window_size.x >= 900 and window_size.y >= 500 and size.x > size.y and is_equal_approx(size.x,get_viewport_rect().size.x):
-		diary_scale = minf(1.0,size.x/float(window_size.x))
-	inventory_panel.scale = Vector2.ONE*diary_scale
+		inventory_scale = minf(1.0,size.x/float(window_size.x))
+	inventory_panel.scale = Vector2.ONE*inventory_scale
 	rpg_panel.scale = Vector2.ONE*diary_scale
-	inventory_panel.size = Vector2(minf(820, (size.x - margin.x - right_inset - 12)/diary_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/diary_scale))
-	inventory_panel.position = (size - inventory_panel.size*diary_scale) * 0.5
+	var landscape := size.x > size.y
+	inventory_panel.size = Vector2(minf(820, (size.x - margin.x - right_inset - 12)/inventory_scale), minf(650, (size.y - margin.y - bottom_inset - 12)/inventory_scale))
+	inventory_panel.position = (size - inventory_panel.size*inventory_scale) * 0.5
 	DiaryArt.skin(inventory_panel)
 	inventory_heading.add_theme_font_size_override("font_size",30 if inventory_panel.size.x >= 600 and inventory_panel.size.y >= 420 else 23)
 	inventory_gold.add_theme_font_size_override("font_size",17 if inventory_panel.size.x >= 600 else 13)
@@ -522,15 +588,16 @@ func _layout() -> void:
 		var i: int = [5, 0, 1, 2][slot]
 		actions[i].position = Vector2(size.x - right_inset - 120 + (slot % 2) * 64, size.y - bottom_inset - 120 + (slot / 2) * 64)
 	actions[3].position = Vector2(size.x-right_inset-56,size.y-bottom_inset-184)
-	interact_button.position = Vector2(size.x * 0.5 - 60, size.y - bottom_inset - (185 if size.y > size.x else 67))
+	actions[4].position = Vector2(size.x-right_inset-120,size.y-bottom_inset-184)
+	interact_button.position = Vector2(size.x * 0.5 - interact_button.size.x * 0.5, size.y - bottom_inset - (177 if size.y > size.x else 59))
 	var service := station_name in ["Ferreiro","Vendedor"]
 	station_title.add_theme_font_size_override("font_size",24 if service else 17)
 	if service: station_title.add_theme_font_override("font",DiaryTheme.heading_font())
 	else: station_title.remove_theme_font_override("font")
-	station_panel.size = Vector2(minf(560 if service else 340, size.x - margin.x - right_inset - 12), minf(780 if service else 320, size.y - margin.y - bottom_inset - 12))
-	station_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",16) if service else _panel_style())
+	station_panel.size = Vector2(minf(720 if landscape and service else 560 if service else 460 if landscape else 340, size.x - margin.x - right_inset - 12), minf(780 if service else 320, size.y - margin.y - bottom_inset - 12))
+	station_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",22) if service else _panel_style())
 	station_panel.position = (size - station_panel.size) * 0.5
-	rpg_panel.size = Vector2(minf(640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(780, (size.y - margin.y - bottom_inset - 12)/diary_scale))
+	rpg_panel.size = Vector2(minf(820 if landscape else 640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(780, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
 	DiaryArt.skin(rpg_panel)
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
@@ -547,6 +614,9 @@ func set_health(current: int, maximum: int) -> void:
 	if previous_health >= 0 and current != previous_health:
 		health_flash_left = 0.55
 		hp_bar.add_theme_stylebox_override("fill", _health_fill(Color("#e57970") if current < previous_health else Color("#85d8c0")))
+		if current < previous_health:
+			damage_flash.color.a = 0.20
+			damage_flash.show()
 	previous_health = current
 
 func set_progress(xp: int, gold: int, kills: int, loot: String) -> void:
@@ -554,8 +624,9 @@ func set_progress(xp: int, gold: int, kills: int, loot: String) -> void:
 	if not loot.is_empty():
 		show_notice(loot)
 
-func show_notice(message: String) -> void:
+func show_notice(message: String, tint: Color = Color("#fff0ce")) -> void:
 	loot_label.text = message
+	loot_label.add_theme_color_override("font_color", tint)
 	loot_label.show()
 	notice_left = 2.5
 
@@ -566,8 +637,11 @@ func _process(delta: float) -> void:
 			loot_label.hide()
 	if health_flash_left > 0.0:
 		health_flash_left = maxf(0.0, health_flash_left - delta)
+		if damage_flash.visible:
+			damage_flash.color.a = 0.20 * health_flash_left / 0.55
 		if health_flash_left == 0.0:
 			hp_bar.add_theme_stylebox_override("fill", _health_fill(Color("#80cf88")))
+			damage_flash.hide()
 
 func _health_fill(color: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -575,11 +649,18 @@ func _health_fill(color: Color) -> StyleBoxFlat:
 	return style
 
 func set_mission(value: String) -> void:
-	mission_text = value.replace("Missão comum: ", "")
+	var lines := value.replace("Missão comum: ", "").split("\n", false)
+	mission_text = lines[0] if not lines.is_empty() else ""
+	mission_hint = ""
+	if lines.size() > 1 and lines[0] == "O Primeiro Passo":
+		mission_text = "Escolha sua primeira arma"
+		mission_hint = "Fale com o Ferreiro."
 	_render_mission()
+	_layout()
 
 func _render_mission() -> void:
 	mission_label.text = mission_text if mission_expanded else mission_text.get_slice("\n",0)
+	mission_hint_label.text = mission_hint
 	mission_toggle.text = "−" if mission_expanded else "+"
 
 func show_inventory(progress: GameProgress) -> void:
@@ -639,7 +720,10 @@ func refresh_inventory(progress: GameProgress) -> void:
 	material_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inventory_list.add_child(material_grid)
 	var has_material := false
-	for item: String in GameProgress.ITEMS:
+	var material_items := GameProgress.ITEMS.duplicate()
+	for owned: String in progress.bag:
+		if not material_items.has(owned): material_items.append(owned)
+	for item: String in material_items:
 		var count := int(progress.bag.get(item, 0))
 		if count > 0:
 			has_material = true
@@ -651,13 +735,15 @@ func refresh_inventory(progress: GameProgress) -> void:
 			var row := VBoxContainer.new()
 			row.custom_minimum_size = Vector2(62,86)
 			tile.add_child(row)
-			var icon := PixelItemIcon.new(item)
+			var material_meta := EquipmentEconomy.split_key(item)
+			var icon := PixelItemIcon.new(material_meta.item,Color(ArsenalRules.RARITIES[material_meta.rarity].color))
 			icon.framed = false
 			icon.custom_minimum_size = Vector2(48,48)
 			icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			row.add_child(icon)
 			var name := Label.new()
-			name.text = item
+			name.text = material_meta.item + (" · "+ArsenalRules.RARITIES[material_meta.rarity].name if EquipmentEconomy.MATERIALS.has(material_meta.item) else "")
+			if EquipmentEconomy.MATERIALS.has(material_meta.item): name.add_theme_color_override("font_color",Color(ArsenalRules.RARITIES[material_meta.rarity].color).darkened(0.45))
 			name.name = "ItemName"
 			name.add_theme_font_size_override("font_size",11)
 			name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -701,6 +787,10 @@ func set_nearby_station(name: String) -> void:
 	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open and not rpg_panel.visible and not map_panel.visible
 	interact_button.visible = interact_button.enabled
 	interact_button.set_caption(("E · Guardião\nOpcional" if name == "Desafiar Guardião (opcional)" else "E · " + name) if interact_button.enabled else "Interagir")
+
+func dismiss_interaction() -> void:
+	interact_button.enabled = false
+	interact_button.hide()
 
 func show_station(name: String, progress: GameProgress) -> void:
 	station_name = name
@@ -751,12 +841,14 @@ func refresh_station(progress: GameProgress) -> void:
 		station_scroll.scroll_vertical = 0
 		var active := tower_trial != null and tower_trial.active()
 		var cleared := active and tower_trial.phase == TowerTrial.Phase.VICTORY
-		_add_description("Vitória · Guardião da Mata!" if cleared else tower_trial.summary() if active else "Andar %d · Torre: %d/50 criaturas" % [selected_floor, progress.ascension.defeats[str(selected_floor)]])
+		var guardian_name := FloorConfig.tower_guardian_name(progress.ascension.current_floor)
+		var return_name := FloorConfig.tower_return_name(progress.ascension.current_floor)
+		_add_description("Vitória · %s!" % guardian_name if cleared else tower_trial.summary() if active else "Andar %d · Torre: %d/50 criaturas" % [selected_floor, progress.ascension.defeats[str(selected_floor)]])
 		_add_description("Ascensão do Andar %d concluída%s" % [progress.ascension.current_floor, " · Selo da Mata" if progress.ascension.current_floor == 1 else ""] if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova concluída" if progress.ascension.completed_trials[str(selected_floor)] else "Prova de Ascensão liberada" if progress.ascension.entrance_unlocked(selected_floor) else "Prova bloqueada: derrote 50 criaturas neste andar.")
-		_add_description("+%d XP · +%d ouro" % [FloorConfig.reward(AscensionProgress.GUARDIAN_XP, progress.ascension.current_floor), FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, progress.ascension.current_floor)] if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e Guardião da Mata.")
-		_add_description(("Campanha inicial conquistada! Cinco andares superados." if progress.ascension.current_floor == 5 else "Andar %d desbloqueado · viaje pela Torre na Mata." % (progress.ascension.current_floor + 1)) if cleared else "Se morrer, a prova recomeça da primeira horda.")
-		_add_description("Retorne à Mata em segurança." if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
-		tower_action_button.text = "Retornar à Mata" if cleared else "Abandonar Prova" if active else "Entrar na Prova"
+		_add_description("+%d XP · +%d ouro" % [FloorConfig.reward(AscensionProgress.GUARDIAN_XP, progress.ascension.current_floor), FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, progress.ascension.current_floor)] if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e %s." % guardian_name)
+		_add_description(("Campanha inicial conquistada! Cinco andares superados." if progress.ascension.current_floor == 5 else "Andar %d desbloqueado · viaje pela Torre no %s." % [progress.ascension.current_floor + 1, return_name]) if cleared else "Se morrer, a prova recomeça da primeira horda.")
+		_add_description("Retorne ao %s em segurança." % return_name if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
+		tower_action_button.text = ("Retornar à Mata" if return_name == "Mata" else "Retornar ao %s" % return_name) if cleared else "Abandonar Prova" if active else "Entrar na Prova"
 		tower_action_button.disabled = not active and not progress.ascension.entrance_unlocked()
 		tower_action_button.show()
 		if not active:
@@ -776,17 +868,22 @@ func refresh_station(progress: GameProgress) -> void:
 			_first_weapon_interface(progress)
 			return
 		_smith_tabs(progress)
-		if smith_tab == 0:
-			_smith_shop(progress)
-		else:
-			_add_description("Seu ouro: %d · materiais da mochila\nFabrique equipamentos ou melhore até +3." % progress.gold)
-			for id: String in RPGRules.EQUIPMENT:
-				_add_equipment(id, progress, station_content, false)
+		match smith_tab:
+			0: _smith_shop(progress)
+			1: _smith_craft(progress)
+			2: _smith_instance_page(progress,"rarity")
+			3: _smith_instance_page(progress,"enhance")
+			4: _smith_instance_page(progress,"bonus")
 	elif station_name == "Baú":
 		_add_description("Mochila/Baú · itens guardados ficam protegidos.")
-		for item: String in _page_items(GameProgress.ITEMS):
+		var chest_items := GameProgress.ITEMS.duplicate()
+		for item: String in progress.bag.keys():
+			if not chest_items.has(item): chest_items.append(item)
+		for item: String in progress.chest.keys():
+			if not chest_items.has(item): chest_items.append(item)
+		for item: String in _page_items(chest_items):
 			_add_row(item, "%d/%d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar", int(progress.bag.get(item, 0)) > 0, int(progress.chest.get(item, 0)) > 0)
-		_add_page_navigation(GameProgress.ITEMS.size(), progress)
+		_add_page_navigation(chest_items.size(), progress)
 	elif station_name == "Vendedor":
 		_vendor_shop(progress)
 
@@ -989,7 +1086,7 @@ func _sync_controls() -> void:
 	mission_toggle.disabled = blocked
 	joystick.reset()
 	joystick.set_process_input(not blocked)
-	for i in [0, 1, 2, 5]:
+	for i in [0, 1, 2, 4, 5]:
 		actions[i].enabled = not blocked and (i >= 3 or skill_available[i])
 		actions[i].touch_index = -1
 		actions[i].queue_redraw()
@@ -1002,6 +1099,7 @@ func show_character(progress: GameProgress) -> void:
 		return
 	rpg_panel.show()
 	rpg_panel.refresh(progress)
+	rpg_panel.scroll.scroll_vertical = 0
 	_sync_controls()
 	_layout()
 
@@ -1029,30 +1127,36 @@ func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	var category := progress.active_category()
 	for i in range(3):
 		var rule := AbilityRules.skill1(progress.equipped.Arma) if i == 0 else AbilityRules.active_skill(category,progress.abilities.loadouts[category].skills[i-1]) if not category.is_empty() else {}
-		var ultimate: bool = not rule.is_empty() and not category.is_empty() and rule.id == AbilityRules.CATEGORIES[category].ultimate.id
-		actions[i].legend = "Ultimate" if ultimate else "Skill %d" % (i+1)
+		actions[i].legend = "Skill %d" % (i+1)
 		actions[i].tooltip_text = rule.get("name","Slot vazio")
-		actions[i].icon = "fury" if ultimate else category if i == 0 and not category.is_empty() else "charge"
-		actions[i].charge_fraction = float(progress.abilities.charge[category])/100.0 if ultimate else -1.0
+		actions[i].icon = category if i == 0 and not category.is_empty() else "charge"
+		actions[i].charge_fraction = -1.0
 		var left := player.skill_cooldowns[i]
-		if ultimate:
-			left = progress.abilities.global_ultimate_cooldown if progress.abilities.last_ultimate_category != category else 0.0
-		actions[i].set_recharge(left,float(rule.get("cooldown",10.0)),ultimate and actions[i].charge_fraction >= 1.0)
-		if ultimate and left <= 0: actions[i].set_caption("%d%%" % progress.abilities.charge[category])
-		elif rule.is_empty(): actions[i].set_caption("—")
+		actions[i].set_recharge(left,float(rule.get("cooldown",10.0)),false)
+		if rule.is_empty(): actions[i].set_caption("—")
 		var enabled := not blocked and player.skill_ready(i)
 		skill_available[i] = player.skill_ready(i)
 		if actions[i].enabled != enabled:
 			actions[i].enabled = enabled
 			actions[i].queue_redraw()
+	var ultimate_rule := AbilityRules.active_skill(category,progress.abilities.loadouts[category].ultimate) if not category.is_empty() else {}
+	var ultimate_ready := not ultimate_rule.is_empty() and player.skill_ready(3)
+	actions[4].visible = ultimate_ready
+	actions[4].legend = "Ultimate"
+	actions[4].tooltip_text = ultimate_rule.get("name","Ultimate")
+	actions[4].charge_fraction = 1.0 if ultimate_ready else -1.0
+	actions[4].set_recharge(0.0,float(ultimate_rule.get("cooldown",10.0)),ultimate_ready)
+	actions[4].set_caption("ULT")
+	actions[4].enabled = not blocked and ultimate_ready
+	actions[4].queue_redraw()
 
 func show_map(progress: GameProgress) -> void:
 	if inventory_open or station_panel.visible or rpg_panel.visible or restart.visible:
 		return
 	expanded_map.progress = progress
 	expanded_map.arena_bounds = minimap.arena_bounds
-	map_title.text = "Mapa · Arena da Torre" if minimap.arena_bounds.has_area() else "Mapa · Mata · Andar %d" % progress.ascension.current_floor
-	map_legend.text = "● Você · Dourado: portais\nSaída para a Mata ao sul" if minimap.arena_bounds.has_area() else "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
+	map_title.text = "Mapa · Arena da Torre" if minimap.arena_bounds.has_area() else "Mapa · Vale · Andar 2" if progress.ascension.current_floor == 2 else "Mapa · Mata · Andar %d" % progress.ascension.current_floor
+	map_legend.text = "● Você · Dourado: portais\nSaída para o %s ao sul" % FloorConfig.tower_return_name(progress.ascension.current_floor) if minimap.arena_bounds.has_area() else "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
 	expanded_map.player_position = minimap.player_position
 	expanded_map.queue_redraw()
 	map_panel.show()
@@ -1110,53 +1214,239 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	header.add_child(label)
-	var description := Label.new()
 	var current: String = progress.equipped[item.slot]
-	description.text = RPGRules.bonus_text(id, upgrade)
-	if current != id:
-		description.text += "\nAtual: " + (RPGRules.EQUIPMENT[current].name if current != "" else "nenhum")
-		if current != "":
-			description.text += "\n" + RPGRules.bonus_text(current, int(progress.equipment[current]))
-	description.add_theme_font_size_override("font_size", 12)
-	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	box.add_child(description)
 	var button := Button.new()
 	button.custom_minimum_size.y = 44
-	box.add_child(button)
 	if in_bag:
+		var description := Label.new()
+		description.text = RPGRules.bonus_text(id, upgrade)
+		if current != id:
+			description.text += "\nAtual: " + (RPGRules.EQUIPMENT[current].name if current != "" else "nenhum")
+			if current != "":
+				description.text += "\n" + RPGRules.bonus_text(current, int(progress.equipment[current]))
+		description.add_theme_font_size_override("font_size", 12)
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(description)
+		box.add_child(button)
 		button.text = "Desequipar" if current == id else "Equipar"
 		button.pressed.connect(func(): rpg_action.emit("unequip" if current == id else "equip", item.slot if current == id else id, 0))
 	else:
 		var expected := int(progress.equipment.get(id, -1))
 		var cost := RPGRules.recipe(id, owned, upgrade)
-		var price := Label.new()
-		price.text = "Máximo +3" if owned and upgrade >= 3 else RPGRules.cost_text(cost)
-		price.add_theme_font_size_override("font_size", 12)
-		price.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		box.add_child(price)
-		box.move_child(price, 2)
-		if owned and upgrade < 3:
-			description.text += "\nApós melhoria: " + RPGRules.bonus_text(id, upgrade + 1)
-		button.text = "Aprimorar para +%d" % (upgrade + 1) if owned else "Fabricar"
-		button.disabled = not progress.can_forge(id)
+		label.text = "%s  +%d\n%s%s" % [item.name, upgrade, item.slot.to_upper(), "  ·  EQUIPADO" if current == id else ""]
+		var status := Label.new()
+		status.text = "NO LIMITE" if owned and upgrade >= 3 else "PRONTO" if progress.can_forge(id) else "REQUISITOS"
+		status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		status.add_theme_font_size_override("font_size", 11)
+		status.add_theme_color_override("font_color", DiaryTheme.GREEN if progress.can_forge(id) else Color("#8c5b35"))
+		header.add_child(status)
+		var summary := Label.new()
+		summary.text = _forge_summary(id, owned, upgrade)
+		summary.add_theme_font_size_override("font_size", 12)
+		summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		box.add_child(summary)
+		if not (owned and upgrade >= 3):
+			var requirements := GridContainer.new()
+			requirements.columns = 2
+			requirements.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			requirements.add_theme_constant_override("h_separation", 4)
+			requirements.add_theme_constant_override("v_separation", 3)
+			box.add_child(requirements)
+			requirements.add_child(_forge_requirement("Ouro", progress.gold, int(cost.gold)))
+			for material: String in cost.materials:
+				requirements.add_child(_forge_requirement(material, int(progress.bag.get(material, 0)), int(cost.materials[material])))
+		button.text = "No limite de melhoria" if owned and upgrade >= 3 else "Aprimorar para +%d" % (upgrade + 1) if owned else "Fabricar equipamento"
+		button.disabled = owned and upgrade >= 3 or not progress.can_forge(id)
+		if not button.disabled:
+			DiaryTheme.primary(button)
+		box.add_child(button)
 		button.pressed.connect(func(): rpg_action.emit("forge", id, expected))
 
+func _forge_summary(id: String, owned: bool, upgrade: int) -> String:
+	if owned:
+		if upgrade >= 3:
+			return "Melhoria máxima alcançada."
+		return "Atual +%d  →  Próximo +%d   ·   %s" % [upgrade, upgrade + 1, _bonus_delta(id, upgrade, upgrade + 1)]
+	return "Ao fabricar: " + _compact_bonus(id, 0)
+
+func _bonus_delta(id: String, before_upgrade: int, after_upgrade: int) -> String:
+	var before := RPGRules.bonuses(id, before_upgrade)
+	var after := RPGRules.bonuses(id, after_upgrade)
+	var labels := {"damage":"Dano", "hp":"HP", "speed":"Vel", "spirit":"Espírito", "armor":"Defesa"}
+	var result: Array[String] = []
+	for key: String in ["damage", "hp", "speed", "spirit", "armor"]:
+		var value := int(after[key]) - int(before[key])
+		if value != 0:
+			result.append("%s %+d" % [labels[key], value])
+	return " · ".join(result) if not result.is_empty() else "Sem mudança"
+
+func _compact_bonus(id: String, upgrade: int) -> String:
+	var values := RPGRules.bonuses(id, upgrade)
+	var labels := {"damage":"Dano", "hp":"HP", "speed":"Vel", "spirit":"Espírito", "armor":"Defesa"}
+	var result: Array[String] = []
+	for key: String in ["damage", "hp", "speed", "spirit", "armor"]:
+		var value := int(values[key])
+		if value != 0:
+			result.append("%s %+d" % [labels[key], value])
+	return " · ".join(result) if not result.is_empty() else "Bônus base"
+
+func _forge_requirement(name: String, available: int, required: int) -> PanelContainer:
+	var enough := available >= required
+	var chip := PanelContainer.new()
+	chip.custom_minimum_size = Vector2(132, 30)
+	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chip.add_theme_stylebox_override("panel",DiaryTheme.box(Color("#d8e7bd") if enough else Color("#f0d6bd"), Color("#668055") if enough else Color("#a26a42"),4,1))
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 3)
+	chip.add_child(row)
+	var material_meta := EquipmentEconomy.split_key(name)
+	var icon := ITEM_ICON.new(material_meta.item)
+	icon.framed = false
+	icon.custom_minimum_size = Vector2(20,20)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(icon)
+	var label := Label.new()
+	var caption: String = material_meta.item + (" · " + ArsenalRules.RARITIES[material_meta.rarity].name if EquipmentEconomy.MATERIALS.has(material_meta.item) and material_meta.rarity != "comum" else "")
+	label.text = ("✓ " if enough else "Falta ") + "%s  %d/%d" % [caption, available, required]
+	label.add_theme_font_size_override("font_size", 11)
+	label.clip_text = true
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	row.add_child(label)
+	return chip
+
 func _smith_tabs(progress: GameProgress) -> void:
-	var tabs := HBoxContainer.new()
+	var tabs := GridContainer.new()
+	tabs.columns = 5
 	station_content.add_child(tabs)
-	for index in range(2):
+	for index in range(5):
 		var tab := Button.new()
-		tab.text = "Comprar" if index == 0 else "Forja"
-		tab.add_theme_font_size_override("font_size",14)
+		tab.text = ["Loja","Criar","Evoluir","Melhorar","Bônus"][index]
+		tab.add_theme_font_size_override("font_size",10)
 		tab.custom_minimum_size.y = 44
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		DiaryTheme.select(tab,smith_tab == index)
 		tab.pressed.connect(func():
 			smith_tab = index
 			smith_shop_selected = ""
+			smith_confirm = false
 			station_scroll.scroll_vertical = 0
 			refresh_station(progress))
 		tabs.add_child(tab)
+
+func _smith_craft(progress: GameProgress) -> void:
+	_add_description("FABRICAR · Escolha uma arma e a raridade do material.")
+	var weapons := GridContainer.new()
+	weapons.columns = 3
+	station_content.add_child(weapons)
+	for id: String in ArsenalRules.CATEGORIES:
+		var button := Button.new()
+		button.text = ArsenalRules.category_name(id)
+		button.custom_minimum_size.y = 44
+		DiaryTheme.select(button,smith_craft_category == id)
+		button.pressed.connect(func(): smith_craft_category = id; smith_confirm = false; refresh_station(progress))
+		weapons.add_child(button)
+	var rarities := GridContainer.new()
+	rarities.columns = 3
+	station_content.add_child(rarities)
+	for rarity: String in EquipmentEconomy.RARITY_ORDER:
+		var button := Button.new()
+		button.text = ArsenalRules.RARITIES[rarity].name
+		button.custom_minimum_size.y = 44
+		DiaryTheme.select(button,smith_craft_rarity == rarity)
+		button.pressed.connect(func(): smith_craft_rarity = rarity; smith_confirm = false; refresh_station(progress))
+		rarities.add_child(button)
+	var recipe := EquipmentEconomy.craft_recipe(smith_craft_category,smith_craft_rarity)
+	_smith_cost(recipe,progress)
+	_add_description("Nova %s %s +0 · Cópias são independentes." % [ArsenalRules.category_name(smith_craft_category),ArsenalRules.RARITIES[smith_craft_rarity].name])
+	_smith_confirm_action("Fabricar esta arma", "craft_weapon",smith_craft_category+"|"+smith_craft_rarity,progress.can_craft_weapon(smith_craft_category,smith_craft_rarity),progress)
+	if progress.ascension.current_floor == 2:
+		_add_description("FERRO DO VALE · receita de teste")
+		for iron_rarity: String in ["comum", "raro"]:
+			var iron_recipe := EquipmentEconomy.vale_iron_recipe(iron_rarity)
+			_smith_cost(iron_recipe, progress)
+			_smith_confirm_action("Forjar espada de ferro · " + ArsenalRules.RARITIES[iron_rarity].name, "craft_vale_iron", iron_rarity, progress.can_craft_vale_iron(iron_rarity), progress)
+	_add_description("ARMADURAS E ACESSÓRIOS")
+	for id: String in RPGRules.EQUIPMENT:
+		if not ArsenalRules.CATEGORIES.has(id): _add_equipment(id,progress,station_content,false)
+
+func _smith_instance_page(progress: GameProgress, page: String) -> void:
+	_add_description("Escolha uma arma da mochila. Cada cópia mantém sua própria evolução.")
+	var picker := GridContainer.new()
+	picker.columns = 1 if station_panel.size.x < 460 else 2
+	station_content.add_child(picker)
+	for uid: String in progress.weapon_instances:
+		var data: Dictionary = progress.weapon(uid)
+		var button := Button.new()
+		button.text = "%s · %s +%d" % [ArsenalRules.category_name(data.category),ArsenalRules.RARITIES[data.rarity].name,int(data.level)]
+		button.tooltip_text = "Arma %s" % uid
+		button.custom_minimum_size.y = 48
+		button.add_theme_color_override("font_color",Color("#fff0ce") if smith_instance_selected == uid else Color(ArsenalRules.RARITIES[data.rarity].color).darkened(0.4))
+		DiaryTheme.select(button,smith_instance_selected == uid)
+		button.pressed.connect(func(): smith_instance_selected = uid; smith_confirm = false; refresh_station(progress))
+		picker.add_child(button)
+	if not progress.weapon_instances.has(smith_instance_selected): return
+	var uid := smith_instance_selected
+	var weapon: Dictionary = progress.weapon(uid)
+	var title := "%s · %s +%d" % [ArsenalRules.category_name(weapon.category),ArsenalRules.RARITIES[weapon.rarity].name,int(weapon.level)]
+	_add_description(title)
+	if page == "rarity":
+		var recipe := EquipmentEconomy.rarity_recipe(weapon.rarity)
+		if recipe.is_empty(): _add_description("Raridade máxima alcançada."); return
+		_add_description("Nova raridade: %s · melhoria volta a +0; bônus escolhidos são reiniciados." % ArsenalRules.RARITIES[EquipmentEconomy.RARITY_ORDER[EquipmentEconomy.RARITY_ORDER.find(weapon.rarity)+1]].name)
+		_smith_cost(recipe,progress)
+		_smith_confirm_action("Evoluir raridade", "evolve_weapon",uid,progress.can_evolve_weapon(uid),progress)
+	elif page == "enhance":
+		if int(weapon.level) >= 20: _add_description("Aprimoramento máximo: +20."); return
+		var recipe := EquipmentEconomy.enhance_recipe(int(weapon.level),weapon.rarity)
+		_smith_cost(recipe,progress)
+		var chance: float = EquipmentEconomy.SUCCESS[int(weapon.level)]
+		_add_description("+%d → +%d · %d%% de sucesso. Falha: %s." % [int(weapon.level),int(weapon.level)+1,roundi(chance*100),"pode baixar 1–2 níveis" if int(weapon.level) >= 15 else "baixa 1 nível" if int(weapon.level) >= 10 else "mantém o nível"])
+		var seal := CheckButton.new()
+		seal.text = "Usar Selo de Proteção (%d)" % progress.bag.get(EquipmentEconomy.SEAL,0)
+		seal.button_pressed = smith_use_seal
+		seal.disabled = int(progress.bag.get(EquipmentEconomy.SEAL,0)) == 0
+		seal.toggled.connect(func(value: bool): smith_use_seal = value)
+		station_content.add_child(seal)
+		_smith_confirm_action("Tentar aprimorar", "enhance_weapon",uid,progress.can_enhance_weapon(uid),progress)
+	else:
+		for milestone: int in EquipmentEconomy.MILESTONES:
+			var active := int(weapon.level) >= milestone
+			var chosen: String = weapon.choices.get(str(milestone),"")
+			_add_description("+%d · %s" % [milestone,"Escolhido: "+chosen.capitalize() if chosen != "" else "Escolha disponível" if active else "Bloqueado"])
+			if not active or chosen != "": continue
+			for option: Dictionary in EquipmentEconomy.bonus_options(weapon.category,milestone):
+				var id := "%s|%d|%s" % [uid,milestone,option.id]
+				_smith_confirm_action("%s %s" % [option.name,_smith_bonus_value(option)],"weapon_bonus",id,true,progress)
+				if smith_confirm and smith_shop_selected == id:
+					_add_description("%s %s. %s Escolha definitiva até evoluir a raridade desta arma." % [option.name,_smith_bonus_value(option),_smith_bonus_description(option.stat)])
+
+func _smith_bonus_value(option: Dictionary) -> String:
+	return "+%s%%" % String.num(float(option.value)*100.0,1) if option.stat in ["critical","attack_speed"] else "+%d" % int(option.value)
+
+func _smith_bonus_description(stat: String) -> String:
+	return {"physical":"Aumenta o dano físico.","magical":"Aumenta o dano mágico.","critical":"Aumenta a chance de crítico.","attack_speed":"Reduz o intervalo do ataque básico.","hp":"Aumenta a vida máxima.","armor":"Aumenta a defesa.","spirit":"Aumenta o Espírito e a magia."}.get(stat,"")
+
+func _smith_cost(recipe: Dictionary, progress: GameProgress) -> void:
+	var box := _service_card(station_content)
+	box.add_child(DiaryTheme.label("REQUISITOS",14))
+	box.add_child(_forge_requirement("Ouro",progress.gold,int(recipe.gold)))
+	for material: String in recipe.materials:
+		box.add_child(_forge_requirement(material,int(progress.bag.get(material,0)),int(recipe.materials[material])))
+
+func _smith_confirm_action(caption: String, action: String, payload: String, enabled: bool, progress: GameProgress) -> void:
+	var button := _shop_action(("Confirmar · " if smith_confirm and smith_shop_selected == payload else "Selecionar · ")+caption,func():
+		if smith_confirm and smith_shop_selected == payload:
+			smith_confirm = false
+			smith_shop_selected = ""
+			station_action.emit(action,payload)
+		else:
+			smith_confirm = true
+			smith_shop_selected = payload
+			refresh_station(progress))
+	button.disabled = not enabled
+	DiaryTheme.primary(button)
 
 func _smith_shop(progress: GameProgress) -> void:
 	if progress.equipment.has(smith_shop_selected): smith_confirm = false
@@ -1276,8 +1566,13 @@ func _vendor_shop(progress: GameProgress) -> void:
 		vendor_tabs.append(button)
 	_add_description("Na sua mochila" if vendor_tab == 0 else "Materiais à venda")
 	var items: Array[String] = []
-	for item: String in GameProgress.SELL_ITEMS if vendor_tab == 0 else GameProgress.TRADE_ITEMS:
-		if vendor_tab == 1 or int(progress.bag.get(item,0)) > 0: items.append(item)
+	if vendor_tab == 0:
+		for item: String in progress.bag:
+			if (GameProgress.SELL_ITEMS.has(item) or EquipmentEconomy.valid_item(item) and item != EquipmentEconomy.SEAL) and int(progress.bag[item]) > 0: items.append(item)
+	else:
+		for item: String in GameProgress.TRADE_ITEMS:
+			for rarity: String in EquipmentEconomy.RARITY_ORDER: items.append(EquipmentEconomy.key(item,rarity))
+		items.append(EquipmentEconomy.SEAL)
 	for item: String in items: _vendor_item(item,progress)
 	if items.is_empty(): _add_description("Nenhum material para vender.")
 	_add_description("O valor é por unidade.")
@@ -1295,15 +1590,19 @@ func _vendor_item(item: String, progress: GameProgress) -> void:
 	var caption := VBoxContainer.new()
 	caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(caption)
-	caption.add_child(DiaryTheme.label(item,14))
+	var item_meta := EquipmentEconomy.split_key(item)
+	var item_title: String = item_meta.item + (" · "+ArsenalRules.RARITIES[item_meta.rarity].name if EquipmentEconomy.MATERIALS.has(item_meta.item) else "")
+	var item_label := DiaryTheme.label(item_title,14)
+	if EquipmentEconomy.MATERIALS.has(item_meta.item): item_label.add_theme_color_override("font_color",Color(ArsenalRules.RARITIES[item_meta.rarity].color))
+	caption.add_child(item_label)
 	caption.add_child(DiaryTheme.label("%d na mochila" % progress.bag.get(item,0),12))
 	var action := "Comprar" if vendor_tab == 1 else "Vender"
 	var button := Button.new()
 	button.name = action+item
-	button.text = "%s 1 · %d ouro" % [action,GameProgress.BUY_PRICE if vendor_tab == 1 else GameProgress.SELL_PRICE]
+	button.text = "%s 1 · %d ouro" % [action,GameProgress.buy_price(item) if vendor_tab == 1 else GameProgress.sell_price(item)]
 	button.custom_minimum_size = Vector2(112,44)
 	button.add_theme_font_size_override("font_size",14)
-	button.disabled = progress.gold < GameProgress.BUY_PRICE if vendor_tab == 1 else int(progress.bag.get(item,0)) <= 0
+	button.disabled = progress.gold < GameProgress.buy_price(item) if vendor_tab == 1 else int(progress.bag.get(item,0)) <= 0
 	button.pressed.connect(func(): station_action.emit(action,item))
 	DiaryTheme.primary(button)
 	row.add_child(button)
@@ -1401,10 +1700,12 @@ func set_boss(boss: TowerGuardian) -> void:
 	boss_name.visible = active
 	boss_bar.visible = active
 	mission_label.visible = not active
+	mission_prefix.visible = not active
+	mission_hint_label.visible = not active
 	mission_toggle.visible = not active
 	if changed: _layout()
 	if active:
-		boss_name.text = "Guardião da Mata · Fase %d\nHP %d/%d" % [2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
+		boss_name.text = "%s · Fase %d\nHP %d/%d" % [FloorConfig.tower_guardian_name(tower_trial.floor_id if tower_trial != null else 1), 2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
 		boss_bar.max_value = boss.health.maximum
 		boss_bar.value = boss.health.current
 

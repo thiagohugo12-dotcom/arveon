@@ -1,3 +1,41 @@
+## Monstros próprios do Andar 2
+
+`Floor2Layout.ENEMY_SPAWN_KINDS` associa espécie a cada ponto existente do
+Vale. `Main` escolhe `floor2_enemy.tscn` apenas para os tipos 5–7 e mantém a
+mesma `EnemyActor`, colisão, limite ativo, ciclo de atividade, dano, derrota e
+recompensas. `Floor2MonsterView` usa as cinco linhas dos spritesheets
+aprovados para repouso, caminhada, ataque/investida, dano e morte, sem criar
+eventos de combate por quadro. A cena antiga segue exclusiva do Andar 1 e da
+Torre. Interações sobrepostas de baú e minério escolhem o objeto mais próximo.
+Testes direcionados: `tests/floor2_monster_game_tests.gd` e
+`tests/andar2_integration.gd`.
+
+## Mineração do Vale — quatro depósitos configurados
+`MiningRules` define IDs, posições, raio, custo de tempo, sorteio de ocorrência
+e tabela condicional de raridades. A segunda etapa usa
+`EquipmentEconomy.roll_entry`, a mesma regra dos drops existentes. Cada andar
+guarda o estado de mineração em `GameProgress.floor_states[id].mining`:
+`remaining` e `ready_at` em segundos Unix. `mining_snapshot` reativa um depósito
+após o prazo, e `mine_deposit` consome exatamente uma carga por tentativa.
+`Main` controla a ação curta, bloqueia entradas duplicadas e valida vida,
+distância e transição antes de conceder o resultado. `Floor2View` escurece o
+sprite existente ao esgotar; `MiningEffect` desenha picareta, fragmentos e
+reproduz um impacto curto gerado localmente. Mochila, baú e Ferreiro usam as
+pilhas de `EquipmentEconomy.key`, incluindo `Minério de Ferro|raro`.
+
+## Vale das Pedras Douradas — cenário jogável local
+`FloorConfig.world_scene(id)` seleciona a cena do andar. O Andar 2 usa
+`scenes/world/andar_2.tscn`; o Andar 1 e os andares posteriores preservam o
+caminho anterior. `FloorWorld` compartilha a criação dos limites e das formas
+físicas. `Floor2Layout` centraliza dimensão, pontos de interesse, objetos,
+serviços e posições de inimigos. `Floor2View` e `Andar2World` leem a mesma
+lista de objetos para manter desenho e colisão alinhados. O terreno pré-renderizado
+usa textura 850×675 ampliada 2× com filtro nearest; elementos altos são sprites
+com profundidade por posição dos pés. `Main` troca a cena na viagem sem duplicar
+a lógica da campanha. `SafeCamp`, `Exploration` e `MiniMap` escolhem dados do
+andar ativo. O save mantém o formato atual; apenas IDs próprios dos novos pontos
+de coleta e baús são acrescentados aos conjuntos validados.
+
 ## Guardião da Mata local — 17/10/2026
 TowerGuardianView usa o atlas do protótipo nas quatro direções e oito poses;
 os quadros de preparação/contato/recuperação consultam o estado real do chefe.
@@ -426,4 +464,57 @@ PlayerActor delega Skill 1/2/3 a ClassCombat e espelha os timers para apresenta�
 GameProgress valida completamente os formatos antigos antes de migrar, mantém Domínio/proficiência e calcula pontos gerais por orçamento. O payload v10 possui campos legados vazios e AbilityState validado; originais são backups imutáveis no filesystem e journal. Diary/HUD emitem comandos com identificador/slot e os handlers verificam camp/trial e versão esperada do grau. Critérios e comparação reproduzível: docs/qa/PROGRESSAO_ETAPA2.md.
 
 
+
+## Habilidades do Arqueiro local — 17/10/2026
+
+BowTechniqueEffect desenha as quatro técnicas aprovadas em coordenadas de mundo
+e reutiliza o atlas do básico do arqueiro para o corpo. ClassCombat mantém a
+linha temporal transitória e chama `_execute` no contato visual; as regras de
+AbilityRules e o estado serializado de AbilityState não mudam. Main não cria
+projéteis extras para essas técnicas; outros andares continuam no caminho
+anterior. O teste local confere contato único e queda vertical da Chuva.
+
+## Habilidades do Cajado local — 17/10/2026
+
+StaffTechniqueEffect desenha Onda, Selo, Barreira e Tempestade com o atlas já
+existente. ClassCombat agenda apenas as três ofensivas até o contato visual.
+A Barreira continua imediata no gameplay e seu desenho consulta `guard_left`;
+um nó separado permite proteção e técnica ofensiva ao mesmo tempo. Estado
+transitório não é serializado. Os outros andares usam o caminho anterior.
+
+## Técnicas do Machado no jogo local — 17/10/2026
+AxeTechniqueEffect é uma View efêmera com relógio dirigido por ClassCombat;
+Skill1GameView reutiliza o atlas e as pernas existentes. Três técnicas de dano
+esperam o quadro de contato antes de chamar o `_execute` original uma vez.
+Impacto Brutal separa a pancada visual à frente da área circular centrada no
+ator. A aura de Fúria acompanha `fury_left`; não altera regras ou save.
+
+SpearTechniqueEffect reutiliza o atlas da lança. ClassCombat agenda as quatro
+técnicas no contato visual e executa as regras originais uma vez; a View recebe
+a mesma direção e alcance real. A prévia HTML permanece isolada.
+
+
+## Equipamento v12 — instâncias e raridade
+EquipmentEconomy mantém tabelas de drop, receitas, chances e bônus. GameProgress serializa `weapon_instances` por UID e `equipped_weapon_uid`; `equipment` preserva o espelho da categoria para os sistemas de combate existentes e os itens não armamentistas. Main aplica drops de duas etapas e valida o Ferreiro; HUD expõe operações separadas e EquipmentBag mostra cópias. WeaponInstanceIcon reutiliza o sprite da categoria com moldura de raridade e marcas leves de nível. Treino usa o mesmo modelo sem persistir.
+
+## Guardião e Torre próprios do Andar 2
+
+`Floor2TowerView` desenha a entrada de arenito. `TowerTrial.wave_kinds()`
+seleciona os três tipos de criatura do Vale somente no Andar 2 e
+`guardian_spawn_position()` mantém o golem dentro da arena. `Main` reaproveita
+as transições, o registro de vitória e o save da prova. `SandstoneColossus`
+especializa o guardião opcional do mundo; `SandstoneTowerGuardianView` mantém o
+ator da Torre e troca atlas e avisos visuais. `TowerArenaView` aplica o tema de
+arenito apenas nesse andar. Capturas e teste dirigido estão em
+`tests/floor2_guardian_capture.gd` e `tests/floor2_guardian_tower_tests.gd`.
+
+## Folha do Guardião da Mata
+
+`TowerGuardianView` seleciona recortes não uniformes da folha original do
+Guardião da Mata conforme os estados de `TowerGuardian`. A subclasse
+`SandstoneTowerGuardianView` do Andar 2 continua usando seu atlas próprio.
+`TowerTrial.guardian_spawn_position` escolhe uma posição interna segura para o
+chefe do Andar 1 sem alterar a distância mínima do jogador. Teste dirigido e
+capturas: `tests/forest_guardian_integration.gd` e
+`tests/forest_guardian_capture.gd`.
 

@@ -22,7 +22,15 @@ static func run(suite, main) -> void:
 	for name: String in SafeCamp.DISPLAY_STATIONS:
 		var anchor: Vector2 = SafeCamp.DISPLAY_STATIONS[name]
 		player.position = anchor+Vector2(24,0)
-		suite.check(not player.test_move(player.transform,Vector2(1,0)),"service approach has no leftover collider "+name)
+		# The chest shares this corner with the visible campfire. Its flame core is
+		# intentionally solid, so reachability is verified through the real prompt.
+		if name != "Baú": suite.check(not player.test_move(player.transform,Vector2(1,0)),"service approach has no leftover collider "+name)
 		suite.check(main._interaction_target().get("id","") == name,"actual gameplay opens visible service "+name)
 		suite.check(SafeCamp.in_clearance(anchor),"service remains inside protected perimeter "+name)
+	player.position = Vector2(500,540)
+	suite.check(not player.test_move(player.transform,Vector2(0,-15)) and player.test_move(player.transform,Vector2(0,-42)),"chest can be approached but its visible base blocks passage")
+	player.position = Vector2(534,590)
+	suite.check(player.test_move(player.transform,Vector2(0,-42)),"campfire logs block passage through the flame")
+	player.position = Vector2(280,410)
+	suite.check(player.test_move(player.transform,Vector2(60,0)),"village bush has a solid base without filling its canopy")
 	player.position = before

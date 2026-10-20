@@ -25,6 +25,7 @@ func _init(value: GameProgress = null, selection: String = "", comparing: bool =
 	if value == null:
 		return
 	_overview()
+	_weapon_copies()
 	for id: String in progress.equipment:
 		_card(id)
 	# Empty cells are presentation, never fake owned items or a capacity limit.
@@ -39,6 +40,7 @@ func _init(value: GameProgress = null, selection: String = "", comparing: bool =
 	if not selection.is_empty() and progress.equipment.has(selection):
 		_details(selection,comparing)
 		DiaryTheme.select(cards[selection],true)
+		_set_selected_card_text(cards[selection])
 	else:
 		var hint := PanelContainer.new()
 		hint.add_theme_stylebox_override("panel",DiaryTheme.piece("paper",10))
@@ -47,6 +49,36 @@ func _init(value: GameProgress = null, selection: String = "", comparing: bool =
 
 func _style(color: Color) -> StyleBoxFlat:
 	return DiaryTheme.box(Color("#e7d2a4"),color,7)
+
+func _weapon_copies() -> void:
+	var section := VBoxContainer.new()
+	section.add_theme_constant_override("separation",4)
+	add_child(section)
+	move_child(section,1)
+	section.add_child(_label("ARMAS · CÓPIAS",DiaryTheme.GREEN,14))
+	for uid: String in progress.weapon_instances:
+		var data: Dictionary = progress.weapon(uid)
+		var row := HBoxContainer.new()
+		section.add_child(row)
+		row.add_child(WeaponInstanceIcon.new(data.category,data.rarity,int(data.level)))
+		var item := _label("%s · %s +%d%s" % [ArsenalRules.category_name(data.category),ArsenalRules.RARITIES[data.rarity].name,int(data.level),"\nEquipada" if uid == progress.equipped_weapon_uid else ""],DiaryTheme.INK,14)
+		row.add_child(item)
+		var equip_copy := Button.new()
+		equip_copy.text = "Equipar"
+		equip_copy.custom_minimum_size = Vector2(80,44)
+		equip_copy.disabled = uid == progress.equipped_weapon_uid
+		equip_copy.pressed.connect(func(): action_requested.emit("equip_instance",uid))
+		row.add_child(equip_copy)
+
+func _set_selected_card_text(card: Control) -> void:
+	for child: Node in card.get_children():
+		_set_selected_card_text_recursive(child)
+
+func _set_selected_card_text_recursive(node: Node) -> void:
+	if node is Label:
+		(node as Label).add_theme_color_override("font_color",Color("#fff7dc"))
+	for child: Node in node.get_children():
+		_set_selected_card_text_recursive(child)
 
 func _label(text: String, color: Color = DiaryTheme.INK, font_size: int = 12) -> Label:
 	var label := Label.new()
@@ -147,9 +179,15 @@ func _attributes(id: String) -> String:
 	var bonus := RPGRules.bonuses(id,int(progress.equipment[id]))
 	return "HP %+d · Defesa %+d · Espírito %+d" % [bonus.hp,bonus.armor,bonus.spirit]
 
+func _rarity_for_category(id: String) -> Dictionary:
+	if ArsenalRules.CATEGORIES.has(id):
+		for uid: String in progress.weapon_instances:
+			if progress.weapon(uid).category == id: return ArsenalRules.RARITIES[progress.weapon(uid).rarity]
+	return ArsenalRules.rarity(id)
+
 func _card(id: String) -> void:
 	var meta := ArsenalRules.metadata(id)
-	var rarity := ArsenalRules.rarity(id)
+	var rarity := _rarity_for_category(id)
 	var color := Color(rarity.color).darkened(0.22)
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(60,68)
@@ -186,7 +224,7 @@ func _card(id: String) -> void:
 
 func _details(id: String, comparing: bool) -> void:
 	var item: Dictionary = RPGRules.EQUIPMENT[id]
-	var rarity := ArsenalRules.rarity(id)
+	var rarity := _rarity_for_category(id)
 	var color := DiaryTheme.INK
 	detail_panel = PanelContainer.new()
 	detail_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("paper",10))

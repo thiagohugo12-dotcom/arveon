@@ -2,6 +2,7 @@ class_name ExplorationView
 extends Node2D
 
 var visual_v2 := false
+var current_floor := 1
 var progress: GameProgress
 var current_time := 0
 var motion_time := 0.0
@@ -28,7 +29,7 @@ func _process(delta: float) -> void:
 		for node: Node2D in pieces.values(): node.hide()
 		return
 	motion_time += delta
-	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+	for spot: Dictionary in Exploration.resources_for_floor(current_floor):
 		var available := int(progress.harvested_until.get(spot.id,0)) <= current_time
 		if resource_available.get(spot.id,available) and not available:
 			resource_fades[spot.id] = 0.22
@@ -46,7 +47,7 @@ func _process(delta: float) -> void:
 			if spot.item == "Madeira": pose = 7
 			elif spot.item == "Cogumelos": pose = 5
 		node.set_pose(pose,tint)
-	for cache: Dictionary in Exploration.HIDDEN_CHESTS:
+	for cache: Dictionary in Exploration.chests_for_floor(current_floor):
 		var opened := progress.opened_caches.has(cache.id)
 		if opened and not cache_opened.get(cache.id,opened): cache_motion[cache.id] = 0.24
 		cache_opened[cache.id] = opened
@@ -60,16 +61,17 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if progress == null:
 		return
-	var altar := Vector2(1060, 155)
-	draw_rect(Rect2(altar - Vector2(24, 20), Vector2(48, 40)), Color("#4b5740"))
-	draw_rect(Rect2(altar - Vector2(10, 30), Vector2(20, 44)), Color("#8a7854"))
-	draw_string(ThemeDB.fallback_font, altar + Vector2(-54, -38), "Guardião · opcional", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#decb91"))
+	if current_floor == 1:
+		var altar := Vector2(1060, 155)
+		draw_rect(Rect2(altar - Vector2(24, 20), Vector2(48, 40)), Color("#4b5740"))
+		draw_rect(Rect2(altar - Vector2(10, 30), Vector2(20, 44)), Color("#8a7854"))
+		draw_string(ThemeDB.fallback_font, altar + Vector2(-54, -38), "Guardião · opcional", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("#decb91"))
 	if visual_v2: return # V4 pieces share actor/tree depth, created once above.
-	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+	for spot: Dictionary in Exploration.resources_for_floor(current_floor):
 		if int(progress.harvested_until.get(spot.id, 0)) > current_time:
 			continue
 		_draw_resource(spot.position, spot.item)
-	for cache: Dictionary in Exploration.HIDDEN_CHESTS:
+	for cache: Dictionary in Exploration.chests_for_floor(current_floor):
 		_draw_cache(cache.position, progress.opened_caches.has(cache.id))
 
 func _draw_resource(at: Vector2, item: String) -> void:

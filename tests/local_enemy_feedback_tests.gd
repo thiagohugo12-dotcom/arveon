@@ -97,7 +97,8 @@ static func run(suite: SceneTree) -> void:
 	suite.check(not bounds.intersects(probe.damage_occluders[0]),"nearby damage number avoids actual HUD rectangle")
 	# Stress the real group-based area damage without changing the game's spawn cap.
 	player.view.village_scale=true
-	player.progress.abilities.loadouts.espada.skills=["danca_laminas","guarda_reativa"]
+	player.progress.abilities.loadouts.espada.skills=["estocada_precisa","guarda_reativa"]
+	player.progress.abilities.loadouts.espada.ultimate="danca_laminas"
 	player.apply_progression(player.progress)
 	var targets: Array[EnemyActor]=[]
 	for i in range(24):
@@ -111,7 +112,7 @@ static func run(suite: SceneTree) -> void:
 	player.class_combat.clear_effects()
 	player.progress.abilities.charge.espada=100
 	var start:=Time.get_ticks_usec()
-	player.use_skill(1)
+	player.use_skill(3)
 	player.class_combat.tick(SwordTechniqueTiming.contact("danca_laminas"))
 	var spent:=Time.get_ticks_usec()-start
 	for actor in targets: suite.check(actor.health.current < 10000,"multi-enemy Kamusari legal circular target")

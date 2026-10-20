@@ -27,4 +27,6 @@ static func finish_skill1(player: PlayerActor) -> void:
 
 static func finish_technique(player: PlayerActor) -> void:
 	if not player.class_combat.technique.is_empty():
-		player.class_combat.tick(SwordTechniqueTiming.duration(player.class_combat.technique.id))
+		var id: String = player.class_combat.technique.id
+		var duration: float = BowTechniqueEffect.duration_time(id,float(player.class_combat.technique.reach)) if BowTechniqueEffect.TIMINGS.has(id) else float(StaffTechniqueEffect.TIMINGS[id].duration) if StaffTechniqueEffect.TIMINGS.has(id) else float(AxeTechniqueEffect.TIMINGS[id].duration) if AxeTechniqueEffect.TIMINGS.has(id) else float(SpearTechniqueEffect.TIMINGS[id].duration) if SpearTechniqueEffect.TIMINGS.has(id) else SwordTechniqueTiming.duration(id)
+		player.class_combat.tick(duration)

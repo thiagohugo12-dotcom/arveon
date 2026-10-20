@@ -31,6 +31,7 @@ func _run() -> void:
 	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", test_path)
 	preload("res://tests/campaign_state_tests.gd").run(self)
 	preload("res://tests/arsenal_state_tests.gd").run(self)
+	preload("res://tests/equipment_economy_tests.gd").run(self)
 	preload("res://tests/tower_tests.gd").run_state(self)
 	preload("res://tests/tower_trial_state_tests.gd").run(self)
 	preload("res://tests/save_tests.gd").run(self)
@@ -86,10 +87,11 @@ func _run() -> void:
 	floor_view.set_visual_v2(true)
 	await frames()
 	preload("res://tests/hub_v3_tests.gd").run(self,main)
+	preload("res://tests/andar1_expansion_tests.gd").run(self,main)
 	preload("res://tests/village_actor_tests.gd").run(self,main)
 	var world := main.get_node("Andar1")
 	var tree_feet := floor_view.v2_view.visible_tree_positions()
-	check(tree_feet.size() > 15 and tree_feet.size() < 42, "sparse deterministic trees preserve open space")
+	check(tree_feet.size() > 40 and tree_feet.size() < 120, "expanded deterministic forest keeps open travel routes")
 	var foot: Vector2 = tree_feet[0]
 	for candidate: Vector2 in tree_feet:
 		if candidate.x > 100 and candidate.x < 1100 and candidate.y > 100 and candidate.y < 800:
@@ -106,13 +108,14 @@ func _run() -> void:
 	check(fence_hit != null and fence_hit.get_position().y < 463.0, "visible western village fence blocks crossing")
 	for target: Vector2 in SafeCamp.DISPLAY_STATIONS.values():
 		player.position = target
-		check(not player.test_move(player.transform, Vector2(1, 0)), "service approach remains walkable %s" % target)
-	check(SafeCamp.nearest_station(Vector2(540, 410)) == "Baú" and
+		if target != SafeCamp.DISPLAY_STATIONS["Baú"]:
+			check(not player.test_move(player.transform, Vector2(1, 0)), "service approach remains walkable %s" % target)
+	check(SafeCamp.nearest_station(SafeCamp.DISPLAY_STATIONS["Baú"],true) == "Baú" and
 		SafeCamp.nearest_station(Vector2(608, 435)) == "Ferreiro" and
 		SafeCamp.nearest_station(Vector2(560, 514)) == "Vendedor", "all three services remain reachable")
 	for service: String in SafeCamp.DISPLAY_STATIONS:
 		check(SafeCamp.nearest_station(SafeCamp.DISPLAY_STATIONS[service],true) == service,"visible village interaction matches " + service)
-	check(SafeCamp.nearest_station(Vector2(608,391),true).is_empty(),"old smith has no phantom interaction in village")
+	check(SafeCamp.nearest_station(Vector2(505,340),true).is_empty(),"empty village edge has no phantom interaction")
 	player.position = SafeCamp.RESPAWN
 	check(player.move_and_collide(Vector2(10, -120)) == null, "north camp opening leads to forest trail")
 	Input.action_press("move_up")
@@ -151,13 +154,13 @@ func _run() -> void:
 	enemy.position = Vector2(805, 630)
 	await frames()
 	check(player.attack.select_target(player) == null, "world obstacle blocks automatic attack")
-	player.position = Vector2(1160, 455) # Existing eastern trail, clear of tower wall.
+	player.position = Vector2(110, 970) # Expanded southern forest, west of an authored trunk.
 	enemy.position = Vector2(100, 800)
 	driver.set_touch_direction(Vector2.RIGHT)
 	driver.request_dash()
 	player.set_physics_process(true)
 	await frames(12)
-	check(player.position.x <= 1171.1 and player.position.x > 1160, "dash respects wall collision")
+	check(player.position.x < 155 and player.position.x > 110, "dash respects expanded forest trunk collision")
 	driver.reset()
 	player.set_physics_process(false)
 	hud.size = Vector2(360, 640)
@@ -216,6 +219,7 @@ func _run() -> void:
 	hud.interact_button._input(open_touch)
 	open_touch.pressed = false
 	hud.interact_button._input(open_touch)
+	check(not hud.interact_button.visible and not hud.interact_button.enabled and hud.interact_button.size == Vector2(96,44), "used interaction prompt hides immediately and keeps a compact touch target")
 	await frames()
 	var vendor_sell: Button = hud.vendor_buttons["Vender:Couro"]
 	hud.station_scroll.ensure_control_visible(vendor_sell)
@@ -325,7 +329,7 @@ func _run() -> void:
 	spider.global_position = player.global_position + Vector2(55, 0)
 	spider.home_position = spider.global_position
 	spider._physics_process(0.016)
-	check(spider.velocity.x > 0.0, "spider retreats when too close")
+	check(spider.melee_windup > 0.0 and spider.view.warning and spider.velocity.is_zero_approx(), "spider telegraphs a dodgeable close strike")
 	var cactus := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor
 	cactus.kind = 2
 	cactus.stats = cactus.stats.duplicate() as ActorData
@@ -387,6 +391,7 @@ func _run() -> void:
 	hud.interact_button._input(cache_touch)
 	cache_touch.pressed = false
 	hud.interact_button._input(cache_touch)
+	check(not hud.interact_button.visible and not hud.interact_button.enabled, "collected cache prompt disappears immediately")
 	check(main.progress.gold == gold_before + 6 and main.progress.bag.get("Couro", 0) == leather_before + 1 and hud.loot_label.text.contains("Baú escondido"), "touch opens hidden cache and shows balanced rewards")
 	main._input(interact_key)
 	check(main.progress.gold == gold_before + 6, "opened cache cannot grant duplicate reward")
@@ -425,11 +430,11 @@ func _run() -> void:
 	player.position = Vector2(950, 750)
 	var hp_before_hit := player.health.current
 	player.receive_damage(4)
-	check(player.health.current == hp_before_hit - 4 and player.view.damage_amount == 4 and hud.health_flash_left > 0.0 and (hud.hp_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color == Color("#e57970"), "damage shows a red HP response and legible player hit number")
+	check(player.health.current == hp_before_hit - 4 and player.view.damage_amount == 4 and hud.health_flash_left > 0.0 and hud.damage_flash.visible and hud.damage_flash.color.a > 0.0 and (hud.hp_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color == Color("#e57970"), "damage shows a red screen pulse, HP response and legible player hit number")
 	player.health.initialize(player.stats.max_hp)
 	check((hud.hp_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color == Color("#85d8c0"), "recovery shows a distinct HP response")
 	hud._process(0.6)
-	check((hud.hp_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color == Color("#80cf88"), "HP feedback returns to its normal color")
+	check((hud.hp_bar.get_theme_stylebox("fill") as StyleBoxFlat).bg_color == Color("#80cf88") and not hud.damage_flash.visible, "HP feedback returns to its normal color")
 	main.progress.add_item("Madeira", 2)
 	main._save_progress()
 	hud.size = Vector2(360, 640)

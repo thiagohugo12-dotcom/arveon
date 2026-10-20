@@ -12,7 +12,7 @@ var input_driver: InputDriver
 var progress: GameProgress
 var class_combat := ClassCombat.new()
 var last_direction := Vector2.DOWN
-var skill_cooldowns: Array[float] = [0.0, 0.0, 0.0]
+var skill_cooldowns: Array[float] = [0.0, 0.0, 0.0, 0.0]
 var skill_ranks: Array[int] = [1, 1, 1]
 var cooldown_factor := 1.0
 var spirit := 0
@@ -32,6 +32,7 @@ var base_weapon_damage := 12
 var skill1_pending := 0.0
 var skill1_pending_category := ""
 var skill1_pending_direction := Vector2.DOWN
+var feedback_target: EnemyActor
 
 func _cancel_skill1() -> void:
 	skill1_pending = 0
@@ -73,6 +74,7 @@ func _physics_process(delta: float) -> void:
 	attack.damage_scale = 1.0
 	view.set_fury(fury_left > 0.0)
 	if not health.is_alive() or input_driver == null:
+		_update_target_feedback()
 		_cancel_skill1()
 		_clear_sword_visual()
 		_clear_bow_visual()
@@ -82,6 +84,7 @@ func _physics_process(delta: float) -> void:
 		view.set_moving(false)
 		return
 	if input_driver.blocked:
+		_update_target_feedback()
 		_cancel_skill1()
 		_clear_sword_visual()
 		_clear_bow_visual()
@@ -109,7 +112,22 @@ func _physics_process(delta: float) -> void:
 	_prepare_bow_visual()
 	_prepare_staff_visual()
 	_prepare_melee_visual()
+	_update_target_feedback()
 	attack.tick(delta, self)
+
+func _update_target_feedback() -> void:
+	var candidate: EnemyActor = null
+	if health.is_alive() and input_driver != null and not input_driver.blocked and attack.armed and not SafeCamp.in_clearance(global_position):
+		var found := attack.select_target(self)
+		if found is EnemyActor:
+			candidate = found as EnemyActor
+	if feedback_target == candidate:
+		return
+	if is_instance_valid(feedback_target):
+		feedback_target.view.set_targeted(false)
+	feedback_target = candidate
+	if is_instance_valid(feedback_target):
+		feedback_target.view.set_targeted(true)
 
 func _uses_melee_visual() -> bool:
 	return view is MeleeActorView and view.village_scale and attack.armed and attack.weapon.category in ["machado","lanca"]
@@ -262,7 +280,7 @@ func apply_progression(value: GameProgress, initial: bool = false) -> void:
 		health.changed.emit(health.current, health.maximum)
 
 func use_skill(index: int) -> bool:
-	if index < 0 or index >= 3 or progress == null or input_driver == null or input_driver.blocked or not health.is_alive() or SafeCamp.in_clearance(global_position): return false
+	if index < 0 or index > 3 or progress == null or input_driver == null or input_driver.blocked or not health.is_alive() or SafeCamp.in_clearance(global_position): return false
 	if index == 0 and view is Skill1GameView and view.village_scale and not view.skill_config.is_empty():
 		if skill1_pending > 0 or float(progress.abilities.skill1_cooldowns[progress.active_category()]) > 0: return false
 		var rule := AbilityRules.skill1(progress.equipped.Arma)
@@ -291,21 +309,22 @@ func _sync_skill_cooldowns() -> void:
 	if progress == null: return
 	var category := progress.active_category()
 	if category.is_empty():
-		skill_cooldowns = [0.0,0.0,0.0]
+		skill_cooldowns = [0.0,0.0,0.0,0.0]
 		return
 	skill_cooldowns[0] = maxf(skill1_pending,float(progress.abilities.skill1_cooldowns[category]))
 	for i in range(1,3):
 		var id: String = progress.abilities.loadouts[category].skills[i-1]
 		skill_cooldowns[i] = float(progress.abilities.cooldowns[category].get(id,0.0))
+	skill_cooldowns[3] = 0.0
 
 func skill_ready(index: int) -> bool:
 	if progress == null or progress.active_category().is_empty(): return false
 	if index == 0: return skill_cooldowns[0] <= 0
 	var category := progress.active_category()
+	if index == 3:
+		return progress.abilities.loadouts[category].ultimate == AbilityRules.CATEGORIES[category].ultimate.id and int(progress.abilities.charge[category]) == 100 and (progress.abilities.global_ultimate_cooldown == 0 or progress.abilities.last_ultimate_category == category)
 	var id: String = progress.abilities.loadouts[category].skills[index-1]
 	if id.is_empty(): return false
-	if id == AbilityRules.CATEGORIES[category].ultimate.id:
-		return int(progress.abilities.charge[category]) == 100 and (progress.abilities.global_ultimate_cooldown == 0 or progress.abilities.last_ultimate_category == category)
 	return skill_cooldowns[index] <= 0
 
 func _on_attack(target: Node2D) -> void:

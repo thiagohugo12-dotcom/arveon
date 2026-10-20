@@ -32,10 +32,12 @@ static func run_world(suite) -> void:
 			await main._travel_floor(id)
 			freeze(main)
 			suite.check(p.ascension.current_floor == id and [p.xp, p.gold, p.bag, p.equipment, main.player.health.current] == before, "travel preserves all global player state to floor " + str(id))
-			suite.check(main.player.position == SafeCamp.RESPAWN and not main.player.test_move(main.player.transform, Vector2(1,0)), "safe unblocked arrival on floor " + str(id))
-		suite.check(main.world.scene_file_path == FloorConfig.WORLD_SCENE and main.tower_view.position == TowerEntrance.POSITION and TowerEntrance.POSITION == Vector2(1130,455), "all floors reuse original Mata and unchanged eastern tower " + str(id))
-		suite.check(main.enemy.health.maximum == roundi(48 * FloorConfig.difficulty(id)) and main.hud.heading.text == "Mata · Andar %d" % id, "active floor initial enemy and HUD use actual configuration " + str(id))
-		main.player.position = TowerEntrance.POSITION + Vector2(0,35)
+			suite.check(main.player.position == SafeCamp.respawn_for_floor(id) and not main.player.test_move(main.player.transform, Vector2(1,0)), "safe unblocked arrival on floor " + str(id))
+		suite.check(main.world.scene_file_path == FloorConfig.world_scene(id) and main.tower_view.position == TowerEntrance.position_for_floor(id) and TowerEntrance.POSITION == Vector2(830,1290) and TowerEntrance.LEGACY_POSITION == Vector2(1130,455), "each floor places its Tower inside its own map " + str(id))
+		var expected_heading := "Vale das Pedras · Andar 2" if id == 2 else "Mata · Andar %d" % id
+		var initial_hp := 108 if id == 2 else 48
+		suite.check(main.enemy.health.maximum == roundi(initial_hp * FloorConfig.difficulty(id)) and main.hud.heading.text == expected_heading, "active floor initial enemy and HUD use actual configuration " + str(id))
+		main.player.position = TowerEntrance.position_for_floor(id) + Vector2(0,35)
 		main._interact()
 		await suite.frames()
 		suite.check(main.hud.station_panel.visible and main.hud.floor_buttons.size() == 5 and main.hud.tower_action_button.disabled, "travel panel remains accessible before floor requirement " + str(id))
@@ -60,8 +62,10 @@ static func run_world(suite) -> void:
 			var elite := 0
 			for mob in actors:
 				elite += 1 if mob.kind == 3 else 0
-				suite.check(mob.stats.max_hp == roundi([48,30,64,120][mob.kind] * FloorConfig.difficulty(id)) and mob.position.distance_to(main.player.position) >= 170, "scaled wave member spawns safely floor %d wave %d" % [id,wave+1])
-			suite.check(elite == (1 if wave == 2 else 0), "elite only in third wave floor " + str(id))
+				var base_hp: int = {0:48,1:36,2:64,3:120,5:52,6:108,7:72}[mob.kind]
+				suite.check(mob.stats.max_hp == roundi(base_hp * FloorConfig.difficulty(id)) and mob.position.distance_to(main.player.position) >= 170, "scaled wave member spawns safely floor %d wave %d" % [id,wave+1])
+			var expected_elite := 0 if id == 2 else 1 if wave == 2 else 0
+			suite.check(elite == expected_elite, "elite only in third wave floor " + str(id))
 			main._process_trial(20)
 			freeze(main)
 			suite.check(TRIAL._actors(main).size() == actors.size(), "no duplicate wave spawn floor %d wave %d" % [id,wave+1])
@@ -76,7 +80,8 @@ static func run_world(suite) -> void:
 		main._process_trial(4)
 		freeze(main)
 		var boss: TowerGuardian = main.tower_guardian
-		suite.check(boss.health.maximum == roundi(360 * FloorConfig.difficulty(id)) and boss.damage_scale == FloorConfig.difficulty(id), "same Guardian scales HP and attacks on floor " + str(id))
+		var guardian_base_hp := 520 if id == 2 else 360
+		suite.check(boss.health.maximum == roundi(guardian_base_hp * FloorConfig.difficulty(id)) and boss.damage_scale == FloorConfig.difficulty(id), "same Guardian scales HP and attacks on floor " + str(id))
 		boss.health.damage(ceili(boss.health.maximum * 0.5))
 		boss._physics_process(0)
 		suite.check(boss.phase_two, "existing phase two activates at half health on floor " + str(id))
@@ -103,7 +108,7 @@ static func run_world(suite) -> void:
 	for resolution: Vector2i in [Vector2i(360,640),Vector2i(390,844),Vector2i(640,360),Vector2i(960,540)]:
 		suite.root.size = resolution
 		suite.root.content_scale_size = resolution
-		main.player.position = TowerEntrance.POSITION + Vector2(0,35)
+		main.player.position = TowerEntrance.position_for_floor(p.ascension.current_floor) + Vector2(0,35)
 		main._interact()
 		await suite.frames(3)
 		suite.check(main.hud.station_panel.get_global_rect().encloses(main.hud.travel_button.get_global_rect()) and main.hud.travel_button.size.y >= 44 and main.input_driver.blocked, "floor selection touch footer and modal fit " + str(resolution))

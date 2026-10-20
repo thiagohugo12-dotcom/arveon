@@ -44,6 +44,8 @@ func _run() -> void:
 		panel.refresh(main.progress)
 		panel.scroll.scroll_vertical = 0
 		await capture(prefix+"dominio")
+		panel.scroll.ensure_control_visible(panel.mastery_buttons["Dano Crítico"])
+		await capture(prefix+"dominio-retorno-fixo")
 		panel.scroll.ensure_control_visible(panel.mastery_buttons["Dano"])
 		await capture(prefix+"dominio-distribuir")
 		panel.prof_section = 1

@@ -15,6 +15,7 @@ size = Vector2(90, 110)
 script = ExtResource("obstacles")
 [node name="FloorView" type="Node2D" parent="."]
 script = ExtResource("view")
+visual_v2 = true
 [node name="ExploreView" type="Node2D" parent="."]
 script = ExtResource("explore")
 [node name="TowerView" type="Node2D" parent="."]

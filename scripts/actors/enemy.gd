@@ -6,7 +6,7 @@ signal weapon_hit(category: String, effective: int, event: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: int)
 
 @export var stats: ActorData
-@export_range(0, 4, 1) var kind: int = 0  # 0 Javali, 1 Aranha, 2 Mandacaru
+@export_range(0, 7, 1) var kind: int = 0  # 0-4 Mata/Torre; 5 Goblin, 6 Tatu, 7 Escorpião
 @onready var health: Health = $Health
 @onready var view: ActorView = $View
 var arena_bounds := Rect2()
@@ -19,6 +19,7 @@ var charge_windup := 0.0
 var charge_left := 0.0
 var charge_direction := Vector2.ZERO
 var spine_windup := 0.0
+var melee_windup := 0.0
 var strafe_sign := 1.0
 const AGGRO_ENTER := 245.0
 const AGGRO_EXIT := 375.0
@@ -41,7 +42,7 @@ var mark_bonus := 0.0
 
 func _ready() -> void:
 	home_position = global_position
-	view.appearance = (0 if kind == 3 else kind) + 1
+	view.appearance = (kind - 4 if kind >= 5 else (0 if kind == 3 else kind) + 1)
 	view.elite = kind == 3
 	view.queue_redraw()
 	add_to_group("damageable_enemies")
@@ -60,6 +61,7 @@ func update_activity(player_position: Vector2) -> void:
 		set_physics_process(false)
 		view.set_moving(false)
 		view.set_warning(false)
+		melee_windup = 0.0
 	elif not awake and distance_squared < SLEEP_EXIT * SLEEP_EXIT:
 		awake = true
 		set_physics_process(true)
@@ -94,6 +96,7 @@ func _physics_process(delta: float) -> void:
 			chasing = false
 			charge_windup = 0.0
 			charge_left = 0.0
+			melee_windup = 0.0
 	else:
 		if distance <= AGGRO_ENTER and home_distance <= TERRITORY_RADIUS and not SafeCamp.in_clearance(target.global_position):
 			chasing = true
@@ -102,8 +105,8 @@ func _physics_process(delta: float) -> void:
 		return
 	view.set_facing(offset)
 	match kind:
-		0, 3: _boar_behavior(delta, offset, distance)
-		1: _spider_behavior(offset, distance)
+		0, 3, 6: _boar_behavior(delta, offset, distance)
+		1, 5, 7: _spider_behavior(delta, offset, distance)
 		2: _cactus_behavior(offset, distance, delta)
 	var before := global_position
 	move_and_slide()
@@ -112,11 +115,12 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		chasing = false
 	view.set_moving(velocity.length_squared() > 1.0)
-	if kind != 2:
+	if kind != 2 and kind not in [1,5,7]:
 		_try_contact(distance)
 
 func _return_home() -> void:
 	spine_windup = 0.0
+	melee_windup = 0.0
 	view.set_warning(false)
 	var offset := home_position - global_position
 	if offset.length_squared() <= 64.0:
@@ -152,12 +156,24 @@ func _boar_behavior(delta: float, offset: Vector2, distance: float) -> void:
 	if distance > 28.0:
 		velocity = offset.normalized() * stats.move_speed
 
-func _spider_behavior(offset: Vector2, distance: float) -> void:
+func _spider_behavior(delta: float, offset: Vector2, distance: float) -> void:
+	if melee_windup > 0.0:
+		melee_windup = maxf(0.0, melee_windup - delta)
+		velocity = Vector2.ZERO
+		view.set_warning(true)
+		if melee_windup == 0.0:
+			_resolve_agile_melee()
+		return
+	if contact_left == 0.0 and distance <= 56.0:
+		melee_windup = 0.34
+		velocity = Vector2.ZERO
+		view.set_warning(true)
+		return
 	view.set_warning(false)
 	var direction := offset.normalized()
-	if distance < 74.0:
+	if distance < 26.0:
 		velocity = -direction * stats.move_speed * 0.8
-	elif distance > 132.0:
+	elif distance > 44.0:
 		velocity = direction * stats.move_speed
 	else:
 		# Strafe around the player instead of stacking on top of them.
@@ -166,6 +182,21 @@ func _spider_behavior(offset: Vector2, distance: float) -> void:
 		if special_left == 0.0:
 			strafe_sign *= -1.0
 			special_left = 1.25
+
+func _resolve_agile_melee() -> void:
+	view.set_warning(false)
+	if not is_targetable() or not chasing or not is_instance_valid(target) or not target.health.is_alive():
+		return
+	var distance := global_position.distance_to(target.global_position)
+	view.play_attack()
+	# The warning gives a short dodge window; leaving the visible strike radius
+	# prevents damage instead of allowing an unavoidable contact tick.
+	if distance > 56.0 or SafeCamp.in_clearance(target.global_position):
+		return
+	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
+	if get_world_2d().direct_space_state.intersect_ray(query).is_empty():
+		target.receive_damage(stats.contact_damage)
+		contact_left = stats.contact_interval
 
 func _cactus_behavior(offset: Vector2, distance: float, delta: float = 0.0) -> void:
 	if spine_windup > 0.0:
@@ -199,7 +230,7 @@ func _fire_cactus_spine() -> void:
 	view.play_attack()
 
 func _try_contact(distance: float) -> void:
-	if kind in [0,3] and charge_windup > 0.0: return
+	if kind in [0,3,6] and charge_windup > 0.0: return
 	if distance > stats.contact_range or contact_left > 0.0:
 		return
 	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
@@ -248,7 +279,7 @@ func _on_died() -> void:
 	velocity = Vector2.ZERO
 	view.play_defeat()
 	defeated.emit(kind)
-	get_tree().create_timer(0.22).timeout.connect(queue_free)
+	get_tree().create_timer(1.0 if kind >= 5 else 0.22).timeout.connect(queue_free)
 
 
 func hit_details(event: int) -> Dictionary:

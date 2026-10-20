@@ -11,7 +11,7 @@ static func run(suite: SceneTree, scene: PackedScene, path: String) -> void:
 	suite.check(practice.training_mode and practice != null and practice.save_path == "user://andar1_progress.json", "training swaps to a separate in-memory build")
 	suite.check(practice.level() == RPGRules.MAX_LEVEL and practice.equipment.size() == RPGRules.EQUIPMENT.size() and practice.active_category() == "espada", "training unlocks all weapons and the maximum character level")
 	for category: String in AbilityRules.CATEGORIES:
-		suite.check(practice.talents.level(category) == TalentRules.MAX_PROFICIENCY and practice.abilities.charge[category] == 100 and practice.abilities.loadouts[category].skills[1] == AbilityRules.CATEGORIES[category].ultimate.id, "training unlocks proficiency and ultimate "+category)
+		suite.check(practice.talents.level(category) == TalentRules.MAX_PROFICIENCY and practice.abilities.charge[category] == 100 and practice.abilities.loadouts[category].ultimate == AbilityRules.CATEGORIES[category].ultimate.id, "training unlocks proficiency and ultimate "+category)
 	suite.check(main.enemy.is_targetable() and main.enemy.health.maximum == 1000000 and not main.enemy.is_physics_processing(), "stationary durable target receives real combat damage")
 	var hp: int = main.enemy.health.current
 	practice.abilities.loadouts.espada.skills[0] = "estocada_precisa"

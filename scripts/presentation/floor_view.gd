@@ -3,13 +3,24 @@ extends Node2D
 
 # Minimal shared pixel atlas; physical trunks use the same deterministic feet.
 var atlas: Texture2D
-var visual_v2 := false
+@export var visual_v2 := false
 var v2_view: FloorV2View
 var depth_scenery: Node2D
 var chest_view: Node2D
+var expanded_world := false
+var secret_path_revealed := false
 
 func set_chest_open(opened: bool) -> void:
 	if is_instance_valid(chest_view): chest_view.set_open(opened)
+
+func set_expanded_world(enabled: bool) -> void:
+	if expanded_world == enabled: return
+	expanded_world = enabled
+	if depth_scenery != null:
+		depth_scenery.queue_free()
+		depth_scenery = null
+		chest_view = null
+	queue_redraw()
 const BERRY := preload("res://assets/art/forest_shrub_v035.png") # Existing arena keeps its art.
 const REMOVED_SECONDARY := [Vector2(705,392),Vector2(738,498),Vector2(475,633),Vector2(969,638),Vector2(196,786),Vector2(1092,91)]
 const REFUGE := preload("res://assets/art/forest_refuge_v035.png")
@@ -20,6 +31,53 @@ const TRAIL := Color("#d5ba7d")
 const TRAIL_HIGHLIGHT := Color("#e3cf9a")
 const ROCK := Color("#45554d")
 const ROCKS := [Rect2(340, 300, 130, 50), Rect2(760, 520, 90, 110)]
+const EXPANSION_TRAILS := [
+	{"points": [Vector2(1160,455),Vector2(1240,380),Vector2(1300,270),Vector2(1430,260)], "width": 38.0},
+	{"points": [Vector2(1300,270),Vector2(1320,170),Vector2(1450,105)], "width": 26.0},
+	{"points": [Vector2(1240,380),Vector2(1280,475),Vector2(1380,535),Vector2(1480,635),Vector2(1640,665)], "width": 34.0},
+	{"points": [Vector2(1480,635),Vector2(1580,790),Vector2(1410,825),Vector2(1310,715),Vector2(1380,520)], "width": 24.0},
+	{"points": [Vector2(560,860),Vector2(620,960),Vector2(720,1035),Vector2(760,1185),Vector2(635,1260),Vector2(430,1270)], "width": 34.0},
+	{"points": [Vector2(720,1035),Vector2(930,1010),Vector2(1110,1110),Vector2(1250,1255),Vector2(1450,1250)], "width": 30.0},
+	{"points": [Vector2(1100,790),Vector2(1210,895),Vector2(1300,955),Vector2(1250,1055),Vector2(1110,1110)], "width": 28.0},
+	{"points": [Vector2(635,1260),Vector2(680,1308),Vector2(830,1320)], "width": 27.0}
+]
+const SECRET_TRAIL := [Vector2(1250,1255),Vector2(1270,1185),Vector2(1280,1108),Vector2(1350,1135),Vector2(1415,1160)]
+const EXPANSION_ROCKS := [
+	Rect2(1308,492,62,46),Rect2(1450,454,62,46),Rect2(1608,500,62,46),
+	Rect2(1292,704,62,46),Rect2(1492,756,62,46),Rect2(1620,696,62,46),
+	Rect2(1330,448,58,44),Rect2(1640,570,58,44),Rect2(1284,785,58,44),Rect2(1650,785,58,44)
+]
+const GROVE_FRAME_TREES := [Vector2(1405,1040),Vector2(1650,1040),Vector2(1650,1295),Vector2(1370,1300)]
+const DANGER_FRAME_TREES := [Vector2(1305,520),Vector2(1640,520),Vector2(1305,740),Vector2(1640,740)]
+const DEEPWOOD_TREE_CLUSTERS := [
+	[Vector2(155,970),Vector2(220,925),Vector2(288,966),Vector2(205,1033)],
+	[Vector2(140,1125),Vector2(210,1085),Vector2(277,1139),Vector2(180,1200)],
+	[Vector2(365,1000),Vector2(430,965),Vector2(495,1015),Vector2(405,1090)],
+	[Vector2(450,1160),Vector2(520,1120),Vector2(570,1180),Vector2(460,1220)],
+	[Vector2(835,930),Vector2(900,890),Vector2(970,930),Vector2(850,985)],
+	[Vector2(880,1185),Vector2(950,1135),Vector2(1020,1190),Vector2(940,1260)],
+	[Vector2(80,1270),Vector2(155,1310),Vector2(255,1280)]
+]
+const AUTHORED_DEEPWOOD_GROUPS := [
+	{"center":Vector2(112,985),"offsets":[Vector2(-30,-18),Vector2(18,-34),Vector2(48,4),Vector2(4,30)]},
+	{"center":Vector2(285,1045),"offsets":[Vector2(-38,-20),Vector2(8,-42),Vector2(42,-8),Vector2(22,35)]},
+	{"center":Vector2(110,1190),"offsets":[Vector2(-20,-34),Vector2(26,-10),Vector2(54,26)]},
+	{"center":Vector2(405,1240),"offsets":[Vector2(-42,-10),Vector2(-8,-40),Vector2(35,-24),Vector2(54,20)]},
+	{"center":Vector2(465,970),"offsets":[Vector2(-34,-18),Vector2(12,-38),Vector2(47,2)]},
+	{"center":Vector2(835,965),"offsets":[Vector2(-38,-20),Vector2(2,-42),Vector2(40,-10),Vector2(30,30)]},
+	{"center":Vector2(1015,1000),"offsets":[Vector2(-30,-26),Vector2(15,-44),Vector2(46,-4)]},
+	{"center":Vector2(880,1210),"offsets":[Vector2(-40,-18),Vector2(2,-42),Vector2(39,-14),Vector2(34,28)]},
+	{"center":Vector2(1085,1290),"offsets":[Vector2(-38,-18),Vector2(8,-40),Vector2(40,-8)]}
+]
+const DANGER_TREE_GROUPS := [
+	{"center":Vector2(1620,445),"offsets":[Vector2(-30,-16),Vector2(10,-34),Vector2(34,0),Vector2(4,30)]},
+	{"center":Vector2(1258,620),"offsets":[Vector2(-18,-26),Vector2(24,-14),Vector2(-4,18),Vector2(28,34)]},
+	{"center":Vector2(1650,650),"offsets":[Vector2(-20,-24),Vector2(16,-4),Vector2(-10,28)]},
+	{"center":Vector2(1640,770),"offsets":[Vector2(-24,-16),Vector2(12,12),Vector2(-12,38)]}
+]
+const DANGER_DRY_PATCHES := [Vector2(1282,490),Vector2(1640,485),Vector2(1288,770),Vector2(1652,790)]
+const DEEPWOOD_LOGS := [Rect2(155,1080,34,12),Rect2(405,1165,38,13),Rect2(915,1080,36,12),Rect2(1030,1235,40,13)]
+const DEEPWOOD_MUSHROOMS := [Vector2(310,1095),Vector2(360,1210),Vector2(585,1100),Vector2(900,1100),Vector2(1070,1190)]
 const TRAILS := [
 	[Vector2(40, 450), Vector2(240, 445), Vector2(360, 480), Vector2(545, 458), Vector2(720, 445), Vector2(880, 485), Vector2(1160, 455)],
 	[Vector2(550, 50), Vector2(555, 220), Vector2(540, 400), Vector2(570, 550), Vector2(540, 690), Vector2(560, 860)],
@@ -32,10 +90,19 @@ const TRAILS := [
 const TRAIL_WIDTHS := [62.0, 54.0, 24.0, 24.0, 26.0, 26.0, 22.0]
 const RESERVED := [Vector2(850, 400), Vector2(930, 440), Vector2(610, 750),
 	Vector2(180, 460), Vector2(630, 135), Vector2(955, 665)]
+const EXPANSION_RESERVED := [Vector2(1350,250),Vector2(1510,260),Vector2(1600,365),Vector2(1335,400),
+	Vector2(1360,560),Vector2(1510,590),Vector2(1630,650),Vector2(1530,770),Vector2(1370,760),
+	Vector2(630,1015),Vector2(800,1110),Vector2(980,1045),Vector2(1090,1190),
+	Vector2(660,1250),Vector2(1000,1260),Vector2(1640,1310)]
 
 func _ready() -> void:
 	atlas = MataArt.texture()
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# Floor 1 can start with the approved renderer already selected by its scene.
+	# Create the helper before the first draw so the legacy map never flashes.
+	if visual_v2 and v2_view == null:
+		v2_view = FloorV2View.new()
+		v2_view.layout = self
 	for station: String in ["Ferreiro", "Vendedor"]:
 		var npc := NPC_VIEW.new()
 		npc.kind = 0 if station == "Ferreiro" else 1
@@ -51,6 +118,10 @@ func _npc_position(station: String, use_v2: bool) -> Vector2:
 
 func set_visual_v2(enabled: bool) -> void:
 	if visual_v2 == enabled:
+		if enabled and v2_view == null:
+			v2_view = FloorV2View.new()
+			v2_view.layout = self
+			queue_redraw()
 		return
 	visual_v2 = enabled
 	if depth_scenery != null: depth_scenery.visible = enabled
@@ -95,9 +166,11 @@ func _build_depth_scenery(commands: Array) -> void:
 	depth_scenery.add_child(fire)
 	chest_view = Node2D.new()
 	chest_view.set_script(preload("res://scripts/presentation/village_chest_view.gd"))
-	chest_view.position = Vector2(500,528)
+	# Storage is at the house entrance, leaving the campfire clearing unobstructed.
+	chest_view.position = Vector2(500,497)
 	chest_view.z_as_relative = false
-	chest_view.z_index = 656
+	# Sort at the chest's feet so an explorer standing south of it appears in front.
+	chest_view.z_index = roundi(chest_view.position.y)+110
 	depth_scenery.add_child(chest_view)
 
 func _draw() -> void:
@@ -186,6 +259,13 @@ func _draw_decoration() -> void:
 		_draw_tree(at)
 
 func tree_positions() -> Array[Vector2]:
+	var trees := _base_tree_positions()
+	if expanded_world: trees.append_array(expansion_tree_positions())
+	return trees
+
+func _base_tree_positions() -> Array[Vector2]:
+	var was_expanded := expanded_world
+	expanded_world = false
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 12051
 	var trees: Array[Vector2] = []
@@ -201,14 +281,73 @@ func tree_positions() -> Array[Vector2]:
 		if free:
 			trees.append(at)
 	# Filter after generation so clearing the entrance never rerolls other trees.
-	return trees.filter(func(at: Vector2): return not REMOVED_SECONDARY.has(at) and not TowerEntrance.BODY.grow(12.0).has_point(at))
+	var filtered := trees.filter(func(at: Vector2): return not REMOVED_SECONDARY.has(at) and not TowerEntrance.LEGACY_BODY.grow(12.0).has_point(at))
+	expanded_world = was_expanded
+	return filtered
+
+func expansion_tree_positions() -> Array[Vector2]:
+	var trees: Array[Vector2] = []
+	# These authored groupings frame each biome and preserve deliberate open spaces.
+	for group: Dictionary in AUTHORED_DEEPWOOD_GROUPS:
+		for offset: Vector2 in group.offsets:
+			var at: Vector2 = group.center + offset
+			if _free_for_expansion_tree(at,trees): trees.append(at)
+	for group: Dictionary in DANGER_TREE_GROUPS:
+		for offset: Vector2 in group.offsets:
+			var at: Vector2 = group.center + offset
+			if _free_for_expansion_tree(at,trees): trees.append(at)
+	# Ruin perimeter and hidden grove are intentionally framed, not randomly seeded.
+	for at: Vector2 in GROVE_FRAME_TREES:
+		if _free_for_expansion_tree(at,trees): trees.append(at)
+	for at: Vector2 in [Vector2(1260,110),Vector2(1370,92),Vector2(1550,105),Vector2(1630,340),Vector2(1280,345)]:
+		if _free_for_expansion_tree(at,trees): trees.append(at)
+	return trees
+
+func expansion_bush_positions() -> Array[Vector2]:
+	return [Vector2(1250,360),Vector2(1680,410),Vector2(1260,830),Vector2(1160,1015),
+		Vector2(1650,1280),Vector2(120,1090),Vector2(330,1190),
+		Vector2(620,1115),Vector2(1040,960),Vector2(1670,755),
+		Vector2(300,1010),Vector2(560,1075),Vector2(1020,1170)]
+
+func _free_for_expansion_tree(at: Vector2, existing: Array[Vector2]) -> bool:
+	if at.x < 38.0 or at.x > 1662.0 or at.y < 42.0 or at.y > 1310.0:
+		return false
+	# Keep the tall tower's full silhouette clear, not just its colliding base.
+	if Rect2(TowerEntrance.POSITION+Vector2(-115,-230),Vector2(230,260)).has_point(at): return false
+	if not _free_for_decoration(at):
+		return false
+	# Keep extra breathing room around trails so tree trunks never pinch a route.
+	for route: Dictionary in EXPANSION_TRAILS:
+		var points: Array = route.points
+		for i in range(points.size()-1):
+			if at.distance_to(Geometry2D.get_closest_point_to_segment(at,points[i],points[i+1])) < float(route.width)*0.5+22.0:
+				return false
+	for i in range(SECRET_TRAIL.size()-1):
+		if at.distance_to(Geometry2D.get_closest_point_to_segment(at,SECRET_TRAIL[i],SECRET_TRAIL[i+1])) < 42.0:
+			return false
+	for other: Vector2 in existing:
+		if at.distance_squared_to(other) < 44.0*44.0:
+			return false
+	return true
 
 func _draw_tree(at: Vector2) -> void:
 	var species := _hash(roundi(at.y),roundi(at.x)) % 8
-	var kind := 2 if species == 0 else 1 if species < 3 else 0
+	var kind := 0
+	if GROVE_FRAME_TREES.has(at):
+		kind = 1
+	elif at.y >= 900.0 and at.x < 1300.0:
+		kind = 2 if _hash(roundi(at.y),roundi(at.x)+73)%9==0 else 0
+	else:
+		kind = 2 if species == 0 else 1 if species < 3 else 0
 	# Smaller canopies and a visible root silhouette leave combat/navigation clear.
 	draw_colored_polygon(PackedVector2Array([at+Vector2(-23,3),at+Vector2(-18,-7),at+Vector2(20,-7),at+Vector2(29,2),at+Vector2(24,10),at+Vector2(-16,10)]),Color("#819255"))
 	draw_texture_rect_region(atlas,Rect2(at-Vector2(32,72),Vector2(64,80)),MataArt.TREE_REGIONS[kind])
+
+func expansion_tree_is_green(at: Vector2) -> bool:
+	if GROVE_FRAME_TREES.has(at) or DANGER_FRAME_TREES.has(at): return true
+	if at.y >= 900.0 and at.x < 1300.0:
+		return _hash(roundi(at.y),roundi(at.x)+73)%9 != 0
+	return _hash(roundi(at.y),roundi(at.x))%3 == 0
 
 func _draw_shrub(at: Vector2) -> void:
 	draw_texture_rect_region(atlas,Rect2(at+Vector2(-16,-24),Vector2(32,32)),MataArt.SHRUB_REGION)
@@ -240,12 +379,37 @@ func _free_for_decoration(at: Vector2) -> bool:
 	for spawn: Vector2 in RESERVED:
 		if at.distance_squared_to(spawn) < 24.0 * 24.0:
 			return false
-	for i in range(TRAILS.size()):
-		var trail: Array = TRAILS[i]
+	if expanded_world:
+		for spawn: Vector2 in EXPANSION_RESERVED:
+			if at.distance_squared_to(spawn)<32.0*32.0: return false
+	var trails: Array = TRAILS.duplicate()
+	if expanded_world:
+		for trail_data: Dictionary in EXPANSION_TRAILS:
+			trails.append(trail_data.points)
+	for i in range(trails.size()):
+		var trail: Array = trails[i]
 		for j in range(trail.size() - 1):
-			if at.distance_to(Geometry2D.get_closest_point_to_segment(at, trail[j], trail[j + 1])) < TRAIL_WIDTHS[i] * 0.5 + 12.0:
+			var width: float = TRAIL_WIDTHS[i] if i < TRAIL_WIDTHS.size() else float(EXPANSION_TRAILS[i-TRAIL_WIDTHS.size()].width)
+			if at.distance_to(Geometry2D.get_closest_point_to_segment(at, trail[j], trail[j + 1])) < width * 0.5 + 12.0:
 				return false
+	if expanded_world:
+		for j in range(SECRET_TRAIL.size()-1):
+			if at.distance_to(Geometry2D.get_closest_point_to_segment(at,SECRET_TRAIL[j],SECRET_TRAIL[j+1]))<28.0:
+				return false
+		for rock: Rect2 in EXPANSION_ROCKS:
+			if rock.grow(18).has_point(at): return false
+		for block: Rect2 in _ruin_blocks():
+			if block.grow(8).has_point(at): return false
+		for bush: Vector2 in expansion_bush_positions():
+			if at.distance_squared_to(bush)<36.0*36.0: return false
 	return true
+
+static func _ruin_blocks() -> Array[Rect2]:
+	# A broken horseshoe leaves a clear western threshold and open courtyard center.
+	return [Rect2(1300,142,72,24),Rect2(1390,136,58,25),Rect2(1480,145,68,24),
+		Rect2(1284,176,20,54),Rect2(1284,306,22,30),Rect2(1320,320,55,20),
+		Rect2(1408,322,48,20),Rect2(1486,314,72,22),Rect2(1550,176,22,62),
+		Rect2(1550,266,22,48)]
 
 func _draw_camp() -> void:
 	var area := SafeCamp.AREA

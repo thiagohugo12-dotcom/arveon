@@ -1,3 +1,62 @@
+## Monstros do Andar 2 — integração local autorizada em 19/10/2026
+
+Após aprovar as animações, Thiago pediu a integração dos três monstros na
+versão local. Goblin Garimpeiro surge na Pedreira Dourada, Tatu Rochoso nos
+Campos do Cerrado e Escorpião da Chapada nas ruínas e na região perigosa.
+Os três usam os spritesheets aprovados, combate e recompensas de XP/ouro
+existentes. HP, velocidade e dano são provisórios. Materiais exclusivos,
+veneno e arremesso de pedras continuam para balanceamento posterior; não há
+alteração na mineração, no Colosso nem nos sistemas do Andar 1.
+Detalhes: `docs/decisions/ANDAR2_MONSTROS_INTEGRACAO_20261019.md`.
+
+## Mineração do Andar 2 — autorizada em 19/10/2026
+Thiago autorizou transformar os quatro depósitos visuais da Pedreira Dourada em
+recursos interativos. Cada tentativa concluída consome uma das três cargas do
+depósito. Primeiro ocorre um sorteio provisório de 75% para obter minério;
+somente após sucesso, um segundo sorteio escolhe 90% Minério de Ferro Comum ou
+10% Minério de Ferro Raro. Esgotamento dura 300 segundos reais por depósito.
+Mochila e baú empilham por tipo e raridade. O Ferreiro recebe uma receita de
+teste de espada de ferro comum ou rara, separada das receitas já aprovadas.
+Treinamento permite restaurar depósitos e receber ambas as raridades sem
+alterar o save normal. Valores e custos são provisórios. Não há picareta
+equipável, novos monstros, chefe nem minério épico neste recorte.
+Implementação e testes: `docs/decisions/ANDAR2_MINERACAO_20261019.md`.
+
+## Andar 2 — Vale das Pedras Douradas, implementação autorizada em 19/10/2026
+Thiago aprovou a direção artística, a planta refinada e a integração do cenário
+jogável na versão local. O Andar 2 possui mapa próprio de 1700×1350, inspirado
+no Cerrado: área segura, campos, Pedreira Dourada, Ruínas da Chapada, região
+perigosa, arena vazia do futuro Colosso e passagem discreta. Viagem, Torre,
+serviços, coleta, baús, minimapa, limites e persistência usam os sistemas já
+existentes. Depósitos de minério são elementos de cenário nesta etapa; não há
+mineração funcional, novos inimigos, chefe, puzzle ou evento secreto. As regras
+de combate, progressão e economia permanecem as da campanha de cinco andares.
+Esta aprovação substitui somente as restrições antigas sobre o mapa do Andar 2.
+Detalhes de implementação: `docs/decisions/ANDAR2_VISUAL_PROPOSTA.md`.
+
+## Expansão do Andar 1 — aprovada em 18/10/2026
+Conforme `docs/decisions/EXPANSAO_ANDAR1_20261018.md` e o pedido explícito de
+Thiago para implementar a expansão local: ampliar somente o Andar 1 de
+1200×900 para 1700×1350, preservando posições e regras atuais. Acrescentar
+Ruínas Antigas, Região Perigosa, Mata Profunda e Bosque Secreto, quatro pontos
+de coleta, dois baús escondidos e uma passagem secreta. Usar recursos,
+interações, persistência e combate existentes; ajustar navegação, câmera,
+minimapa e spawns sem elevar o limite de atores ativos. Sem novos inimigos,
+chefes, missões, habilidades, balanceamento ou alteração de saves. Os outros
+andares mantêm seu mapa e seus limites atuais.
+
+## Ficha do Personagem local — autorizada em 17/10/2026
+Conforme `FICHA_PERSONAGEM_LOCAL_20261017.md` e pedido de Thiago para reunir
+mochila, equipamentos e atributos: a página inicial do Diário vira uma ficha
+única. Gestão detalhada continua disponível por atalho; regras, save e combate
+permanecem inalterados. Trabalho local, sem publicação.
+
+## HUD de Ultimate e ritmo do Andar 1 — autorizados em 17/10/2026
+Conforme `HUD_ULTIMATE_E_RITMO_ANDAR1_20261017.md`: objetivo atual compacto;
+três skills normais permanentes e Ultimate própria, oculta até 100% de carga.
+Também revisar encontros, obstáculos visíveis e apresentação do Guardião no
+Andar 1, sem alterar combate, recompensas, economia, progressão ou saves.
+
 ## Guardião da Mata — integração e duas habilidades autorizadas em 17/10/2026
 Thiago solicitou integrar o visual/animações do protótipo e criar duas habilidades.
 O chefe da Torre recebe Onda de Raízes (anel expansivo) e Sementes Ancestrais
@@ -161,6 +220,9 @@ Estas regras são a direção do jogo completo. O protótipo técnico atual não
 - HUD mobile: joystick à esquerda, Dash/2 skills/Ultimate/poção à direita; ataque básico não precisa de botão. Orientação e viewport responsivos.
 - A próxima v0.2 é uma iteração experimental com sprites procedurais, animações leves, vários inimigos e feedback XP/ouro sem inventário ou persistência. Não afirmar que representa o visual definitivo.
 
+## Equipamentos por instância — aprovado em 18/10/2026
+Conforme `docs/decisions/EQUIPAMENTOS_INSTANCIAS_V12.md`, materiais têm raridade própria e os drops fazem dois sorteios independentes. O Ferreiro fabrica armas individuais diretamente em uma raridade, evolui a raridade da cópia escolhida e aprimora de +0 a +20, com falha, Selo de Proteção e bônus nos marcos +5/+10/+15/+20. Proficiência continua por categoria. Valores de economia são provisórios; Mítica permanece reservada.
+
 ## Área Segura v0.2.1 — regra aprovada em 2026-10-08
 Conforme `docs/decisions/AREA_SEGURA_V021.md`, o acampamento central contém baú,
 ferreiro e vendedor. Mochila e baú guardam os materiais já existentes sem limite
@@ -275,3 +337,44 @@ Thiago aprovou a prancha visual e autorizou aplicar a composição dos menus
 Ferreiro, Vendedor, Habilidades e Treinamento. Contrato:
 LAYOUT_MENUS_APROVADO_20261015.md. Somente UI; economia, combate, progressão
 e save v11 preservados, publicação exclusiva em TESTE.
+
+## Habilidades do Arqueiro — integração local aprovada em 17/10/2026
+
+Thiago aprovou Rajada de Flechas, Tiro Marcado, Flecha Perfurante e Chuva de
+Flechas da prévia local, com flechas verticais na Chuva. A apresentação usa o
+explorador existente e sincroniza contato e dano. Alcance, área, acertos,
+recarga, carga de Ultimate e saves permanecem como no catálogo. Somente local.
+
+## Habilidades do Cajado — integração local aprovada em 17/10/2026
+
+Thiago aprovou a prévia de Onda Arcana, Selo Místico, Barreira Espiritual e
+Tempestade Arcana para o jogo local. O contato das três técnicas ofensivas
+acompanha a animação; a Barreira continua protegendo pelo tempo do catálogo.
+Dano, área, marca, controle, recarga e saves permanecem inalterados.
+
+## Habilidades do Machado — integração local autorizada em 17/10/2026
+Thiago avaliou a prévia, pediu corrigir a face de contato da lâmina e colocar
+as quatro técnicas no jogo local. Impacto Brutal mostra o golpe no chão à frente
+do explorador e a área circular real. As três técnicas ofensivas aplicam as
+regras existentes no contato; Fúria conserva os oito segundos do catálogo.
+Após esclarecimento do dono, a lança também foi integrada ao mesmo jogo local:
+Estocada Longa, Varredura, Marca de Caça e Muralha de Lanças. Nenhum dano,
+alcance, recarga, controle, marca ou save foi alterado.
+
+## Guardião e Torre do Andar 2 — implementação local autorizada em 20/10/2026
+
+Thiago autorizou usar a folha aprovada do golem para integrar o Colosso de
+Arenito à arena do Vale e dar identidade própria à Torre do Andar 2. A Torre
+apresenta três hordas dos monstros do Vale e o Guardião de Arenito final. A
+vitória usa a progressão já existente; o Colosso opcional usa o estado de
+guardião do andar. Arte, HP e danos são provisórios para revisão no celular.
+Detalhes: `docs/decisions/ANDAR2_GUARDIAO_TORRE_20261020.md`.
+
+## Guardião da Mata — nova folha local em 20/10/2026
+
+Thiago pediu ajustar o Guardião da Mata da Torre do Andar 1 com a folha de
+sprites enviada. Repouso, caminhada, golpes e derrota agora seguem essa arte.
+Somente o ponto de surgimento foi centralizado para evitar corte da copa; os
+ataques, HP, colisão, recompensas, progressão e save continuam iguais. O
+Guardião das Raízes opcional permanece distinto. Detalhes:
+`docs/decisions/GUARDIAO_MATA_FOLHA_20261020.md`.

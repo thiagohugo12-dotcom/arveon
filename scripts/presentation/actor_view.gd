@@ -26,6 +26,7 @@ const DAMAGE_DURATION := 0.85
 var damage_occluders: Array[Rect2] = [] # Shared HUD rectangles, updated only on layout.
 var defeat_left: float = 0.0
 var warning: bool = false
+var targeted: bool = false
 var walking: bool = false
 var anim_time: float = 0.0
 var anim_frame: int = 0
@@ -112,11 +113,18 @@ func set_warning(value: bool) -> void:
 		warning = value
 		queue_redraw()
 
+func set_targeted(value: bool) -> void:
+	if targeted != value:
+		targeted = value
+		queue_redraw()
+
 func _process(delta: float) -> void:
 	# Match the village's grounded sprites: walking behind a roof or canopy
 	# never places a character on top of it. Legacy scenery remains at z=0.
 	z_as_relative = false
-	z_index = clampi(roundi(global_position.y)+100,-4096,4096)
+	# A selected target rises slightly above foliage, so its marker stays readable
+	# in dense parts of the Mata without changing collisions or target choice.
+	z_index = clampi(roundi(global_position.y)+100+(32 if targeted else 0),-4096,4096)
 	if skill_left > 0.0:
 		skill_left = maxf(0.0, skill_left - delta)
 		queue_redraw()
@@ -229,6 +237,20 @@ func _draw() -> void:
 		var warning_y := -64.0 if village_scale else -57.0 if appearance == 3 else -48.0 if appearance != 0 else -39.0
 		px(-11,warning_y,22,5,Color("#f4b942"))
 		px(-2,warning_y-8,4,7,Color("#ffe39a"))
+	if targeted and appearance != 0:
+		# A marca é apenas leitura: mostra o alvo atual do ataque automático.
+		# O tom frio não compete com o amarelo dos avisos de ataque inimigo.
+		var marker := Color("#c9f4e5")
+		var top := -54.0 if village_scale else -47.0 if appearance == 3 else -38.0
+		draw_colored_polygon(PackedVector2Array([Vector2(0,top-13),Vector2(-6,top-21),Vector2(6,top-21)]),marker)
+		draw_line(Vector2(-20,top),Vector2(-10,top),marker,2.0)
+		draw_line(Vector2(-20,top),Vector2(-20,top+10),marker,2.0)
+		draw_line(Vector2(20,top),Vector2(10,top),marker,2.0)
+		draw_line(Vector2(20,top),Vector2(20,top+10),marker,2.0)
+		draw_line(Vector2(-20,7),Vector2(-10,7),marker,2.0)
+		draw_line(Vector2(-20,7),Vector2(-20,-3),marker,2.0)
+		draw_line(Vector2(20,7),Vector2(10,7),marker,2.0)
+		draw_line(Vector2(20,7),Vector2(20,-3),marker,2.0)
 	if flash_left > 0.0:
 		for i in range(4):
 			var p := Vector2(-19 + i * 11, -24 + (i % 2) * 26)

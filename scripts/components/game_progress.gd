@@ -1,12 +1,12 @@
 class_name GameProgress
 extends RefCounted
 
-const ITEMS := ["Couro", "Seda", "Essência", "Broto Ancestral", "Ervas", "Cogumelos", "Madeira", "Pedras"]
+const ITEMS := ["Couro", "Seda", "Essência", "Broto Ancestral", "Ervas", "Cogumelos", "Madeira", "Pedras", "Minério de Ferro"]
 const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 11
+const SAVE_VERSION := 12
 # Legacy-format mode remains only for migration fixtures. Runtime uses v10.
 var etapa2_enabled := true
 var abilities := AbilityState.new()
@@ -27,7 +27,7 @@ func _init() -> void:
 		floor_states[str(id)] = _empty_floor()
 
 static func _empty_floor() -> Dictionary:
-	return {"harvested_until": {}, "opened_caches": {}, "discovered_pois": {}, "guardian_defeated": false}
+	return {"harvested_until": {}, "opened_caches": {}, "discovered_pois": {}, "guardian_defeated": false, "mining": {}}
 
 func _store_floor() -> void:
 	var state: Dictionary = floor_states[str(ascension.current_floor)]
@@ -74,12 +74,18 @@ var skills: Dictionary = {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral
 # Recipe IDs are unique inventory identities; equipping never removes ownership.
 var equipment: Dictionary = {"espada": 0}
 var equipped: Dictionary = {"Arma": "espada", "Armadura": "", "Acessório": ""}
+var weapon_instances: Dictionary = {}
+var equipped_weapon_uid := ""
+var next_weapon_uid := 1
 # Existing snapshots are exempt; only the no-save runtime starts the introduction.
 var introduction: Dictionary = {"status":"legacy","met_smith":false,"weapon":""}
 
 func begin_new_character() -> void:
 	equipment = {}
 	equipped = {"Arma":"","Armadura":"","Acessório":""}
+	weapon_instances = {}
+	equipped_weapon_uid = ""
+	next_weapon_uid = 1
 	introduction = {"status":"active","met_smith":false,"weapon":""}
 
 func introduction_active() -> bool:
@@ -99,10 +105,14 @@ func claim_first_weapon(id: String, at_smith: bool) -> bool:
 	var previous := introduction.duplicate()
 	equipment[id] = 0
 	equipped.Arma = id
+	var uid := _create_weapon(id,"comum")
+	equipped_weapon_uid = uid
 	introduction = {"status":"complete","met_smith":true,"weapon":id}
 	if save(true): return true
 	equipment.erase(id)
 	equipped.Arma = ""
+	weapon_instances.erase(uid)
+	equipped_weapon_uid = ""
 	introduction = previous
 	return false
 
@@ -159,6 +169,127 @@ func improve_skill(name: String, at_camp: bool = false) -> bool:
 	skills[name] = int(skills[name]) + 1
 	return true
 
+func _create_weapon(category: String, rarity: String) -> String:
+	var uid := "w%d" % next_weapon_uid
+	next_weapon_uid += 1
+	weapon_instances[uid] = {"model":category,"category":category,"rarity":rarity,"level":0,"choices":{}}
+	return uid
+
+func weapon(uid: String) -> Dictionary:
+	return weapon_instances.get(uid,{})
+
+func _can_pay(recipe: Dictionary) -> bool:
+	if recipe.is_empty() or gold < int(recipe.gold): return false
+	for item: String in recipe.materials:
+		if int(bag.get(item,0)) < int(recipe.materials[item]): return false
+	return true
+
+func _pay(recipe: Dictionary) -> void:
+	gold -= int(recipe.gold)
+	for item: String in recipe.materials:
+		bag[item] = int(bag[item]) - int(recipe.materials[item])
+		if bag[item] == 0: bag.erase(item)
+
+func can_craft_weapon(category: String, rarity: String) -> bool:
+	return not introduction_active() and not save_blocked and _can_pay(EquipmentEconomy.craft_recipe(category,rarity))
+
+func craft_weapon(category: String, rarity: String) -> String:
+	if not can_craft_weapon(category,rarity): return ""
+	_pay(EquipmentEconomy.craft_recipe(category,rarity))
+	var uid := _create_weapon(category,rarity)
+	if not equipment.has(category): equipment[category] = 0
+	return uid
+
+func can_craft_vale_iron(rarity: String) -> bool:
+	return not introduction_active() and not save_blocked and _can_pay(EquipmentEconomy.vale_iron_recipe(rarity))
+
+func craft_vale_iron(rarity: String) -> String:
+	if not can_craft_vale_iron(rarity): return ""
+	_pay(EquipmentEconomy.vale_iron_recipe(rarity))
+	var uid := _create_weapon("espada", rarity)
+	if not equipment.has("espada"): equipment["espada"] = 0
+	return uid
+
+func mining_snapshot(floor_id: int, id: String, now: int) -> Dictionary:
+	var config := MiningRules.definition(floor_id, id)
+	if config.is_empty(): return {}
+	var state: Dictionary = floor_states[str(floor_id)].mining.get(id, {})
+	var until := int(state.get("ready_at", 0))
+	if until > 0 and now >= until:
+		floor_states[str(floor_id)].mining.erase(id)
+		state = {}
+	return {"remaining": int(state.get("remaining", config.uses)), "ready_at": int(state.get("ready_at", 0))}
+
+func mine_deposit(floor_id: int, id: String, now: int, rng: RandomNumberGenerator) -> Dictionary:
+	var config := MiningRules.definition(floor_id, id)
+	if config.is_empty() or floor_id != ascension.current_floor or now <= 0 or save_blocked: return {}
+	var state := mining_snapshot(floor_id, id, now)
+	if state.remaining <= 0: return {}
+	var remaining := int(state.remaining) - 1
+	var ready_at := now + int(config.respawn_seconds) if remaining == 0 else 0
+	floor_states[str(floor_id)].mining[id] = {"remaining": remaining, "ready_at": ready_at}
+	var drop := MiningRules.roll(config, rng)
+	if not drop.is_empty(): add_item(drop.key)
+	return {"attempted": true, "drop": drop, "remaining": remaining, "ready_at": ready_at}
+
+func reset_mining_for_training(floor_id: int) -> void:
+	if training_mode: floor_states[str(floor_id)].mining.clear()
+
+func can_evolve_weapon(uid: String) -> bool:
+	return weapon_instances.has(uid) and not save_blocked and _can_pay(EquipmentEconomy.rarity_recipe(weapon(uid).rarity))
+
+func evolve_weapon(uid: String) -> bool:
+	if not can_evolve_weapon(uid): return false
+	var data: Dictionary = weapon_instances[uid]
+	_pay(EquipmentEconomy.rarity_recipe(data.rarity))
+	data.rarity = EquipmentEconomy.RARITY_ORDER[EquipmentEconomy.RARITY_ORDER.find(data.rarity)+1]
+	data.level = 0
+	data.choices = {}
+	if uid == equipped_weapon_uid: equipment[data.category] = 0
+	return true
+
+func can_enhance_weapon(uid: String) -> bool:
+	return weapon_instances.has(uid) and not save_blocked and int(weapon(uid).level) < 20 and _can_pay(EquipmentEconomy.enhance_recipe(int(weapon(uid).level),weapon(uid).rarity))
+
+func enhance_weapon(uid: String, use_seal: bool = false, roll: float = -1.0, loss_roll: float = -1.0) -> Dictionary:
+	if not can_enhance_weapon(uid) or use_seal and int(bag.get(EquipmentEconomy.SEAL,0)) < 1: return {}
+	var data: Dictionary = weapon_instances[uid]
+	var old := int(data.level)
+	_pay(EquipmentEconomy.enhance_recipe(old,data.rarity))
+	var success: bool = (randf() if roll < 0 else roll) < float(EquipmentEconomy.SUCCESS[old])
+	var lost := 0
+	if success:
+		data.level = old + 1
+	elif old >= int(EquipmentEconomy.FAILURE.safe_through):
+		lost = (2 if (randf() if loss_roll < 0 else loss_roll) < float(EquipmentEconomy.FAILURE.highest_loss_chance_two) else 1) if old >= 15 else int(EquipmentEconomy.FAILURE.high_loss)
+		if use_seal:
+			bag[EquipmentEconomy.SEAL] -= 1
+			if bag[EquipmentEconomy.SEAL] == 0: bag.erase(EquipmentEconomy.SEAL)
+			lost = 0
+		else:
+			data.level = maxi(0,old-lost)
+	if uid == equipped_weapon_uid: equipment[data.category] = int(data.level)
+	return {"success":success,"old":old,"level":int(data.level),"lost":lost,"seal_used":use_seal and not success and old >= 10}
+
+func choose_weapon_bonus(uid: String, milestone: int, choice: String) -> bool:
+	if not weapon_instances.has(uid) or int(weapon(uid).level) < milestone: return false
+	var data: Dictionary = weapon_instances[uid]
+	if data.choices.has(str(milestone)): return false
+	for option: Dictionary in EquipmentEconomy.bonus_options(data.category,milestone):
+		if option.id == choice:
+			data.choices[str(milestone)] = choice
+			return true
+	return false
+
+func equip_weapon_instance(uid: String) -> bool:
+	if not weapon_instances.has(uid): return false
+	var data: Dictionary = weapon_instances[uid]
+	if not equipment.has(data.category): equipment[data.category] = 0
+	equipped_weapon_uid = uid
+	equipped.Arma = data.category
+	equipment[data.category] = int(data.level)
+	return true
+
 func can_forge(id: String) -> bool:
 	if introduction_active(): return false
 	if not RPGRules.EQUIPMENT.has(id) or (equipment.has(id) and int(equipment[id]) >= 3):
@@ -182,6 +313,15 @@ func forge(id: String, expected_upgrade: int) -> bool:
 		if bag[item] == 0:
 			bag.erase(item)
 	equipment[id] = expected_upgrade + 1
+	if ArsenalRules.CATEGORIES.has(id):
+		var target_uid := ""
+		for uid: String in weapon_instances:
+			if weapon_instances[uid].category == id:
+				target_uid = uid
+				break
+		if target_uid == "": target_uid = _create_weapon(id,"comum")
+		weapon_instances[target_uid].level = expected_upgrade + 1
+		if equipped.Arma == id: equipped_weapon_uid = target_uid
 	return true
 
 # Gold-only starter shop at the Ferreiro. The free first-weapon gift is separate.
@@ -198,14 +338,19 @@ func purchase_starter_weapon(id: String, at_smith: bool) -> bool:
 	if not at_smith or not can_buy_starter_weapon(id): return false
 	var price := starter_weapon_price(id)
 	var previous_weapon: String = equipped.Arma
+	var previous_uid := equipped_weapon_uid
 	gold -= price
 	equipment[id] = 0
 	equipped.Arma = id
+	var uid := _create_weapon(id,"comum")
+	equipped_weapon_uid = uid
 	# One durable transaction: balance, ownership and active class.
 	if save(true): return true
 	gold += price
 	equipment.erase(id)
 	equipped.Arma = previous_weapon
+	weapon_instances.erase(uid)
+	equipped_weapon_uid = previous_uid
 	return false
 
 func equip(id: String) -> bool:
@@ -215,15 +360,26 @@ func equip(id: String) -> bool:
 	if equipped[slot] == id:
 		return false
 	equipped[slot] = id
+	if slot == "Arma":
+		for uid: String in weapon_instances:
+			if weapon_instances[uid].category == id:
+				equipped_weapon_uid = uid
+				equipment[id] = int(weapon_instances[uid].level)
+				break
 	return true
 
 func unequip(slot: String) -> bool:
 	if not RPGRules.SLOTS.has(slot) or equipped[slot] == "":
 		return false
 	equipped[slot] = ""
+	if slot == "Arma": equipped_weapon_uid = ""
 	return true
 
 func combat_stats() -> Dictionary:
+	var physical_bonus := 0
+	var magical_bonus := 0
+	var critical_bonus := 0.0
+	var attack_speed_bonus := 0.0
 	var result := {"physical": 12 + int(attributes["Força"]) * 2, "magical": 12 + int(attributes["Espírito"]) * 2,
 		"hp": 100 + int(attributes["Vitalidade"]) * 8, "speed": 180.0,
 		"spirit": int(attributes["Espírito"]), "armor": 0, "cooldown": 1.0,
@@ -234,7 +390,26 @@ func combat_stats() -> Dictionary:
 		var id: String = equipped[slot]
 		if id.is_empty():
 			continue
-		var bonus := RPGRules.bonuses(id, int(equipment[id]))
+		var level_value := int(equipment[id])
+		if slot == "Arma" and weapon_instances.has(equipped_weapon_uid): level_value = int(weapon(equipped_weapon_uid).level)
+		var bonus := RPGRules.bonuses(id, level_value)
+		if slot == "Arma" and weapon_instances.has(equipped_weapon_uid):
+			var data := weapon(equipped_weapon_uid)
+			var tier := EquipmentEconomy.RARITY_ORDER.find(data.rarity)
+			bonus.damage += tier * 2
+			bonus.spirit += tier
+			for milestone: int in EquipmentEconomy.MILESTONES:
+				if level_value < milestone or not data.choices.has(str(milestone)): continue
+				for option: Dictionary in EquipmentEconomy.bonus_options(data.category,milestone):
+					if option.id == data.choices[str(milestone)]:
+						match option.stat:
+							"physical": physical_bonus += int(option.value)
+							"magical": magical_bonus += int(option.value)
+							"critical": critical_bonus += float(option.value)
+							"attack_speed": attack_speed_bonus += float(option.value)
+							"hp": bonus.hp += int(option.value)
+							"armor": bonus.armor += int(option.value)
+							"spirit": bonus.spirit += int(option.value)
 		result.physical += int(bonus.damage)
 		result.magical += int(bonus.damage) + int(bonus.spirit) * 2
 		for key: String in ["hp","speed","spirit","armor"]: result[key] += bonus[key]
@@ -246,25 +421,29 @@ func combat_stats() -> Dictionary:
 	result.speed *= 1.0+minf(0.2,int(attributes["Mobilidade"])*0.01)
 	result.damage_type = "magical" if active_category() == "cajado" else "physical"
 	result.merge(talents.mastery_bonuses(active_category()))
+	result.physical += physical_bonus
+	result.magical += magical_bonus
+	result.critical_chance = minf(0.15,float(result.critical_chance)+critical_bonus)
+	result.basic_interval_factor = maxf(0.7,float(result.basic_interval_factor)-attack_speed_bonus)
 	result.damage = roundi(float(result[result.damage_type]) * (1.0+result.automatic+result.basic))
 	return result
 
-func discover_nearby(point: Vector2) -> bool:
+func discover_nearby(point: Vector2, floor_id: int = 1) -> bool:
 	var changed := false
-	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+	for spot: Dictionary in Exploration.resources_for_floor(floor_id):
 		if not discovered_pois.has(spot.id) and point.distance_squared_to(spot.position) <= 95.0 * 95.0:
 			discovered_pois[spot.id] = true
 			changed = true
 	return changed
 
 func add_item(item: String, amount: int = 1) -> bool:
-	if not ITEMS.has(item) or amount < 1:
+	if not ITEMS.has(item) and not EquipmentEconomy.valid_item(item) or amount < 1:
 		return false
 	bag[item] = int(bag.get(item, 0)) + amount
 	return true
 
 func transfer(item: String, to_chest: bool) -> bool:
-	if not ITEMS.has(item):
+	if not ITEMS.has(item) and not EquipmentEconomy.valid_item(item):
 		return false
 	var source: Dictionary = bag if to_chest else chest
 	var destination: Dictionary = chest if to_chest else bag
@@ -277,23 +456,31 @@ func transfer(item: String, to_chest: bool) -> bool:
 	return true
 
 func buy(item: String) -> bool:
-	if not TRADE_ITEMS.has(item) or gold < BUY_PRICE:
+	var meta := EquipmentEconomy.split_key(item)
+	if not TRADE_ITEMS.has(meta.item) and item != EquipmentEconomy.SEAL or not ITEMS.has(item) and not EquipmentEconomy.valid_item(item) or gold < buy_price(item):
 		return false
-	gold -= BUY_PRICE
+	gold -= buy_price(item)
 	add_item(item)
 	return true
 
+static func buy_price(item: String) -> int:
+	if item == EquipmentEconomy.SEAL: return 50
+	return BUY_PRICE * (1 + maxi(0,EquipmentEconomy.RARITY_ORDER.find(EquipmentEconomy.split_key(item).rarity)))
+
 func sell(item: String) -> bool:
-	if not SELL_ITEMS.has(item) or int(bag.get(item, 0)) < 1:
+	if not SELL_ITEMS.has(item) and not EquipmentEconomy.valid_item(item) or item == EquipmentEconomy.SEAL or int(bag.get(item, 0)) < 1:
 		return false
 	bag[item] = int(bag[item]) - 1
 	if bag[item] == 0:
 		bag.erase(item)
-	gold += SELL_PRICE
+	gold += sell_price(item)
 	return true
 
-func collect_resource(id: String, now: int) -> String:
-	for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+static func sell_price(item: String) -> int:
+	return SELL_PRICE * (1 + maxi(0,EquipmentEconomy.RARITY_ORDER.find(EquipmentEconomy.split_key(item).rarity)))
+
+func collect_resource(id: String, now: int, floor_id: int = 1) -> String:
+	for spot: Dictionary in Exploration.resources_for_floor(floor_id):
 		if spot.id == id and now >= int(harvested_until.get(id, 0)) and now > 0:
 			var item: String = spot.item
 			add_item(item)
@@ -301,10 +488,10 @@ func collect_resource(id: String, now: int) -> String:
 			return item
 	return ""
 
-func open_exploration_chest(id: String) -> Dictionary:
+func open_exploration_chest(id: String, floor_id: int = 1) -> Dictionary:
 	if opened_caches.has(id):
 		return {}
-	for chest_data: Dictionary in Exploration.HIDDEN_CHESTS:
+	for chest_data: Dictionary in Exploration.chests_for_floor(floor_id):
 		if chest_data.id == id:
 			gold += int(chest_data.gold)
 			var item: String = chest_data.item
@@ -314,7 +501,10 @@ func open_exploration_chest(id: String) -> Dictionary:
 	return {}
 
 func death_loss() -> String:
-	for item: String in ITEMS:
+	var loss_order := ITEMS.duplicate()
+	for extra: String in bag:
+		if not loss_order.has(extra): loss_order.append(extra)
+	for item: String in loss_order:
 		if int(bag.get(item, 0)) > 0:
 			bag[item] = int(bag[item]) - 1
 			if bag[item] == 0:
@@ -332,6 +522,10 @@ func to_json() -> String:
 		"skills": {} if etapa2_enabled else skills, "equipment": equipment, "equipped": equipped, "equipment_meta": equipment_metadata()}}
 	if etapa2_enabled: payload["abilities"] = abilities.to_save()
 	if etapa2_enabled: payload["introduction"] = introduction
+	if etapa2_enabled:
+		payload["weapon_instances"] = weapon_instances
+		payload["equipped_weapon_uid"] = equipped_weapon_uid
+		payload["next_weapon_uid"] = next_weapon_uid
 	return JSON.stringify(payload)
 
 func _web_save() -> bool:
@@ -592,23 +786,25 @@ func load_text(text: String) -> bool:
 			return false
 		for key: String in new_floors:
 			var state: Variant = parsed.floor_states.get(key)
-			if not state is Dictionary or state.size() != 4 or not state.get("guardian_defeated") is bool:
+			if not state is Dictionary or state.size() < 4 or state.size() > 5 or not state.get("guardian_defeated") is bool:
 				return false
+			var mining: Variant = _valid_mining(state.get("mining", {}), int(key))
+			if mining == null: return false
 			var harvested: Variant = _valid_exploration(state.get("harvested_until"), false)
 			var opened: Variant = _valid_exploration(state.get("opened_caches"), true)
 			var discovered: Variant = _valid_discoveries(state.get("discovered_pois"))
 			if harvested == null or opened == null or discovered == null:
 				return false
-			if not new_ascension.can_travel(int(key)) and (not harvested.is_empty() or not opened.is_empty() or not discovered.is_empty() or state.guardian_defeated):
+			if not new_ascension.can_travel(int(key)) and (not harvested.is_empty() or not opened.is_empty() or not discovered.is_empty() or state.guardian_defeated or not mining.is_empty()):
 				return false
-			new_floors[key] = {"harvested_until": harvested, "opened_caches": opened, "discovered_pois": discovered, "guardian_defeated": state.guardian_defeated}
+			new_floors[key] = {"harvested_until": harvested, "opened_caches": opened, "discovered_pois": discovered, "guardian_defeated": state.guardian_defeated, "mining": mining}
 		var active: Dictionary = new_floors[str(new_ascension.current_floor)]
 		if active.harvested_until != new_harvested or active.opened_caches != new_opened or active.discovered_pois != new_discovered:
 			return false
 	else:
 		if new_ascension.current_floor != 1:
 			return false
-		new_floors["1"] = {"harvested_until": new_harvested, "opened_caches": new_opened, "discovered_pois": new_discovered, "guardian_defeated": new_adventures.guardiao > 0}
+		new_floors["1"] = {"harvested_until": new_harvested, "opened_caches": new_opened, "discovered_pois": new_discovered, "guardian_defeated": new_adventures.guardiao > 0, "mining": {}}
 	var new_talents := TalentProgress.new()
 	if loaded_version >= 7:
 		var remaining := RPGRules.level_for_xp(int(parsed.xp))-1
@@ -634,6 +830,35 @@ func load_text(text: String) -> bool:
 			if not intro.met_smith or not ArsenalRules.CATEGORIES.has(intro.weapon) or not new_rpg.equipment.has(intro.weapon): return false
 		elif intro.weapon != "" or intro.met_smith: return false
 		new_introduction = intro.duplicate()
+	var new_instances := {}
+	var new_equipped_uid := ""
+	var new_next_uid := 1
+	if loaded_version >= 12:
+		if not parsed.get("weapon_instances") is Dictionary or not parsed.get("equipped_weapon_uid") is String or not _bounded_integer(parsed.get("next_weapon_uid"),1,10000000): return false
+		new_instances = parsed.weapon_instances.duplicate(true)
+		new_equipped_uid = parsed.equipped_weapon_uid
+		new_next_uid = int(parsed.next_weapon_uid)
+		if new_instances.size() > 300: return false
+		for uid: String in new_instances:
+			var entry: Variant = new_instances[uid]
+			if not uid.begins_with("w") or not uid.substr(1).is_valid_int() or int(uid.substr(1)) >= new_next_uid: return false
+			if not entry is Dictionary or entry.size() != 5 or not ArsenalRules.CATEGORIES.has(entry.get("category")) or entry.get("model") != entry.get("category") or not EquipmentEconomy.RARITY_ORDER.has(entry.get("rarity")) or not _bounded_integer(entry.get("level"),0,20) or not entry.get("choices") is Dictionary: return false
+			entry.level = int(entry.level)
+			if not new_rpg.equipment.has(entry.category): return false
+			for milestone: String in entry.choices:
+				if not milestone.is_valid_int() or not EquipmentEconomy.MILESTONES.has(int(milestone)) or not entry.choices[milestone] is String: return false
+				var matched := false
+				for option: Dictionary in EquipmentEconomy.bonus_options(entry.category,int(milestone)):
+					if option.id == entry.choices[milestone]: matched = true
+				if not matched: return false
+		if new_equipped_uid != "" and (not new_instances.has(new_equipped_uid) or new_instances[new_equipped_uid].category != new_rpg.equipped.Arma or int(new_instances[new_equipped_uid].level) != int(new_rpg.equipment[new_rpg.equipped.Arma])): return false
+	elif new_rpg.equipped.Arma != "":
+		for category: String in new_rpg.equipment:
+			if ArsenalRules.CATEGORIES.has(category):
+				var uid := "w%d" % new_next_uid
+				new_next_uid += 1
+				new_instances[uid] = {"model":category,"category":category,"rarity":ArsenalRules.metadata(category).rarity,"level":int(new_rpg.equipment[category]),"choices":{}}
+				if category == new_rpg.equipped.Arma: new_equipped_uid = uid
 	# Commit all validated fields together; malformed trees cannot partially load.
 	introduction = new_introduction
 	talents = new_talents
@@ -656,6 +881,9 @@ func load_text(text: String) -> bool:
 	skills = new_rpg.skills
 	equipment = new_rpg.equipment
 	equipped = new_rpg.equipped
+	weapon_instances = new_instances
+	equipped_weapon_uid = new_equipped_uid
+	next_weapon_uid = new_next_uid
 	if loaded_version >= 10: etapa2_enabled = true
 	elif etapa2_enabled: migrate_etapa2()
 	return true
@@ -694,7 +922,7 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 	if attribute_spent > (loaded_level - 1) * 2 or skill_spent > loaded_level - 1 or value.equipment.size() > RPGRules.EQUIPMENT.size():
 		return null
 	for id: String in value.equipment:
-		if not RPGRules.EQUIPMENT.has(id) or not _bounded_integer(value.equipment[id], 0, 3):
+		if not RPGRules.EQUIPMENT.has(id) or not _bounded_integer(value.equipment[id], 0, 20 if version >= 12 and ArsenalRules.CATEGORIES.has(id) else 3):
 			return null
 		result.equipment[id] = int(value.equipment[id])
 	if value.has("equipment_meta"):
@@ -725,7 +953,7 @@ func _valid_discoveries(value: Variant) -> Variant:
 	var result := {}
 	for id: String in value:
 		var valid := false
-		for spot: Dictionary in Exploration.RESOURCE_SPOTS:
+		for spot: Dictionary in Exploration.known_resources():
 			if spot.id == id:
 				valid = true
 				break
@@ -738,7 +966,7 @@ func _valid_exploration(value: Variant, is_cache: bool) -> Variant:
 	if not value is Dictionary:
 		return null
 	var result := {}
-	var sources: Array = Exploration.HIDDEN_CHESTS if is_cache else Exploration.RESOURCE_SPOTS
+	var sources: Array = Exploration.known_chests() if is_cache else Exploration.known_resources()
 	for id: String in value:
 		var found := false
 		for entry: Dictionary in sources:
@@ -762,9 +990,23 @@ func _valid_items(value: Variant) -> Variant:
 		return null
 	var result := {}
 	for item: String in value:
-		if not ITEMS.has(item) or not value[item] is float or value[item] < 1 or value[item] > 100000000 or value[item] != floorf(value[item]):
+		if not ITEMS.has(item) and not EquipmentEconomy.valid_item(item) or not value[item] is float or value[item] < 1 or value[item] > 100000000 or value[item] != floorf(value[item]):
 			return null
 		result[item] = int(value[item])
+	return result
+
+func _valid_mining(value: Variant, floor_id: int) -> Variant:
+	if not value is Dictionary: return null
+	var result := {}
+	for id: String in value:
+		var config := MiningRules.definition(floor_id, id)
+		var state: Variant = value[id]
+		if config.is_empty() or not state is Dictionary or state.size() != 2: return null
+		var remaining: Variant = state.get("remaining")
+		var ready_at: Variant = state.get("ready_at")
+		if not _bounded_integer(remaining, 0, int(config.uses)) or not _bounded_integer(ready_at, 0, 1000000000000): return null
+		if (int(remaining) == 0) != (int(ready_at) > 0): return null
+		result[id] = {"remaining": int(remaining), "ready_at": int(ready_at)}
 	return result
 
 func xp_for_level(target: int) -> int:
@@ -818,12 +1060,16 @@ func configure_ability(action: String, category: String, id: String, slot: int, 
 		"equip_skill":
 			if slot not in [0,1]: return false
 			if not id.is_empty() and not AbilityRules.available(category,id,prof): return false
+			if id == AbilityRules.CATEGORIES[category].ultimate.id:
+				return abilities.select_ultimate(category,id,prof,true)
 			var slots: Array = abilities.loadouts[category].skills
 			if not id.is_empty() and slots[1-slot] == id:
 				slots[1-slot] = slots[slot]
 				slots[slot] = id
 				return true
 			return abilities.select_skill(category,slot,id,prof,true)
+		"equip_ultimate":
+			return abilities.select_ultimate(category,id,prof,true)
 		"equip_passive":
 			if slot not in [0,1]: return false
 			var rule := AbilityRules.passive(category,id)

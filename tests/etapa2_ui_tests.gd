@@ -67,7 +67,7 @@ static func run_world(suite: SceneTree) -> void:
 			p.abilities.charge[category] = 100
 			main._toggle_character()
 			main.hud.set_rpg_status(p,main.player)
-			suite.check(main.hud.actions[1].legend == "Ultimate" and main.hud.actions[1].charge_fraction == 1.0 and main.hud.actions[1].caption.text == "100%","HUD maps optional Ultimate to its actual slot "+category+str(resolution))
+			suite.check(main.hud.actions[4].legend == "Ultimate" and main.hud.actions[4].visible and main.hud.actions[4].charge_fraction == 1.0 and main.hud.actions[4].caption.text == "ULT","HUD maps optional Ultimate to its actual slot "+category+str(resolution))
 			main.player.position = Vector2(850,400)
 			panel.tab = 1
 			main._toggle_character()

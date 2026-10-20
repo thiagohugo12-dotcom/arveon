@@ -19,6 +19,10 @@ func _draw() -> void:
 	if DiaryArt.icon(self,slot,Rect2(2,2,26,26) if framed else Rect2(0,0,30,30)): return
 	var gold := Color("#697f78")
 	match slot:
+		"Ouro":
+			draw_circle(Vector2(15,15),10,Color("#8e6330"))
+			draw_circle(Vector2(15,15),7,Color("#e5b953"))
+			draw_circle(Vector2(13,12),2,Color("#fff0ab"))
 		"Madeira":
 			draw_rect(Rect2(5,11,20,12),Color("#89552f"))
 			draw_rect(Rect2(5,11,6,12),Color("#d5a454"))
@@ -31,6 +35,10 @@ func _draw() -> void:
 		"Pedra", "Pedras":
 			draw_rect(Rect2(6,13,20,10),Color("#7c827b"))
 			draw_rect(Rect2(10,8,12,10),Color("#b1b2a0"))
+		"Minério de Ferro":
+			draw_colored_polygon(PackedVector2Array([Vector2(4,21),Vector2(7,12),Vector2(14,7),Vector2(23,10),Vector2(27,19),Vector2(20,25),Vector2(9,25)]),Color("#555d5c"))
+			draw_rect(Rect2(10,11,9,5),Color("#9da69a"))
+			draw_rect(Rect2(16,17,7,4),frame_color)
 		"Erva", "Ervas":
 			draw_rect(Rect2(14,6,3,20),Color("#4c7339"))
 			draw_rect(Rect2(6,10,8,7),Color("#68963d"))

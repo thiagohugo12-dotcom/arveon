@@ -145,6 +145,8 @@ func run() -> void:
 		player.position = SafeCamp.DISPLAY_STATIONS.Ferreiro
 		main._interact()
 		check(hud.station_panel.visible and main.input_driver.blocked and p.introduction.met_smith,"actual smith visit opens mission option "+id)
+		main._refresh_mission()
+		check(hud.mission_hint == "Fale com o Ferreiro.","unfinished first-weapon mission keeps actionable smith instruction "+id)
 		for size: Vector2i in [Vector2i(360,640),Vector2i(390,844),Vector2i(640,360),Vector2i(960,540)]:
 			root.size = size
 			root.content_scale_size = size

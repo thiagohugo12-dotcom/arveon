@@ -7,16 +7,24 @@ class MapEvidence extends Node2D:
 	func _draw() -> void:
 		var gold := Color("#ffe09a")
 		var font := ThemeDB.fallback_font
-		draw_polyline(PackedVector2Array([SafeCamp.RESPAWN, Vector2(720, 445), Vector2(880, 485), TowerEntrance.POSITION]), gold, 3.0)
+		draw_polyline(PackedVector2Array([SafeCamp.RESPAWN,Vector2(570,690),Vector2(560,860),
+			Vector2(720,1035),Vector2(635,1260),TowerEntrance.POSITION]), gold, 3.0)
 		draw_circle(SafeCamp.RESPAWN, 12, gold, false, 3.0)
 		draw_circle(TowerEntrance.POSITION, 13, gold, false, 3.0)
-		draw_circle(Vector2(600, 280), 10, Color("#c7d4cb"), false, 2.0)
-		draw_string(font, Vector2(620, 285), "Posição anterior", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#e2e9e2"))
+		draw_circle(TowerEntrance.LEGACY_POSITION, 10, Color("#c7d4cb"), false, 2.0)
+		draw_string(font, Vector2(1060, 425), "Entrada anterior", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("#e2e9e2"))
 		draw_string(font, Vector2(490, 585), "Vila / acampamento", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, gold)
-		draw_string(font, Vector2(925, 338), "Torre — extremidade leste", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gold)
-		draw_rect(Rect2(270, 810, 660, 64), Color("#162b25"))
-		draw_string(font, Vector2(290, 835), "Mapa original: 1200 × 900 — linha amarela: trilha existente", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, gold)
-		draw_string(font, Vector2(290, 860), "Distância direta à vila: antes 180 px / depois 590 px", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, gold)
+		draw_string(font, Vector2(850, 1275), "Torre", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, gold)
+		draw_rect(Rect2(1250, 70, 410, 365), Color("#c8ae7040"), false, 4.0)
+		draw_string(font, Vector2(1300, 205), "Ruínas Antigas", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, gold)
+		draw_rect(Rect2(1260, 440, 410, 400), Color("#a95c4840"), false, 4.0)
+		draw_string(font, Vector2(1360, 655), "Região Perigosa", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, gold)
+		draw_rect(Rect2(0, 900, 1300, 420), Color("#315d3b40"), false, 4.0)
+		draw_string(font, Vector2(300, 1190), "Mata Profunda", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, gold)
+		draw_rect(Rect2(1300, 930, 370, 390), Color("#62618a40"), false, 4.0)
+		draw_string(font, Vector2(1360, 1190), "Bosque Secreto", HORIZONTAL_ALIGNMENT_LEFT, -1, 20, gold)
+		draw_rect(Rect2(270, 1245, 1000, 80), Color("#162b25"))
+		draw_string(font, Vector2(290, 1275), "Andar 1 expandido: 1700 × 1350 — áreas novas mantêm o acampamento e a Torre", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, gold)
 
 func _initialize() -> void:
 	create_timer(45.0).timeout.connect(func(): quit(1))
@@ -113,19 +121,19 @@ func _run() -> void:
 			main._toggle_map()
 	# QA-only overview: native scene with annotations, never included in gameplay.
 	root.size_changed.disconnect(main._adapt_orientation)
-	root.size = Vector2i(1200, 900)
+	root.size = Vector2i(1700, 1350)
 	await _frames()
-	root.content_scale_size = Vector2i(1200, 900)
+	root.content_scale_size = Vector2i(1700, 1350)
 	main.hud.hide()
 	main.player.position = SafeCamp.RESPAWN
 	var camera := main.player.get_node("Camera2D") as Camera2D
 	camera.zoom = Vector2.ONE
-	camera.position = Vector2(600, 450) - main.player.position
+	camera.position = Vector2(850, 675) - main.player.position
 	camera.reset_smoothing()
 	var evidence := MapEvidence.new()
 	main.add_child(evidence)
 	await _capture("tower_overview")
-	_check(root.content_scale_size == Vector2i(1200, 900), "overview shows entire original map at one pixel per world unit")
+	_check(root.content_scale_size == Vector2i(1700, 1350), "overview shows all new regions at one pixel per world unit")
 	var file := FileAccess.open(output.path_join("tower-result.txt"), FileAccess.WRITE)
 	file.store_line("TOWER_QA_RESULT: %d failures" % failures)
 	file.close()

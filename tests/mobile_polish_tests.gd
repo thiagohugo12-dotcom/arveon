@@ -52,10 +52,18 @@ static func run(suite, main) -> void:
 		suite.check(text_fits and hud.progress_label.get_theme_font("font").get_string_size(hud.progress_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x <= hud.progress_label.size.x, "mission and XP text fit compact panels %s" % resolution)
 		if resolution.x >= 600 and resolution.x > resolution.y:
 			suite.check(hud.info_back.position.y == hud.mission_back.position.y and not hud.info_back.get_rect().intersects(hud.mission_back.get_rect()),"landscape HUD frees workshop without overlapping readable panels %s" % resolution)
-		var mission_snapshot: String = main.progress.to_json()
-		tap(hud,hud.mission_toggle)
-		suite.check(not hud.mission_expanded and hud.mission_back.size.y == 44 and main.progress.to_json() == mission_snapshot,"collapsing mission frees space without modifying quest progress %s" % resolution)
-		tap(hud,hud.mission_toggle)
+		suite.check(not hud.mission_toggle.visible and hud.mission_back.size.y == 34,"current objective uses one compact, non-expandable HUD strip %s" % resolution)
+		var original_mission := hud.mission_text
+		var original_hint := hud.mission_hint
+		hud.set_mission("O Primeiro Passo\nFale com o Ferreiro.")
+		await suite.frames()
+		var intro_fits := hud.mission_label.get_line_count() * hud.mission_label.get_line_height() <= hud.mission_label.size.y
+		intro_fits = intro_fits and hud.mission_hint_label.get_line_count() * hud.mission_hint_label.get_line_height() <= hud.mission_hint_label.size.y
+		suite.check(hud.mission_back.size == Vector2(220,48) and intro_fits, "three-line introduction stays compact and readable %s" % resolution)
+		hud.mission_text = original_mission
+		hud.mission_hint = original_hint
+		hud._render_mission()
+		hud._layout()
 		for menu in ["bag", "character", "map"]:
 			var button: Button = {"bag": hud.inventory_button, "character": hud.character_button, "map": hud.map_button}[menu]
 			tap(hud, button)

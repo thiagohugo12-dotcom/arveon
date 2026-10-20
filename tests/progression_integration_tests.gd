@@ -90,7 +90,7 @@ static func _simulate_campaign() -> Dictionary:
 				for kind: int in wave: roster.append(kind)
 			roster.append(4)
 			for kind: int in roster:
-				var hp := roundi([48,30,64,120,360][kind]*FloorConfig.difficulty(floor_id))
+				var hp := roundi([48,36,64,120,360][kind]*FloorConfig.difficulty(floor_id))
 				total_hp += hp
 				while hp > 0:
 					var stats := p.combat_stats()

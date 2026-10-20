@@ -115,6 +115,8 @@ func _run() -> void:
 		panel.scroll.scroll_vertical = 0
 		await frames()
 		check(panel.skill_catalog_buttons.size() == AbilityRules.CATEGORIES.espada.normal.size()+1 and panel.ability_buttons.size() == 3 and panel.skill_slots.size() == 3,"all sword techniques remain in selectable catalogue "+prefix)
+		await tap(hud,panel.skill_slots[2],panel.scroll)
+		check(panel.skill_target_slot == 1 and panel.ability_buttons[panel.skill_choice+":1"].text.begins_with("Equipar"),"choosing Skill 3 keeps it as the direct equipment target "+prefix)
 		await capture(prefix+"habilidades")
 		await tap(hud,panel.skill_catalog_buttons.guarda_reativa,panel.scroll)
 		check(panel.skill_choice == "guarda_reativa" and panel.ability_buttons.has("guarda_reativa:0"),"selecting entry opens its actual slot actions "+prefix)
@@ -138,10 +140,14 @@ func _run() -> void:
 		panel.scroll.scroll_vertical = 0
 		await frames()
 		check(panel.mastery_buttons.size() == 4 and panel.category_buttons.size() == 5,"four training attributes and five categories stay available "+prefix)
+		check(panel.training_back.visible and panel.training_back.size.y >= 44,"training keeps a fixed return to the talent tree "+prefix)
 		await capture(prefix+"treinamento")
 		requests.clear()
 		await tap(hud,panel.mastery_buttons.Dano,panel.scroll)
 		check(requests == [["mastery","espada:Dano",0]],"training still sends expected investment guard "+prefix)
+		panel.training_back.pressed.emit()
+		await frames()
+		check(panel.tab == 2 and panel.prof_section == 1,"fixed training return restores the talent tree "+prefix)
 		hud.close_character()
 		check(p.to_json() == snapshot,"all reading and selection preserve v11 snapshot "+prefix)
 	print("MENU_CLARITY_RESULT: %d checks, %d failures" % [checks,failures])

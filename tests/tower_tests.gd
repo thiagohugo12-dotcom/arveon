@@ -133,25 +133,28 @@ static func run_world(suite) -> void:
 	suite.check(p.ascension.defeats["1"] == 50 and main.earned_xp == earned_xp + 12 and p.ascension.unlocked_floors == [1], "later real kills retain original rewards without raising tower count or unlocking floor 2")
 	later.queue_free()
 	await suite.frames()
-	# Follow the existing main trail in small walking-sized collision steps.
+	# Follow the camp-to-south route in small walking-sized collision steps.
 	player.position = SafeCamp.RESPAWN
 	var route_clear := true
-	for waypoint: Vector2 in [Vector2(720, 445), Vector2(880, 485), TowerEntrance.POSITION]:
-		for step in range(200):
+	var approach := TowerEntrance.POSITION + Vector2(0,28)
+	for waypoint: Vector2 in [Vector2(570,480),Vector2(570,690),Vector2(560,860),Vector2(620,960),
+		Vector2(720,1035),Vector2(760,1185),Vector2(635,1260),Vector2(680,1308),approach]:
+		for step in range(250):
 			var offset := waypoint - player.position
-			if offset.length() < 0.1:
+			if offset.length() < 0.5:
 				break
 			if player.move_and_collide(offset.limit_length(3.0)) != null:
 				route_clear = false
 				break
-	suite.check(route_clear and player.position.distance_to(TowerEntrance.POSITION) < 0.1, "ordinary walking route reaches eastern tower from camp without dash or teleport")
+	suite.check(route_clear and player.position.distance_to(approach) < 0.5, "ordinary walking route reaches southern tower from camp without dash or teleport")
 	suite.check(TowerEntrance.POSITION.distance_to(SafeCamp.RESPAWN) > 3.0 * Vector2(600, 280).distance_to(SafeCamp.RESPAWN), "tower is over three times farther from camp than previous location")
 	suite.check(not SafeCamp.AREA.grow(SafeCamp.CLEARANCE).has_point(TowerEntrance.POSITION), "tower stands outside camp and safe clearance")
-	suite.check(Rect2(16, 16, 1168, 868).encloses(TowerEntrance.BODY.grow(12)), "tower footprint remains inside original map walls")
+	suite.check(Rect2(16, 16, 1668, 1318).encloses(TowerEntrance.BODY.grow(12)), "tower footprint remains inside expanded map walls")
 	var walls := main.get_node("Andar1/Walls")
-	suite.check(walls.get_node("Top").position == Vector2(600, 0) and walls.get_node("Bottom").position == Vector2(600, 900) and walls.get_node("Left").position == Vector2(0, 450) and walls.get_node("Right").position == Vector2(1200, 450), "all four original world limits remain exactly unchanged")
+	suite.check(walls.get_node("Top").position == Vector2(850, 0) and walls.get_node("Bottom").position == Vector2(850, 1350) and walls.get_node("Left").position == Vector2(0, 675) and walls.get_node("Right").position == Vector2(1700, 675), "Andar 1 boundaries surround the expanded world")
 	var camera := player.get_node("Camera2D") as Camera2D
-	suite.check(camera.limit_left == 0 and camera.limit_top == 0 and camera.limit_right == 1200 and camera.limit_bottom == 900 and MiniMap.WORLD_SIZE == Vector2(1200, 900), "camera and minimap retain original map dimensions")
+	suite.check(camera.limit_left == 0 and camera.limit_top == 0 and camera.limit_right == 1700 and camera.limit_bottom == 1350 and MiniMap.WORLD_SIZE == Vector2(1200, 900), "camera and minimap use the expanded Andar 1 size while the legacy default remains available")
+	suite.check(FloorConfig.world_size(2) == Floor2Layout.WORLD_SIZE and FloorConfig.world_size(3) == FloorConfig.DEFAULT_WORLD_SIZE, "Vale bounds are configured without changing later floors")
 	for spawn: Vector2 in main.ENEMY_POSITIONS:
 		suite.check(spawn.distance_to(TowerEntrance.POSITION) > 150.0, "existing enemy spawn remains away from tower entrance " + str(spawn))
 	# Actual movement uses the unchanged joystick InputDriver and PlayerActor.
@@ -160,10 +163,10 @@ static func run_world(suite) -> void:
 	await suite.frames(8)
 	player.set_physics_process(false)
 	main.input_driver.set_touch_direction(Vector2.ZERO)
-	suite.check(player.position.x < TowerEntrance.POSITION.x - 5 and TowerEntrance.is_near(player.position), "touch movement works on eastern tower apron")
+	suite.check(player.position.x < TowerEntrance.POSITION.x - 5 and TowerEntrance.is_near(player.position), "touch movement works on southern tower apron")
 	main.activity_remaining = 0.0
 	main._process(0.0)
-	suite.check(hud.minimap.player_position.distance_to(player.position) < 4.0 and hud.minimap._map_point(player.position).x > hud.minimap.size.x * 0.85, "minimap follows player at eastern edge without resizing world")
+	suite.check(hud.minimap.player_position.distance_to(player.position) < 4.0 and hud.minimap._map_point(player.position).y > hud.minimap.size.y * 0.80, "minimap follows player at the southern Tower on the expanded Andar 1 map")
 	player.position = TowerEntrance.POSITION + Vector2(0, 35)
 	var hit := player.move_and_collide(Vector2(0, -75))
 	suite.check(hit != null and player.position.y >= TowerEntrance.POSITION.y - 8, "tower wall is solid while front interaction remains accessible")

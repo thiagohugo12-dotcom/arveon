@@ -237,7 +237,8 @@ func setup_cast() -> void:
 		player.add_child(driver)
 		player.input_driver=driver
 		var progress:=TrainingMode.create()
-		progress.abilities.loadouts.espada.skills=[ability if actor_kind == 0 else "estocada_precisa","danca_laminas"]
+		progress.abilities.loadouts.espada.skills=[ability if actor_kind == 0 and ability != "danca_laminas" else "estocada_precisa","guarda_reativa"]
+		progress.abilities.loadouts.espada.ultimate="danca_laminas"
 		player.apply_progression(progress,true)
 		player.last_direction=aim
 		player.view.set_facing(aim)
@@ -276,7 +277,7 @@ func setup_cast() -> void:
 				new_player=player
 				new_enemy=enemy
 				player.class_combat.technique_impact.connect(func(_id: String,when: float): actual_contact_events+=1; actual_contact_time=when)
-				player.use_skill(1)
+				player.use_skill(3 if ability == "danca_laminas" else 1)
 				if SwordTechniqueEffect.EXTRA_DURATIONS.has(ability):
 					actual_contact_events=1
 					actual_contact_time=0

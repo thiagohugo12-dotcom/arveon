@@ -56,10 +56,10 @@ static func run_world(suite) -> void:
 		boss._physics_process(0.74)
 		suite.check(player.health.current == 100, "roots telegraph itself causes no damage " + str(direction))
 		boss._physics_process(0.01)
-		suite.check(player.health.current == 82,"root contact occurs exactly on ACTIVE entry "+str(direction))
+		suite.check(player.health.current == 80,"root contact occurs exactly on ACTIVE entry "+str(direction))
 		boss._physics_process(0.02)
 		boss._physics_process(0.02)
-		suite.check(player.health.current == 82 and boss.attack_hit, "roots hit once across active frames " + str(direction))
+		suite.check(player.health.current == 80 and boss.attack_hit, "roots hit once across active frames " + str(direction))
 	# A physical obstacle blocks root damage and charge movement.
 	var wall := StaticBody2D.new()
 	wall.collision_layer = 1
@@ -98,7 +98,7 @@ static func run_world(suite) -> void:
 	boss._physics_process(0.01)
 	player.position = spikes[1]
 	boss._physics_process(0.01)
-	suite.check(player.health.current == 84 and boss.attack_hit, "spike burst hits once even crossing another area")
+	suite.check(player.health.current == 82 and boss.attack_hit, "spike burst hits once even crossing another area")
 	boss._physics_process(0.5)
 	suite.check(boss.spike_points.is_empty() and not boss.view.warning, "temporary spike hazards clear completely after activation")
 	# Dodge the original spot; hazards never follow the player.
@@ -126,7 +126,7 @@ static func run_world(suite) -> void:
 	boss._physics_process(0.8)
 	boss._physics_process(0.12)
 	boss._physics_process(0.12)
-	suite.check(player.health.current == 80 and boss.attack_hit, "charge swept movement applies only one hit per execution")
+	suite.check(player.health.current == 78 and boss.attack_hit, "charge swept movement applies only one hit per execution")
 	boss.position = TowerTrial.ORIGIN + Vector2(670, 270)
 	player.position = TowerTrial.ORIGIN + Vector2(710, 270)
 	boss.action = TowerGuardian.Action.CHARGE

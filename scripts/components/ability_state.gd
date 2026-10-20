@@ -15,7 +15,7 @@ var last_ultimate_category := ""
 
 func _init() -> void:
 	for category: String in AbilityRules.CATEGORIES:
-		loadouts[category] = {"skills":["",""],"passives":["",""],"specialization":""}
+		loadouts[category] = {"skills":["",""],"ultimate":"","passives":["",""],"specialization":""}
 		grades[category] = {}
 		talents[category] = []
 		charge[category] = 0
@@ -34,12 +34,20 @@ func spent() -> int:
 func select_skill(category: String, slot: int, id: String, prof: int, at_camp: bool) -> bool:
 	if not at_camp or not loadouts.has(category) or slot < 0 or slot > 1:
 		return false
-	if not id.is_empty() and not AbilityRules.available(category,id,prof):
+	if not id.is_empty() and (id == AbilityRules.CATEGORIES[category].ultimate.id or not AbilityRules.available(category,id,prof)):
 		return false
 	var other: int = 1 - slot
 	if not id.is_empty() and loadouts[category].skills[other] == id:
 		return false
 	loadouts[category].skills[slot] = id
+	return true
+
+func select_ultimate(category: String, id: String, prof: int, at_camp: bool) -> bool:
+	if not at_camp or not loadouts.has(category):
+		return false
+	if not id.is_empty() and (id != AbilityRules.CATEGORIES[category].ultimate.id or not AbilityRules.available(category,id,prof)):
+		return false
+	loadouts[category].ultimate = id
 	return true
 
 func select_passive(category: String, slot: int, id: String, prof: int, at_camp: bool) -> bool:
@@ -114,7 +122,7 @@ func start_normal(category: String, id: String, prof: int) -> bool:
 func add_ultimate_damage(category: String, effective: int, active_category: String) -> bool:
 	if effective <= 0 or category != active_category or not charge.has(category):
 		return false
-	if not loadouts[category].skills.has(AbilityRules.CATEGORIES[category].ultimate.id) or int(charge[category]) >= AbilityRules.MAX_ULTIMATE_CHARGE:
+	if loadouts[category].ultimate != AbilityRules.CATEGORIES[category].ultimate.id or int(charge[category]) >= AbilityRules.MAX_ULTIMATE_CHARGE:
 		return false
 	var units := int(charge_remainder[category]) + effective
 	@warning_ignore("integer_division")
@@ -125,7 +133,7 @@ func add_ultimate_damage(category: String, effective: int, active_category: Stri
 func use_ultimate(category: String, active_category: String) -> bool:
 	if category != active_category or not charge.has(category) or (global_ultimate_cooldown > 0.0 and category != last_ultimate_category):
 		return false
-	if int(charge[category]) != AbilityRules.MAX_ULTIMATE_CHARGE or not loadouts[category].skills.has(AbilityRules.CATEGORIES[category].ultimate.id):
+	if int(charge[category]) != AbilityRules.MAX_ULTIMATE_CHARGE or loadouts[category].ultimate != AbilityRules.CATEGORIES[category].ultimate.id:
 		return false
 	charge[category] = 0
 	charge_remainder[category] = 0
@@ -172,24 +180,33 @@ static func from_save(raw: Variant, proficiencies: Dictionary, point_budget: int
 		if level < 1 or level > TalentRules.MAX_PROFICIENCY:
 			return null
 		var entry: Variant = raw.loadouts.get(category)
-		if not entry is Dictionary or entry.size() != 3 or not entry.get("skills") is Array or not entry.get("passives") is Array or not entry.get("specialization") is String:
+		if not entry is Dictionary or entry.size() not in [3,4] or not entry.get("skills") is Array or not entry.get("passives") is Array or not entry.get("specialization") is String:
 			return null
 		if entry.skills.size() != 2 or entry.passives.size() != 2:
 			return null
+		var migrated_ultimate := ""
+		var normalized_skills: Array = ["",""]
 		for i in range(2):
 			if not entry.skills[i] is String or not entry.passives[i] is String:
 				return null
 			if not entry.skills[i].is_empty() and not AbilityRules.available(category,entry.skills[i],level):
 				return null
+			if entry.skills[i] == AbilityRules.CATEGORIES[category].ultimate.id:
+				migrated_ultimate = entry.skills[i]
+			else:
+				normalized_skills[i] = entry.skills[i]
 			if not entry.passives[i].is_empty():
 				var rule := AbilityRules.passive(category,entry.passives[i])
 				if rule.is_empty() or level < int(rule.prof):
 					return null
-		if (not entry.skills[0].is_empty() and entry.skills[0] == entry.skills[1]) or (not entry.passives[0].is_empty() and entry.passives[0] == entry.passives[1]):
+		if (not normalized_skills[0].is_empty() and normalized_skills[0] == normalized_skills[1]) or (not entry.passives[0].is_empty() and entry.passives[0] == entry.passives[1]):
 			return null
 		if not entry.specialization.is_empty() and (level < 18 or not AbilityRules.CATEGORIES[category].specializations.has(entry.specialization)):
 			return null
-		result.loadouts[category] = {"skills":entry.skills.duplicate(),"passives":entry.passives.duplicate(),"specialization":entry.specialization}
+		var stored_ultimate: Variant = entry.get("ultimate",migrated_ultimate)
+		if not stored_ultimate is String or (not stored_ultimate.is_empty() and (stored_ultimate != AbilityRules.CATEGORIES[category].ultimate.id or not AbilityRules.available(category,stored_ultimate,level))):
+			return null
+		result.loadouts[category] = {"skills":normalized_skills,"ultimate":stored_ultimate,"passives":entry.passives.duplicate(),"specialization":entry.specialization}
 		var category_grades: Variant = raw.grades.get(category)
 		var category_talents: Variant = raw.talents.get(category)
 		var category_cooldowns: Variant = raw.cooldowns.get(category)

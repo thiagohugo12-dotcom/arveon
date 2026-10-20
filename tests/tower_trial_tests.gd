@@ -39,7 +39,7 @@ static func _tap_action(button: TouchActionButton) -> void:
 	button._input(touch)
 
 static func _enter(suite, main) -> void:
-	main.player.position = TowerEntrance.POSITION + Vector2(0, 35)
+	main.player.position = TowerEntrance.position_for_floor(main.progress.ascension.current_floor) + Vector2(0, 35)
 	main._interact()
 	_tap(main.hud, main.hud.tower_action_button)
 	await _transition(suite, main)
@@ -231,7 +231,7 @@ static func run_world(suite) -> void:
 	main._station_action("Retornar", "")
 	await _transition(suite, main)
 	suite.check(not main.trial.active() and player.position == SafeCamp.RESPAWN and main.world.get_parent() == main and player.health.current == third_hp and p.bag == bag_after and p.gold == gold_after, "safe return restores Mata without changing HP or applying death penalty")
-	suite.check((player.get_node("Camera2D") as Camera2D).limit_right == 1200 and hud.minimap.arena_bounds == Rect2() and TowerEntrance.POSITION == Vector2(1130, 455), "return restores exact original map camera and unchanged eastern Tower")
+	suite.check((player.get_node("Camera2D") as Camera2D).limit_right == 1700 and (player.get_node("Camera2D") as Camera2D).limit_bottom == 1350 and hud.minimap.arena_bounds == Rect2() and TowerEntrance.POSITION == Vector2(830, 1290), "return restores expanded Andar 1 camera and southern Tower")
 	await _enter(suite, main)
 	suite.check(main.trial.wave == 1 and main.trial.cleared_waves == 0, "reentry after three waves always starts first wave")
 	_spawn(main)

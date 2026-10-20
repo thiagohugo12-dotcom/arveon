@@ -75,6 +75,8 @@ func _run() -> void:
 		main.hud.close_character()
 		main.hud.show_station("Ferreiro", p)
 		await _capture(orientation + "_smith")
+		main.hud.station_content.get_child(0).get_child(1).pressed.emit()
+		await _capture(orientation + "_smith_forge")
 		main.hud.close_station()
 	# The protagonist is also captured in the actual forest at native game scale.
 	root.size = Vector2i(390, 844)

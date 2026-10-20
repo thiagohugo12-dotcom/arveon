@@ -45,6 +45,12 @@ static func run(suite: SceneTree) -> void:
 	suite.check(player.attack.cooldown_left == 0.0 and player.view.attack_left == 0.0, "missed acquisition spends no swing and creates no hit effect")
 	enemy.position = player.position + Vector2(70, 0)
 	await suite.frames()
+	player._update_target_feedback()
+	suite.check(enemy.view.targeted, "nearest reachable enemy receives the visual auto-target marker")
+	enemy.position = player.position + Vector2(200, 0)
+	player._update_target_feedback()
+	suite.check(not enemy.view.targeted, "auto-target marker clears when no enemy is in reach")
+	enemy.position = player.position + Vector2(70, 0)
 	for tick in range(4):
 		player.attack.tick(0.016, player)
 	suite.check(enemy.health.current == 48, "empty searches remain throttled instead of scanning each frame")

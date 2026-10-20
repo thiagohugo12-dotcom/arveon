@@ -43,14 +43,16 @@ static func run_world(suite: SceneTree) -> void:
 			suite.check(player.use_skill(0),"class Skill 1 executes in floor matrix "+category+str(floor_id))
 			preload("res://tests/etapa2_fixtures.gd").finish_skill1(player)
 			for shot: PlayerProjectile in preload("res://tests/arsenal_combat_tests.gd").shots(main): shot._physics_process(0.5)
-			suite.check(player.use_skill(1) and enemy.health.current < original,"normal technique damages scaled elite "+category+str(floor_id))
+			var normal_used := player.use_skill(1)
+			preload("res://tests/etapa2_fixtures.gd").finish_technique(player)
+			suite.check(normal_used and enemy.health.current < original,"normal technique damages scaled elite "+category+str(floor_id))
 			player.attack.cooldown_left = 0
 			player.attack.search_left = 0
 			player.attack.tick(0,player)
 			for shot: PlayerProjectile in preload("res://tests/arsenal_combat_tests.gd").shots(main): shot._physics_process(0.5)
 			suite.check(p.abilities.charge[category] > 0,"valid floor receipts charge correct class Ultimate "+category+str(floor_id))
 			p.abilities.charge[category] = 100
-			suite.check(player.use_skill(2) and p.abilities.charge[category] == 0,"Ultimate consumes once in every floor "+category+str(floor_id))
+			suite.check(player.use_skill(3) and p.abilities.charge[category] == 0,"Ultimate consumes once in every floor "+category+str(floor_id))
 			enemy.queue_free()
 			await suite.frames()
 	var restored := GameProgress.new()

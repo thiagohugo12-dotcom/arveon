@@ -31,7 +31,7 @@ func _run() -> void:
 			p.equipped.Arma = category
 			p.talents.xp[category] = TalentRules.xp_floor(30)
 			p.configure_ability("equip_skill",category,catalog.normal[0].id,0,true)
-			p.configure_ability("equip_skill",category,catalog.ultimate.id,1,true)
+			p.configure_ability("equip_skill",category,catalog.ultimate.id,0,true)
 			p.configure_ability("equip_passive",category,catalog.passives[0].id,0,true)
 			p.configure_ability("equip_passive",category,catalog.passives[1].id,1,true)
 			p.configure_ability("specialization",category,catalog.specializations[0],0,true)

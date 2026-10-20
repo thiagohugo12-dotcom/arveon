@@ -9,7 +9,7 @@ static func run(suite) -> void:
 	p.discovered_pois[spot.id] = true
 	for id in range(1,6):
 		var config := FloorConfig.configuration(id)
-		suite.check(config.number == id and config.world_scene == FloorConfig.WORLD_SCENE and config.arena_scene == FloorConfig.ARENA_SCENE and is_equal_approx(config.difficulty, 1.0 + (id-1)*0.2), "central reusable floor configuration " + str(id))
+		suite.check(config.number == id and config.world_scene == FloorConfig.world_scene(id) and config.arena_scene == FloorConfig.ARENA_SCENE and is_equal_approx(config.difficulty, 1.0 + (id-1)*0.2), "central reusable floor configuration " + str(id))
 		suite.check(p.ascension.defeats[str(id)] == 0 and not p.ascension.completed_trials[str(id)], "independent new floor requirement " + str(id))
 		suite.check(p.switch_floor(id) and not p.switch_floor(6) and not p.ascension.complete_forest_trial(), "only unlocked floor accepts travel and no premature victory " + str(id))
 		if id > 1:

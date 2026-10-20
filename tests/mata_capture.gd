@@ -36,7 +36,7 @@ func _run() -> void:
 		root.size = resolution
 		root.content_scale_size = resolution
 		for place: String in ["trilha","norte","torre"]:
-			main.player.position = {"trilha":Vector2(870,430),"norte":Vector2(650,240),"torre":Vector2(1110,495)}[place]
+			main.player.position = {"trilha":Vector2(870,430),"norte":Vector2(650,240),"torre":TowerEntrance.POSITION+Vector2(0,28)}[place]
 			main.hud.minimap.player_position = main.player.position
 			(main.get_node("Andar1/TowerView") as TowerView).set_state(true,place == "torre")
 			main.hud.set_nearby_station("Torre de Ascensão" if place == "torre" else "")

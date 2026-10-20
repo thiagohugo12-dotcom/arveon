@@ -57,22 +57,22 @@ func _physics_process(delta: float) -> void:
 				action_left = ACTIVES[action]
 				view.play_attack()
 				# The root contact is the WINDUP -> ACTIVE event, shared with the pose.
-				if action == Action.ROOTS and roots_contains(target.global_position): _damage_once(18)
+				if action == Action.ROOTS and roots_contains(target.global_position): _damage_once(20)
 		State.ACTIVE:
 			if action == Action.CHARGE:
 				var before := global_position
 				var collision := _move_bounded(aim * CHARGE_SPEED * minf(delta, action_left))
 				var nearest := Geometry2D.get_closest_point_to_segment(target.global_position, before, global_position)
 				if nearest.distance_to(target.global_position) <= 30.0:
-					_damage_once(20)
+					_damage_once(22)
 				if collision:
 					action_left = 0.0
 			elif action == Action.ROOTS and roots_contains(target.global_position):
-				_damage_once(18)
+				_damage_once(20)
 			elif action == Action.SPIKES:
 				for point in spike_points:
 					if point.distance_to(target.global_position) <= SPIKE_RADIUS:
-						_damage_once(16)
+						_damage_once(18)
 			elif action in [Action.ROOT_WAVE,Action.SEEDS]:
 				var before := float(ACTIVES[action])-action_left
 				_apply_new_hazards(before,minf(float(ACTIVES[action]),before+delta))
@@ -100,7 +100,7 @@ func _apply_new_hazards(before: float,after: float) -> void:
 	if action == Action.ROOT_WAVE:
 		var distance := attack_origin.distance_to(target.global_position)
 		if distance >= wave_radius(before)-WAVE_HALF_WIDTH and distance <= wave_radius(after)+WAVE_HALF_WIDTH:
-			_damage_once(16)
+			_damage_once(18)
 	elif action == Action.SEEDS:
 		for i in range(3):
 			if seed_blocked[i]: continue
@@ -111,7 +111,7 @@ func _apply_new_hazards(before: float,after: float) -> void:
 				end=wall.position
 				seed_blocked[i]=true
 			var nearest := Geometry2D.get_closest_point_to_segment(target.global_position,start,end)
-			if nearest.distance_to(target.global_position) <= SEED_RADIUS: _damage_once(14)
+			if nearest.distance_to(target.global_position) <= SEED_RADIUS: _damage_once(16)
 
 func roots_contains(point: Vector2) -> bool:
 	var offset := point - global_position

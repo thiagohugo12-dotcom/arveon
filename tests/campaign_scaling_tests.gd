@@ -7,8 +7,8 @@ static func run(suite, main) -> void:
 		for kind in range(4):
 			var actor: EnemyActor = main._make_enemy(kind)
 			var multiplier := FloorConfig.difficulty(id)
-			var base_hp: int = [48, 30, 64, 120][kind]
-			var base_damage: int = [8, 5, 10, 12][kind]
+			var base_hp: int = [48, 36, 64, 120][kind]
+			var base_damage: int = [8, 7, 10, 12][kind]
 			suite.check(actor.stats.max_hp == roundi(base_hp * multiplier) and actor.stats.contact_damage == roundi(base_damage * multiplier), "floor %d kind %d has configured HP and damage" % [id, kind])
 			suite.check(actor.projectile_damage_override == roundi(maxi(4, base_damage - 2) * multiplier) and actor.damage_scale == multiplier, "floor %d kind %d scales ranged damage from base once" % [id, kind])
 			main._apply_floor_stats(actor)

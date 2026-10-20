@@ -116,7 +116,8 @@ func _state(entry: Dictionary) -> String:
 	var loadout: Dictionary = progress.abilities.loadouts.espada
 	match kind:
 		"skill1": return "Inicial"
-		"normal", "ultimate": return "Equipado" if loadout.skills.has(id) else "Disponível"
+		"normal": return "Equipado" if loadout.skills.has(id) else "Disponível"
+		"ultimate": return "Equipado" if loadout.ultimate == id else "Disponível"
 		"passive": return "Equipado" if loadout.passives.has(id) else "Disponível"
 		"mastery", "supreme": return "Automática"
 		"specialization": return "Escolhido" if not str(loadout.specialization).is_empty() else "Disponível"

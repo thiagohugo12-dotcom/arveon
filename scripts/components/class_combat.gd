@@ -12,26 +12,36 @@ func cancel_technique() -> void:
 	technique_did_hit = false
 	if is_instance_valid(player) and player.view is Skill1GameView:
 		player.view.clear_sword_technique()
+		player.view.clear_bow_technique()
+		player.view.clear_staff_technique()
+		player.view.clear_axe_technique()
+		player.view.clear_spear_technique()
 
 func _tick_technique(delta: float) -> void:
 	if technique.is_empty(): return
-	if not player.health.is_alive() or not player.attack.armed or progress.equipped.Arma != technique.weapon or progress.active_category() != "espada" or SafeCamp.in_clearance(player.global_position):
+	if not player.health.is_alive() or not player.attack.armed or progress.equipped.Arma != technique.weapon or progress.active_category() != technique.category or SafeCamp.in_clearance(player.global_position) or (technique.category in ["arco","cajado","machado","lanca"] and not player.view.village_scale):
 		cancel_technique()
 		return
 	# Modal menus pause the same timeline, including damage and the visible pose.
 	if player.input_driver != null and player.input_driver.blocked: return
-	technique_elapsed = minf(SwordTechniqueTiming.duration(technique.id),technique_elapsed+maxf(0,delta))
+	var duration := BowTechniqueEffect.duration_time(technique.id,float(technique.get("reach",0.0))) if technique.category == "arco" else float(StaffTechniqueEffect.TIMINGS[technique.id].duration) if technique.category == "cajado" else float(AxeTechniqueEffect.TIMINGS[technique.id].duration) if technique.category == "machado" else float(SpearTechniqueEffect.TIMINGS[technique.id].duration) if technique.category == "lanca" else SwordTechniqueTiming.duration(technique.id)
+	var contact := BowTechniqueEffect.contact_time(technique.id,float(technique.get("reach",0.0))) if technique.category == "arco" else float(StaffTechniqueEffect.TIMINGS[technique.id].contact) if technique.category == "cajado" else float(AxeTechniqueEffect.TIMINGS[technique.id].contact) if technique.category == "machado" else float(SpearTechniqueEffect.TIMINGS[technique.id].contact) if technique.category == "lanca" else SwordTechniqueTiming.contact(technique.id)
+	technique_elapsed = minf(duration,technique_elapsed+maxf(0,delta))
 	if player.view is Skill1GameView:
-		player.view.seek_sword_technique(technique_elapsed)
-	if not technique_did_hit and technique_elapsed+0.000001 >= SwordTechniqueTiming.contact(technique.id):
+		if technique.category == "arco": player.view.seek_bow_technique(technique_elapsed)
+		elif technique.category == "cajado": player.view.seek_staff_technique(technique_elapsed)
+		elif technique.category == "machado": player.view.seek_axe_technique(technique_elapsed)
+		elif technique.category == "lanca": player.view.seek_spear_technique(technique_elapsed)
+		else: player.view.seek_sword_technique(technique_elapsed)
+	if not technique_did_hit and technique_elapsed+0.000001 >= contact:
 		technique_did_hit = true # Mark BEFORE callbacks, including lethal damage.
 		var consumed_perfect := perfect_ready
 		perfect_ready = bool(technique.perfect)
 		var hits := _execute(technique.id,technique.effect,technique.power,technique.ultimate,technique.direction)
 		perfect_ready = consumed_perfect
 		_after_technique(hits)
-		technique_impact.emit(technique.id,SwordTechniqueTiming.contact(technique.id))
-	if technique_elapsed >= SwordTechniqueTiming.duration(technique.id): cancel_technique()
+		technique_impact.emit(technique.id,contact)
+	if technique_elapsed >= duration: cancel_technique()
 
 # Transient effects never refill HP. Persistent timers/charges live in AbilityState.
 var player: PlayerActor
@@ -68,6 +78,9 @@ func clear_effects() -> void:
 	fury_left = 0.0
 	technique_hits = 0
 	moving_time = 0.0
+	if is_instance_valid(player) and player.view is Skill1GameView:
+		player.view.clear_staff_guard()
+		player.view.clear_axe_fury()
 
 func has_passive(id: String) -> bool:
 	return progress != null and progress.abilities.loadouts.get(category,{}).get("passives",[]).has(id)
@@ -186,7 +199,8 @@ func use(index: int) -> bool:
 	if not technique.is_empty() and not technique_did_hit: return false
 	var state := progress.abilities
 	var prof := progress.talents.level(category)
-	var rule := AbilityRules.skill1(progress.equipped.Arma) if index == 0 else AbilityRules.active_skill(category,state.loadouts[category].skills[index-1])
+	if index < 0 or index > 3: return false
+	var rule := AbilityRules.skill1(progress.equipped.Arma) if index == 0 else AbilityRules.active_skill(category,state.loadouts[category].ultimate if index == 3 else state.loadouts[category].skills[index-1])
 	if rule.is_empty(): return false
 	if AbilityRules.effect(rule.id).shape == "projectile" and player.get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE: return false
 	var ultimate: bool = rule.id == AbilityRules.CATEGORIES[category].ultimate.id
@@ -210,8 +224,8 @@ func use(index: int) -> bool:
 		var power := float(rule.get("power",effect.get("power",1.0)))*(1+0.15*(grade-1))
 		if ultimate and category == "espada" and prof >= 60: power *= 1.20
 		if index == 0: power *= 1+0.03*int(progress.equipment[progress.equipped.Arma])
-		if category == "espada" and SwordTechniqueTiming.FRAMES.has(rule.id):
-			technique = {"id":rule.id,"effect":effect.duplicate(true),"power":power,"ultimate":ultimate,"weapon":progress.equipped.Arma,"direction":player.last_direction.normalized(),"perfect":perfect_ready,"progress":progress}
+		if (category == "espada" and SwordTechniqueTiming.FRAMES.has(rule.id)) or (category == "arco" and player.view is Skill1GameView and player.view.village_scale and BowTechniqueEffect.TIMINGS.has(rule.id)) or (category == "cajado" and player.view is Skill1GameView and player.view.village_scale and StaffTechniqueEffect.TIMINGS.has(rule.id)) or (category == "machado" and player.view is Skill1GameView and player.view.village_scale and AxeTechniqueEffect.TIMINGS.has(rule.id)) or (category == "lanca" and player.view is Skill1GameView and player.view.village_scale and SpearTechniqueEffect.TIMINGS.has(rule.id)):
+			technique = {"id":rule.id,"effect":effect.duplicate(true),"power":power,"ultimate":ultimate,"weapon":progress.equipped.Arma,"category":category,"direction":player.last_direction.normalized(),"reach":float(effect.reach)+(20.0 if has_passive("alcance_treinado") else 0.0),"perfect":perfect_ready,"progress":progress}
 			technique_elapsed = 0
 			technique_did_hit = false
 		else:
@@ -220,6 +234,15 @@ func use(index: int) -> bool:
 	if category == "espada" and player.view is Skill1GameView and Skill1GameView.TECHNIQUE_POSES.has(rule.id):
 		(player.view as Skill1GameView).play_sword_technique(rule.id,player.last_direction,guard_left)
 		if not technique.is_empty(): player.view.seek_sword_technique(0.0)
+	elif category == "arco" and player.view is Skill1GameView and player.view.village_scale and BowTechniqueEffect.TIMINGS.has(rule.id):
+		var reach := float(effect.reach)+(20.0 if has_passive("alcance_treinado") else 0.0)
+		(player.view as Skill1GameView).play_bow_technique(rule.id,player.last_direction,reach,_bow_mark_target(effect,reach) if rule.id == "tiro_marcado" else null)
+	elif category == "cajado" and player.view is Skill1GameView and player.view.village_scale and (StaffTechniqueEffect.TIMINGS.has(rule.id) or rule.id == "barreira_espiritual"):
+		(player.view as Skill1GameView).play_staff_technique(rule.id,player.last_direction,float(effect.get("reach",0.0))+(20.0 if effect.has("reach") and has_passive("alcance_treinado") else 0.0),guard_left)
+	elif category == "machado" and player.view is Skill1GameView and player.view.village_scale and (AxeTechniqueEffect.TIMINGS.has(rule.id) or rule.id == "furia_machado"):
+		(player.view as Skill1GameView).play_axe_technique(rule.id,player.last_direction,float(effect.get("reach",0.0))+(20.0 if effect.has("reach") and has_passive("alcance_treinado") else 0.0),fury_left)
+	elif category == "lanca" and player.view is Skill1GameView and player.view.village_scale and SpearTechniqueEffect.TIMINGS.has(rule.id):
+		(player.view as Skill1GameView).play_spear_technique(rule.id,player.last_direction,float(effect.reach)+(20.0 if has_passive("alcance_treinado") else 0.0))
 	else:
 		player.view.play_skill(2 if ultimate else mini(index,1))
 	player.skill_used.emit(index)
@@ -290,3 +313,16 @@ func _execute(id: String, effect: Dictionary, power: float, ultimate: bool, aim 
 func _visible(target: EnemyActor) -> bool:
 	var query := PhysicsRayQueryParameters2D.create(player.global_position,target.global_position,1)
 	return player.get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+func _bow_mark_target(effect: Dictionary, reach: float) -> EnemyActor:
+	var aim := player.last_direction.normalized()
+	var chosen: EnemyActor
+	var nearest := reach*reach
+	for candidate in player.get_tree().get_nodes_in_group("damageable_enemies"):
+		if not candidate is EnemyActor or candidate.get_world_2d() != player.get_world_2d() or not candidate.is_targetable(): continue
+		var offset: Vector2 = candidate.global_position-player.global_position
+		var distance := offset.length_squared()
+		if distance > nearest or offset.dot(aim) < 0 or absf(offset.cross(aim)) > float(effect.width) or not _visible(candidate): continue
+		chosen = candidate
+		nearest = distance
+	return chosen

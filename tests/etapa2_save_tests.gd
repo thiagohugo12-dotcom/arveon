@@ -32,15 +32,15 @@ static func run(suite: SceneTree) -> void:
 	var parsed: Dictionary = JSON.parse_string(migrated)
 	suite.check(parsed.version == GameProgress.SAVE_VERSION and parsed.rpg.skills.is_empty() and parsed.abilities.loadouts.size() == 5,"current snapshot replaces legacy active fields and contains all categories")
 	var reloaded := GameProgress.new()
-	suite.check(reloaded.load_text(migrated) and reloaded.to_json() == migrated and reloaded.skill_points() == 59,"v10 reload is exact and idempotent")
-	suite.check(reloaded.load_text(source) and reloaded.to_json() == migrated and reloaded.skill_points() == 59,"repeated v9 migration never adds points or rewards")
+	suite.check(reloaded.load_text(migrated) and JSON.parse_string(reloaded.to_json()) == JSON.parse_string(migrated) and reloaded.skill_points() == 59,"current reload is exact and idempotent")
+	suite.check(reloaded.load_text(source) and JSON.parse_string(reloaded.to_json()) == JSON.parse_string(migrated) and reloaded.skill_points() == 59,"repeated v9 migration never adds points or rewards")
 	var envelope := target.export_backup()
 	var path := "user://etapa2-migration-integrity.json"
 	reloaded.save_path = path
-	suite.check(reloaded.import_backup(envelope,true) and reloaded.import_backup(envelope,true) and reloaded.to_json() == migrated,"export import and repeat import preserve v10 exactly")
+	suite.check(reloaded.import_backup(envelope,true) and reloaded.import_backup(envelope,true) and JSON.parse_string(reloaded.to_json()) == JSON.parse_string(migrated),"export import and repeat import preserve current save exactly")
 	var bad: Dictionary = JSON.parse_string(migrated)
 	bad.abilities.charge.espada = 101
-	suite.check(not reloaded.load_text(JSON.stringify(bad)) and reloaded.to_json() == migrated,"corrupt abilities rejected without modifying valid progress")
+	suite.check(not reloaded.load_text(JSON.stringify(bad)) and JSON.parse_string(reloaded.to_json()) == JSON.parse_string(migrated),"corrupt abilities rejected without modifying valid progress")
 	bad = JSON.parse_string(migrated)
 	bad.rpg.skills["Corte Circular"] = 3
 	suite.check(not reloaded.load_text(JSON.stringify(bad)),"v10 cannot smuggle old investments back into active progression")

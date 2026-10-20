@@ -62,12 +62,12 @@ static func run_world(suite: SceneTree) -> void:
 				suite.check(p.abilities.improve(category,technique.id,category_prof,p.skill_points(),true),"grade purchase "+technique.id+str(grade))
 			suite.check(not p.abilities.improve(category,technique.id,30,p.skill_points(),true),"normal technique caps at grade four "+technique.id)
 		var ultimate: Dictionary = AbilityRules.CATEGORIES[category].ultimate
-		p.abilities.select_skill(category,0,ultimate.id,30,true)
+		p.abilities.select_ultimate(category,ultimate.id,30,true)
 		p.abilities.death_reset()
 		p.abilities.charge[category] = 100
 		before = enemy.health.current
-		suite.check(player.use_skill(1) and p.abilities.charge[category] == 0,"Ultimate executes and consumes independent bar "+category)
-		suite.check(p.abilities.charge[category] == 0 and not player.use_skill(1),"Ultimate own damage cannot recharge or reactivate "+category)
+		suite.check(player.use_skill(3) and p.abilities.charge[category] == 0,"Ultimate executes and consumes independent bar "+category)
+		suite.check(p.abilities.charge[category] == 0 and not player.use_skill(3),"Ultimate own damage cannot recharge or reactivate "+category)
 		preload("res://tests/etapa2_fixtures.gd").finish_technique(player)
 		if ultimate.type == "buff": suite.check(player.class_combat.fury_left == 8,"axe Ultimate uses timed heavy-combat buff")
 		else: suite.check(enemy.health.current < before,"Ultimate deals real damage "+category)
@@ -95,7 +95,7 @@ static func run_world(suite: SceneTree) -> void:
 	player.class_combat.clear_effects()
 	enemy.mark_left = 0.0
 	p.abilities.charge.machado = 100
-	suite.check(player.use_skill(2),"axe Ultimate amplifier activates for credit accounting regression")
+	suite.check(player.use_skill(3),"axe Ultimate amplifier activates for credit accounting regression")
 	var unboosted_basic := CombatRules.resolve(player.attack.damage_base,player.attack.basic_bonus,1.0,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
 	var unboosted_skill := CombatRules.resolve(player.attack.damage_base,player.special_bonus,1.70,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
 	var amplified_before := enemy.health.current
@@ -103,6 +103,7 @@ static func run_world(suite: SceneTree) -> void:
 	player.attack.search_left = 0.0
 	player.attack.tick(0,player)
 	suite.check(player.use_skill(1),"normal technique retains its real axe Ultimate amplification")
+	preload("res://tests/etapa2_fixtures.gd").finish_technique(player)
 	var credited := int(p.abilities.charge.machado)*10+int(p.abilities.charge_remainder.machado)
 	suite.check(credited == int(unboosted_basic.damage)+int(unboosted_skill.damage) and amplified_before-enemy.health.current > credited,"Ultimate amplifier bonus is excluded while valid unamplified basics and techniques charge once")
 	# Test the actual level-30 mechanic under a non-critical random roll.

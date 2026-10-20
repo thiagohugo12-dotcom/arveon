@@ -85,8 +85,22 @@ static func create() -> Theme:
 	return result
 
 static func select(button: Button, selected: bool) -> void:
-	button.add_theme_stylebox_override("normal",piece("green" if selected else "paper",8))
-	button.add_theme_color_override("font_color",Color("#fff0ce") if selected else INK)
+	if selected:
+		button.add_theme_stylebox_override("normal",piece("green",10))
+		button.add_theme_stylebox_override("hover",piece("green",10))
+		button.add_theme_stylebox_override("pressed",piece("wood",10))
+		button.add_theme_stylebox_override("focus",piece("green",10))
+		button.add_theme_color_override("font_color",Color("#fff7dc"))
+		button.add_theme_color_override("font_hover_color",Color.WHITE)
+		button.add_theme_color_override("font_pressed_color",Color("#fff7dc"))
+	else:
+		button.add_theme_stylebox_override("normal",piece("paper",8))
+		button.add_theme_stylebox_override("hover",piece("paper",8))
+		button.add_theme_stylebox_override("pressed",piece("green",8))
+		button.add_theme_stylebox_override("focus",piece("paper",8))
+		button.add_theme_color_override("font_color",INK)
+		button.add_theme_color_override("font_hover_color",INK)
+		button.add_theme_color_override("font_pressed_color",Color("#fff0ce"))
 
 static func label(text: String, font_size: int = 13) -> Label:
 	var node := Label.new()

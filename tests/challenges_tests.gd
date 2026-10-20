@@ -82,5 +82,5 @@ static func run(suite, main) -> void:
 		main.hud.size = resolution
 		main.hud._layout()
 		main.hud.set_nearby_station("Desafiar Guardião (opcional)")
-		suite.check(main.hud.interact_button.size.x == 120 and main.hud.interact_button.caption.text == "E · Guardião\nOpcional", "optional guardian interaction stays legible %s" % resolution)
+		suite.check(main.hud.interact_button.size == Vector2(96,44) and main.hud.interact_button.caption.text == "E · Guardião\nOpcional", "optional guardian interaction stays legible %s" % resolution)
 		suite.check(main.hud.mission_label.get_rect().end.y <= main.hud.loot_label.position.y, "expanded mission text avoids reward text %s" % resolution)

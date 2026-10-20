@@ -9,6 +9,15 @@ static func _button_with_text(root: Node, prefix: String) -> Button:
 			return found
 	return null
 
+static func _label_with_text(root: Node, text: String) -> Label:
+	if root is Label and (root as Label).text.contains(text):
+		return root as Label
+	for child in root.get_children():
+		var found := _label_with_text(child, text)
+		if found != null:
+			return found
+	return null
+
 static func run(suite, main) -> void:
 	var p := GameProgress.new()
 	suite.check(p.level() == 1 and p.attribute_points() == 0 and p.skill_points() == 0, "RPG starts at level one without free points")
@@ -212,6 +221,8 @@ static func _interface(suite, main) -> void:
 		touch.pressed = true
 		touch.index = 12
 		var button := _button_with_text(hud.rpg_panel.content, "+1")
+		hud.rpg_panel.scroll.ensure_control_visible(button)
+		await suite.frames()
 		touch.position = button.global_position + button.size * 0.5
 		var before := p.attribute_points()
 		preload("res://tests/mobile_polish_tests.gd").tap(hud,button)
@@ -287,13 +298,19 @@ static func _interface(suite, main) -> void:
 	p.add_item("Pedras", 4)
 	main._interact()
 	await suite.frames()
-	# Ferreiro now opens the gold-only Loja; switch to Forja for the legacy recipe regression.
+	# Ferreiro opens the gold shop; switch to material crafting.
 	var forge_tab := hud.station_content.get_child(0).get_child(1) as Button
 	forge_tab.pressed.emit()
 	await suite.frames()
-	var forge_box := hud.station_content.get_child(3).get_child(0) as VBoxContainer
-	suite.check((forge_box.get_child(2) as Label).text.contains("35 ouro") and (forge_box.get_child(1) as Label).text.contains("Atual:"), "smith shows actual price and equipment comparison before craft action")
-	var forge_button := forge_box.get_child(3) as Button
+	p.add_item("Couro",2)
+	p.add_item("Essência",1)
+	var axe_choice := _button_with_text(hud.station_content,"Machado")
+	axe_choice.pressed.emit()
+	await suite.frames()
+	var forge_box := hud.station_content
+	suite.check(_label_with_text(forge_box,"Ouro  %d/20" % p.gold) != null and _label_with_text(forge_box,"Couro  %d/2" % int(p.bag.Couro)) != null and _label_with_text(forge_box,"Essência  %d/1" % int(p.bag["Essência"])) != null, "smith shows ready requirements for selected rarity and weapon")
+	var forge_button := _button_with_text(forge_box,"Selecionar · Fabricar esta arma")
+	suite.check(forge_button != null and not forge_button.disabled, "smith exposes a clear enabled craft action only when all requirements are ready")
 	hud.station_scroll.scroll_vertical += maxi(0, roundi(forge_button.global_position.y - hud.station_scroll.global_position.y - 32))
 	await suite.frames()
 	var forge_touch := InputEventScreenTouch.new()
@@ -304,7 +321,14 @@ static func _interface(suite, main) -> void:
 	hud._input(forge_touch)
 	forge_touch.pressed = false
 	hud._input(forge_touch)
-	suite.check(p.equipment.has("machado") and p.gold == 80 and p.adventures.forjar == 1, "mobile smith button crafts through existing wallet and inventory")
+	await suite.frames()
+	forge_button = _button_with_text(hud.station_content,"Confirmar · Fabricar esta arma")
+	forge_touch.position = forge_button.global_position + forge_button.size * 0.5
+	forge_touch.pressed = true
+	hud._input(forge_touch)
+	forge_touch.pressed = false
+	hud._input(forge_touch)
+	suite.check(p.equipment.has("machado") and p.gold == 80 and p.adventures.forjar == 0 and p.weapon_instances.size() > 0, "mobile smith button crafts a distinct weapon with material cost")
 	hud.close_station()
 	player.position = SafeCamp.RESPAWN
 	hud.rpg_panel.tab = 1

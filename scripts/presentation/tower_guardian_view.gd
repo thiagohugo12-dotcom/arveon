@@ -1,6 +1,27 @@
 class_name TowerGuardianView
 extends GuardianView
-const GUARDIAN_ATLAS := preload("res://assets/art/local_combat_review/guardiao.png")
+const FOREST_SHEET := preload("res://assets/art/andar1/forest_guardian_sheet.png")
+# Crops are read directly from the supplied transparent sheet. Each source row
+# has a different spacing, so a regular grid would cut antlers and fists.
+const FOREST_IDLE := [
+	Rect2(544, 23, 193, 174), Rect2(757, 23, 196, 174),
+	Rect2(971, 23, 198, 174), Rect2(1188, 23, 203, 174)]
+const FOREST_WALK := [
+	Rect2(544, 213, 176, 179), Rect2(734, 213, 155, 179),
+	Rect2(898, 213, 163, 179), Rect2(1075, 213, 167, 179),
+	Rect2(1253, 213, 167, 179)]
+const FOREST_STRIKE := [
+	Rect2(528, 410, 199, 180), Rect2(730, 410, 175, 180),
+	Rect2(911, 410, 204, 180), Rect2(1118, 410, 150, 180),
+	Rect2(1271, 410, 163, 180)]
+const FOREST_SLAM := [
+	Rect2(18, 608, 202, 217), Rect2(220, 608, 255, 217),
+	Rect2(491, 608, 254, 217), Rect2(745, 608, 256, 217),
+	Rect2(1010, 608, 218, 217), Rect2(1237, 608, 202, 217)]
+const FOREST_DEATH := [
+	Rect2(13, 852, 221, 213), Rect2(250, 852, 221, 213),
+	Rect2(488, 852, 215, 213), Rect2(709, 852, 224, 213),
+	Rect2(940, 852, 240, 213), Rect2(1180, 852, 261, 213)]
 var legacy_body := false
 var guardian_time := 0.0
 func _process(delta: float) -> void:
@@ -22,18 +43,38 @@ func _draw_body() -> void:
 	if legacy_body:
 		super._draw_body()
 		return
-	var row := SwordActorView.direction_row(facing)
-	var tint := Color(1.7,1.55,1.25) if flash_left > 0 else Color.WHITE
-	draw_texture_rect_region(GUARDIAN_ATLAS,Rect2(-80,-132,160,160),Rect2(sprite_frame()*80,row*80,80,80),tint)
+	var tint := Color(1.4, 1.35, 1.15) if flash_left > 0.0 else Color.WHITE
+	var horizontal_flip := facing.x < -0.35 and absf(facing.x) > absf(facing.y)
+	if horizontal_flip:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
+	draw_texture_rect_region(FOREST_SHEET, Rect2(-95, -152, 190, 180), _forest_frame(), tint)
+	if horizontal_flip:
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _forest_frame() -> Rect2:
+	if defeat_left > 0.0:
+		return FOREST_DEATH[clampi(int((1.0 - defeat_left / 0.22) * FOREST_DEATH.size()), 0, FOREST_DEATH.size() - 1)]
+	if flash_left > 0.0:
+		return FOREST_DEATH[1]
+	var boss := get_parent() as TowerGuardian
+	if boss != null:
+		var slam := boss.action in [TowerGuardian.Action.SPIKES, TowerGuardian.Action.ROOT_WAVE]
+		if boss.state == TowerGuardian.State.WINDUP:
+			return FOREST_SLAM[0 if boss.action_left > float(TowerGuardian.WINDUPS[boss.action]) * 0.5 else 1] if slam else FOREST_STRIKE[0 if boss.action_left > float(TowerGuardian.WINDUPS[boss.action]) * 0.5 else 1]
+		if boss.state == TowerGuardian.State.ACTIVE:
+			var progress := 1.0 - boss.action_left / maxf(0.001, float(TowerGuardian.ACTIVES[boss.action]))
+			return FOREST_SLAM[clampi(2 + int(progress * 4.0), 2, 5)] if slam else FOREST_STRIKE[clampi(2 + int(progress * 3.0), 2, 4)]
+		if boss.state == TowerGuardian.State.RECOVERY:
+			return FOREST_SLAM[5] if slam else FOREST_IDLE[3]
+	return FOREST_WALK[int(guardian_time * 7.0) % FOREST_WALK.size()] if walking else FOREST_IDLE[int(guardian_time * 2.0) % FOREST_IDLE.size()]
 
 func _draw_caption(title: String) -> void:
 	if legacy_body:
 		super._draw_caption(title)
 		return
-	draw_rect(Rect2(-34,-138,68,5),Color("#1a241e"))
-	draw_rect(Rect2(-34,-138,68*hp_ratio,5),Color("#97c273"))
-	draw_string(ThemeDB.fallback_font,Vector2(-48,-145),title,HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("#e7cf8a"))
-	_draw_hit_feedback(-158)
+	# The fixed boss panel already shows name, HP and phase on small screens.
+	# Keep only the combat feedback near the sprite to avoid duplicate captions.
+	_draw_hit_feedback(-165)
 
 var hazards_active := false
 var second_phase := false
