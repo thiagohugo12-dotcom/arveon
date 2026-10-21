@@ -17,8 +17,9 @@ static func run(suite: SceneTree) -> void:
 	arena.add_child(second)
 	second.set_physics_process(false)
 	second.position = Vector2(1500, 1500)
+	var sword_reach: float = player.attack.weapon.reach
 	for direction: Vector2 in [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT]:
-		enemy.position = player.position + direction * 90.0
+		enemy.position = player.position + direction * sword_reach
 		enemy.health.initialize(48)
 		await suite.frames()
 		player.view.set_facing(-direction)
@@ -26,12 +27,12 @@ static func run(suite: SceneTree) -> void:
 		player.attack.cooldown_left = 0.0
 		player.attack.search_left = 0.0
 		player.attack.tick(0.0, player)
-		suite.check(enemy.health.current == 36, "basic attack retains 12 damage at 90px boundary %s" % direction)
-		suite.check(player.view.attack_direction.is_equal_approx(direction) and is_equal_approx(player.view.attack_distance, 90.0), "strike snapshot points to selected enemy %s" % direction)
+		suite.check(enemy.health.current == 36, "basic attack retains 12 damage at sword boundary %s" % direction)
+		suite.check(player.view.attack_direction.is_equal_approx(direction) and is_equal_approx(player.view.attack_distance, sword_reach), "strike snapshot points to selected enemy %s" % direction)
 		suite.check(player.view.facing.is_equal_approx(-direction) and player.last_direction.is_equal_approx(-direction), "auto aim preserves movement and dash direction %s" % direction)
 		player.view.set_facing(Vector2(1, 1))
 		suite.check(player.view.attack_direction.is_equal_approx(direction), "active strike does not rotate with subsequent movement %s" % direction)
-		enemy.position = player.position + direction * 90.1
+		enemy.position = player.position + direction * (sword_reach + 0.1)
 		await suite.frames()
 		suite.check(player.attack.select_target(player) == null, "basic attack excludes just outside reach %s" % direction)
 	# Measure empty-search response through the actual component, in 60Hz-like ticks.

@@ -34,7 +34,7 @@ func run() -> void:
 	main.progress.equipment.cajado = 0
 	main.progress.equipped.Arma = "cajado"
 	player.apply_progression(main.progress)
-	check(player.attack.damage_type == "magical" and player.attack.weapon.interval == 0.95 and player.attack.weapon.projectile_speed == 260 and player.attack.weapon.reach == 260,"actual staff stats preserved")
+	check(player.attack.damage_type == "magical" and player.attack.weapon.interval == 0.95 and player.attack.weapon.projectile_speed == 260 and player.attack.weapon.reach == 220,"actual staff stats preserved")
 	var centre := Vector2.ZERO
 	var scenery: FloorView = main.get_node("Andar1/FloorView")
 	for y in range(300,760,20):

@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1792547109|4442351';
+const CACHE_VERSION = '1792578785|6965435';
 /** @type {string} */
 const CACHE_PREFIX = 'ARVÉON: Ascensão-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
@@ -102,14 +102,14 @@ self.addEventListener(
 		const isCacheable = FULL_CACHE.some((v) => v === local) || (base === referrer && base.endsWith(CACHED_FILES[0]));
 		if (isNavigate || isCacheable) {
 			event.respondWith((async () => {
-				// Always refresh the app shell online, keeping the cache for offline fallback.
+				// Refresh the app shell online, keeping cached files for offline use.
 				const cache = await caches.open(CACHE_NAME);
 				if (isNavigate) {
 					try {
 						return await fetchAndCache(event, cache, true);
 					} catch (e) {
 						return await cache.match('index.html') || caches.match(OFFLINE_URL);
-				}
+					}
 				}
 				let cached = await cache.match(event.request);
 				if (cached != null) {

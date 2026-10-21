@@ -10,11 +10,11 @@ const RARITIES := {
 	"lendario": {"name": "Lendário", "color": "#e7c36d"},
 	"mitico": {"name": "Mítico · reservado", "color": "#e891bd"}}
 const CATEGORIES := {
-	"espada": {"name": "Espada", "reach": 90.0, "interval": 0.72, "projectile": "", "speed": 0.0},
-	"machado": {"name": "Machado", "reach": 105.0, "interval": 0.9, "projectile": "", "speed": 0.0},
-	"lanca": {"name": "Lança", "reach": 170.0, "interval": 0.75, "projectile": "", "speed": 0.0},
-	"arco": {"name": "Arco", "reach": 300.0, "interval": 0.8, "projectile": "flecha", "speed": 440.0},
-	"cajado": {"name": "Cajado", "reach": 260.0, "interval": 0.95, "projectile": "orbe", "speed": 260.0}}
+	"espada": {"name": "Espada", "reach": 75.0, "interval": 0.72, "projectile": "", "speed": 0.0},
+	"machado": {"name": "Machado", "reach": 80.0, "interval": 0.9, "projectile": "", "speed": 0.0},
+	"lanca": {"name": "Lança", "reach": 115.0, "interval": 0.75, "projectile": "", "speed": 0.0},
+	"arco": {"name": "Arco", "reach": 250.0, "interval": 0.8, "projectile": "flecha", "speed": 440.0},
+	"cajado": {"name": "Cajado", "reach": 220.0, "interval": 0.95, "projectile": "orbe", "speed": 260.0}}
 static func metadata(id: String) -> Dictionary:
 	var item: Dictionary = RPGRules.EQUIPMENT.get(id, {})
 	if item.is_empty():

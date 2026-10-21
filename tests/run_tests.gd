@@ -132,7 +132,7 @@ func _run() -> void:
 	enemy.position = Vector2(1000, 475)
 	await frames()
 	check(player.attack.select_target(player) == null, "out of range excluded")
-	enemy.position = Vector2(900, 475)
+	enemy.position = player.position + Vector2(player.attack.weapon.reach, 0)
 	await frames()
 	check(player.attack.select_target(player) == enemy, "target at reach boundary valid")
 	var second := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor

@@ -57,9 +57,9 @@ func _run() -> void:
 
 	# Weapon identities remain distinct at the data actually used by combat.
 	var expected := {
-		"espada": [90.0, 0.72], "machado": [105.0, 0.90],
-		"lanca": [170.0, 0.75], "arco": [300.0, 0.80],
-		"cajado": [260.0, 0.95]}
+		"espada": [75.0, 0.72], "machado": [80.0, 0.90],
+		"lanca": [115.0, 0.75], "arco": [250.0, 0.80],
+		"cajado": [220.0, 0.95]}
 	for category: String in expected:
 		var profile := ArsenalRules.profile(category)
 		check(is_equal_approx(float(profile.reach), expected[category][0]) and is_equal_approx(float(profile.interval), expected[category][1]), "alcance e cadência preservam identidade de " + category)

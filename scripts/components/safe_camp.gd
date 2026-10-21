@@ -2,7 +2,7 @@ class_name SafeCamp
 extends RefCounted
 
 const AREA := Rect2(470, 355, 180, 200)
-const CLEARANCE := 130.0 # Greater than the starter weapon's 120 px reach.
+const CLEARANCE := 130.0 # Keeps the short-range weapons outside the camp.
 const RESPAWN := Vector2(540, 450)
 const INTERACT_RANGE := 56.0
 # Legacy floors retain these original service anchors; saves store no NPC positions.

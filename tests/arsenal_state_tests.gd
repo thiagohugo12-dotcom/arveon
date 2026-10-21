@@ -27,7 +27,7 @@ static func run(suite) -> void:
 		suite.check(not ArsenalRules.RARITIES[id].name.is_empty() and Color(ArsenalRules.RARITIES[id].color).a == 1.0, "rarity has legible text and independent visual identity " + id)
 	var before := p.to_json()
 	var values := ArsenalRules.effective(p,"machado")
-	suite.check(p.to_json() == before and values.interval == 0.9 and values.reach == 105, "comparison is read-only and uses effective candidate attributes")
+	suite.check(p.to_json() == before and values.interval == 0.9 and values.reach == 80, "comparison is read-only and uses effective candidate attributes")
 	p.gold = 100
 	p.bag = {"Madeira":6,"Seda":2,"Essência":2}
 	p.equipment.erase("arco")

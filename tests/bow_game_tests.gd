@@ -34,7 +34,7 @@ func run() -> void:
 	main.progress.equipment.arco = 0
 	main.progress.equipped.Arma = "arco"
 	player.apply_progression(main.progress)
-	check(player.attack.weapon.interval == 0.8 and player.attack.weapon.projectile_speed == 440 and player.attack.weapon.reach == 300,"actual bow stats preserved")
+	check(player.attack.weapon.interval == 0.8 and player.attack.weapon.projectile_speed == 440 and player.attack.weapon.reach == 250,"actual bow stats preserved")
 	var centre := Vector2.ZERO
 	var scenery: FloorView = main.get_node("Andar1/FloorView")
 	for y in range(300,760,20):
