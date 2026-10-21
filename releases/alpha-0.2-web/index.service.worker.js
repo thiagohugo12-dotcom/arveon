@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1792545839|4738987';
+const CACHE_VERSION = '1792547109|4442351';
 /** @type {string} */
 const CACHE_PREFIX = 'ARVÉON: Ascensão-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
@@ -109,7 +109,7 @@ self.addEventListener(
 						return await fetchAndCache(event, cache, true);
 					} catch (e) {
 						return await cache.match('index.html') || caches.match(OFFLINE_URL);
-					}
+				}
 				}
 				let cached = await cache.match(event.request);
 				if (cached != null) {

@@ -2,6 +2,6 @@
 [ext_resource type="Script" path="res://data/weapon_data.gd" id="1"]
 [resource]
 script = ExtResource("1")
-reach = 120.0
+reach = 90.0
 damage = 12
-interval = 0.65
+interval = 0.72
