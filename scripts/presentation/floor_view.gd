@@ -108,7 +108,14 @@ func _ready() -> void:
 		npc.kind = 0 if station == "Ferreiro" else 1
 		npc.visual_v2 = visual_v2
 		npc.position = _npc_position(station,visual_v2)
+		_set_npc_depth(npc, visual_v2)
 		add_child(npc)
+
+func _set_npc_depth(npc: CampNpcView, enabled: bool) -> void:
+	# The atlas draws planted feet 21 px below the node origin. Sort the whole
+	# animation by those feet, including when V2 was enabled before _ready().
+	npc.z_as_relative = false
+	npc.z_index = roundi(npc.position.y + 21.0) + 100 if enabled else 0
 
 func _npc_position(station: String, use_v2: bool) -> Vector2:
 	# V2 places people at the fronts of their expanded visual service zones.
@@ -131,8 +138,7 @@ func set_visual_v2(enabled: bool) -> void:
 		if child is CampNpcView:
 			child.visual_v2 = enabled
 			child.position = _npc_position("Ferreiro" if child.kind == 0 else "Vendedor",enabled)
-			child.z_as_relative = false
-			child.z_index = roundi(child.position.y+21)+100 if enabled else 0
+			_set_npc_depth(child, enabled)
 	if enabled and v2_view == null:
 		v2_view = FloorV2View.new()
 		v2_view.layout = self

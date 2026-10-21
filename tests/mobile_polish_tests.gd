@@ -10,6 +10,7 @@ static func tap(hud: GameHUD, button: Button, index: int = 42) -> void:
 	hud._input(touch)
 
 static func run(suite, main) -> void:
+	suite.check(not ProjectSettings.get_setting("input_devices/pointing/emulate_mouse_from_touch") and not ProjectSettings.get_setting("input_devices/pointing/emulate_touch_from_mouse"), "touch and mouse events are not duplicated")
 	main.set_process(false)
 	var hud: GameHUD = main.hud
 	var player: PlayerActor = main.player

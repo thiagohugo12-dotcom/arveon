@@ -6,7 +6,6 @@ const WORLD_SIZE := Vector2(1700, 1350)
 const CAMP_AREA := Rect2(190, 715, 350, 300)
 const RESPAWN := Vector2(340, 885)
 const TOWER_POSITION := Vector2(216, 782)
-const TOWER_BODY := Rect2(162, 752, 108, 28)
 const GUARDIAN_ALTAR := Vector2(1380, 1070)
 const STATIONS := {"Baú": Vector2(282, 940), "Ferreiro": Vector2(285, 855), "Vendedor": Vector2(450, 928)}
 const ENEMY_SPAWNS := [Vector2(750, 700), Vector2(945, 930), Vector2(1040, 690), Vector2(1260, 790), Vector2(1390, 1080), Vector2(490, 350), Vector2(1200, 410), Vector2(900, 1120)]

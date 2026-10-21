@@ -7,7 +7,9 @@ const POSITION := Vector2(830, 1290)
 const LEGACY_POSITION := Vector2(1130, 455)
 const ANDAR2_POSITION := Vector2(216, 782)
 const INTERACT_RANGE := 58.0
-const BODY := Rect2(POSITION + Vector2(-42, -67), Vector2(84, 48))
+# The visible stone feet flank a walkable doorway. The player is 26 px wide.
+const ANDAR1_SIDES := [Rect2(POSITION + Vector2(-69, -39), Vector2(47, 40)), Rect2(POSITION + Vector2(22, -39), Vector2(47, 40))]
+const ANDAR2_SIDES := [Rect2(ANDAR2_POSITION + Vector2(-57, -35), Vector2(39, 36)), Rect2(ANDAR2_POSITION + Vector2(18, -35), Vector2(39, 36))]
 const LEGACY_BODY := Rect2(LEGACY_POSITION + Vector2(-32, -76), Vector2(64, 58))
 const NAME := "Torre de Ascensão"
 
