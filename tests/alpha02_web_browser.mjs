@@ -17,8 +17,9 @@ const server = http.createServer(async (req,res)=>{
     res.end(data);
   } catch (_) { res.writeHead(404); res.end(); }
 });
-await new Promise(r=>server.listen(0,'127.0.0.1',r));
-const origin = `http://127.0.0.1:${server.address().port}`;
+const remoteOrigin = process.env.ARVEON_WEB_URL;
+if (!remoteOrigin) await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const origin = remoteOrigin || `http://127.0.0.1:${server.address().port}`;
 const chrome = process.env.CHROME_BIN || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const browser = spawn(chrome,['--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'],{stdio:['ignore','ignore','pipe']});
 let diagnostics=''; browser.stderr.on('data',d=>diagnostics=(diagnostics+d).slice(-5000));
@@ -98,7 +99,7 @@ try {
   check(errors.length===0,'sem erros JavaScript relevantes');
 } finally {
   try { await call('Browser.close'); } catch (_) {}
-  socket.close(); server.close();
+  socket.close(); if (server.listening) server.close();
   await Promise.race([new Promise(r=>browser.once('exit',r)),wait(3000)]);
   if(browser.exitCode===null) browser.kill('SIGKILL');
 }
