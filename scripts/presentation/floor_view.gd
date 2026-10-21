@@ -108,6 +108,9 @@ func _ready() -> void:
 		npc.kind = 0 if station == "Ferreiro" else 1
 		npc.visual_v2 = visual_v2
 		npc.position = _npc_position(station,visual_v2)
+		# Initial scenes can already use visual_v2; set depth without waiting for a mode change.
+		npc.z_as_relative = false
+		npc.z_index = roundi(npc.position.y + 21) + 100 if visual_v2 else 0
 		add_child(npc)
 
 func _npc_position(station: String, use_v2: bool) -> Vector2:

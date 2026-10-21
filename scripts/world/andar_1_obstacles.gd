@@ -63,7 +63,9 @@ func set_expanded_world(enabled: bool) -> void:
 	_set_world_boundaries(FloorConfig.ANDAR1_WORLD_SIZE if enabled else FloorConfig.DEFAULT_WORLD_SIZE)
 
 func _build_expansion_solids() -> void:
-	expansion_solids.append(_add_box(TowerEntrance.BODY))
+	# Use solid side supports instead of obstructing the central doorway.
+	for solid: Rect2 in TowerEntrance.BODY_PARTS:
+		expansion_solids.append(_add_box(solid))
 	for feet: Vector2 in floor_view.expansion_tree_positions():
 		expansion_solids.append(_add_circle(feet+Vector2(0,1),9.0))
 	for rock: Rect2 in FloorView.EXPANSION_ROCKS:
