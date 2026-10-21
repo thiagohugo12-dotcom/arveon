@@ -86,7 +86,7 @@ func run() -> void:
 		demo.select_direction(3)
 		var interval: float = after.attack.weapon.interval
 		check(is_equal_approx(interval,before.attack.weapon.interval),"same modified cadence at Dex %d" % dex)
-		if dex == 20: check(interval < 0.65,"Dex really changes original attack interval")
+		if dex == 20: check(interval < 0.72,"Dex really changes original attack interval")
 		var nodes := get_node_count()
 		var hits: int = demo.targets[1].hits
 		var count: int = view.sword_attacks

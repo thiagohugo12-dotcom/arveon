@@ -69,6 +69,17 @@ func _run() -> void:
 	_check(main.progress.ascension.current_floor == 2 and main.world.scene_file_path == FloorConfig.ANDAR2_WORLD_SCENE, "viagem carrega cena própria do Vale")
 	_check(FloorConfig.world_size(2) == Vector2(1700, 1350) and main.player.position == Floor2Layout.RESPAWN, "limites e chegada usam a planta aprovada")
 	_check(main.world is Andar2World and main.world.get_node("FloorView") is Floor2View and main.tower_view is Floor2TowerView, "renderização, colisões e portal são próprios")
+	var camp_view := main.world.get_node("FloorView") as Floor2View
+	var smith_visible := false
+	var seller_visible := false
+	for child in camp_view.get_children():
+		if child is CampNpcView:
+			var station := "Ferreiro" if child.kind == 0 else "Vendedor"
+			var anchor: Vector2 = Floor2Layout.STATIONS[station]
+			_check(child.position == anchor - Vector2(0, 21) and child.z_index > roundi(anchor.y - 30) + 100, "NPC visível e alinhado com interação: " + station)
+			if child.kind == 0: smith_visible = true
+			else: seller_visible = true
+	_check(smith_visible and seller_visible and Floor2Layout.STATIONS.Ferreiro.x < 300, "ferreiro fora da cobertura da banca e ambos NPCs presentes")
 	_check(main.hud.minimap._world_size() == Floor2Layout.WORLD_SIZE and main.hud.minimap._map_point(Vector2(1700, 1350)).distance_to(main.hud.minimap.size - Vector2(4, 4)) < 2, "minimapa cobre o mapa inteiro")
 	_check(not main.player.test_move(main.player.transform, Vector2(1, 0)), "chegada não está presa em obstáculo")
 	await physics_frame

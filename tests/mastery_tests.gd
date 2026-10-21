@@ -126,7 +126,7 @@ static func run_world(suite: SceneTree) -> void:
 	main.progress.attributes["Mobilidade"] = 20
 	main.progress.attributes["Destreza"] = 20
 	main.player.apply_progression(main.progress)
-	suite.check(main.player.stats.dash_speed == 620 and main.player.stats.move_speed == 216 and is_equal_approx(main.player.attack.weapon.interval,0.65*0.85),"actual player Mobility and Dexterity never change Dash")
+	suite.check(main.player.stats.dash_speed == 620 and main.player.stats.move_speed == 216 and is_equal_approx(main.player.attack.weapon.interval,0.72*0.85),"actual player Mobility and Dexterity never change Dash")
 	for actor in suite.get_nodes_in_group("damageable_enemies"): actor.queue_free()
 	await suite.frames()
 	var target: EnemyActor = main._make_enemy(0)

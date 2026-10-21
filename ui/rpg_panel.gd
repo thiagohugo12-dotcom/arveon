@@ -121,15 +121,15 @@ func _ready() -> void:
 func refresh(value: GameProgress) -> void:
 	progress = value
 	var focused_page := tab == 1 or tab == 2 and prof_section == 0
-	page_title.text = "Habilidades" if tab == 1 else "Treinamento" if tab == 2 and prof_section == 0 else "Ficha do Personagem"
+	page_title.text = "Habilidades" if tab == 1 else "Treinamento" if tab == 2 and prof_section == 0 else "Proficiências" if tab == 2 else "Ficha do Personagem"
 	add_theme_stylebox_override("panel",DiaryTheme.piece("frame",22))
-	tabs.visible = not focused_page
-	diary_return.visible = tab != 0
+	tabs.visible = true
+	diary_return.visible = focused_page
 	diary_return.text = "Voltar ao diário" if focused_page else "Personagem"
-	footer_close.visible = not focused_page
-	header_close.visible = focused_page
+	footer_close.visible = tab == 0
+	header_close.visible = tab != 0
 	training_back.visible = tab == 2 and prof_section == 0
-	close_button = header_close if focused_page else footer_close
+	close_button = header_close if tab != 0 else footer_close
 	skill_slots.clear()
 	talent_tree = null
 	sword_detail = null

@@ -12,7 +12,7 @@ const ARENA_SCENE := "res://scenes/world/tower_arena.tscn"
 const TOWER_SCRIPT := "res://scripts/components/tower_entrance.gd"
 const FLOORS := {
 	"1": {"difficulty": 1.0, "rewards": 1.0},
-	"2": {"difficulty": 1.2, "rewards": 1.1},
+	"2": {"difficulty": 1.5, "rewards": 1.1},
 	"3": {"difficulty": 1.4, "rewards": 1.2},
 	"4": {"difficulty": 1.6, "rewards": 1.3},
 	"5": {"difficulty": 1.8, "rewards": 1.4}}

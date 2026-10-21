@@ -5,7 +5,7 @@ import {join, resolve, extname} from 'node:path';
 import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';
 
-const root = resolve('build/alpha02/ARVEON_Alpha_0.2_Web');
+const root = resolve(process.env.ARVEON_WEB_ROOT || 'build/alpha02/ARVEON_Alpha_0.2_Web');
 const profile = await mkdtemp(join(tmpdir(), 'arveon-alpha02-'));
 const types = {'.js':'application/javascript','.wasm':'application/wasm','.html':'text/html','.png':'image/png','.json':'application/json','.pck':'application/octet-stream'};
 const server = http.createServer(async (req,res)=>{
@@ -68,6 +68,29 @@ try {
   const save=await evalJs('JSON.parse(JSON.parse(localStorage.getItem("grande-arvore-rpg.save.v6")).payload)');
   check(save.version===12 && save.ascension.current_floor===1,'novo jogo grava save v12 no Andar 1');
   check(save.introduction.status==='active','novo jogo preserva a introdução inicial');
+  await wait(800);
+  const gameShot=await call('Page.captureScreenshot',{format:'png'});
+  await writeFile('build/alpha02/capturas/alpha02-web-andar1.png',Buffer.from(gameShot.data,'base64'));
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:250,y:38,id:2,radiusX:4,radiusY:4,force:1}]});
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await wait(300);
+  const diaryShot=await call('Page.captureScreenshot',{format:'png'});
+  await writeFile('build/alpha02/capturas/alpha02-web-ficha.png',Buffer.from(diaryShot.data,'base64'));
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:299,y:153,id:3,radiusX:4,radiusY:4,force:1}]});
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await wait(300);
+  const skillShot=await call('Page.captureScreenshot',{format:'png'});
+  await writeFile('build/alpha02/capturas/alpha02-web-habilidades.png',Buffer.from(skillShot.data,'base64'));
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:196,y:449,id:4,radiusX:4,radiusY:4,force:1}]});
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await wait(250);
+  const passiveShot=await call('Page.captureScreenshot',{format:'png'});
+  await writeFile('build/alpha02/capturas/alpha02-web-passivas.png',Buffer.from(passiveShot.data,'base64'));
+  await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:192,y:124,id:5,radiusX:4,radiusY:4,force:1}]});
+  await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+  await wait(250);
+  const talentShot=await call('Page.captureScreenshot',{format:'png'});
+  await writeFile('build/alpha02/capturas/alpha02-web-proficiencias.png',Buffer.from(talentShot.data,'base64'));
   await call('Page.reload');
   await until('document.readyState === "complete" && !!document.querySelector("canvas")');
   await wait(1800);

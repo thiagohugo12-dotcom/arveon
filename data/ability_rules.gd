@@ -9,9 +9,9 @@ const MAX_NORMAL_GRADE := 4
 const WEAPON_SKILLS := {"espada":"talho_agil","machado":"racha_chao","lanca":"impulso_perfurante","arco":"flecha_certeira","cajado":"orbe_arcano"}
 const CATEGORIES := {
 	"espada": {
-		"skill1": {"id":"talho_agil","name":"Talho Ágil","cooldown":6.0,"power":1.35,"type":"physical"},
+		"skill1": {"id":"talho_agil","name":"Talho Ágil","cooldown":6.0,"power":1.20,"type":"physical"},
 		"normal": [
-			{"id":"corte_crescente","name":"Corte Crescente","prof":3,"cooldown":7.0,"power":1.45,"type":"physical"},
+			{"id":"corte_crescente","name":"Corte Crescente","prof":3,"cooldown":7.0,"power":1.30,"type":"physical"},
 			{"id":"guarda_reativa","name":"Guarda Reativa","prof":8,"cooldown":12.0,"power":0.0,"type":"defense"},
 			{"id":"estocada_precisa","name":"Estocada Precisa","prof":25,"cooldown":10.0,"power":1.80,"type":"physical"},
 			{"id":"ruptura_ancestral","name":"Ruptura Ancestral","prof":40,"cooldown":14.0,"power":2.25,"type":"physical"}],
@@ -101,12 +101,12 @@ static func skill1(weapon_id: String) -> Dictionary:
 
 # Geometry and mechanics are provisional. No global old skill is used here.
 const EFFECTS := {
-	"talho_agil":{"shape":"cone","reach":120.0,"dot":0.0},
+	"talho_agil":{"shape":"cone","reach":100.0,"dot":0.0},
 	"racha_chao":{"shape":"disk","reach":110.0,"control":0.25},
 	"impulso_perfurante":{"shape":"line","reach":190.0,"width":28.0},
 	"flecha_certeira":{"shape":"projectile","reach":340.0},
 	"orbe_arcano":{"shape":"projectile","reach":290.0},
-	"corte_crescente":{"shape":"cone","reach":140.0,"dot":-0.15},
+	"corte_crescente":{"shape":"cone","reach":115.0,"dot":-0.15},
 	"guarda_reativa":{"shape":"guard","duration":3.0},
 	"estocada_precisa":{"shape":"line","reach":155.0,"width":22.0},
 	"ruptura_ancestral":{"shape":"line","reach":205.0,"width":40.0},

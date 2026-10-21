@@ -74,7 +74,7 @@ func _run() -> void:
 	if is_instance_valid(boss):
 		boss.set_physics_process(false)
 		_check(boss.position.y >= TowerTrial.ORIGIN.y + 190.0, "guardiao aparece dentro da arena, longe da borda superior")
-		_check(boss.health.maximum >= 520 and (boss.get_node("Collision").shape as CircleShape2D).radius == 34.0, "HP e colisao proprios do Andar 2")
+		_check(boss.health.maximum >= 780 and (boss.get_node("Collision").shape as CircleShape2D).radius == 34.0, "HP e colisao proprios do Andar 2")
 		_check(main.hud.boss_name.text.contains("Guardião de Arenito"), "HUD identifica o guardiao correto")
 		boss._begin_attack()
 		_check(boss.view.warning and boss.state == TowerGuardian.State.WINDUP, "ataque avisa antes do dano")

@@ -57,7 +57,7 @@ func _run() -> void:
 
 	# Weapon identities remain distinct at the data actually used by combat.
 	var expected := {
-		"espada": [120.0, 0.65], "machado": [105.0, 0.90],
+		"espada": [90.0, 0.72], "machado": [105.0, 0.90],
 		"lanca": [170.0, 0.75], "arco": [300.0, 0.80],
 		"cajado": [260.0, 0.95]}
 	for category: String in expected:
@@ -89,7 +89,7 @@ func _run() -> void:
 	await process_frame
 
 	main.progress.ascension.current_floor = 2
-	var expected_floor2 := {5: [62,10], 6: [130,13], 7: [86,16]}
+	var expected_floor2 := {5: [78,12], 6: [162,17], 7: [108,20]}
 	for kind: int in expected_floor2:
 		var monster: EnemyActor = main._make_enemy(kind)
 		check(monster.stats.max_hp == expected_floor2[kind][0] and monster.stats.contact_damage == expected_floor2[kind][1], "espécie %d aplica identidade e escala do Andar 2" % kind)

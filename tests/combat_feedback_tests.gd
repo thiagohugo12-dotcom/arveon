@@ -18,7 +18,7 @@ static func run(suite: SceneTree) -> void:
 	second.set_physics_process(false)
 	second.position = Vector2(1500, 1500)
 	for direction: Vector2 in [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT]:
-		enemy.position = player.position + direction * 120.0
+		enemy.position = player.position + direction * 90.0
 		enemy.health.initialize(48)
 		await suite.frames()
 		player.view.set_facing(-direction)
@@ -26,12 +26,12 @@ static func run(suite: SceneTree) -> void:
 		player.attack.cooldown_left = 0.0
 		player.attack.search_left = 0.0
 		player.attack.tick(0.0, player)
-		suite.check(enemy.health.current == 36, "basic attack retains 12 damage at 120px boundary %s" % direction)
-		suite.check(player.view.attack_direction.is_equal_approx(direction) and is_equal_approx(player.view.attack_distance, 120.0), "strike snapshot points to selected enemy %s" % direction)
+		suite.check(enemy.health.current == 36, "basic attack retains 12 damage at 90px boundary %s" % direction)
+		suite.check(player.view.attack_direction.is_equal_approx(direction) and is_equal_approx(player.view.attack_distance, 90.0), "strike snapshot points to selected enemy %s" % direction)
 		suite.check(player.view.facing.is_equal_approx(-direction) and player.last_direction.is_equal_approx(-direction), "auto aim preserves movement and dash direction %s" % direction)
 		player.view.set_facing(Vector2(1, 1))
 		suite.check(player.view.attack_direction.is_equal_approx(direction), "active strike does not rotate with subsequent movement %s" % direction)
-		enemy.position = player.position + direction * 120.1
+		enemy.position = player.position + direction * 90.1
 		await suite.frames()
 		suite.check(player.attack.select_target(player) == null, "basic attack excludes just outside reach %s" % direction)
 	# Measure empty-search response through the actual component, in 60Hz-like ticks.
@@ -55,12 +55,12 @@ static func run(suite: SceneTree) -> void:
 		player.attack.tick(0.016, player)
 	suite.check(enemy.health.current == 48, "empty searches remain throttled instead of scanning each frame")
 	player.attack.tick(0.016, player)
-	suite.check(enemy.health.current == 36 and is_equal_approx(player.attack.cooldown_left, 0.65), "newly reachable target is acquired in 80ms with original hit cooldown")
+	suite.check(enemy.health.current == 36 and is_equal_approx(player.attack.cooldown_left, 0.72), "newly reachable target is acquired in 80ms with balanced hit cooldown")
 	player.attack.tick(0.0, player)
 	player.attack.tick(0.3, player)
 	suite.check(enemy.health.current == 36, "zero and partial ticks cannot duplicate one basic swing")
-	player.attack.tick(0.35, player)
-	suite.check(enemy.health.current == 24, "next basic swing retains 650ms cadence")
+	player.attack.tick(0.42, player)
+	suite.check(enemy.health.current == 24, "next basic swing uses 720ms cadence")
 	# A second enemy remains untouched by a single-target strike, even with callback re-entry.
 	second.position = player.position + Vector2(90, 0)
 	await suite.frames()

@@ -119,7 +119,7 @@ static func run_world(suite: SceneTree) -> void:
 		player.attack.tick(0,player)
 	suite.check(player.class_combat.perfect_ready,"three real basics prepare sword Maestria without an equipped Ultimate")
 	var hp_before := enemy.health.current
-	var normal := CombatRules.resolve(player.attack.damage_base,player.special_bonus,1.45,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
+	var normal := CombatRules.resolve(player.attack.damage_base,player.special_bonus,1.30,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
 	suite.check(player.use_skill(1) and enemy.view.damage_critical and hp_before-enemy.health.current > int(normal.damage) and not player.class_combat.perfect_ready,"level-30 critical override executes once despite ordinary critical cap")
 	suite.check(not CombatRules.resolve(12,1,1,1.0,1.5,0.30).critical and CombatRules.resolve(12,1,1,0.05,1.5,0.30,0.40).critical,"ordinary critical cap preserved while class-specific precision can apply")
 	var boss := (load("res://scenes/actors/enemy.tscn") as PackedScene).instantiate() as EnemyActor

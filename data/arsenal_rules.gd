@@ -10,7 +10,7 @@ const RARITIES := {
 	"lendario": {"name": "Lendário", "color": "#e7c36d"},
 	"mitico": {"name": "Mítico · reservado", "color": "#e891bd"}}
 const CATEGORIES := {
-	"espada": {"name": "Espada", "reach": 120.0, "interval": 0.65, "projectile": "", "speed": 0.0},
+	"espada": {"name": "Espada", "reach": 90.0, "interval": 0.72, "projectile": "", "speed": 0.0},
 	"machado": {"name": "Machado", "reach": 105.0, "interval": 0.9, "projectile": "", "speed": 0.0},
 	"lanca": {"name": "Lança", "reach": 170.0, "interval": 0.75, "projectile": "", "speed": 0.0},
 	"arco": {"name": "Arco", "reach": 300.0, "interval": 0.8, "projectile": "flecha", "speed": 440.0},

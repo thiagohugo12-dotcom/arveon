@@ -37,6 +37,16 @@ func tap(hud: GameHUD, button: Button, scroll: ScrollContainer) -> void:
 	hud._input(event)
 	await frames()
 
+func tap_navigation(hud: GameHUD, button: Button) -> void:
+	var event := InputEventScreenTouch.new()
+	event.index = 25
+	event.position = button.get_global_rect().get_center()
+	event.pressed = true
+	hud._input(event)
+	event.pressed = false
+	hud._input(event)
+	await frames()
+
 func swipe(hud: GameHUD, button: Button, scroll: ScrollContainer) -> void:
 	scroll.ensure_control_visible(button)
 	await frames()
@@ -114,6 +124,8 @@ func _run() -> void:
 		hud.show_character(p)
 		panel.scroll.scroll_vertical = 0
 		await frames()
+		check(panel.tabs.visible and panel.page_title.text == "Habilidades","skills keep the main tabs visible "+prefix)
+		check(panel.close_button.visible and panel.close_button.size.y >= 44,"skills keep a reachable close button "+prefix)
 		check(panel.skill_catalog_buttons.size() == AbilityRules.CATEGORIES.espada.normal.size()+1 and panel.ability_buttons.size() == 3 and panel.skill_slots.size() == 3,"all sword techniques remain in selectable catalogue "+prefix)
 		await tap(hud,panel.skill_slots[2],panel.scroll)
 		check(panel.skill_target_slot == 1 and panel.ability_buttons[panel.skill_choice+":1"].text.begins_with("Equipar"),"choosing Skill 3 keeps it as the direct equipment target "+prefix)
@@ -148,6 +160,11 @@ func _run() -> void:
 		panel.training_back.pressed.emit()
 		await frames()
 		check(panel.tab == 2 and panel.prof_section == 1,"fixed training return restores the talent tree "+prefix)
+		check(panel.tabs.visible and panel.page_title.text == "Proficiências" and panel.close_button.visible,"talent tree keeps named navigation and close action "+prefix)
+		await tap_navigation(hud,panel.tabs.get_child(2))
+		check(panel.tab == 1 and panel.page_title.text == "Habilidades","touch switches from proficiency to skills "+prefix)
+		await tap_navigation(hud,panel.tabs.get_child(0))
+		check(panel.tab == 0 and panel.page_title.text == "Ficha do Personagem","touch returns to character sheet "+prefix)
 		hud.close_character()
 		check(p.to_json() == snapshot,"all reading and selection preserve v11 snapshot "+prefix)
 	print("MENU_CLARITY_RESULT: %d checks, %d failures" % [checks,failures])
