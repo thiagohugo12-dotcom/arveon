@@ -1872,7 +1872,8 @@ func _qa_collect_buttons(node: Node, result: Array[Dictionary]) -> void:
 		var button := node as Button
 		var rect := button.get_global_rect()
 		var local_y := minf(button.size.y * 0.5,22.0) if button.text in ["×","Fechar"] else button.size.y * 0.5
-		var touch_point := button.get_global_transform_with_canvas() * Vector2(button.size.x * 0.5,local_y)
+		# Screen touch InputEvents use the canvas space consumed by make_input_local.
+		var touch_point := button.get_global_transform() * Vector2(button.size.x * 0.5,local_y)
 		result.append({"text":button.text,"tooltip":button.tooltip_text,"disabled":button.disabled,"x":rect.position.x,"y":rect.position.y,"w":rect.size.x,"h":rect.size.y,"touch_x":touch_point.x,"touch_y":touch_point.y})
 	for child in node.get_children():
 		_qa_collect_buttons(child,result)
