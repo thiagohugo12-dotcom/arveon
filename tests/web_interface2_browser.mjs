@@ -23,12 +23,12 @@ async function session(mode){
  const profile=await mkdtemp(path.join(tmpdir(),'arveon-ui2-'));
  const browser=spawn(process.env.CHROME_BIN||'google-chrome',['--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});
  let diagnostics='';browser.stderr.on('data',b=>diagnostics=(diagnostics+b).slice(-4000));
- let target,socket,id=0;const pending=new Map(),titles=[],ui=[],errors=[];
+ let target,socket,id=0;const pending=new Map(),titles=[],ui=[],moves=[],errors=[];
  let canvasRect;
  for(let n=0;n<200;n++){try{const port=(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];target=(await(await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t=>t.type==='page');if(target)break;}catch{}await delay(100);}
  if(!target)throw Error('Chromium startup: '+diagnostics);
  socket=new WebSocket(target.webSocketDebuggerUrl);await new Promise(r=>socket.addEventListener('open',r,{once:true}));
- socket.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);if(p)m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result);}if(m.method==='Runtime.exceptionThrown')errors.push(JSON.stringify(m.params.exceptionDetails));if(m.method==='Runtime.consoleAPICalled')for(const arg of m.params.args){const s=arg.value;if(typeof s!=='string')continue;if(s.startsWith('ARVEON_TITLE_STATE '))titles.push(JSON.parse(s.slice(19)));if(s.startsWith('ARVEON_TITLE_STARTED '))titles.push({started:JSON.parse(s.slice(21))});if(s.startsWith('ARVEON_UI2_STATE '))ui.push(JSON.parse(s.slice(17)));if(/SCRIPT ERROR|Parse Error|Invalid call|Invalid access/.test(s))errors.push(s);}});
+ socket.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);if(p)m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result);}if(m.method==='Runtime.exceptionThrown')errors.push(JSON.stringify(m.params.exceptionDetails));if(m.method==='Runtime.consoleAPICalled')for(const arg of m.params.args){const s=arg.value;if(typeof s!=='string')continue;if(s.startsWith('ARVEON_TITLE_STATE '))titles.push(JSON.parse(s.slice(19)));if(s.startsWith('ARVEON_TITLE_STARTED '))titles.push({started:JSON.parse(s.slice(21))});if(s.startsWith('ARVEON_UI2_STATE '))ui.push(JSON.parse(s.slice(17)));if(s.startsWith('ARVEON_UI2_MOVE '))moves.push(JSON.parse(s.slice(16)));if(/SCRIPT ERROR|Parse Error|Invalid call|Invalid access/.test(s))errors.push(s);}});
  const call=(method,params={})=>new Promise((resolve,reject)=>{const n=++id;pending.set(n,{resolve,reject});socket.send(JSON.stringify({id:n,method,params}));});
  const evaluate=async expression=>{const r=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
  const until=async(predicate,label,timeout=45000)=>{const begin=Date.now();while(Date.now()-begin<timeout){if(await predicate())return;await delay(100);}throw Error(`${mode} timeout ${label}; title=${JSON.stringify(titles.slice(-2))} ui=${JSON.stringify(ui.slice(-3))} errors=${errors.join('\n')}`);};
@@ -101,7 +101,17 @@ async function session(mode){
   prior=ui.length;
   await tap({...button('blacksmith',b=>b.text==='×'),screen:'blacksmith'});
   await until(()=>ui.length>prior,'Blacksmith closes');
-  await call('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});await delay(2200);await call('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
+  if(mobile){
+   const world=[...ui].reverse().find(s=>s.screen==='hud'),joy=world.joystick,start=screenPoint(world,joy.x+joy.w/2,joy.y+joy.h/2);
+   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:2,radiusX:4,radiusY:4,force:1}]});
+   for(let i=1;i<=28;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x,y:start.y+Math.min(52,i*2),id:2,radiusX:4,radiusY:4,force:1}]});await delay(100);}
+   await shot('joystick-held');await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+   check(moves.some(m=>Math.hypot(...m.direction)>0.2&&!m.blocked),'mobile joystick delivers movement after menu close');
+   check(new Set(moves.filter(m=>Math.hypot(...m.direction)>0.2).map(m=>m.position.join(','))).size>1,'player moves in the world after menu close');
+  }else{
+   await call('Input.dispatchKeyEvent',{type:'keyDown',key:'s',code:'KeyS',windowsVirtualKeyCode:83});await delay(2200);await call('Input.dispatchKeyEvent',{type:'keyUp',key:'s',code:'KeyS',windowsVirtualKeyCode:83});
+  }
+  await shot('after-forge-walk');
   await shot('after-forge-walk');
   await until(()=>current('death'),'actual enemy damage/death displays the result panel',90000);
   await shot('death');
@@ -118,7 +128,7 @@ async function session(mode){
   const trusted=await evaluate('ui2BrowserEvents.some(e=>e.trusted&&e.target==="canvas"&&e.type==="'+(mobile?'touchstart':'mousedown')+'")');
   check(trusted,mode+': trusted Touch/Mouse browser events reached the exported canvas');
   check(errors.length===0,mode+': no runtime script errors');
-  return {mode,viewport:[width,height],events:await evaluate('ui2BrowserEvents'),states:ui,started:titles.filter(s=>s.started),errors};
+  return {mode,viewport:[width,height],events:await evaluate('ui2BrowserEvents'),states:ui,movement:moves,started:titles.filter(s=>s.started),errors};
  }catch(error){await shot('failure').catch(()=>{});throw error;}
  finally{try{await call('Browser.close');}catch{}socket.close();if(browser.exitCode===null)browser.kill('SIGKILL');}
 }

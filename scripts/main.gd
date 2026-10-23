@@ -121,7 +121,13 @@ func _ready() -> void:
 	_apply_floor_stats(enemy)
 	_register_enemy_defeat(enemy)
 	enemy.projectile_requested.connect(_on_enemy_projectile)
-	hud.movement_changed.connect(input_driver.set_touch_direction)
+	hud.movement_changed.connect(func(value: Vector2):
+		input_driver.set_touch_direction(value)
+		if OS.has_feature("web") and bool(JavaScriptBridge.eval("window.__ARVEON_UI2_TEST__ === true", true)):
+			var movement_state := {"direction":[value.x,value.y],"position":[player.global_position.x,player.global_position.y],"blocked":input_driver.blocked}
+			var message := "ARVEON_UI2_MOVE "+JSON.stringify(movement_state)
+			JavaScriptBridge.eval("console.log("+JSON.stringify(message)+")")
+	)
 	hud.dash_pressed.connect(input_driver.request_dash)
 	hud.interact_pressed.connect(_interact)
 	hud.inventory_toggled.connect(_toggle_inventory)
