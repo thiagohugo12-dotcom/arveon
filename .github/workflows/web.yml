@@ -260,8 +260,7 @@ jobs:
         if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: timeout 180s node tests/web_loading_browser.mjs
       - name: Save approved loading screenshots
-        if: github.head_ref != 'fix/mobile-title-touch-20261022'
-        if: always()
+        if: always() && github.head_ref != 'fix/mobile-title-touch-20261022'
         uses: actions/upload-artifact@v4
         with:
           name: approved-loading-qa
@@ -499,8 +498,7 @@ jobs:
           QA_LOADING_CAPTURE_DIR: loading-live-qa
         run: timeout 180s node source/tests/web_loading_browser.mjs
       - name: Save published loading screenshots
-        if: github.head_ref != 'fix/mobile-title-touch-20261022'
-        if: always()
+        if: always() && github.head_ref != 'fix/mobile-title-touch-20261022'
         uses: actions/upload-artifact@v4
         with:
           name: approved-loading-live-qa
