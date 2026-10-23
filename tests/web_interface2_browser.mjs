@@ -34,7 +34,8 @@ async function session(mode){
  const shot=async name=>{await delay(250);const r=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(path.join(out,mode+'-'+name+'.png'),Buffer.from(r.data,'base64'));return r.data;};
  const current=screen=>[...ui].reverse().find(s=>s.screen===screen&&s.panel_visible);
  const button=(screen,predicate)=>{const b=current(screen)?.buttons.find(x=>!x.disabled&&predicate(x));assert.ok(b,`${screen} button not found`);return b;};
- const point=b=>evaluate(`(()=>{const c=document.querySelector('canvas'),r=c.getBoundingClientRect(),v=${JSON.stringify(current(b.screen)?.viewport||[width,height])};return {x:r.left+${b.x}*r.width/v[0],y:r.top+${b.y}*r.height/v[1]}})()`);
+ const screenPoint=(state,x,y)=>({x:canvasRect.left+x*canvasRect.width/state.viewport[0],y:canvasRect.top+y*canvasRect.height/state.viewport[1]});
+ const point=b=>screenPoint(current(b.screen)||{viewport:[width,height]},b.x,b.y);
  const input=async(p,kind)=>{if(mobile){await call('Input.dispatchTouchEvent',{type:kind==='down'?'touchStart':'touchEnd',touchPoints:kind==='down'?[{...p,id:1,radiusX:4,radiusY:4,force:1}]:[]});}else{await call('Input.dispatchMouseEvent',{type:kind==='down'?'mousePressed':'mouseReleased',x:p.x,y:p.y,button:'left',clickCount:1});}};
  const tap=async b=>{const p=await point(b);await input(p,'down');await delay(70);await input(p,'up');};
  try{
@@ -46,10 +47,12 @@ async function session(mode){
   await until(()=>evaluate('document.readyState==="complete"&&!!document.querySelector("canvas")&&!document.getElementById("status")'),'canvas ready');
   await until(()=>titles.some(s=>s.buttons),'title buttons ready');
   const titleButton=text=>{const b=titles.filter(s=>s.buttons).at(-1).buttons.find(x=>x.text===text);assert.ok(b,'title '+text);return b;};
-  const play=titleButton('Jogar · novo jogo');const scale=await evaluate('(()=>{const r=document.querySelector("canvas").getBoundingClientRect();return [r.width/360,r.height/800,r.left,r.top]})()');
+  const titleState=titles.filter(s=>s.buttons).at(-1);const play=titleButton('Jogar · novo jogo');
+  const canvasRect=await evaluate('(()=>{const r=document.querySelector("canvas").getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,top:r.top}})()');
   await shot('title-before');
-  const p={x:scale[2]+play.x*scale[0],y:scale[3]+play.y*scale[1]};await input(p,'down');await delay(70);await input(p,'up');
+  const p={x:canvasRect.left+play.x*canvasRect.width/titleState.viewport[0],y:canvasRect.top+play.y*canvasRect.height/titleState.viewport[1]};await input(p,'down');await delay(70);await input(p,'up');
   await until(()=>titles.some(s=>s.started),'new game starts');
+  check(titles.filter(s=>s.started).at(-1).started.floor===1,mode+': new game enters Andar 1');
   await until(()=>ui.some(s=>s.screen==='hud'),'game HUD state');
   await until(()=>evaluate('!!localStorage.getItem("grande-arvore-rpg.save.v6")'),'save initialized');
   await shot('floor1');
@@ -66,7 +69,7 @@ async function session(mode){
   // joystick itself so the mobile path stays an actual touch interaction.
   const camp=[...ui].reverse().find(s=>s.screen==='hud');
   if(mobile){
-   const joy=camp.joystick,start={x:joy.x+joy.w/2,y:joy.y+joy.h/2};
+   const joy=camp.joystick,start=screenPoint(camp,joy.x+joy.w/2,joy.y+joy.h/2);
    await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:2,radiusX:4,radiusY:4,force:1}]});
    for(let i=1;i<=8;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x-38,y:start.y-12,id:2,radiusX:4,radiusY:4,force:1}]});await delay(100);}
    await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
@@ -91,20 +94,25 @@ async function session(mode){
   await until(()=>ui.length>prior,'Blacksmith closes');
   const world=[...ui].reverse().find(s=>s.screen==='hud');
   if(mobile){
-   const joy=world.joystick;const start={x:joy.x+joy.w/2,y:joy.y+joy.h/2};
+   const joy=world.joystick;const start=screenPoint(world,joy.x+joy.w/2,joy.y+joy.h/2);
    await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:2,radiusX:4,radiusY:4,force:1}]});
-   for(let i=1;i<=10;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+Math.min(52,i*5),y:start.y,id:2,radiusX:4,radiusY:4,force:1}]});await delay(120);}
+   for(let i=1;i<=32;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+Math.min(52,i*2),y:start.y,id:2,radiusX:4,radiusY:4,force:1}]});await delay(120);}
    await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   }else{
-   await call('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});await delay(1200);await call('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
+   await call('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});await delay(3800);await call('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
   }
-  await until(()=>current('death'),'actual enemy damage/death displays the result panel',40000);
+  await until(()=>current('death'),'actual enemy damage/death displays the result panel',60000);
   await shot('death');
   const details={...button('death',b=>b.text==='Ver detalhes'),screen:'death'};await tap(details);
   await until(()=>current('death')?.buttons.some(b=>b.text==='Ocultar detalhes'),'death details open from touch/mouse');
   await shot('death-details');
   const back={...button('death',b=>b.text.includes('Voltar ao acampamento')),screen:'death'};await tap(back);
-  await until(()=>{const h=[...ui].reverse().find(s=>s.screen==='hud');return h?.panel_visible;},'return restarts into playable world');
+  await until(()=>titles.filter(s=>s.buttons).at(-1)?.buttons.some(b=>b.text==='Continuar'&&!b.disabled),'death return exposes the saved character at the title screen',30000);
+  const continueState=titles.filter(s=>s.buttons).at(-1);const continueButton=continueState.buttons.find(b=>b.text==='Continuar'&&!b.disabled);
+  const continuePoint={x:canvasRect.left+continueButton.x*canvasRect.width/continueState.viewport[0],y:canvasRect.top+continueButton.y*canvasRect.height/continueState.viewport[1]};
+  const startCount=titles.filter(s=>s.started).length;await input(continuePoint,'down');await delay(70);await input(continuePoint,'up');
+  await until(()=>titles.filter(s=>s.started).length>startCount,'continue returns to the saved character');
+  check(titles.filter(s=>s.started).at(-1).started.floor===1,mode+': death return continues in the Andar 1 camp');
   const trusted=await evaluate('ui2BrowserEvents.some(e=>e.trusted&&e.target==="canvas"&&e.type==="'+(mobile?'touchstart':'mousedown')+'")');
   check(trusted,mode+': trusted Touch/Mouse browser events reached the exported canvas');
   check(errors.length===0,mode+': no runtime script errors');
