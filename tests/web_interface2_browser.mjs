@@ -31,7 +31,7 @@ async function session(mode){
  socket.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);if(p)m.error?p.reject(Error(JSON.stringify(m.error))):p.resolve(m.result);}if(m.method==='Runtime.exceptionThrown')errors.push(JSON.stringify(m.params.exceptionDetails));if(m.method==='Runtime.consoleAPICalled')for(const arg of m.params.args){const s=arg.value;if(typeof s!=='string')continue;if(s.startsWith('ARVEON_TITLE_STATE '))titles.push(JSON.parse(s.slice(19)));if(s.startsWith('ARVEON_TITLE_STARTED '))titles.push({started:JSON.parse(s.slice(21))});if(s.startsWith('ARVEON_UI2_STATE '))ui.push(JSON.parse(s.slice(17)));if(s.startsWith('ARVEON_UI2_MOVE '))moves.push(JSON.parse(s.slice(16)));if(/SCRIPT ERROR|Parse Error|Invalid call|Invalid access/.test(s))errors.push(s);}});
  const call=(method,params={})=>new Promise((resolve,reject)=>{const n=++id;pending.set(n,{resolve,reject});socket.send(JSON.stringify({id:n,method,params}));});
  const evaluate=async expression=>{const r=await call('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result?.value;};
- const until=async(predicate,label,timeout=45000)=>{const begin=Date.now();while(Date.now()-begin<timeout){if(await predicate())return;await delay(100);}throw Error(`${mode} timeout ${label}; title=${JSON.stringify(titles.slice(-2))} ui=${JSON.stringify(ui.slice(-3))} errors=${errors.join('\n')}`);};
+ const until=async(predicate,label,timeout=45000)=>{const begin=Date.now();while(Date.now()-begin<timeout){if(await predicate())return;await delay(100);}throw Error(`${mode} timeout ${label}; title=${JSON.stringify(titles.slice(-2))} ui=${JSON.stringify(ui.slice(-3))} movement=${JSON.stringify(moves.slice(-3))} errors=${errors.join('\n')}`);};
  const shot=async name=>{await delay(250);const r=await call('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile(path.join(out,mode+'-'+name+'.png'),Buffer.from(r.data,'base64'));return r.data;};
  const current=screen=>[...ui].reverse().find(s=>s.screen===screen&&s.panel_visible);
  const button=(screen,predicate)=>{const b=current(screen)?.buttons.find(x=>!x.disabled&&predicate(x));assert.ok(b,`${screen} button not found`);return b;};
@@ -104,7 +104,7 @@ async function session(mode){
   if(mobile){
    const world=[...ui].reverse().find(s=>s.screen==='hud'),joy=world.joystick,start=screenPoint(world,joy.x+joy.w/2,joy.y+joy.h/2);
    await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:2,radiusX:4,radiusY:4,force:1}]});
-   for(let i=1;i<=50;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x,y:start.y+Math.min(52,i*2),id:2,radiusX:4,radiusY:4,force:1}]});await delay(100);}
+   for(let i=1;i<=130;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x,y:start.y+Math.min(52,i*2),id:2,radiusX:4,radiusY:4,force:1}]});await delay(100);}
    await shot('joystick-held');await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    check(moves.some(m=>Math.hypot(...m.direction)>0.2&&!m.blocked),'mobile joystick delivers movement after menu close');
    check(new Set(moves.filter(m=>Math.hypot(...m.direction)>0.2).map(m=>m.position.join(','))).size>1,'player moves in the world after menu close');
