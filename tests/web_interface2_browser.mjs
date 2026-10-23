@@ -64,8 +64,8 @@ async function session(mode){
   await until(()=>current('evolution'),'Evolution opens through browser input');
   await shot('evolution');
   const evo=current('evolution');check(evo.buttons.length>12&&evo.viewport[0]===width,mode+': Evolution renders a scrollable real game panel');
-  const close={...button('evolution',b=>b.text==='×'),screen:'evolution'};await tap(close);
-  await until(()=>!current('evolution'),'Evolution closes');
+  const close={...button('evolution',b=>b.text==='×'),screen:'evolution'};const beforeClose=ui.length;await tap(close);
+  await until(()=>ui.length>beforeClose&&[...ui].reverse()[0]?.screen==='hud','Evolution closes back to the HUD');
   // Fresh characters spawn a short walk from the smith. Use the on-screen
   // joystick itself so the mobile path stays an actual touch interaction.
   const camp=[...ui].reverse().find(s=>s.screen==='hud');
