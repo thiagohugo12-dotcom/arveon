@@ -148,9 +148,10 @@ func _report_title_state() -> void:
 	var buttons: Array = []
 	for button in touch_buttons:
 		if button.is_visible_in_tree():
-			var center := button.get_screen_transform() * (button.size * 0.5)
+			var center := button.get_global_transform_with_canvas() * (button.size * 0.5)
 			buttons.append({"text": button.text, "x": center.x, "y": center.y, "disabled": button.disabled})
-	print("ARVEON_TITLE_STATE " + JSON.stringify({"settings": settings_panel.visible, "confirm": confirm_panel.visible, "buttons": buttons}))
+	var viewport_size := get_viewport_rect().size
+	print("ARVEON_TITLE_STATE " + JSON.stringify({"settings": settings_panel.visible, "confirm": confirm_panel.visible, "buttons": buttons, "viewport": [viewport_size.x, viewport_size.y]}))
 
 func _dialog(caption: String) -> PanelContainer:
 	var panel := PanelContainer.new()

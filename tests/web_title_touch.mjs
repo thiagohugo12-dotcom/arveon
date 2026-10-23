@@ -42,7 +42,7 @@ async function session(mode,url,baselineButtons){
  const touch=async(type,points)=>call('Input.dispatchTouchEvent',{type,touchPoints:points});
  const point=b=>({x:b.x,y:b.y,id:1,radiusX:4,radiusY:4,force:1});
  const click=async b=>{if(mobile){await touch('touchStart',[point(b)]);await delay(70);await touch('touchEnd',[]);}else{await call('Input.dispatchMouseEvent',{type:'mouseMoved',x:b.x,y:b.y});await call('Input.dispatchMouseEvent',{type:'mousePressed',x:b.x,y:b.y,button:'left',clickCount:1});await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:b.x,y:b.y,button:'left',clickCount:1});}};
- const state=()=>states.at(-1);
+ const state=()=>{const s=states.at(-1);if(!s)return s;return {...s,buttons:s.buttons.map(b=>({...b,x:b.x*width/s.viewport[0],y:b.y*height/s.viewport[1]}))};};
  const button=text=>{const b=state().buttons.find(b=>b.text===text);assert.ok(b&&!b.disabled,'button available '+text);return b;};
  try{
  await call('Page.enable');await call('Runtime.enable');
@@ -78,9 +78,9 @@ async function session(mode,url,baselineButtons){
  await shot('settings-open');
  check(states.filter(s=>s.settings).length===1,mode+': settings opens once');
  if(mobile){
-  await click(play);await delay(400);check(started.length===0&&state().settings,'mobile: title buttons behind modal cannot start game');
-  const sound=button('Som: ligado');await click(sound);await until(()=>state().buttons.some(b=>b.text==='Som: desligado'),'single audio toggle');
-  await delay(300);check(state().buttons.some(b=>b.text==='Som: desligado'),'mobile: touch does not double-toggle audio');
+  await click({x:8,y:play.y});await delay(400);check(started.length===0&&state().settings,'mobile: touch outside modal does not dismiss or start game');
+  const sound=state().buttons.find(b=>b.text.startsWith('Som:'));const toggled=sound.text==='Som: ligado'?'Som: desligado':'Som: ligado';await click(sound);await until(()=>state().buttons.some(b=>b.text===toggled),'single audio toggle');
+  await delay(300);check(state().buttons.some(b=>b.text===toggled),'mobile: touch does not double-toggle audio');
  }
  await click(button('Voltar'));await until(()=>!state().settings,'settings closed');await shot('settings-closed');
  check(!state().settings,mode+': Voltar closes panel');
