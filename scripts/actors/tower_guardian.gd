@@ -27,6 +27,9 @@ var aim := Vector2.DOWN
 var spike_points: Array[Vector2] = []
 var attack_hit := false
 
+func display_name() -> String:
+	return "Guardião da Prova"
+
 func _physics_process(delta: float) -> void:
 	tick_ability_status(delta)
 	velocity = Vector2.ZERO
@@ -146,7 +149,7 @@ func _damage_once(amount: int) -> void:
 	if not get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
 		return
 	attack_hit = true # All spike areas and charge frames share one hit per action.
-	target.receive_damage(roundi(amount * damage_scale))
+	target.receive_damage(roundi(amount * damage_scale),"physical",display_name())
 
 func _finish_attack() -> void:
 	_clear_warning()

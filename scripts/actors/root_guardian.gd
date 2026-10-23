@@ -6,6 +6,9 @@ var windup := 0.0
 var recover := 1.4
 var aim := Vector2.DOWN
 
+func display_name() -> String:
+	return "Guardião da Mata"
+
 func _physics_process(delta: float) -> void:
 	tick_ability_status(delta)
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive():
@@ -57,9 +60,9 @@ func _resolve_attack() -> void:
 		1: hit = offset.dot(aim) > 0.0 and offset.dot(aim) <= 200.0 and absf(offset.cross(aim)) < 28.0
 		2:
 			for angle in [-0.35, 0.0, 0.35]:
-				projectile_requested.emit(global_position, aim.rotated(angle), roundi(15 * damage_scale))
+				projectile_requested.emit(global_position, aim.rotated(angle), roundi(15 * damage_scale),display_name())
 	if hit:
 		var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
 		if get_world_2d().direct_space_state.intersect_ray(query).is_empty():
-			target.receive_damage(roundi(20 * damage_scale))
+			target.receive_damage(roundi(20 * damage_scale),"physical",display_name())
 	view.play_attack()

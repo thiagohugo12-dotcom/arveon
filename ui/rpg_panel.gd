@@ -42,6 +42,7 @@ var diary_return: Button
 var skill_slots: Array[Button] = []
 var passive_buttons: Dictionary = {}
 var specialization_buttons: Dictionary = {}
+var evolution_tree_expanded := true
 
 func _ready() -> void:
 	resized.connect(_reflow_stats)
@@ -75,19 +76,14 @@ func _ready() -> void:
 	header.add_child(exit)
 	var navigation := HBoxContainer.new()
 	column.add_child(navigation)
-	for i in range(3):
-		var link := DiaryTab.new()
-		link.glyph = ["character","book","fury"][i]
-		link.text = ["Ficha","Proficiências","Habilidades"][i]
-		link.add_theme_font_size_override("font_size",15)
-		link.custom_minimum_size.y = 44
-		link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		link.pressed.connect(func():
-			tab = 0 if i == 0 else 2 if i == 1 else 1
-			refresh(progress)
-			scroll.scroll_vertical = 0
-		)
-		navigation.add_child(link)
+	var link := DiaryTab.new()
+	link.glyph = "fury"
+	link.text = "Evolução"
+	link.add_theme_font_size_override("font_size",15)
+	link.custom_minimum_size.y = 44
+	link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	link.pressed.connect(func(): tab = 3; refresh(progress); scroll.scroll_vertical = 0)
+	navigation.add_child(link)
 	tabs = navigation
 	scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -120,16 +116,15 @@ func _ready() -> void:
 
 func refresh(value: GameProgress) -> void:
 	progress = value
-	var focused_page := tab == 1 or tab == 2 and prof_section == 0
-	page_title.text = "Habilidades" if tab == 1 else "Treinamento" if tab == 2 and prof_section == 0 else "Proficiências" if tab == 2 else "Ficha do Personagem"
+	var focused_page := false
+	page_title.text = "Evolução"
 	add_theme_stylebox_override("panel",DiaryTheme.piece("frame",22))
-	tabs.visible = true
-	diary_return.visible = focused_page
-	diary_return.text = "Voltar ao diário" if focused_page else "Personagem"
-	footer_close.visible = tab == 0
-	header_close.visible = tab != 0
-	training_back.visible = tab == 2 and prof_section == 0
-	close_button = header_close if tab != 0 else footer_close
+	tabs.visible = false
+	diary_return.visible = false
+	footer_close.visible = false
+	header_close.visible = true
+	training_back.visible = false
+	close_button = header_close
 	skill_slots.clear()
 	talent_tree = null
 	sword_detail = null
@@ -151,7 +146,9 @@ func refresh(value: GameProgress) -> void:
 	for child in content.get_children():
 		content.remove_child(child)
 		child.queue_free()
-	if tab == 0:
+	if tab == 3:
+		_evolution_page()
+	elif tab == 0:
 		var lvl := progress.level()
 		_heading("%s · NÍVEL %d" % [progress.active_class().to_upper(),lvl])
 		_label("XP %d / %d  ·  total %d" % [progress.xp - RPGRules.xp_floor(lvl), RPGRules.cost_to_level(lvl), progress.xp] if lvl < RPGRules.MAX_LEVEL else "Nível máximo  ·  XP total %d" % progress.xp)
@@ -199,7 +196,75 @@ func refresh(value: GameProgress) -> void:
 		_skills_page()
 	else:
 		_talent_page()
-	for i in range(tabs.get_child_count()): DiaryTheme.select(tabs.get_child(i),(tab == 2 and i == 1) or (tab == 1 and i == 2))
+	for i in range(tabs.get_child_count()): DiaryTheme.select(tabs.get_child(i),true)
+
+func _evolution_page() -> void:
+	var level := progress.level()
+	_heading("PERSONAGEM · %s · NÍVEL %d" % [progress.active_class(),level])
+	if level < RPGRules.MAX_LEVEL:
+		var xp_now := progress.xp-RPGRules.xp_floor(level)
+		var xp_needed := RPGRules.cost_to_level(level)
+		_label("XP %d / %d · Total %d" % [xp_now,xp_needed,progress.xp])
+		var xp_bar := ProgressBar.new()
+		xp_bar.custom_minimum_size.y = 12
+		xp_bar.max_value = maxi(1,xp_needed)
+		xp_bar.value = xp_now
+		xp_bar.show_percentage = false
+		content.add_child(xp_bar)
+	else:
+		_label("Nível máximo · XP total %d" % progress.xp)
+	_profile_equipment()
+	var active_weapon := progress.active_category()
+	if not active_weapon.is_empty():
+		var prof := progress.talents.level(active_weapon)
+		_heading("ARMA ATIVA · %s · PROFICIÊNCIA %d/%d" % [ArsenalRules.category_name(active_weapon),prof,TalentRules.MAX_PROFICIENCY])
+		var prof_xp := int(progress.talents.xp[active_weapon])-TalentRules.xp_floor(prof)
+		var prof_next := TalentRules.xp_floor(prof+1)-TalentRules.xp_floor(prof) if prof < TalentRules.MAX_PROFICIENCY else 1
+		_label("XP de proficiência %d / %d" % [prof_xp,prof_next] if prof < TalentRules.MAX_PROFICIENCY else "Proficiência máxima")
+		var prof_bar := ProgressBar.new()
+		prof_bar.custom_minimum_size.y = 10
+		prof_bar.max_value = maxi(1,prof_next)
+		prof_bar.value = prof_xp if prof < TalentRules.MAX_PROFICIENCY else 1
+		prof_bar.show_percentage = false
+		content.add_child(prof_bar)
+	_heading("ATRIBUTOS · %d PONTOS DISPONÍVEIS" % progress.attribute_points())
+	attribute_grid = GridContainer.new()
+	attribute_grid.columns = 1 if size.x < 520 else 2
+	attribute_grid.add_theme_constant_override("h_separation",6)
+	attribute_grid.add_theme_constant_override("v_separation",4)
+	content.add_child(attribute_grid)
+	for name: String in RPGRules.ATTRIBUTES:
+		var card := _card(attribute_grid)
+		var row := HBoxContainer.new()
+		card.add_child(row)
+		var label := DiaryTheme.label("%s  ·  %d" % [name,progress.attributes[name]],13)
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(label)
+		var button := Button.new()
+		button.text = "+1"
+		button.custom_minimum_size = Vector2(54,44)
+		button.disabled = not allow_respec or progress.attribute_points() < 1 or int(progress.attributes[name]) >= 198
+		button.pressed.connect(func(): action_requested.emit("attribute",name,0))
+		row.add_child(button)
+		attribute_buttons[name] = button
+		_label(RPGRules.ATTRIBUTE_HELP[name],card)
+	_heading("HABILIDADES EQUIPADAS")
+	_skills_page()
+	_heading("TALENTOS, PASSIVAS E ÁRVORE DE EVOLUÇÃO")
+	_talent_page()
+	_heading("MODO TREINO")
+	if progress.training_mode:
+		_label("Sessão temporária · alterações não entram no save normal.")
+		if progress.ascension.current_floor == 2:
+			_training_button("Restaurar depósitos","training_mining_reset")
+			_training_button("+5 minérios comuns","training_mining_common")
+			_training_button("+5 minérios raros","training_mining_rare")
+		_training_button("Abrir Ferreiro de treino","training_smith")
+		_training_button("Recarregar skills e Ultimates","training_refill")
+		_training_button("Encerrar treino · voltar ao personagem","training_exit")
+	else:
+		_label("Experimente as armas, habilidades e talentos sem alterar seu save.")
+		_training_button("Entrar no modo treino","training_start")
 
 func _talent_page() -> void:
 	var compact := true
@@ -644,20 +709,20 @@ func _skills_page() -> void:
 	var slots := HBoxContainer.new()
 	slots.add_theme_constant_override("separation",4)
 	content.add_child(slots)
-	for index in range(3):
-		var id: String = catalog.skill1.id if index == 0 else build.skills[index-1]
+	for index in range(4):
+		var id: String = catalog.skill1.id if index == 0 else build.ultimate if index == 3 else build.skills[index-1]
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(0,100 if size.x < 340 else 90)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		button.tooltip_text = "Skill 1 fixa" if index == 0 else "Selecione uma técnica para este espaço"
+		button.tooltip_text = "Skill 1 fixa" if index == 0 else "Ultimate equipada" if index == 3 else "Selecione uma técnica para este espaço"
 		button.pressed.connect(func():
 			if index == 0: return
 			skill_section = 0
-			skill_target_slot = index-1
+			skill_target_slot = 2 if index == 3 else index-1
 			if not id.is_empty(): skill_choice = id
 			refresh(progress)
 			_focus_skill_catalog.call_deferred())
-		DiaryTheme.select(button,index-1 == skill_target_slot)
+		DiaryTheme.select(button,(index-1 == skill_target_slot and index in [1,2]) or (index == 3 and skill_target_slot == 2))
 		slots.add_child(button)
 		skill_slots.append(button)
 		var box := VBoxContainer.new()
@@ -669,7 +734,7 @@ func _skills_page() -> void:
 		box.add_theme_constant_override("separation",2)
 		box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		button.add_child(box)
-		var label := DiaryTheme.label("Skill %d%s" % [index+1," · fixa" if index == 0 else ""],12)
+		var label := DiaryTheme.label("Ultimate" if index == 3 else "Skill %d%s" % [index+1," · fixa" if index == 0 else ""],12)
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(label)
 		var icon := PixelItemIcon.new(_ability_icon(id,category))
@@ -677,7 +742,7 @@ func _skills_page() -> void:
 		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		icon.visible = not id.is_empty()
 		box.add_child(icon)
-		var name_label := DiaryTheme.label(catalog.skill1.name if index == 0 else _skill_name(category,id) if not id.is_empty() else "Vazia",12)
+		var name_label := DiaryTheme.label(catalog.skill1.name if index == 0 else catalog.ultimate.name if index == 3 else _skill_name(category,id) if not id.is_empty() else "Vazia",12)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(name_label)
 		if index-1 == skill_target_slot:
