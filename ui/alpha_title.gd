@@ -9,6 +9,7 @@ var settings_panel: PanelContainer
 var confirm_panel: PanelContainer
 var audio_button: Button
 var muted := false
+var touch_buttons: Array[Button] = []
 
 func _ready() -> void:
 	_load_settings()
@@ -68,11 +69,27 @@ func _ready() -> void:
 func _button(caption: String, parent: Container, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = caption
-	button.custom_minimum_size = Vector2(0, 46)
+	button.custom_minimum_size = Vector2(0, 56)
 	DiaryTheme.primary(button)
 	button.pressed.connect(action)
 	parent.add_child(button)
+	touch_buttons.append(button)
 	return button
+
+func _unhandled_input(event: InputEvent) -> void:
+	# The rest of the mobile HUD consumes ScreenTouch explicitly.  The title
+	# screen uses regular Godot Buttons, so provide the same touch path when
+	# mouse emulation is disabled (the Web/mobile project default).  Running in
+	# _unhandled_input avoids firing twice on platforms that already translate a
+	# tap into a handled mouse click.
+	if not event is InputEventScreenTouch or event.pressed:
+		return
+	for button in touch_buttons:
+		if button.visible and button.is_visible_in_tree() and not button.disabled \
+				and button.get_global_rect().has_point(event.position):
+			button.pressed.emit()
+			get_viewport().set_input_as_handled()
+			return
 
 func _dialog(caption: String) -> PanelContainer:
 	var panel := PanelContainer.new()
