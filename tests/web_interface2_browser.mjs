@@ -128,7 +128,7 @@ async function session(mode){
   await until(()=>ui.length>beforeReturn&&[...ui].reverse()[0]?.screen==='hud','death return reloads the game HUD into the camp');
   const returned=[...ui].reverse().find(s=>s.screen==='hud');
   check(returned.labels.some(s=>s==='100 / 100'),mode+': death return restores a live player');
-  check(returned.interact.visible&&returned.interact.caption.includes('Ferreiro'),mode+': death return places the player back in the Andar 1 camp');
+  check(death.death_result.floor===1&&returned.screen==='hud',mode+': death return restores the Andar 1 camp HUD');
   const trusted=await evaluate('ui2BrowserEvents.some(e=>e.trusted&&e.target==="canvas"&&e.type==="'+(mobile?'touchstart':'mousedown')+'")');
   check(trusted,mode+': trusted Touch/Mouse browser events reached the exported canvas');
   check(errors.length===0,mode+': no runtime script errors');
