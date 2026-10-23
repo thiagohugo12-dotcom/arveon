@@ -34,6 +34,9 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
           unzip -q /tmp/templates.tpz 'templates/web*' -d /tmp/godot-templates
           mv /tmp/godot-templates/templates/web* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          mkdir -p build/templates
+          cp "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/web_nothreads_debug.zip" build/templates/
+          cp "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/web_nothreads_release.zip" build/templates/
       - name: Import and validate scripts
         shell: bash
         run: |
