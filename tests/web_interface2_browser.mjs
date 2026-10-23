@@ -80,6 +80,14 @@ async function session(mode){
   await until(()=>{const h=[...ui].reverse().find(s=>s.screen==='hud');return h?.interact.visible&&h.interact.caption.includes('Ferreiro');},'Ferreiro interaction becomes available at camp');
   await tap({...([...ui].reverse().find(s=>s.screen==='hud').interact),screen:'hud'});
   await until(()=>current('blacksmith'),'Blacksmith appears');
+  if(current('blacksmith').buttons.some(b=>b.text==='Escolher primeira arma')){
+   await tap({...button('blacksmith',b=>b.text==='Escolher primeira arma'),screen:'blacksmith'});
+   await until(()=>current('blacksmith')?.buttons.some(b=>b.text==='Escolher Espada'),'starter weapon choices appear');
+   await tap({...button('blacksmith',b=>b.text==='Escolher Espada'),screen:'blacksmith'});
+   await until(()=>current('blacksmith')?.buttons.some(b=>b.text==='Confirmar'),'starter weapon confirmation appears');
+   await tap({...button('blacksmith',b=>b.text==='Confirmar'),screen:'blacksmith'});
+   await until(()=>current('blacksmith')?.buttons.some(b=>b.text==='Forjar'),'starter choice unlocks regular Blacksmith tabs');
+  }
   await shot('blacksmith-forjar');
   for(const name of ['Forjar','Aprimorar','Evoluir'])check(!!current('blacksmith').buttons.find(b=>b.text===name),mode+': Blacksmith tab '+name+' exists');
   let prior=ui.length;
