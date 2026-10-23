@@ -1173,9 +1173,9 @@ func _defer_menu_touch(content: Control, scroll: ScrollContainer, event: InputEv
 	get_viewport().set_input_as_handled()
 
 func _activate_touch_button(button: Button, event: InputEventScreenTouch) -> bool:
-	if death_panel.visible and button.text.contains("Ver detalhes") and OS.has_feature("web") and bool(JavaScriptBridge.eval("window.__ARVEON_UI2_TEST__ === true", true)):
+	if death_panel.visible and (button.text.contains("Ver detalhes") or button.text.contains("Voltar ao acampamento")) and OS.has_feature("web") and bool(JavaScriptBridge.eval("window.__ARVEON_UI2_TEST__ === true", true)):
 		var local_event := button.make_input_local(event) as InputEventScreenTouch
-		var diagnostic := {"raw":[event.position.x,event.position.y],"local":[local_event.position.x,local_event.position.y],"size":[button.size.x,button.size.y]}
+		var diagnostic := {"text":button.text,"raw":[event.position.x,event.position.y],"local":[local_event.position.x,local_event.position.y],"size":[button.size.x,button.size.y]}
 		JavaScriptBridge.eval("console.log("+JSON.stringify("ARVEON_UI2_TOUCH "+JSON.stringify(diagnostic))+")")
 	if not button.disabled and button.is_visible_in_tree() and _touch_contains(button,event):
 		button.pressed.emit()
