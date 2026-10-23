@@ -140,7 +140,6 @@ func _ready() -> void:
 	)
 	hud.restart_pressed.connect(func(): get_tree().reload_current_scene())
 	player.health.changed.connect(hud.set_health)
-	player.health.died.connect(hud.show_death)
 	player.health.died.connect(_on_player_died)
 	player.apply_progression(progress, true)
 	known_level = progress.level()
@@ -157,6 +156,7 @@ func _ready() -> void:
 	if progress.save_blocked:
 		hud.show_notice(progress.save_status)
 		hud.notice_left = 12.0
+
 
 func _process(delta: float) -> void:
 	autosave_left -= delta
@@ -300,7 +300,7 @@ func _spawn_enemy() -> void:
 	actor.view.damage_occluders = hud.damage_occluders
 	spawn_count += 1
 
-func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> void:
+func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int, source_name: String) -> void:
 	if transitioning or not player.health.is_alive():
 		return
 	if trial.active() and (input_driver.blocked or not TowerTrial.BOUNDS.has_point(origin)):
@@ -308,7 +308,7 @@ func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int) -> v
 	var projectile := Area2D.new()
 	projectile.set_script(PROJECTILE_SCRIPT)
 	add_child(projectile)
-	projectile.setup(origin, direction, damage, player)
+	projectile.setup(origin, direction, damage, player,source_name)
 	if trial.active():
 		projectile.arena_bounds = TowerTrial.BOUNDS
 
@@ -422,10 +422,31 @@ func _on_player_died() -> void:
 	input_driver.blocked = false
 	if progress.training_mode:
 		hud.set_progress(earned_xp, earned_gold, defeated_count, "Treino encerrado · Reiniciar retorna ao personagem")
+		hud.show_death({"enemy":"Treino encerrado","gold_lost":0,"xp_lost":0,"item_lost":"","item_count":0,"floor":progress.ascension.current_floor})
 		return
+	# Report the outcome of the existing penalty transaction. The view receives
+	# deltas from the saved model and never reimplements penalty rules.
+	var gold_before := progress.gold
+	var xp_before := progress.xp
+	var bag_before: Dictionary = progress.bag.duplicate(true)
+	var equipment_before: Dictionary = progress.equipment.duplicate(true)
+	var equipped_before: Dictionary = progress.equipped.duplicate(true)
 	var lost := progress.death_loss()
+	var lost_count := maxi(0,int(bag_before.get(lost,0))-int(progress.bag.get(lost,0))) if not lost.is_empty() else 0
+	var equipment_lost: Array[String] = []
+	for slot: String in equipment_before:
+		if int(equipment_before[slot]) != int(progress.equipment.get(slot,0)):
+			equipment_lost.append(slot)
+	for slot: String in equipped_before:
+		if str(equipped_before[slot]) != str(progress.equipped.get(slot,"")) and not equipment_lost.has(slot):
+			equipment_lost.append(slot)
 	hud.set_progress(earned_xp, earned_gold, defeated_count,
 		"Perdeu 1 " + lost + " da mochila; baú protegido" if not lost.is_empty() else "Baú protegido · sem material na mochila")
+	var last_attacker := player.last_damage_source if Time.get_ticks_msec()-player.last_damage_time_msec <= 10000 else ""
+	hud.show_death({"enemy":last_attacker if not last_attacker.is_empty() else "Inimigo não identificado",
+		"gold_lost":maxi(0,gold_before-progress.gold),"xp_lost":maxi(0,xp_before-progress.xp),
+		"item_lost":lost,"item_count":lost_count,"equipment_lost":equipment_lost,
+		"floor":progress.ascension.current_floor})
 	_save_progress()
 	if trial.active():
 		_return_from_trial(true)

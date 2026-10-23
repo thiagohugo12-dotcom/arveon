@@ -3,7 +3,7 @@ extends CharacterBody2D
 
 signal defeated(kind: int)
 signal weapon_hit(category: String, effective: int, event: int)
-signal projectile_requested(origin: Vector2, direction: Vector2, damage: int)
+signal projectile_requested(origin: Vector2, direction: Vector2, damage: int, source_name: String)
 
 @export var stats: ActorData
 @export_range(0, 7, 1) var kind: int = 0  # 0-4 Mata/Torre; 5 Goblin, 6 Tatu, 7 Escorpião
@@ -39,6 +39,11 @@ var control_left := 0.0
 var mark_left := 0.0
 var mark_category := ""
 var mark_bonus := 0.0
+
+func display_name() -> String:
+	if kind >= 5:
+		return ["Goblin Garimpeiro","Tatu Rochoso","Escorpião da Chapada"][kind-5]
+	return ["Javali","Aranha","Mandacaru","Javali Elite","Criatura da Mata"][mini(kind,4)]
 
 func _ready() -> void:
 	home_position = global_position
@@ -195,7 +200,7 @@ func _resolve_agile_melee() -> void:
 		return
 	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
 	if get_world_2d().direct_space_state.intersect_ray(query).is_empty():
-		target.receive_damage(stats.contact_damage)
+		target.receive_damage(stats.contact_damage,"physical",display_name())
 		contact_left = stats.contact_interval
 
 func _cactus_behavior(offset: Vector2, distance: float, delta: float = 0.0) -> void:
@@ -225,7 +230,7 @@ func _fire_cactus_spine() -> void:
 		view.set_warning(false)
 		return
 	var direction := global_position.direction_to(target.global_position)
-	projectile_requested.emit(global_position, direction, projectile_damage_override if projectile_damage_override > 0 else max(4, stats.contact_damage - 2))
+	projectile_requested.emit(global_position, direction, projectile_damage_override if projectile_damage_override > 0 else max(4, stats.contact_damage - 2),display_name())
 	view.set_warning(false)
 	view.play_attack()
 
@@ -235,7 +240,7 @@ func _try_contact(distance: float) -> void:
 		return
 	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
 	if get_world_2d().direct_space_state.intersect_ray(query).is_empty():
-		target.receive_damage(stats.contact_damage)
+		target.receive_damage(stats.contact_damage,"physical",display_name())
 		contact_left = stats.contact_interval
 		view.play_attack()
 

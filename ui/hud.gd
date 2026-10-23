@@ -83,6 +83,12 @@ var inventory_open := false
 var minimap: MiniMap
 var damage_occluders: Array[Rect2] = []
 var restart: Button
+var death_panel: Panel
+var death_scroll: ScrollContainer
+var death_body: VBoxContainer
+var death_details: VBoxContainer
+var death_details_button: Button
+var death_details_open := false
 var cooldown: float = 0.0
 var notice_left := 0.0
 var health_flash_left := 0.0
@@ -109,6 +115,8 @@ var vendor_buttons: Dictionary = {}
 var vendor_tab := 0
 var vendor_tabs: Array[Button] = []
 var smith_confirm := false
+var smith_shop_expanded := false
+var smith_bonus_expanded := false
 var smith_grid: GridContainer
 var station_wallet: Label
 var station_header_close: Button
@@ -236,7 +244,7 @@ func _ready() -> void:
 	character_button.glyph = "character"
 	character_button.tooltip_text = "Ficha do personagem · C"
 	character_button.pressed.connect(func():
-		rpg_panel.tab = 0
+		rpg_panel.tab = 3
 		character_toggled.emit()
 	)
 	add_child(character_button)
@@ -297,10 +305,10 @@ func _ready() -> void:
 	book_header.add_child(inventory_gold)
 	diary_navigation = HBoxContainer.new()
 	inventory_column.add_child(diary_navigation)
-	for i in range(3):
+	for i in range(2):
 		var link := DiaryTab.new()
-		link.glyph = ["bag","book","fury"][i]
-		link.text = ["Mochila","Proficiências","Habilidades"][i]
+		link.glyph = ["bag","fury"][i]
+		link.text = ["Mochila","Evolução"][i]
 		link.add_theme_font_size_override("font_size",11)
 		link.custom_minimum_size.y = 44
 		link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -461,6 +469,46 @@ func _ready() -> void:
 	restart.visible = false
 	restart.pressed.connect(func(): restart_pressed.emit())
 	add_child(restart)
+	death_panel = Panel.new()
+	death_panel.z_index = 20
+	death_panel.visible = false
+	death_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	death_panel.clip_contents = true
+	death_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",18))
+	add_child(death_panel)
+	var death_column := VBoxContainer.new()
+	death_column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	death_column.offset_left = 16
+	death_column.offset_top = 16
+	death_column.offset_right = -16
+	death_column.offset_bottom = -16
+	death_column.add_theme_constant_override("separation",6)
+	death_panel.add_child(death_column)
+	var death_heading := DiaryTheme.label("VOCÊ FOI DERROTADO",26)
+	death_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	death_heading.add_theme_font_override("font",DiaryTheme.heading_font())
+	death_heading.add_theme_color_override("font_color",Color("#8b3328"))
+	death_column.add_child(death_heading)
+	death_scroll = ScrollContainer.new()
+	death_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	death_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	death_column.add_child(death_scroll)
+	death_body = VBoxContainer.new()
+	death_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	death_body.add_theme_constant_override("separation",6)
+	death_scroll.add_child(death_body)
+	death_details_button = Button.new()
+	death_details_button.text = "Ver detalhes"
+	death_details_button.custom_minimum_size.y = 44
+	death_details_button.pressed.connect(func(): death_details_open = not death_details_open; death_details.visible = death_details_open; death_details_button.text = "Ocultar detalhes" if death_details_open else "Ver detalhes")
+	death_details_button.pressed.connect(func(): call_deferred("_qa_ui_state","death"))
+	death_column.add_child(death_details_button)
+	var return_button := Button.new()
+	return_button.text = "⌂  Voltar ao acampamento"
+	return_button.custom_minimum_size.y = 54
+	DiaryTheme.primary(return_button)
+	return_button.pressed.connect(func(): restart_pressed.emit())
+	death_column.add_child(return_button)
 	boss_name = Label.new()
 	boss_name.add_theme_font_size_override("font_size", 12)
 	boss_name.add_theme_color_override("font_color", Color("#fff0c3"))
@@ -479,6 +527,7 @@ func _ready() -> void:
 	rpg_panel.minimum_size_changed.connect(func(): _layout.call_deferred())
 	inventory_panel.minimum_size_changed.connect(func(): _layout.call_deferred())
 	_layout()
+	call_deferred("_qa_ui_state","hud")
 
 func _layout() -> void:
 	if not is_instance_valid(joystick):
@@ -600,6 +649,8 @@ func _layout() -> void:
 	rpg_panel.size = Vector2(minf(820 if landscape else 640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(780, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
 	DiaryArt.skin(rpg_panel)
+	death_panel.size = Vector2(minf(520,size.x-24),minf(740,size.y-24))
+	death_panel.position = (size-death_panel.size)*0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
 	restart.size = Vector2(240, 48)
 	# Existing HUD appearance is unchanged. A shared list keeps world hit numbers readable.
@@ -770,7 +821,7 @@ func close_inventory() -> void:
 	dash_button.queue_redraw()
 	_sync_controls()
 
-func show_death() -> void:
+func show_death(result: Dictionary = {}) -> void:
 	save_panel.hide()
 	close_inventory()
 	close_station()
@@ -778,15 +829,53 @@ func show_death() -> void:
 	dash_button.enabled = false
 	dash_button.queue_redraw()
 	interact_button.visible = false
-	restart.show()
+	restart.hide()
+	death_panel.show()
+	death_details_open = false
+	death_details_button.text = "Ver detalhes"
+	for child in death_body.get_children():
+		death_body.remove_child(child)
+		child.queue_free()
+	death_body.add_child(_death_label("Derrotado por: %s" % str(result.get("enemy","Inimigo não identificado")),16,true))
+	death_body.add_child(_death_section("PERDAS DESTA DERROTA"))
+	death_body.add_child(_death_label("Ouro perdido: %d" % int(result.get("gold_lost",0)),15))
+	death_body.add_child(_death_label("XP perdido: %d" % int(result.get("xp_lost",0)),15))
+	var item_name := str(result.get("item_lost",""))
+	var item_count := int(result.get("item_count",0))
+	death_body.add_child(_death_label("Item perdido: %s × %d" % [item_name,item_count] if item_count > 0 else "Nenhum item perdido",15))
+	death_body.add_child(_death_section("EQUIPAMENTOS"))
+	var equipment_lost: Array = result.get("equipment_lost",[])
+	death_body.add_child(_death_label("Equipamento perdido: %s" % ", ".join(PackedStringArray(equipment_lost)) if not equipment_lost.is_empty() else "Nenhum equipamento foi perdido.",14))
+	death_body.add_child(_death_section("RETORNO"))
+	death_body.add_child(_death_label("Retorno: Acampamento do Andar %d" % int(result.get("floor",1)),14,true))
+	death_body.add_child(_death_label("A confirmação leva você ao acampamento deste andar.",13))
+	death_details = VBoxContainer.new()
+	death_details.visible = false
+	death_body.add_child(death_details)
+	death_details.add_child(_death_section("DETALHES DA DERROTA"))
+	death_details.add_child(_death_label("Resultado registrado pelo sistema de morte. Valores zero indicam que não houve perda de ouro ou XP.",12))
+	death_scroll.scroll_vertical = 0
 	rpg_panel.hide()
 	map_panel.hide()
+	_layout()
 	_sync_controls()
+	call_deferred("_qa_ui_state","death")
+
+func _death_section(value: String) -> Control:
+	var label := DiaryTheme.label(value,14)
+	label.add_theme_color_override("font_color",DiaryTheme.GREEN)
+	return label
+
+func _death_label(value: String, font_size: int, centered: bool = false) -> Label:
+	var label := DiaryTheme.label(value,font_size)
+	if centered: label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return label
 
 func set_nearby_station(name: String) -> void:
 	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open and not rpg_panel.visible and not map_panel.visible
 	interact_button.visible = interact_button.enabled
 	interact_button.set_caption(("E · Guardião\nOpcional" if name == "Desafiar Guardião (opcional)" else "E · " + name) if interact_button.enabled else "Interagir")
+	if interact_button.visible: call_deferred("_qa_ui_state","hud")
 
 func dismiss_interaction() -> void:
 	interact_button.enabled = false
@@ -800,6 +889,8 @@ func show_station(name: String, progress: GameProgress) -> void:
 	first_weapon_page = 0
 	first_weapon_selected = ""
 	smith_tab = 0
+	smith_shop_expanded = false
+	smith_bonus_expanded = false
 	smith_confirm = false
 	vendor_tab = 0
 	smith_shop_selected = ""
@@ -811,6 +902,7 @@ func show_station(name: String, progress: GameProgress) -> void:
 	dash_button.enabled = false
 	refresh_station(progress)
 	_layout()
+	call_deferred("_qa_ui_state","blacksmith")
 
 func close_station() -> void:
 	if station_panel.visible:
@@ -819,6 +911,7 @@ func close_station() -> void:
 		dash_button.queue_redraw()
 		panel_closed.emit()
 		_sync_controls()
+		call_deferred("_qa_ui_state","hud")
 
 func refresh_station(progress: GameProgress) -> void:
 	station_title.text = station_name
@@ -869,11 +962,9 @@ func refresh_station(progress: GameProgress) -> void:
 			return
 		_smith_tabs(progress)
 		match smith_tab:
-			0: _smith_shop(progress)
-			1: _smith_craft(progress)
+			0: _smith_craft(progress)
+			1: _smith_instance_page(progress,"enhance")
 			2: _smith_instance_page(progress,"rarity")
-			3: _smith_instance_page(progress,"enhance")
-			4: _smith_instance_page(progress,"bonus")
 	elif station_name == "Baú":
 		_add_description("Mochila/Baú · itens guardados ficam protegidos.")
 		var chest_items := GameProgress.ITEMS.duplicate()
@@ -886,6 +977,7 @@ func refresh_station(progress: GameProgress) -> void:
 		_add_page_navigation(chest_items.size(), progress)
 	elif station_name == "Vendedor":
 		_vendor_shop(progress)
+	if station_name == "Ferreiro": call_deferred("_qa_ui_state","blacksmith")
 
 func _page_items(items: Array) -> Array:
 	var start := station_page * ITEMS_PER_PAGE
@@ -970,6 +1062,13 @@ func _input(event: InputEvent) -> void:
 		return
 	if restart.visible:
 		_activate_touch_button(restart, event.position)
+		return
+	if death_panel.visible:
+		if death_scroll.get_global_rect().has_point(event.position):
+			_defer_menu_touch(death_body,death_scroll,event)
+		else:
+			_touch_buttons(death_panel,event.position)
+		get_viewport().set_input_as_handled()
 		return
 	if map_panel.visible:
 		_activate_touch_button(map_close, event.position)
@@ -1079,8 +1178,8 @@ func _sync_controls() -> void:
 	inventory_touch_dragged = false
 	scroll_touch = -1
 	touch_scroll = null
-	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible
-	menu_shade.visible = blocked and not transition_active and not restart.visible
+	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible or death_panel.visible
+	menu_shade.visible = blocked and not transition_active and not restart.visible and not death_panel.visible
 	for button in [inventory_button, character_button, map_button]:
 		button.disabled = blocked
 	mission_toggle.disabled = blocked
@@ -1097,15 +1196,18 @@ func _sync_controls() -> void:
 func show_character(progress: GameProgress) -> void:
 	if inventory_open or station_panel.visible or restart.visible or map_panel.visible:
 		return
+	rpg_panel.tab = 3
 	rpg_panel.show()
 	rpg_panel.refresh(progress)
 	rpg_panel.scroll.scroll_vertical = 0
 	_sync_controls()
 	_layout()
+	call_deferred("_qa_ui_state","evolution")
 
 func close_character() -> void:
 	rpg_panel.hide()
 	_sync_controls()
+	call_deferred("_qa_ui_state","hud")
 
 func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	if introduction_hud != progress.introduction_active():
@@ -1186,7 +1288,7 @@ func _open_diary(page: int) -> void:
 	if page == 0:
 		inventory_toggled.emit()
 	else:
-		rpg_panel.tab = 2 if page == 1 else 1
+		rpg_panel.tab = 3
 		character_toggled.emit()
 
 func _add_equipment(id: String, progress: GameProgress, destination: VBoxContainer, in_bag: bool) -> void:
@@ -1318,12 +1420,12 @@ func _forge_requirement(name: String, available: int, required: int) -> PanelCon
 
 func _smith_tabs(progress: GameProgress) -> void:
 	var tabs := GridContainer.new()
-	tabs.columns = 5
+	tabs.columns = 3
 	station_content.add_child(tabs)
-	for index in range(5):
+	for index in range(3):
 		var tab := Button.new()
-		tab.text = ["Loja","Criar","Evoluir","Melhorar","Bônus"][index]
-		tab.add_theme_font_size_override("font_size",10)
+		tab.text = ["Forjar","Aprimorar","Evoluir"][index]
+		tab.add_theme_font_size_override("font_size",13)
 		tab.custom_minimum_size.y = 44
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		DiaryTheme.select(tab,smith_tab == index)
@@ -1370,6 +1472,14 @@ func _smith_craft(progress: GameProgress) -> void:
 	_add_description("ARMADURAS E ACESSÓRIOS")
 	for id: String in RPGRules.EQUIPMENT:
 		if not ArsenalRules.CATEGORIES.has(id): _add_equipment(id,progress,station_content,false)
+	var shop_toggle := Button.new()
+	shop_toggle.text = ("− " if smith_shop_expanded else "+ ")+"Armas iniciais por ouro"
+	shop_toggle.custom_minimum_size.y = 44
+	shop_toggle.pressed.connect(func(): smith_shop_expanded = not smith_shop_expanded; refresh_station(progress))
+	station_content.add_child(shop_toggle)
+	if smith_shop_expanded:
+		_add_description("Armas disponíveis para compra com as regras atuais.")
+		_smith_shop(progress)
 
 func _smith_instance_page(progress: GameProgress, page: String) -> void:
 	_add_description("Escolha uma arma da mochila. Cada cópia mantém sua própria evolução.")
@@ -1394,13 +1504,26 @@ func _smith_instance_page(progress: GameProgress, page: String) -> void:
 	if page == "rarity":
 		var recipe := EquipmentEconomy.rarity_recipe(weapon.rarity)
 		if recipe.is_empty(): _add_description("Raridade máxima alcançada."); return
-		_add_description("Nova raridade: %s · melhoria volta a +0; bônus escolhidos são reiniciados." % ArsenalRules.RARITIES[EquipmentEconomy.RARITY_ORDER[EquipmentEconomy.RARITY_ORDER.find(weapon.rarity)+1]].name)
+		var next_rarity: String = EquipmentEconomy.RARITY_ORDER[EquipmentEconomy.RARITY_ORDER.find(weapon.rarity)+1]
+		_add_description("Nova raridade: %s · melhoria volta a +0; bônus escolhidos são reiniciados." % ArsenalRules.RARITIES[next_rarity].name)
+		var current_stats := _weapon_instance_stats(progress,uid,weapon.rarity,int(weapon.level),weapon.choices)
+		var next_stats := _weapon_instance_stats(progress,uid,next_rarity,0,{})
+		_add_description(_weapon_comparison(current_stats,next_stats,weapon.category))
 		_smith_cost(recipe,progress)
 		_smith_confirm_action("Evoluir raridade", "evolve_weapon",uid,progress.can_evolve_weapon(uid),progress)
+		var bonuses := Button.new()
+		bonuses.text = ("− " if smith_bonus_expanded else "+ ")+"Bônus dos aprimoramentos"
+		bonuses.custom_minimum_size.y = 44
+		bonuses.pressed.connect(func(): smith_bonus_expanded = not smith_bonus_expanded; refresh_station(progress))
+		station_content.add_child(bonuses)
+		if smith_bonus_expanded: _smith_bonus_options(progress,uid,weapon)
 	elif page == "enhance":
 		if int(weapon.level) >= 20: _add_description("Aprimoramento máximo: +20."); return
 		var recipe := EquipmentEconomy.enhance_recipe(int(weapon.level),weapon.rarity)
 		_smith_cost(recipe,progress)
+		var current_stats := _weapon_instance_stats(progress,uid,weapon.rarity,int(weapon.level),weapon.choices)
+		var next_stats := _weapon_instance_stats(progress,uid,weapon.rarity,int(weapon.level)+1,weapon.choices)
+		_add_description(_weapon_comparison(current_stats,next_stats,weapon.category))
 		var chance: float = EquipmentEconomy.SUCCESS[int(weapon.level)]
 		_add_description("+%d → +%d · %d%% de sucesso. Falha: %s." % [int(weapon.level),int(weapon.level)+1,roundi(chance*100),"pode baixar 1–2 níveis" if int(weapon.level) >= 15 else "baixa 1 nível" if int(weapon.level) >= 10 else "mantém o nível"])
 		var seal := CheckButton.new()
@@ -1411,16 +1534,40 @@ func _smith_instance_page(progress: GameProgress, page: String) -> void:
 		station_content.add_child(seal)
 		_smith_confirm_action("Tentar aprimorar", "enhance_weapon",uid,progress.can_enhance_weapon(uid),progress)
 	else:
-		for milestone: int in EquipmentEconomy.MILESTONES:
-			var active := int(weapon.level) >= milestone
-			var chosen: String = weapon.choices.get(str(milestone),"")
-			_add_description("+%d · %s" % [milestone,"Escolhido: "+chosen.capitalize() if chosen != "" else "Escolha disponível" if active else "Bloqueado"])
-			if not active or chosen != "": continue
-			for option: Dictionary in EquipmentEconomy.bonus_options(weapon.category,milestone):
-				var id := "%s|%d|%s" % [uid,milestone,option.id]
-				_smith_confirm_action("%s %s" % [option.name,_smith_bonus_value(option)],"weapon_bonus",id,true,progress)
-				if smith_confirm and smith_shop_selected == id:
-					_add_description("%s %s. %s Escolha definitiva até evoluir a raridade desta arma." % [option.name,_smith_bonus_value(option),_smith_bonus_description(option.stat)])
+		_smith_bonus_options(progress,uid,weapon)
+
+func _smith_bonus_options(progress: GameProgress, uid: String, weapon: Dictionary) -> void:
+	_add_description("Bônus de atributos nos marcos de aprimoramento existentes.")
+	for milestone: int in EquipmentEconomy.MILESTONES:
+		var active := int(weapon.level) >= milestone
+		var chosen: String = weapon.choices.get(str(milestone),"")
+		_add_description("+%d · %s" % [milestone,"Escolhido: "+chosen.capitalize() if chosen != "" else "Escolha disponível" if active else "Bloqueado"])
+		if not active or chosen != "": continue
+		for option: Dictionary in EquipmentEconomy.bonus_options(weapon.category,milestone):
+			var id := "%s|%d|%s" % [uid,milestone,option.id]
+			_smith_confirm_action("%s %s" % [option.name,_smith_bonus_value(option)],"weapon_bonus",id,true,progress)
+			if smith_confirm and smith_shop_selected == id:
+				_add_description("%s %s. %s Escolha definitiva até evoluir a raridade desta arma." % [option.name,_smith_bonus_value(option),_smith_bonus_description(option.stat)])
+
+func _weapon_instance_stats(progress: GameProgress, uid: String, rarity: String, level: int, choices: Dictionary) -> Dictionary:
+	var candidate := GameProgress.new()
+	candidate.attributes = progress.attributes.duplicate(true)
+	candidate.equipment = progress.equipment.duplicate(true)
+	candidate.weapon_instances = progress.weapon_instances.duplicate(true)
+	candidate.talents = progress.talents
+	candidate.abilities = progress.abilities
+	candidate.etapa2_enabled = progress.etapa2_enabled
+	candidate.equipped = progress.equipped.duplicate(true)
+	candidate.equipped.Arma = str(candidate.weapon_instances[uid].category)
+	candidate.equipped_weapon_uid = uid
+	candidate.weapon_instances[uid].rarity = rarity
+	candidate.weapon_instances[uid].level = level
+	candidate.weapon_instances[uid].choices = choices.duplicate(true)
+	return ArsenalRules.effective(candidate,str(candidate.weapon_instances[uid].category))
+
+func _weapon_comparison(current: Dictionary, next: Dictionary, category: String) -> String:
+	var damage_label := "Dano mágico" if category == "cajado" else "Dano físico"
+	return "%s: %d → %d\nVida: %d → %d · Defesa: %d → %d\nVelocidade do ataque: %.2f → %.2f/s" % [damage_label,int(current.damage),int(next.damage),int(current.hp),int(next.hp),int(current.armor),int(next.armor),1.0/float(current.interval),1.0/float(next.interval)]
 
 func _smith_bonus_value(option: Dictionary) -> String:
 	return "+%s%%" % String.num(float(option.value)*100.0,1) if option.stat in ["critical","attack_speed"] else "+%d" % int(option.value)
@@ -1679,6 +1826,27 @@ func _touch_buttons(node: Node, point: Vector2) -> bool:
 		if _touch_buttons(child, point):
 			return true
 	return false
+
+func _qa_ui_state(kind: String) -> void:
+	if not OS.has_feature("web"): return
+	var root_node: Control = rpg_panel if kind == "evolution" else station_panel if kind == "blacksmith" else death_panel if kind == "death" else self
+	var buttons: Array[Dictionary] = []
+	_qa_collect_buttons(root_node,buttons)
+	var joy_rect := joystick.get_global_rect()
+	var interact_rect := interact_button.get_global_rect()
+	var payload := {"screen":kind,"panel_visible":root_node.visible,"viewport":[size.x,size.y],"buttons":buttons,
+		"joystick":{"x":joy_rect.position.x,"y":joy_rect.position.y,"w":joy_rect.size.x,"h":joy_rect.size.y},
+		"interact":{"visible":interact_button.visible,"caption":interact_button.caption.text,"x":interact_rect.position.x,"y":interact_rect.position.y,"w":interact_rect.size.x,"h":interact_rect.size.y}}
+	var message := "ARVEON_UI2_STATE "+JSON.stringify(payload)
+	JavaScriptBridge.eval("if(window.__ARVEON_UI2_TEST__===true) console.log("+JSON.stringify(message)+")")
+
+func _qa_collect_buttons(node: Node, result: Array[Dictionary]) -> void:
+	if node is Button and node.is_visible_in_tree():
+		var button := node as Button
+		var rect := button.get_global_rect()
+		result.append({"text":button.text,"tooltip":button.tooltip_text,"disabled":button.disabled,"x":rect.position.x,"y":rect.position.y,"w":rect.size.x,"h":rect.size.y})
+	for child in node.get_children():
+		_qa_collect_buttons(child,result)
 
 func _begin_scroll(scroll: ScrollContainer, event: InputEventScreenTouch) -> void:
 	if scroll_touch == -1 and scroll.get_global_rect().has_point(event.position):

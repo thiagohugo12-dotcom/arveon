@@ -5,6 +5,9 @@ extends RootGuardian
 # guardian state, drops and save path remain the source of truth.
 const ARENA_LIMITS := Rect2(1210, 920, 340, 315)
 
+func display_name() -> String:
+	return "Colosso de Arenito"
+
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
 	global_position = Vector2(
@@ -21,9 +24,9 @@ func _resolve_attack() -> void:
 		1: hit = offset.dot(aim) > 0.0 and offset.dot(aim) <= 210.0 and absf(offset.cross(aim)) < 36.0
 		2:
 			for angle in [-0.38, 0.0, 0.38]:
-				projectile_requested.emit(global_position, aim.rotated(angle), roundi(17 * damage_scale))
+				projectile_requested.emit(global_position, aim.rotated(angle), roundi(17 * damage_scale),display_name())
 	if hit:
 		var ray := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
 		if get_world_2d().direct_space_state.intersect_ray(ray).is_empty():
-			target.receive_damage(roundi((25 if attack_index == 0 else 22) * damage_scale))
+			target.receive_damage(roundi((25 if attack_index == 0 else 22) * damage_scale),"physical",display_name())
 	view.play_attack()

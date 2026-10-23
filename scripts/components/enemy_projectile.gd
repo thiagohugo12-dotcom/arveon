@@ -7,14 +7,16 @@ var speed := 240.0
 var damage := 6
 var lifetime := 2.0
 var target: PlayerActor
+var source_name := ""
 var spent := false
 var visual_offset := Vector2.ZERO # Review-only height; collision remains on ground.
 
-func setup(origin: Vector2, travel_direction: Vector2, hit_damage: int, player: PlayerActor) -> void:
+func setup(origin: Vector2, travel_direction: Vector2, hit_damage: int, player: PlayerActor, attacker_name: String = "") -> void:
 	global_position = origin
 	direction = travel_direction.normalized()
 	damage = hit_damage
 	target = player
+	source_name = attacker_name
 
 func _ready() -> void:
 	collision_layer = 0
@@ -39,7 +41,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if is_instance_valid(target) and target.health.is_alive() and Geometry2D.get_closest_point_to_segment(target.global_position,start,end).distance_to(target.global_position) <= 19.0:
 		spent = true
-		target.receive_damage(damage)
+		target.receive_damage(damage,"physical",source_name)
 		queue_free()
 	elif lifetime <= 0.0 or not wall.is_empty():
 		spent = true

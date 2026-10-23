@@ -33,6 +33,8 @@ var skill1_pending := 0.0
 var skill1_pending_category := ""
 var skill1_pending_direction := Vector2.DOWN
 var feedback_target: EnemyActor
+var last_damage_source := ""
+var last_damage_time_msec := 0
 
 func _cancel_skill1() -> void:
 	skill1_pending = 0
@@ -222,13 +224,16 @@ func _prepare_sword_visual() -> void:
 	else:
 		sword_view.cancel_preparation()
 
-func receive_damage(amount: int, damage_type: String = "physical") -> void:
+func receive_damage(amount: int, damage_type: String = "physical", source_name: String = "") -> void:
 	if SafeCamp.in_clearance(global_position) or not health.is_alive() or amount <= 0:
 		return
 	var reduced := RPGRules.received_damage(amount,damage_type,armor,resistance)
 	reduced = class_combat.receive(reduced) if progress != null else reduced
 	var before := health.current
 	health.damage(reduced)
+	if before > health.current and not source_name.is_empty():
+		last_damage_source = source_name
+		last_damage_time_msec = Time.get_ticks_msec()
 	view.show_damage(before - health.current)
 
 func apply_progression(value: GameProgress, initial: bool = false) -> void:
