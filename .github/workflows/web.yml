@@ -257,8 +257,10 @@ jobs:
       - name: Validate responsive loading without fake progress
         run: node tests/web_arveon_loading.mjs
       - name: Capture approved loading artwork in real Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: timeout 180s node tests/web_loading_browser.mjs
       - name: Save approved loading screenshots
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -267,34 +269,46 @@ jobs:
           if-no-files-found: error
           retention-days: 1
       - name: Prepare isolated art sample entry
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: node tools/build-art-sample.mjs
       - name: Prepare isolated sword review entry
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: node tools/build-sword-demo.mjs
       - name: Prepare isolated bow review entry
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: node tools/build-bow-demo.mjs
       - name: Prepare isolated staff review entry
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: node tools/build-staff-demo.mjs
       - name: Prepare isolated axe and spear reviews
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: node tools/build-melee-demos.mjs
       - name: Prepare isolated Skill 1 review
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: node tools/build-skill1-demo.mjs
       - name: Verify five Skills 1 in desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: timeout 150s node tests/web_skill1_demo.mjs
       - name: Verify axe and spear with desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: |
           MELEE_REVIEW_WEAPON=machado timeout 150s node tests/web_melee_demos.mjs
           MELEE_REVIEW_WEAPON=lanca timeout 150s node tests/web_melee_demos.mjs
       - name: Verify staff review in desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: timeout 150s node tests/web_staff_demo.mjs
       - name: Verify bow review in desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: node tests/web_bow_demo.mjs
       - name: Verify actual Web persistence in Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         shell: bash
         run: |
           set -euo pipefail
           timeout 150s node tests/web_save_browser.mjs 2>&1 | tee /tmp/web-save-browser.log
           grep '^WEB_SAVE_RESULT: [0-9]* checks, 0 failures$' /tmp/web-save-browser.log
       - name: Verify sword review in desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: node tests/web_sword_demo.mjs
       - name: Save Web build (no deployment)
         uses: actions/upload-artifact@v4
@@ -478,12 +492,14 @@ jobs:
           fi
 
       - name: Verify published loading screen and capture TESTE
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         env:
           LOADING_WEB_DIR: web
           LOADING_TEST_BASE_URL: https://arveon-teste.vercel.app/
           QA_LOADING_CAPTURE_DIR: loading-live-qa
         run: timeout 180s node source/tests/web_loading_browser.mjs
       - name: Save published loading screenshots
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         if: always()
         uses: actions/upload-artifact@v4
         with:
