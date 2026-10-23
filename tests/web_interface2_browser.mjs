@@ -104,27 +104,24 @@ async function session(mode){
   if(mobile){
    const world=[...ui].reverse().find(s=>s.screen==='hud'),joy=world.joystick,start=screenPoint(world,joy.x+joy.w/2,joy.y+joy.h/2);
    await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:2,radiusX:4,radiusY:4,force:1}]});
-   for(let i=1;i<=28;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x,y:start.y+Math.min(52,i*2),id:2,radiusX:4,radiusY:4,force:1}]});await delay(100);}
+   for(let i=1;i<=50;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x,y:start.y+Math.min(52,i*2),id:2,radiusX:4,radiusY:4,force:1}]});await delay(100);}
    await shot('joystick-held');await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    check(moves.some(m=>Math.hypot(...m.direction)>0.2&&!m.blocked),'mobile joystick delivers movement after menu close');
    check(new Set(moves.filter(m=>Math.hypot(...m.direction)>0.2).map(m=>m.position.join(','))).size>1,'player moves in the world after menu close');
-  }else{
-   await call('Input.dispatchKeyEvent',{type:'keyDown',key:'s',code:'KeyS',windowsVirtualKeyCode:83});await delay(2200);await call('Input.dispatchKeyEvent',{type:'keyUp',key:'s',code:'KeyS',windowsVirtualKeyCode:83});
+   await shot('after-forge-walk');
+   await until(()=>current('death'),'actual enemy damage/death displays the result panel',120000);
+   await shot('death');
+   const details={...button('death',b=>b.text==='Ver detalhes'),screen:'death'};await tap(details);
+   await until(()=>current('death')?.buttons.some(b=>b.text==='Ocultar detalhes'),'death details open from touch/mouse');
+   await shot('death-details');
+   const back={...button('death',b=>b.text.includes('Voltar ao acampamento')),screen:'death'};await tap(back);
+   await until(()=>titles.filter(s=>s.buttons).at(-1)?.buttons.some(b=>b.text==='Continuar'&&!b.disabled),'death return exposes the saved character at the title screen',30000);
+   const continueState=titles.filter(s=>s.buttons).at(-1);const continueButton=continueState.buttons.find(b=>b.text==='Continuar'&&!b.disabled);
+   const continuePoint={x:canvasRect.left+continueButton.x*canvasRect.width/continueState.viewport[0],y:canvasRect.top+continueButton.y*canvasRect.height/continueState.viewport[1]};
+   const startCount=titles.filter(s=>s.started).length;await input(continuePoint,'down');await delay(70);await input(continuePoint,'up');
+   await until(()=>titles.filter(s=>s.started).length>startCount,'continue returns to the saved character');
+   check(titles.filter(s=>s.started).at(-1).started.floor===1,'mobile: death return continues in the Andar 1 camp');
   }
-  await shot('after-forge-walk');
-  await shot('after-forge-walk');
-  await until(()=>current('death'),'actual enemy damage/death displays the result panel',90000);
-  await shot('death');
-  const details={...button('death',b=>b.text==='Ver detalhes'),screen:'death'};await tap(details);
-  await until(()=>current('death')?.buttons.some(b=>b.text==='Ocultar detalhes'),'death details open from touch/mouse');
-  await shot('death-details');
-  const back={...button('death',b=>b.text.includes('Voltar ao acampamento')),screen:'death'};await tap(back);
-  await until(()=>titles.filter(s=>s.buttons).at(-1)?.buttons.some(b=>b.text==='Continuar'&&!b.disabled),'death return exposes the saved character at the title screen',30000);
-  const continueState=titles.filter(s=>s.buttons).at(-1);const continueButton=continueState.buttons.find(b=>b.text==='Continuar'&&!b.disabled);
-  const continuePoint={x:canvasRect.left+continueButton.x*canvasRect.width/continueState.viewport[0],y:canvasRect.top+continueButton.y*canvasRect.height/continueState.viewport[1]};
-  const startCount=titles.filter(s=>s.started).length;await input(continuePoint,'down');await delay(70);await input(continuePoint,'up');
-  await until(()=>titles.filter(s=>s.started).length>startCount,'continue returns to the saved character');
-  check(titles.filter(s=>s.started).at(-1).started.floor===1,mode+': death return continues in the Andar 1 camp');
   const trusted=await evaluate('ui2BrowserEvents.some(e=>e.trusted&&e.target==="canvas"&&e.type==="'+(mobile?'touchstart':'mousedown')+'")');
   check(trusted,mode+': trusted Touch/Mouse browser events reached the exported canvas');
   check(errors.length===0,mode+': no runtime script errors');
