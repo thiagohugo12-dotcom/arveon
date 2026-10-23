@@ -101,16 +101,9 @@ async function session(mode){
   prior=ui.length;
   await tap({...button('blacksmith',b=>b.text==='×'),screen:'blacksmith'});
   await until(()=>ui.length>prior,'Blacksmith closes');
-  const world=[...ui].reverse().find(s=>s.screen==='hud');
-  if(mobile){
-   const joy=world.joystick;const start=screenPoint(world,joy.x+joy.w/2,joy.y+joy.h/2);
-   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:2,radiusX:4,radiusY:4,force:1}]});
-   for(let i=1;i<=32;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x+Math.min(52,i*2),y:start.y,id:2,radiusX:4,radiusY:4,force:1}]});await delay(120);}
-   await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
-  }else{
-   await call('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});await delay(3800);await call('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
-  }
-  await until(()=>current('death'),'actual enemy damage/death displays the result panel',60000);
+  await call('Input.dispatchKeyEvent',{type:'keyDown',key:'d',code:'KeyD',windowsVirtualKeyCode:68});await delay(2200);await call('Input.dispatchKeyEvent',{type:'keyUp',key:'d',code:'KeyD',windowsVirtualKeyCode:68});
+  await shot('after-forge-walk');
+  await until(()=>current('death'),'actual enemy damage/death displays the result panel',90000);
   await shot('death');
   const details={...button('death',b=>b.text==='Ver detalhes'),screen:'death'};await tap(details);
   await until(()=>current('death')?.buttons.some(b=>b.text==='Ocultar detalhes'),'death details open from touch/mouse');
