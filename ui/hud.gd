@@ -959,6 +959,7 @@ func refresh_station(progress: GameProgress) -> void:
 	elif station_name == "Ferreiro":
 		if progress.introduction_active():
 			_first_weapon_interface(progress)
+			call_deferred("_qa_ui_state","blacksmith")
 			return
 		_smith_tabs(progress)
 		match smith_tab:
@@ -1837,6 +1838,7 @@ func _qa_ui_state(kind: String) -> void:
 	var payload := {"screen":kind,"panel_visible":root_node.visible,"viewport":[size.x,size.y],"buttons":buttons,
 		"joystick":{"x":joy_rect.position.x,"y":joy_rect.position.y,"w":joy_rect.size.x,"h":joy_rect.size.y},
 		"interact":{"visible":interact_button.visible,"caption":interact_button.caption.text,"x":interact_rect.position.x,"y":interact_rect.position.y,"w":interact_rect.size.x,"h":interact_rect.size.y}}
+	if kind == "blacksmith": payload["scroll_y"] = station_scroll.scroll_vertical
 	var message := "ARVEON_UI2_STATE "+JSON.stringify(payload)
 	JavaScriptBridge.eval("if(window.__ARVEON_UI2_TEST__===true) console.log("+JSON.stringify(message)+")")
 
@@ -1876,5 +1878,3 @@ func set_boss(boss: TowerGuardian) -> void:
 		boss_name.text = "%s · Fase %d\nHP %d/%d" % [FloorConfig.tower_guardian_name(tower_trial.floor_id if tower_trial != null else 1), 2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
 		boss_bar.max_value = boss.health.maximum
 		boss_bar.value = boss.health.current
-
-
