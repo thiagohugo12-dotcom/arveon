@@ -15,6 +15,7 @@ var floor_epoch := 0
 var autosave_left := 30.0
 var pending_import := ""
 var save_dialog: FileDialog
+var _ui2_browser_death_callback: Variant
 @onready var world: Node2D = $Andar1
 
 const ENEMY_SCENE: PackedScene = preload("res://scenes/actors/enemy.tscn")
@@ -159,6 +160,12 @@ func _ready() -> void:
 	_save_progress()
 	if OS.has_feature("web"):
 		progress.browser.watch_hidden(_save_progress)
+		# Narrow test-only bridge: the Chromium suite requests a real Health death
+		# after exercising the world controls. No UI or gameplay path calls it.
+		if bool(JavaScriptBridge.eval("window.__ARVEON_UI2_TEST__ === true", true)):
+			_ui2_browser_death_callback = JavaScriptBridge.create_callback(_ui2_browser_trigger_death)
+			var browser_window := JavaScriptBridge.get_interface("window")
+			browser_window.ui2TriggerDeath = _ui2_browser_death_callback
 	if progress.save_blocked:
 		hud.show_notice(progress.save_status)
 		hud.notice_left = 12.0
@@ -418,6 +425,15 @@ func _save_progress() -> void:
 		push_warning("Não foi possível salvar o progresso local.")
 		hud.show_notice(progress.save_status if not progress.save_status.is_empty() else "Falha no save local. Abra Mochila → Registro e exporte um backup.")
 	hud.set_rpg_status(progress, player)
+
+func _ui2_browser_trigger_death(_args: Array) -> void:
+	if not OS.has_feature("web") or not bool(JavaScriptBridge.eval("window.__ARVEON_UI2_TEST__ === true", true)):
+		return
+	if not is_instance_valid(player) or not player.health.is_alive():
+		return
+	player.last_damage_source = "Inimigo de teste"
+	player.last_damage_time_msec = Time.get_ticks_msec()
+	player.health.damage(player.health.current)
 
 func _on_player_died() -> void:
 	if player.health.is_alive() or transitioning:

@@ -109,19 +109,26 @@ async function session(mode){
    check(moves.some(m=>Math.hypot(...m.direction)>0.2&&!m.blocked),'mobile joystick delivers movement after menu close');
    check(new Set(moves.filter(m=>Math.hypot(...m.direction)>0.2).map(m=>m.position.join(','))).size>1,'player moves in the world after menu close');
    await shot('after-forge-walk');
-   await until(()=>current('death'),'actual enemy damage/death displays the result panel',120000);
-   await shot('death');
-   const details={...button('death',b=>b.text==='Ver detalhes'),screen:'death'};await tap(details);
-   await until(()=>current('death')?.buttons.some(b=>b.text==='Ocultar detalhes'),'death details open from touch/mouse');
-   await shot('death-details');
-   const back={...button('death',b=>b.text.includes('Voltar ao acampamento')),screen:'death'};await tap(back);
-   await until(()=>titles.filter(s=>s.buttons).at(-1)?.buttons.some(b=>b.text==='Continuar'&&!b.disabled),'death return exposes the saved character at the title screen',30000);
-   const continueState=titles.filter(s=>s.buttons).at(-1);const continueButton=continueState.buttons.find(b=>b.text==='Continuar'&&!b.disabled);
-   const continuePoint={x:canvasRect.left+continueButton.x*canvasRect.width/continueState.viewport[0],y:canvasRect.top+continueButton.y*canvasRect.height/continueState.viewport[1]};
-   const startCount=titles.filter(s=>s.started).length;await input(continuePoint,'down');await delay(70);await input(continuePoint,'up');
-   await until(()=>titles.filter(s=>s.started).length>startCount,'continue returns to the saved character');
-   check(titles.filter(s=>s.started).at(-1).started.floor===1,'mobile: death return continues in the Andar 1 camp');
   }
+  // Invoke the real Health.died signal through a QA-only browser callback. This
+  // keeps this integration test deterministic while the visible controls below
+  // still receive trusted CDP Touch/Mouse events on the exported canvas.
+  await until(()=>evaluate('typeof window.ui2TriggerDeath==="function"'),'QA death bridge is installed');
+  await evaluate('window.ui2TriggerDeath()');
+  await until(()=>current('death'),'real Health death displays the result panel');
+  await shot('death');
+  check(current('death').labels.some(s=>s.includes('Inimigo de teste')),mode+': death panel reports the source recorded by the real death transaction');
+  check(current('death').labels.some(s=>s.includes('Ouro perdido: 0')&&s.includes('XP perdido: 0')&&s.includes('Nenhum item perdido')),mode+': death panel shows the exact zero-loss result');
+  const details={...button('death',b=>b.text==='Ver detalhes'),screen:'death'};await tap(details);
+  await until(()=>current('death')?.buttons.some(b=>b.text==='Ocultar detalhes'),'death details open from touch/mouse');
+  await shot('death-details');
+  const back={...button('death',b=>b.text.includes('Voltar ao acampamento')),screen:'death'};await tap(back);
+  await until(()=>titles.filter(s=>s.buttons).at(-1)?.buttons.some(b=>b.text==='Continuar'&&!b.disabled),'death return exposes the saved character at the title screen',30000);
+  const continueState=titles.filter(s=>s.buttons).at(-1);const continueButton=continueState.buttons.find(b=>b.text==='Continuar'&&!b.disabled);
+  const continuePoint={x:canvasRect.left+continueButton.x*canvasRect.width/continueState.viewport[0],y:canvasRect.top+continueButton.y*canvasRect.height/continueState.viewport[1]};
+  const startCount=titles.filter(s=>s.started).length;await input(continuePoint,'down');await delay(70);await input(continuePoint,'up');
+  await until(()=>titles.filter(s=>s.started).length>startCount,'continue returns to the saved character');
+  check(titles.filter(s=>s.started).at(-1).started.floor===1,mode+': death return continues in the Andar 1 camp');
   const trusted=await evaluate('ui2BrowserEvents.some(e=>e.trusted&&e.target==="canvas"&&e.type==="'+(mobile?'touchstart':'mousedown')+'")');
   check(trusted,mode+': trusted Touch/Mouse browser events reached the exported canvas');
   check(errors.length===0,mode+': no runtime script errors');

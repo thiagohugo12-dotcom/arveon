@@ -1832,10 +1832,12 @@ func _qa_ui_state(kind: String) -> void:
 	if not OS.has_feature("web"): return
 	var root_node: Control = rpg_panel if kind == "evolution" else station_panel if kind == "blacksmith" else death_panel if kind == "death" else self
 	var buttons: Array[Dictionary] = []
+	var labels: Array[String] = []
 	_qa_collect_buttons(root_node,buttons)
+	_qa_collect_labels(root_node,labels)
 	var joy_rect := joystick.get_global_rect()
 	var interact_rect := interact_button.get_global_rect()
-	var payload := {"screen":kind,"panel_visible":root_node.visible,"viewport":[size.x,size.y],"buttons":buttons,
+	var payload := {"screen":kind,"panel_visible":root_node.visible,"viewport":[size.x,size.y],"buttons":buttons,"labels":labels,
 		"joystick":{"x":joy_rect.position.x,"y":joy_rect.position.y,"w":joy_rect.size.x,"h":joy_rect.size.y},
 		"interact":{"visible":interact_button.visible,"caption":interact_button.caption.text,"x":interact_rect.position.x,"y":interact_rect.position.y,"w":interact_rect.size.x,"h":interact_rect.size.y}}
 	if kind == "blacksmith": payload["scroll_y"] = station_scroll.scroll_vertical
@@ -1849,6 +1851,12 @@ func _qa_collect_buttons(node: Node, result: Array[Dictionary]) -> void:
 		result.append({"text":button.text,"tooltip":button.tooltip_text,"disabled":button.disabled,"x":rect.position.x,"y":rect.position.y,"w":rect.size.x,"h":rect.size.y})
 	for child in node.get_children():
 		_qa_collect_buttons(child,result)
+
+func _qa_collect_labels(node: Node, result: Array[String]) -> void:
+	if node is Label and node.is_visible_in_tree():
+		result.append((node as Label).text)
+	for child in node.get_children():
+		_qa_collect_labels(child,result)
 
 func _begin_scroll(scroll: ScrollContainer, event: InputEventScreenTouch) -> void:
 	if scroll_touch == -1 and scroll.get_global_rect().has_point(event.position):
