@@ -11,7 +11,7 @@ func _count(node: Node, counts: Dictionary) -> void:
 		_count(child, counts)
 
 func _run() -> void:
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", "user://perf_probe.json")
+	OS.set_environment("ARVEON_SAVE_PATH", "user://perf_probe.json")
 	var start := Time.get_ticks_usec()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(main)

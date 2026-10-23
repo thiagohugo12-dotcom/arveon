@@ -172,7 +172,7 @@ Pequenas bases de construções podem bloquear movimento, mantendo vias abertas.
 A autorização substitui a composição fixa anterior apenas no Andar 1.
 Proteção, respawn, monstros aprovados, combate, saves e Andares 2–5 preservados.
 
-Fonte de verdade das decisões conhecidas, baseada no pedido de 07/10/2026. Nome provisório: grande-arvore-rpg.
+Fonte de verdade das decisões conhecidas, baseada no pedido de 07/10/2026. Nome oficial: ARVÉON: Ascensão Ancestral; nome curto: ARVÉON; identificador técnico: arveon.
 
 ## v0.5.0 — entrada da Torre, aprovada em 10/10/2026
 Conforme `docs/decisions/TORRE_V050.md`: 50 derrotas reais de criaturas do

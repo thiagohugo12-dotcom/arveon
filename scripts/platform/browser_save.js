@@ -68,6 +68,9 @@
   else {
     let storage;
     try { storage = root.localStorage; } catch (_) { storage = {getItem(){throw Error();}}; }
-    root.GrandeArvoreSave = create(storage);
+    const api = create(storage);
+    root.ArveonSave = api;
+    // Keep the old bridge name available to deployed builds and browser tools.
+    root.GrandeArvoreSave = api;
   }
 })(typeof window === 'undefined' ? globalThis : window);

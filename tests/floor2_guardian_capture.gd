@@ -31,7 +31,7 @@ func _run() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(output)
 	var path := "user://qa_vale_guardian_capture_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", path)
+	OS.set_environment("ARVEON_SAVE_PATH", path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	root.size = Vector2i(960, 540)
 	root.content_scale_size = Vector2i(960, 540)
@@ -109,6 +109,6 @@ func _run() -> void:
 	main.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
+	OS.unset_environment("ARVEON_SAVE_PATH")
 	print("VALE_GUARDIAN_CAPTURE: 9 capturas reais em " + output)
 	quit()

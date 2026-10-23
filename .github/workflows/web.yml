@@ -337,7 +337,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency:
-      group: grande-arvore-rpg-fixed-test-preview
+      group: arveon-fixed-test-preview
       cancel-in-progress: true
     steps:
       - name: Download tested Web export
@@ -360,7 +360,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: team_6XRzZ5HN4AOw2hWyIpf8McMU
           VERCEL_PROJECT_ID: prj_gYKlx91MiswTmwj2PLiN5liQD0B7
-          TEST_ALIAS: grande-arvore-rpg-teste.vercel.app
+          TEST_ALIAS: arveon-teste.vercel.app
           PREVIEW_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PREVIEW_BRANCH: ${{ github.head_ref || github.ref_name }}
         run: |
@@ -374,10 +374,10 @@ jobs:
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
           cd web
           cp ../source/tools/preview-vercel.json vercel.json
-          npx --yes vercel@62.7.0 deploy --yes --non-interactive --meta "githubCommitSha=$PREVIEW_COMMIT_SHA" --meta "githubCommitRef=$PREVIEW_BRANCH" > /tmp/grande-arvore-deploy.json
+          npx --yes vercel@62.7.0 deploy --yes --non-interactive --meta "githubCommitSha=$PREVIEW_COMMIT_SHA" --meta "githubCommitRef=$PREVIEW_BRANCH" > /tmp/arveon-deploy.json
           preview_url="$(node --input-type=module -e '
             import { readFileSync } from "node:fs";
-            const result = JSON.parse(readFileSync("/tmp/grande-arvore-deploy.json", "utf8"));
+            const result = JSON.parse(readFileSync("/tmp/arveon-deploy.json", "utf8"));
             if (result.status !== "ok" || result.deployment.readyState !== "READY" || result.deployment.target === "production") process.exit(1);
             console.log(result.deployment.url);
           ')"
@@ -468,7 +468,7 @@ jobs:
       - name: Verify published loading screen and capture TESTE
         env:
           LOADING_WEB_DIR: web
-          LOADING_TEST_BASE_URL: https://grande-arvore-rpg-teste.vercel.app/
+          LOADING_TEST_BASE_URL: https://arveon-teste.vercel.app/
           QA_LOADING_CAPTURE_DIR: loading-live-qa
         run: timeout 180s node source/tests/web_loading_browser.mjs
       - name: Save published loading screenshots

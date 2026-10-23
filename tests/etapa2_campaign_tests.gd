@@ -1,7 +1,7 @@
 extends RefCounted
 static func run_world(suite: SceneTree) -> void:
-	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH","user://qa_etapa2_campaign.json")
+	var previous := OS.get_environment("ARVEON_SAVE_PATH")
+	OS.set_environment("ARVEON_SAVE_PATH","user://qa_etapa2_campaign.json")
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	suite.root.add_child(main)
@@ -60,4 +60,4 @@ static func run_world(suite: SceneTree) -> void:
 	main.queue_free()
 	await suite.frames()
 	CombatRules.random_roll_source = Callable()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)
+	OS.set_environment("ARVEON_SAVE_PATH",previous)

@@ -80,9 +80,9 @@ static func run(suite: SceneTree) -> void:
 	suite.check(reset_sample.load_text(reset_sample.to_json()) and reset_sample.talents.mastery_points("espada") == 9,"Domain reallocation persists after save roundtrip")
 
 static func run_world(suite: SceneTree) -> void:
-	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	var previous := OS.get_environment("ARVEON_SAVE_PATH")
 	var path := "user://qa_effective_damage_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",path)
+	OS.set_environment("ARVEON_SAVE_PATH",path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	suite.root.add_child(main)
@@ -171,4 +171,4 @@ static func run_world(suite: SceneTree) -> void:
 	suite.check(main.player.use_skill(2) and main.player.class_combat.barrier > 0 and main.player.class_combat.guard_left == 5.0,"staff barrier absorbs damage instead of invoking a global Fury")
 	main.queue_free()
 	await suite.frames()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)
+	OS.set_environment("ARVEON_SAVE_PATH",previous)

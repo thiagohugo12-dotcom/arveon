@@ -67,7 +67,9 @@ var rpg_refresh := 0.0
 var known_level := 1
 
 func _ready() -> void:
-	var test_save := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	var test_save := OS.get_environment("ARVEON_SAVE_PATH")
+	if test_save.is_empty():
+		test_save = OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
 	if not test_save.is_empty():
 		progress.save_path = test_save
 	if launch_new_game:
@@ -1105,7 +1107,7 @@ func _save_action(action: String) -> void:
 		"export":
 			_save_progress()
 			if OS.has_feature("web"):
-				JavaScriptBridge.download_buffer(progress.export_backup().to_utf8_buffer(), "grande-arvore-rpg-save.json", "application/json")
+				JavaScriptBridge.download_buffer(progress.export_backup().to_utf8_buffer(), "arveon-save.json", "application/json")
 				hud.save_panel.description.text = "Backup solicitado ao navegador. Confira Downloads antes de fechar."
 			else:
 				_open_save_dialog(true)
@@ -1142,7 +1144,7 @@ func _open_save_dialog(exporting: bool) -> void:
 	save_dialog.access = FileDialog.ACCESS_FILESYSTEM
 	save_dialog.file_mode = FileDialog.FILE_MODE_SAVE_FILE if exporting else FileDialog.FILE_MODE_OPEN_FILE
 	save_dialog.filters = PackedStringArray(["*.json ; Save JSON"])
-	save_dialog.current_file = "grande-arvore-rpg-save.json" if exporting else ""
+	save_dialog.current_file = "arveon-save.json" if exporting else ""
 	add_child(save_dialog)
 	save_dialog.file_selected.connect(func(path: String):
 		if exporting:

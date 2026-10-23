@@ -9,7 +9,7 @@ import {join,dirname} from 'node:path';
 const review=JSON.parse(await readFile(new URL('./staff-review.json',import.meta.url),'utf8'));
 if(review.fixedTestAlias!==false || review.status!=='awaiting-visual-approval' || review.entry!=='amostra-cajado/index.html')throw Error('Unexpected review policy; fixed alias remains blocked');
 const url=new URL(process.env.PREVIEW_URL);
-if(url.protocol!=='https:' || !url.hostname.endsWith('.vercel.app') || url.hostname==='grande-arvore-rpg-teste.vercel.app' || url.hostname==='grande-arvore-rpg.vercel.app')throw Error('Expected unique preview URL');
+if(url.protocol!=='https:' || !url.hostname.endsWith('.vercel.app') || url.hostname==='arveon-teste.vercel.app' || url.hostname==='arveon.vercel.app')throw Error('Expected unique preview URL');
 const team=process.env.VERCEL_ORG_ID,project=process.env.VERCEL_PROJECT_ID;
 if(team!=='team_6XRzZ5HN4AOw2hWyIpf8McMU' || project!=='prj_gYKlx91MiswTmwj2PLiN5liQD0B7')throw Error('Unexpected review owner/project');
 async function api(path,method='GET',body){
@@ -89,7 +89,7 @@ console.log('FIXED_TEST_ALIAS: preserved; waiting for visual approval');
 
 for(const [name,expected] of Object.entries(review.fixedTestSha256||{})){
   if(!['index.html','index.pck'].includes(name)||!/^[0-9a-f]{64}$/.test(expected))throw Error('Invalid fixed TESTE baseline');
-  const response=await fetch('https://grande-arvore-rpg-teste.vercel.app/'+name,{cache:'no-store',signal:AbortSignal.timeout(30000)});
+  const response=await fetch('https://arveon-teste.vercel.app/'+name,{cache:'no-store',signal:AbortSignal.timeout(30000)});
   if(!response.ok||hash(Buffer.from(await response.arrayBuffer()))!==expected)throw Error('Fixed TESTE changed during staff review: '+name);
   console.log('STAFF_FIXED_TEST_PRESERVED: '+name);
 }

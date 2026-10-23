@@ -127,7 +127,7 @@ func run() -> void:
 	viewport.queue_free()
 	await process_frame
 	# Actual full game: movement and Dash while the original explorer casts.
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH","user://kam_motion_%d.json" % Time.get_ticks_usec())
+	OS.set_environment("ARVEON_SAVE_PATH","user://kam_motion_%d.json" % Time.get_ticks_usec())
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	root.size=Vector2i(960,540)
 	root.content_scale_size=root.size

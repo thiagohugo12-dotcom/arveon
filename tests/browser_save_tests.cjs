@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const vm = require('node:vm');
 const {create, KEY, PREVIOUS} = require('../scripts/platform/browser_save.js');
 function storage() {
   const values = new Map();
@@ -13,6 +14,15 @@ test('new journal and synchronous durable snapshot', () => {
   assert.equal(s.getItem(KEY), 'save1');
   assert.equal(bridge.write('save2'), 'ok');
   assert.equal(s.getItem(PREVIOUS), 'save1');
+});
+test('new bridge name keeps the existing browser key and legacy alias', () => {
+  const localStorage = storage();
+  const context = {window: {localStorage}};
+  vm.runInNewContext(require('node:fs').readFileSync('scripts/platform/browser_save.js', 'utf8'), context);
+  assert.equal(context.window.ArveonSave, context.window.GrandeArvoreSave);
+  context.window.ArveonSave.read();
+  assert.equal(context.window.ArveonSave.write('progress'), 'ok');
+  assert.equal(localStorage.getItem(KEY), 'progress');
 });
 test('reload and reopened tab read the durable snapshot', () => {
   const s = storage(), first = create(s); first.read(); first.write('progress');

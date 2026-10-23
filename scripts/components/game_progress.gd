@@ -651,7 +651,7 @@ func _legacy_web_path() -> String:
 
 func export_backup() -> String:
 	var payload := to_json()
-	return JSON.stringify({"format": "grande-arvore-rpg-save", "archive_version": 1, "sha256": payload.sha256_text(), "payload": payload})
+	return JSON.stringify({"format": "arveon-save", "archive_version": 1, "sha256": payload.sha256_text(), "payload": payload})
 
 func preview_backup(text: String) -> Variant:
 	if text.to_utf8_buffer().size() > MAX_SAVE_BYTES:
@@ -661,7 +661,7 @@ func preview_backup(text: String) -> Variant:
 		return null
 	var payload := text
 	if parsed.has("format"):
-		if parsed.get("format") != "grande-arvore-rpg-save" or parsed.get("archive_version") != 1.0 or not parsed.get("payload") is String or not parsed.get("sha256") is String:
+		if not ["arveon-save", "grande-arvore-rpg-save"].has(parsed.get("format")) or parsed.get("archive_version") != 1.0 or not parsed.get("payload") is String or not parsed.get("sha256") is String:
 			return null
 		payload = parsed.payload
 		if payload.sha256_text() != parsed.sha256:

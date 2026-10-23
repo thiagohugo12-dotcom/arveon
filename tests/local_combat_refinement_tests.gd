@@ -24,7 +24,7 @@ func ready_cast(id: String) -> void:
 	hit_events = 0
 	impact_events = 0
 func run() -> void:
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH","user://local_refine_%d.json" % Time.get_ticks_usec())
+	OS.set_environment("ARVEON_SAVE_PATH","user://local_refine_%d.json" % Time.get_ticks_usec())
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	main = preload("res://scenes/main.tscn").instantiate()
 	root.add_child(main)

@@ -54,9 +54,9 @@ static func _kill_wave(main) -> void:
 		actor.receive_damage(100000)
 
 static func run_world(suite) -> void:
-	var old_path := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	var old_path := OS.get_environment("ARVEON_SAVE_PATH")
 	var path := "user://qa_tower_trial_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", path)
+	OS.set_environment("ARVEON_SAVE_PATH", path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	suite.root.add_child(main)
@@ -283,4 +283,4 @@ static func run_world(suite) -> void:
 	reload.queue_free()
 	await suite.frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", old_path)
+	OS.set_environment("ARVEON_SAVE_PATH", old_path)

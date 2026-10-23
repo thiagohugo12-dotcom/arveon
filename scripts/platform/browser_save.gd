@@ -9,9 +9,10 @@ var detach_callback: JavaScriptObject
 func initialize() -> void:
 	if api != null or not OS.has_feature("web"):
 		return
-	if JavaScriptBridge.eval("typeof window.GrandeArvoreSave === 'undefined'", true):
+	if JavaScriptBridge.eval("typeof window.ArveonSave === 'undefined' && typeof window.GrandeArvoreSave === 'undefined'", true):
 		JavaScriptBridge.eval(FileAccess.get_file_as_string("res://scripts/platform/browser_save.js"), true)
-	api = JavaScriptBridge.get_interface("GrandeArvoreSave")
+	var bridge_name := "ArveonSave" if not JavaScriptBridge.eval("typeof window.ArveonSave === 'undefined'", true) else "GrandeArvoreSave"
+	api = JavaScriptBridge.get_interface(bridge_name)
 
 func read() -> String:
 	initialize()

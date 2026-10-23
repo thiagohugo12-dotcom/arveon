@@ -3,7 +3,7 @@ func _initialize() -> void:
 	create_timer(45).timeout.connect(func(): quit(1))
 	call_deferred("run")
 func run() -> void:
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH","user://qa_skill1_game_perf.json")
+	OS.set_environment("ARVEON_SAVE_PATH","user://qa_skill1_game_perf.json")
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	root.size = Vector2i(390,844)
 	root.content_scale_size = root.size

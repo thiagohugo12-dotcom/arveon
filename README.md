@@ -1,4 +1,4 @@
-# Grande Árvore RPG
+# ARVÉON: Ascensão Ancestral
 Fundação Godot 4.5.1 + GDScript, 2D Compatibility. **v0.7.0 — Arsenal, Etapa 1:** cinco categorias de armas funcionais e Mochila visual. Os cinco andares reutilizam a Mata dos Primeiros Passos com dificuldade configurável.
 
 Mata com visual simplificado: chão limpo, trilhas claras, atlas pixel art pequeno,
@@ -11,7 +11,7 @@ pasta. Por padrão procuram Godot 4.5.1 em Downloads; a variável `ARVEON_GODOT`
 permite informar outro caminho. Cache `.godot`, builds e logs ficam fora do Git.
 
 1. Instale/extraia **Godot 4.5.1 Standard** (não .NET): https://godotengine.org/download/archive/4.5.1-stable/.
-2. Clone o repositório ou extraia este projeto em `C:\Projetos\grande-arvore-rpg`.
+2. Clone o repositório ou extraia este projeto em `C:\Projetos\arveon`.
 3. No Project Manager: **Importar → project.godot → Importar e editar**.
 4. Espere a importação e pressione **F6** para a cena aberta ou **F5** para o projeto.
 5. WASD/setas movem; **Shift ou Espaço** fazem Dash. Ataque é automático. **1/2/3** ativam Corte Circular, Investida e Fúria; **C** abre Personagem, **M** abre Mapa e **Esc** fecha os painéis. Joystick e Dash também funcionam com mouse. Para multitouch, teste num celular.
@@ -50,9 +50,11 @@ Poção e proficiência ainda não estão implementadas. Valores são provisóri
 ## CI e ambientes
 Actions importa, executa testes, renderiza 182 capturas de QA e exporta Web. O PR da branch
 `feat/andar1-v020-primeiro-passe` publica o build validado em Preview e atualiza
-TESTE: https://grande-arvore-rpg-teste.vercel.app/.
-PRODUÇÃO: https://grande-arvore-rpg.vercel.app/ — não alterada por esta versão.
+TESTE: https://arveon-teste.vercel.app/.
+PRODUÇÃO: https://arveon.vercel.app/ — alias para a publicação existente.
 Não fazer merge em main ou publicar em produção sem autorização de Thiago.
+Saves do navegador ficam vinculados ao domínio onde foram criados. O endereço
+antigo segue ativo; para mudar o save ao novo, exporte e importe o backup no jogo.
 
 ## Contratos
 `AGENTS.md`, `docs/design/GAME_DESIGN.md`, `docs/ARCHITECTURE.md`, `docs/QA_CHECKLIST.md` e `docs/VALIDATION.md`.

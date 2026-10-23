@@ -49,7 +49,7 @@ func _run() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(output)
 	var path := "user://qa_arena_render_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", path)
+	OS.set_environment("ARVEON_SAVE_PATH", path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
@@ -151,5 +151,5 @@ func _run() -> void:
 	main.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
+	OS.unset_environment("ARVEON_SAVE_PATH")
 	quit(1 if failures > 0 else 0)

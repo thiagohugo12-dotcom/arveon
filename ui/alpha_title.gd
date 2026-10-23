@@ -92,7 +92,9 @@ func _dialog(caption: String) -> PanelContainer:
 
 func _refresh_save_state() -> void:
 	var probe := GameProgress.new()
-	var test_save := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	var test_save := OS.get_environment("ARVEON_SAVE_PATH")
+	if test_save.is_empty():
+		test_save = OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
 	if not test_save.is_empty():
 		probe.save_path = test_save
 	continue_button.disabled = not probe.load_save()

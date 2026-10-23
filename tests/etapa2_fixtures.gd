@@ -1,7 +1,7 @@
 extends RefCounted
 static func seed_existing() -> void:
 	var existing := GameProgress.new()
-	existing.save_path = OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	existing.save_path = OS.get_environment("ARVEON_SAVE_PATH")
 	# Reset fixed QA paths as well; captures exercise established characters.
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(existing.save_path))
 	existing.save()

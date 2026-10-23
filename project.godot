@@ -14,6 +14,7 @@ config/name="ARVÉON: Ascensão Ancestral — Alpha 0.2"
 run/main_scene="res://scenes/title.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 config/use_custom_user_dir.web=true
+; Keep the legacy IDBFS folder so existing browser saves remain available.
 config/custom_user_dir_name.web="grande-arvore-rpg"
 config/version="0.2.0-alpha"
 

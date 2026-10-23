@@ -3,7 +3,7 @@ import { appendFileSync } from 'node:fs';
 
 const { VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID, PREVIEW_URL, TEST_ALIAS } = process.env;
 if (!VERCEL_TOKEN || !VERCEL_ORG_ID || !VERCEL_PROJECT_ID) throw new Error('Missing Vercel CI configuration');
-if (TEST_ALIAS !== 'grande-arvore-rpg-teste.vercel.app') throw new Error('Unexpected test alias');
+if (TEST_ALIAS !== 'arveon-teste.vercel.app') throw new Error('Unexpected test alias');
 const preview = new URL(PREVIEW_URL);
 if (preview.protocol !== 'https:' || preview.origin !== PREVIEW_URL || !preview.hostname.endsWith('.vercel.app')) {
   throw new Error('Invalid Preview URL');

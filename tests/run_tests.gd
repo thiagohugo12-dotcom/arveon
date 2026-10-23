@@ -28,7 +28,7 @@ func frames(count: int = 2) -> void:
 func _run() -> void:
 	CombatRules.random_roll_source = func(): return 0.99
 	var test_path := "user://qa_area_segura_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", test_path)
+	OS.set_environment("ARVEON_SAVE_PATH", test_path)
 	preload("res://tests/campaign_state_tests.gd").run(self)
 	preload("res://tests/arsenal_state_tests.gd").run(self)
 	preload("res://tests/equipment_economy_tests.gd").run(self)
@@ -585,7 +585,7 @@ func _run() -> void:
 	await preload("res://tests/mastery_tests.gd").run_world(self)
 	await preload("res://tests/progression_ui_tests.gd").run_world(self)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(test_path))
-	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
+	OS.unset_environment("ARVEON_SAVE_PATH")
 	await preload("res://tests/etapa2_combat_tests.gd").run_world(self)
 	await preload("res://tests/etapa2_ui_tests.gd").run_world(self)
 	await preload("res://tests/etapa2_campaign_tests.gd").run_world(self)

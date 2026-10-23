@@ -20,9 +20,9 @@ func frames() -> void:
 		await process_frame
 
 func run() -> void:
-	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	var previous := OS.get_environment("ARVEON_SAVE_PATH")
 	var path := "user://qa_axe_techniques_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",path)
+	OS.set_environment("ARVEON_SAVE_PATH",path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := preload("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
@@ -79,7 +79,7 @@ func run() -> void:
 	main.queue_free()
 	await frames()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)
+	OS.set_environment("ARVEON_SAVE_PATH",previous)
 	CombatRules.random_roll_source = Callable()
 	print("AXE_TECHNIQUE_RESULT: %d checks, %d failures" % [checks,failures])
 	quit(0 if failures == 0 else 1)

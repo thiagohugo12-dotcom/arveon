@@ -1,4 +1,4 @@
-# Direção Artística Oficial V2 — Grande Árvore RPG
+# Direção Artística Oficial V2 — ARVÉON: Ascensão Ancestral
 Status: VIGENTE — fornecida e aprovada por Thiago em 11/10/2026.
 
 ## Identidade

@@ -2,9 +2,9 @@ extends RefCounted
 const TOUCH = preload("res://tests/tower_trial_tests.gd")
 
 static func run_world(suite: SceneTree) -> void:
-	var previous := OS.get_environment("GRANDE_ARVORE_SAVE_PATH")
+	var previous := OS.get_environment("ARVEON_SAVE_PATH")
 	var path := "user://qa_progression_ui_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",path)
+	OS.set_environment("ARVEON_SAVE_PATH",path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	suite.root.add_child(main)
@@ -75,4 +75,4 @@ static func run_world(suite: SceneTree) -> void:
 	suite.check(not main.progress.abilities.talents.espada.has("sequencia_precisa") and main.progress.skill_points() == points+1 and main.progress.talents.mastery == mastery_before and main.progress.talents.xp == xp_before and main.progress.skills == skills_before,"free safe respec refunds only existing learned nodes, preserves other systems")
 	main.queue_free()
 	await suite.frames()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",previous)
+	OS.set_environment("ARVEON_SAVE_PATH",previous)

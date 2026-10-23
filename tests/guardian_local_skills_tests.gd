@@ -17,7 +17,7 @@ func capture(name: String) -> void:
 	root.get_texture().get_image().save_png(output.path_join(name+".png"))
 func run() -> void:
 	DirAccess.make_dir_recursive_absolute(output)
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH","user://guardian_new_%d.json" % Time.get_ticks_usec())
+	OS.set_environment("ARVEON_SAVE_PATH","user://guardian_new_%d.json" % Time.get_ticks_usec())
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	root.size=Vector2i(960,640)
 	root.content_scale_size=root.size

@@ -2,7 +2,7 @@
 // No credentials or production requests; build hashes are the source of truth.
 import {readFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
-const base = 'https://grande-arvore-rpg-teste.vercel.app/';
+const base = 'https://arveon-teste.vercel.app/';
 const sha = value => createHash('sha256').update(value).digest('hex');
 for (const name of ['index.html','index.pck']) {
   const expected = sha(await readFile(name));

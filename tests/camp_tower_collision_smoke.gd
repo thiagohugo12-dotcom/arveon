@@ -28,7 +28,7 @@ func _clearance(main: Node2D, center: Vector2, floor_id: int) -> void:
 	main.input_driver.blocked = false
 
 func _run() -> void:
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", "user://qa_camp_tower_%d.json" % Time.get_ticks_usec())
+	OS.set_environment("ARVEON_SAVE_PATH", "user://qa_camp_tower_%d.json" % Time.get_ticks_usec())
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(main)

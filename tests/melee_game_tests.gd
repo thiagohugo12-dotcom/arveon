@@ -6,7 +6,7 @@ func check(ok: bool,message: String) -> void:
 		push_error("MELEE_GAME_FAIL: "+message)
 func run() -> void:
 	var save_path := "user://qa_melee_game_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",save_path)
+	OS.set_environment("ARVEON_SAVE_PATH",save_path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := preload("res://scenes/main.tscn").instantiate()
 	root.add_child(main)

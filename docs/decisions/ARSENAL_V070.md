@@ -3,7 +3,7 @@ Status: APROVADA — pedido explícito de Thiago em 11/10/2026 (Recife).
 
 Cinco categorias funcionais, catálogo configurável, ícones pixel art locais,
 Mochila compacta com seleção/detalhes/comparação e persistência compatível.
-Referência: Projeto de Armas — Grande Árvore RPG (Sistema de Armas.png).
+Referência: Projeto de Armas — ARVÉON (Sistema de Armas.png).
 A imagem orienta organização, não define regras, spritesheet ou interface.
 IDs e upgrades antigos preservados; raridade é independente de +1/+2/+3.
 Espada mantém parâmetros; machado mais lento, lança mais longa; arco lança

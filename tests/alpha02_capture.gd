@@ -19,7 +19,7 @@ func _run() -> void:
 		quit(1)
 		return
 	DirAccess.make_dir_recursive_absolute(output)
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", "user://qa_alpha02_capture_%d.json" % Time.get_ticks_usec())
+	OS.set_environment("ARVEON_SAVE_PATH", "user://qa_alpha02_capture_%d.json" % Time.get_ticks_usec())
 	root.size = Vector2i(390, 844)
 	root.content_scale_size = Vector2i(390, 844)
 	var title := (load("res://scenes/title.tscn") as PackedScene).instantiate()

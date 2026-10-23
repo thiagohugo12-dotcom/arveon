@@ -17,7 +17,7 @@ func capture(name: String) -> void:
 	root.get_texture().get_image().save_png(output.path_join(name + ".png"))
 
 func _run() -> void:
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", "user://qa_save_capture_%d.json" % Time.get_ticks_usec())
+	OS.set_environment("ARVEON_SAVE_PATH", "user://qa_save_capture_%d.json" % Time.get_ticks_usec())
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main = load("res://scenes/main.tscn").instantiate()
 	root.add_child(main)

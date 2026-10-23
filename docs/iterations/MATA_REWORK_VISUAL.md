@@ -66,7 +66,7 @@ renderizadas pelo Godot. Overview altera apenas câmera/viewport da ferramenta
 QA; nunca modifica tamanho/limites/câmera do jogo.
 
 ## Aprovação visual e limitações
-Abra https://grande-arvore-rpg-teste.vercel.app/ no celular, continue o save e
+Abra https://arveon-teste.vercel.app/ no celular, continue o save e
 percorra trilha leste, norte e entrada da Torre. Teste em retrato/paisagem,
 colisão nos troncos/pedras e interação. A campanha/desbloqueios anteriores
 continuam disponíveis; nenhum progresso de teste é inserido no save real.

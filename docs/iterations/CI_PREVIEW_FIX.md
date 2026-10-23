@@ -11,7 +11,7 @@ O job `113277322425` da execução `37767002731` passa por 37 verificações e e
 - Teste usa `player.stats.max_hp`, preservando o contrato dos dados e todas as funcionalidades.
 - Watchdog independente encerra o runner com código 1 após 15 segundos se ele não concluir.
 - CI exige também a linha `RESULT: N checks, 0 failures` antes de exportar.
-- Somente a branch de desenvolvimento autorizada atualiza o alias fixo `grande-arvore-rpg-teste.vercel.app`, após testes e exportação.
+- Somente a branch de desenvolvimento autorizada atualiza o alias fixo `arveon-teste.vercel.app`, após testes e exportação.
 - Publicação Preview usa a credencial já configurada no GitHub, via variável de ambiente e escopo explícito.
 - `main` não foi alterada. Nenhum deploy de produção foi solicitado.
 
@@ -27,8 +27,8 @@ Execução no navegador, publicação remota e teste humano no celular devem ser
 
 ## Endereços
 
-- TESTE: `https://grande-arvore-rpg-teste.vercel.app` — alias configurado pelo job Preview após publicação bem-sucedida.
-- PRODUÇÃO: `https://grande-arvore-rpg.vercel.app` — existente, não atualizado por este trabalho.
+- TESTE: `https://arveon-teste.vercel.app` — alias configurado pelo job Preview após publicação bem-sucedida.
+- PRODUÇÃO: `https://arveon.vercel.app` — alias para a publicação existente.
 
 ## Atualização concorrente preservada
 

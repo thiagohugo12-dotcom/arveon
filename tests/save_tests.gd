@@ -29,8 +29,12 @@ static func run(suite) -> void:
 	loaded.save_path = p.save_path
 	suite.check(loaded.load_save() and loaded.to_json() == p.to_json(), "fresh process-style load restores all permanent fields and smith +3")
 	var backup := p.export_backup()
+	var new_archive := JSON.parse_string(backup) as Dictionary
+	suite.check(new_archive.get("format") == "arveon-save", "new backups use the ARVÉON identifier")
 	var candidate = p.preview_backup(backup)
 	suite.check(candidate != null and candidate.to_json() == p.to_json(), "export archive validates checksum and complete v6 payload")
+	new_archive.format = "grande-arvore-rpg-save"
+	suite.check(p.preview_backup(JSON.stringify(new_archive)) != null, "legacy backup format remains importable")
 	var broken := backup.replace('"sha256":"', '"sha256":"0')
 	suite.check(p.preview_backup(broken) == null, "altered checksum rejects archive")
 	var envelope := JSON.parse_string(backup) as Dictionary

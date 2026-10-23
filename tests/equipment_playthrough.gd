@@ -22,7 +22,7 @@ func _button(parent: Node, start: String) -> Button:
 
 func _run() -> void:
 	var save_path := "user://equipment_playthrough_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",save_path)
+	OS.set_environment("ARVEON_SAVE_PATH",save_path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
@@ -82,6 +82,6 @@ func _run() -> void:
 	main.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
-	OS.unset_environment("GRANDE_ARVORE_SAVE_PATH")
+	OS.unset_environment("ARVEON_SAVE_PATH")
 	print("EQUIPMENT_PLAYTHROUGH: %d checks, %d failures" % [checks,failures])
 	quit(1 if failures > 0 else 0)

@@ -15,7 +15,7 @@ func _check(value: bool, label: String) -> void:
 
 func _run() -> void:
 	var path := "user://qa_alpha02_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", path)
+	OS.set_environment("ARVEON_SAVE_PATH", path)
 	var title := (load("res://scenes/title.tscn") as PackedScene).instantiate()
 	root.add_child(title)
 	_check(title.continue_button.disabled, "abertura oferece novo jogo sem save")

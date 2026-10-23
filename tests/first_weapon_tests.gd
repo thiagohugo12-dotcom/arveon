@@ -121,7 +121,7 @@ func run() -> void:
 		call_deferred("_finish")
 		return
 	for id: String in ArsenalRules.CATEGORIES:
-		OS.set_environment("GRANDE_ARVORE_SAVE_PATH","user://first_weapon_world_%s_%d.json" % [id,Time.get_ticks_usec()])
+		OS.set_environment("ARVEON_SAVE_PATH","user://first_weapon_world_%s_%d.json" % [id,Time.get_ticks_usec()])
 		var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
 		root.add_child(main)
 		main.set_process(false)

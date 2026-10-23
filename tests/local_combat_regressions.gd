@@ -17,7 +17,7 @@ func run() -> void:
 	await preload("res://tests/etapa2_combat_tests.gd").run_world(self)
 	await preload("res://tests/tower_guardian_tests.gd").run_world(self)
 	var path:="user://local_training_regression_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH",path)
+	OS.set_environment("ARVEON_SAVE_PATH",path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	await preload("res://tests/training_mode_tests.gd").run(self,preload("res://scenes/main.tscn"),path)
 	CombatRules.random_roll_source=Callable()

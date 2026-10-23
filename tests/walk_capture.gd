@@ -11,7 +11,7 @@ func _run() -> void:
 		return
 	DirAccess.make_dir_recursive_absolute(output)
 	var save_path := "user://qa_walk_%d.json" % Time.get_ticks_usec()
-	OS.set_environment("GRANDE_ARVORE_SAVE_PATH", save_path)
+	OS.set_environment("ARVEON_SAVE_PATH", save_path)
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	root.size = Vector2i(390, 844)
 	root.content_scale_size = root.size

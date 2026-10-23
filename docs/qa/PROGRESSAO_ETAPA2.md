@@ -1,4 +1,4 @@
-# Grande Árvore RPG — Etapa 2
+# ARVÉON: Ascensão Ancestral — Etapa 2
 
 Implementação na branch `feat/progressao-etapa2`, PR #2. Base remota recuperada: `a04b28d`; main, checkpoint e produção preservados.
 
@@ -9,7 +9,7 @@ Implementação na branch `feat/progressao-etapa2`, PR #2. Base remota recuperad
 - C, `dfd4a5f`: cinco Skill 1, quinze técnicas e cinco Ultimates, dano mágico/físico, geometria e efeitos; 2.001 verificações sem falhas.
 - D, `015eacc`: graus, talentos, passivas, especializações e Maestria automática; 2.131 verificações sem falhas.
 - E, `14ebd94`: runtime v10, Diário e HUD; 2.269 verificações sem falhas, incluindo cinco classes em quatro viewports.
-- QA final local: **2.375 verificações, zero falhas**, incluindo 25 combinações classe/andar, mortes, elites, cargas, recargas e integridade. **10 testes do journal, zero falhas**. CI validado no commit `09155d4`: exportação Web, **33 checks em Chromium**, 317 capturas renderizadas (40 da Etapa 2) e todos os grupos visuais sem falhas. As capturas das cinco classes foram inspecionadas. [Actions validado](https://github.com/thiagohugo12-dotcom/grande-arvore-rpg/actions/runs/38337606343). A publicação no TESTE fica condicionada à mesma suíte completa no commit de entrega.
+- QA final local: **2.375 verificações, zero falhas**, incluindo 25 combinações classe/andar, mortes, elites, cargas, recargas e integridade. **10 testes do journal, zero falhas**. CI validado no commit `09155d4`: exportação Web, **33 checks em Chromium**, 317 capturas renderizadas (40 da Etapa 2) e todos os grupos visuais sem falhas. As capturas das cinco classes foram inspecionadas. [Actions validado](https://github.com/thiagohugo12-dotcom/arveon/actions/runs/38337606343). A publicação no TESTE fica condicionada à mesma suíte completa no commit de entrega.
 
 ## Save e integridade
 
