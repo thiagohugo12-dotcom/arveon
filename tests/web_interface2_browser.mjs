@@ -124,13 +124,11 @@ async function session(mode){
   const details={...button('death',b=>b.text==='Ver detalhes'),screen:'death'};await tap(details);
   await until(()=>current('death')?.buttons.some(b=>b.text==='Ocultar detalhes'),'death details open from touch/mouse');
   await shot('death-details');
-  const back={...button('death',b=>b.text.includes('Voltar ao acampamento')),screen:'death'};await tap(back);
-  await until(()=>titles.filter(s=>s.buttons).at(-1)?.buttons.some(b=>b.text==='Continuar'&&!b.disabled),'death return exposes the saved character at the title screen',30000);
-  const continueState=titles.filter(s=>s.buttons).at(-1);const continueButton=continueState.buttons.find(b=>b.text==='Continuar'&&!b.disabled);
-  const continuePoint={x:canvasRect.left+continueButton.x*canvasRect.width/continueState.viewport[0],y:canvasRect.top+continueButton.y*canvasRect.height/continueState.viewport[1]};
-  const startCount=titles.filter(s=>s.started).length;await input(continuePoint,'down');await delay(70);await input(continuePoint,'up');
-  await until(()=>titles.filter(s=>s.started).length>startCount,'continue returns to the saved character');
-  check(titles.filter(s=>s.started).at(-1).started.floor===1,mode+': death return continues in the Andar 1 camp');
+  const back={...button('death',b=>b.text.includes('Voltar ao acampamento')),screen:'death'};const beforeReturn=ui.length;await tap(back);
+  await until(()=>ui.length>beforeReturn&&[...ui].reverse()[0]?.screen==='hud','death return reloads the game HUD into the camp');
+  const returned=[...ui].reverse().find(s=>s.screen==='hud');
+  check(returned.labels.some(s=>s==='100 / 100'),mode+': death return restores a live player');
+  check(returned.interact.visible&&returned.interact.caption.includes('Ferreiro'),mode+': death return places the player back in the Andar 1 camp');
   const trusted=await evaluate('ui2BrowserEvents.some(e=>e.trusted&&e.target==="canvas"&&e.type==="'+(mobile?'touchstart':'mousedown')+'")');
   check(trusted,mode+': trusted Touch/Mouse browser events reached the exported canvas');
   check(errors.length===0,mode+': no runtime script errors');
