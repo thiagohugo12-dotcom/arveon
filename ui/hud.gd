@@ -1040,14 +1040,18 @@ func _add_row(item: String, count: String, left: String, right: String, can_left
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenDrag and event.index == scroll_touch and is_instance_valid(touch_scroll):
-		if event.position.distance_to(inventory_touch_origin) > 8.0:
+		var local_drag := touch_scroll.make_input_local(event) as InputEventScreenDrag
+		if local_drag.position.distance_to(inventory_touch_origin) > 8.0:
 			inventory_touch_dragged = true
-		touch_scroll.scroll_vertical -= roundi(event.relative.y)
+		touch_scroll.scroll_vertical -= roundi(local_drag.relative.y)
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventScreenTouch and not event.pressed and event.index == scroll_touch:
 		var tapped_card := inventory_touch_card
-		var activate: bool = not inventory_touch_dragged and is_instance_valid(tapped_card) and event.position.distance_to(inventory_touch_origin) <= 8.0
+		var local_release: InputEventScreenTouch = event as InputEventScreenTouch
+		if is_instance_valid(touch_scroll):
+			local_release = touch_scroll.make_input_local(event) as InputEventScreenTouch
+		var activate: bool = not inventory_touch_dragged and is_instance_valid(tapped_card) and local_release.position.distance_to(inventory_touch_origin) <= 8.0
 		inventory_touch_card = null
 		scroll_touch = -1
 		touch_scroll = null
@@ -1060,112 +1064,116 @@ func _input(event: InputEvent) -> void:
 	if not event is InputEventScreenTouch or not event.pressed:
 		return
 	if save_panel.visible:
-		_touch_buttons(save_panel, event.position)
+		_touch_buttons(save_panel, event)
 		get_viewport().set_input_as_handled()
 		return
 	if restart.visible:
-		_activate_touch_button(restart, event.position)
+		_activate_touch_button(restart, event)
 		return
 	if death_panel.visible:
-		if death_scroll.get_global_rect().has_point(event.position):
+		if _touch_contains(death_scroll,event):
 			_defer_menu_touch(death_body,death_scroll,event)
 		else:
-			_touch_buttons(death_panel,event.position)
+			_touch_buttons(death_panel,event)
 		get_viewport().set_input_as_handled()
 		return
 	if map_panel.visible:
-		_activate_touch_button(map_close, event.position)
+		_activate_touch_button(map_close, event)
 		get_viewport().set_input_as_handled()
 		return
 	if rpg_panel.visible:
-		if _activate_touch_button(rpg_panel.close_button, event.position):
+		if _activate_touch_button(rpg_panel.close_button, event):
 			return
-		if rpg_panel.scroll.get_global_rect().has_point(event.position):
+		if _touch_contains(rpg_panel.scroll,event):
 			_defer_menu_touch(rpg_panel.content,rpg_panel.scroll,event)
 			return
-		if not _touch_buttons(rpg_panel, event.position):
+		if not _touch_buttons(rpg_panel, event):
 			_begin_scroll(rpg_panel.scroll, event)
 		get_viewport().set_input_as_handled()
 		return
 	if inventory_open:
-		if _activate_touch_button(inventory_close, event.position):
+		if _activate_touch_button(inventory_close, event):
 			return
 		# Delay card activation until release so a swipe can scroll over the cards.
-		if inventory_category == 1 and inventory_scroll.get_global_rect().has_point(event.position):
+		if inventory_category == 1 and _touch_contains(inventory_scroll,event):
 			inventory_touch_card = null
-			inventory_touch_origin = event.position
+			inventory_touch_origin = (inventory_scroll.make_input_local(event) as InputEventScreenTouch).position
 			inventory_touch_dragged = false
 			for card: Button in equipment_bag.cards.values():
-				if card.get_global_rect().has_point(event.position):
+				if _touch_contains(card,event):
 					inventory_touch_card = card
 					break
 			if inventory_touch_card != null:
 				_begin_scroll(inventory_scroll,event)
 				get_viewport().set_input_as_handled()
 				return
-		if not _touch_buttons(inventory_panel, event.position):
+		if not _touch_buttons(inventory_panel, event):
 			_begin_scroll(inventory_scroll, event)
 		get_viewport().set_input_as_handled()
 		return
 	if not station_panel.visible:
 		for button in [inventory_button, character_button, map_button, mission_toggle]:
-			if _activate_touch_button(button, event.position):
+			if _activate_touch_button(button, event):
 				return
 	if not station_panel.visible:
 		return
-	if _activate_touch_button(travel_button, event.position) or _activate_touch_button(tower_action_button, event.position):
+	if _activate_touch_button(travel_button, event) or _activate_touch_button(tower_action_button, event):
 		return
 	if station_name == TowerEntrance.NAME:
-		if _activate_touch_button(station_close_button, event.position):
+		if _activate_touch_button(station_close_button, event):
 			return
-		if station_scroll.get_global_rect().has_point(event.position) and not _touch_buttons(station_content, event.position):
+		if _touch_contains(station_scroll,event) and not _touch_buttons(station_content, event):
 			_begin_scroll(station_scroll, event)
 		get_viewport().set_input_as_handled()
 		return
 	if station_name in ["Ferreiro","Vendedor"]:
-		if _activate_touch_button(station_close_button,event.position) or _activate_touch_button(station_header_close,event.position): return
-		if station_scroll.get_global_rect().has_point(event.position):
+		if _activate_touch_button(station_close_button,event) or _activate_touch_button(station_header_close,event): return
+		if _touch_contains(station_scroll,event):
 			_defer_menu_touch(station_content,station_scroll,event)
 		get_viewport().set_input_as_handled()
 		return
 
-	if _activate_touch_button(station_close_button, event.position):
+	if _activate_touch_button(station_close_button, event):
 		return
-	if not station_scroll.get_global_rect().has_point(event.position):
+	if not _touch_contains(station_scroll,event):
 		return
 	for row in station_content.get_children():
 		if row.is_queued_for_deletion() or not row is HBoxContainer:
 			continue
 		for node in row.get_children():
-			if node is Button and _activate_touch_button(node, event.position):
+			if node is Button and _activate_touch_button(node, event):
 				return
 	_begin_scroll(station_scroll, event)
 	get_viewport().set_input_as_handled()
 
-func _button_under(node: Node, point: Vector2) -> Button:
-	if node is Control and node.clip_contents and not node.get_global_rect().has_point(point): return null
+func _button_under(node: Node, event: InputEventScreenTouch) -> Button:
+	if node is Control and node.clip_contents and not _touch_contains(node,event): return null
 	if node is Button:
-		return node if not node.disabled and node.is_visible_in_tree() and node.get_global_rect().has_point(point) else null
+		return node if not node.disabled and node.is_visible_in_tree() and _touch_contains(node,event) else null
 	var children := node.get_children()
 	children.reverse()
 	for child: Node in children:
-		var button := _button_under(child,point)
+		var button := _button_under(child,event)
 		if button != null: return button
 	return null
 
 func _defer_menu_touch(content: Control, scroll: ScrollContainer, event: InputEventScreenTouch) -> void:
-	inventory_touch_card = _button_under(content,event.position)
-	inventory_touch_origin = event.position
+	inventory_touch_card = _button_under(content,event)
+	inventory_touch_origin = (scroll.make_input_local(event) as InputEventScreenTouch).position
 	inventory_touch_dragged = false
 	_begin_scroll(scroll,event)
 	get_viewport().set_input_as_handled()
 
-func _activate_touch_button(button: Button, position: Vector2) -> bool:
-	if not button.disabled and button.is_visible_in_tree() and button.get_global_rect().has_point(position):
+func _activate_touch_button(button: Button, event: InputEventScreenTouch) -> bool:
+	if not button.disabled and button.is_visible_in_tree() and _touch_contains(button,event):
 		button.pressed.emit()
 		get_viewport().set_input_as_handled()
 		return true
 	return false
+
+func _touch_contains(control: Control, event: InputEvent) -> bool:
+	var local_event := control.make_input_local(event)
+	return Rect2(Vector2.ZERO,control.size).has_point(local_event.position)
 
 func _panel_style() -> StyleBoxFlat:
 	return DiaryTheme.box(DiaryTheme.PAPER,DiaryTheme.WOOD,12,3)
@@ -1818,15 +1826,15 @@ func _first_weapon_interface(progress: GameProgress) -> void:
 		station_scroll.scroll_vertical = 0
 		refresh_station(progress))
 
-func _touch_buttons(node: Node, point: Vector2) -> bool:
-	if node is Control and node.clip_contents and not node.get_global_rect().has_point(point):
+func _touch_buttons(node: Node, event: InputEventScreenTouch) -> bool:
+	if node is Control and node.clip_contents and not _touch_contains(node,event):
 		return false
 	if node is Button:
-		return _activate_touch_button(node, point)
+		return _activate_touch_button(node, event)
 	var children := node.get_children()
 	children.reverse()
 	for child in children:
-		if _touch_buttons(child, point):
+		if _touch_buttons(child, event):
 			return true
 	return false
 
@@ -1862,7 +1870,7 @@ func _qa_collect_labels(node: Node, result: Array[String]) -> void:
 		_qa_collect_labels(child,result)
 
 func _begin_scroll(scroll: ScrollContainer, event: InputEventScreenTouch) -> void:
-	if scroll_touch == -1 and scroll.get_global_rect().has_point(event.position):
+	if scroll_touch == -1 and _touch_contains(scroll,event):
 		scroll_touch = event.index
 		touch_scroll = scroll
 
