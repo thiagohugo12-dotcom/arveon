@@ -18,7 +18,16 @@ func _run() -> void:
 	OS.set_environment("ARVEON_SAVE_PATH", path)
 	var title := (load("res://scenes/title.tscn") as PackedScene).instantiate()
 	root.add_child(title)
+	await process_frame
 	_check(title.continue_button.disabled, "abertura oferece novo jogo sem save")
+	var settings_button: Button = title.touch_buttons[2]
+	var touch := InputEventScreenTouch.new()
+	touch.index = 7
+	touch.pressed = false
+	touch.position = settings_button.get_global_rect().get_center()
+	title._unhandled_input(touch)
+	_check(title.settings_panel.visible, "toque real abre Configurações sem emulação de mouse")
+	title.settings_panel.hide()
 	title._start_game(true)
 	await process_frame
 	var main := current_scene as Node2D
