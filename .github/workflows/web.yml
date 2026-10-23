@@ -256,6 +256,19 @@ jobs:
         run: node tools/inject-arveon-loading.mjs
       - name: Validate responsive loading without fake progress
         run: node tests/web_arveon_loading.mjs
+      - name: Real browser mobile title regression
+        if: github.head_ref == 'fix/mobile-title-touch-20261022'
+        env:
+          TITLE_BASELINE_URL: https://arveon-teste.vercel.app
+        run: timeout 180s node tests/web_title_touch.mjs
+      - name: Save real title touch evidence
+        if: always() && github.head_ref == 'fix/mobile-title-touch-20261022'
+        uses: actions/upload-artifact@v4
+        with:
+          name: title-touch-browser-qa
+          path: build/title-touch-qa/
+          if-no-files-found: error
+          retention-days: 3
       - name: Capture approved loading artwork in real Chromium
         if: github.head_ref != 'fix/mobile-title-touch-20261022'
         run: timeout 180s node tests/web_loading_browser.mjs
@@ -489,6 +502,22 @@ jobs:
               echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
             fi
           fi
+
+      - name: Verify real touch on published TESTE
+        if: github.head_ref == 'fix/mobile-title-touch-20261022'
+        env:
+          TITLE_WEB_DIR: web
+          TITLE_WEB_URL: https://arveon-teste.vercel.app
+          TITLE_QA_DIR: title-touch-live-qa
+        run: timeout 180s node source/tests/web_title_touch.mjs
+      - name: Save live title touch evidence
+        if: always() && github.head_ref == 'fix/mobile-title-touch-20261022'
+        uses: actions/upload-artifact@v4
+        with:
+          name: title-touch-live-qa
+          path: title-touch-live-qa/
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Verify published loading screen and capture TESTE
         if: github.head_ref != 'fix/mobile-title-touch-20261022'

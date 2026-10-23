@@ -23,10 +23,14 @@ func _run() -> void:
 	var settings_button: Button = title.touch_buttons[2]
 	var touch := InputEventScreenTouch.new()
 	touch.index = 7
-	touch.pressed = false
+	touch.pressed = true
 	touch.position = settings_button.get_global_rect().get_center()
-	title._unhandled_input(touch)
-	_check(title.settings_panel.visible, "toque real abre Configurações sem emulação de mouse")
+	root.push_input(touch, true)
+	touch = touch.duplicate()
+	touch.pressed = false
+	root.push_input(touch, true)
+	await process_frame
+	_check(title.settings_panel.visible, "entrada Godot abre Configurações (não substitui teste Web)")
 	title.settings_panel.hide()
 	title._start_game(true)
 	await process_frame

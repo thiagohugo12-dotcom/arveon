@@ -1,9 +1,7 @@
 name: Mobile title hotfix preview
 
 on:
-  push:
-    branches:
-      - fix/mobile-title-touch-20261022
+  workflow_dispatch:
 
 permissions:
   contents: read
