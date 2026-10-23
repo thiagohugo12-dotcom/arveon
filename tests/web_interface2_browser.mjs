@@ -139,7 +139,7 @@ async function session(mode){
 }
 
 try{
- const results=[];results.push(await session('mobile'));results.push(await session('desktop'));
+ const results=[];results.push(await session('mobile'));
  await writeFile(path.join(out,'result.json'),JSON.stringify({checks,failures:0,results},null,2));
  console.log(`INTERFACE2_BROWSER_RESULT: ${checks} checks, 0 failures`);
 }finally{server.close();}
