@@ -36,7 +36,7 @@ async function session(mode){
  const current=screen=>[...ui].reverse().find(s=>s.screen===screen&&s.panel_visible);
  const button=(screen,predicate)=>{const b=current(screen)?.buttons.find(x=>!x.disabled&&predicate(x));assert.ok(b,`${screen} button not found`);return b;};
  const screenPoint=(state,x,y)=>({x:canvasRect.left+x*canvasRect.width/state.viewport[0],y:canvasRect.top+y*canvasRect.height/state.viewport[1]});
- const point=b=>screenPoint(current(b.screen)||{viewport:[width,height]},b.x,b.y);
+ const point=b=>{const s=current(b.screen)||{viewport:[width,height]};const scrollOffset=b.screen==='blacksmith'&&!['×','Fechar'].includes(b.text)?(s.scroll_y||0):0;return screenPoint(s,b.x,b.y-scrollOffset);};
  const input=async(p,kind)=>{if(mobile){await call('Input.dispatchTouchEvent',{type:kind==='down'?'touchStart':'touchEnd',touchPoints:kind==='down'?[{...p,id:1,radiusX:4,radiusY:4,force:1}]:[]});}else{await call('Input.dispatchMouseEvent',{type:kind==='down'?'mousePressed':'mouseReleased',x:p.x,y:p.y,button:'left',clickCount:1});}};
  const tap=async b=>{const p=await point(b);await input(p,'down');await delay(70);await input(p,'up');};
  try{
