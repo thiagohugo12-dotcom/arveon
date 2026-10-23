@@ -103,6 +103,7 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:|INTERFACE2_FAIL:' /tmp/interface2-render.log; then exit 1; fi
           grep -E '^INTERFACE2_RESULT: [0-9]+ checks, 0 failures$' /tmp/interface2-render.log
           test -s build/interface2-qa/evolution-360x800.png
+          test -s build/interface2-qa/evolution-lower-360x800.png
           test -s build/interface2-qa/blacksmith-forjar-360x800.png
           test -s build/interface2-qa/blacksmith-aprimorar-360x800.png
           test -s build/interface2-qa/blacksmith-evoluir-360x800.png

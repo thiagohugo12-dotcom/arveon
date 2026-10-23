@@ -93,6 +93,11 @@ func _run() -> void:
 	var reloaded := GameProgress.new()
 	reloaded.save_path = save_path
 	check(reloaded.load_save() and reloaded.attributes["Força"] == points_before+1,"attribute change persists through existing save format")
+	evolution.scroll.scroll_vertical = int(evolution.scroll.get_v_scroll_bar().max_value)
+	await frames()
+	await capture("evolution-lower-360x800")
+	main._toggle_character()
+	await frames()
 	var price_before: int = main.progress.gold
 	main.player.position = SafeCamp.DISPLAY_STATIONS["Ferreiro"]
 	var smith := find_button(hud.station_content,"Forjar")
