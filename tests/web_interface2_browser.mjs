@@ -104,7 +104,7 @@ async function session(mode){
   if(mobile){
    const world=[...ui].reverse().find(s=>s.screen==='hud'),joy=world.joystick,start=screenPoint(world,joy.x+joy.w/2,joy.y+joy.h/2);
    await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...start,id:2,radiusX:4,radiusY:4,force:1}]});
-   for(let i=1;i<=130;i++){await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x,y:start.y+Math.min(52,i*2),id:2,radiusX:4,radiusY:4,force:1}]});await delay(100);}
+   for(let i=1;i<=130;i++){const offset=Math.min(52,i*2);await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:start.x-offset,y:start.y-offset,id:2,radiusX:4,radiusY:4,force:1}]});await delay(100);}
    await shot('joystick-held');await call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
    check(moves.some(m=>Math.hypot(...m.direction)>0.2&&!m.blocked),'mobile joystick delivers movement after menu close');
    check(new Set(moves.filter(m=>Math.hypot(...m.direction)>0.2).map(m=>m.position.join(','))).size>1,'player moves in the world after menu close');
