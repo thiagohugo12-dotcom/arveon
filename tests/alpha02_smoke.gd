@@ -18,7 +18,20 @@ func _run() -> void:
 	OS.set_environment("ARVEON_SAVE_PATH", path)
 	var title := (load("res://scenes/title.tscn") as PackedScene).instantiate()
 	root.add_child(title)
+	await process_frame
 	_check(title.continue_button.disabled, "abertura oferece novo jogo sem save")
+	var settings_button: Button = title.touch_buttons[2]
+	var touch := InputEventScreenTouch.new()
+	touch.index = 7
+	touch.pressed = true
+	touch.position = settings_button.get_global_rect().get_center()
+	root.push_input(touch, true)
+	touch = touch.duplicate()
+	touch.pressed = false
+	root.push_input(touch, true)
+	await process_frame
+	_check(title.settings_panel.visible, "entrada Godot abre Configurações (não substitui teste Web)")
+	title.settings_panel.hide()
 	title._start_game(true)
 	await process_frame
 	var main := current_scene as Node2D
