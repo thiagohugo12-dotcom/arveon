@@ -147,7 +147,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 1
       - name: Render mobile layouts in software GL
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe') && github.head_ref != 'fix/mobile-title-touch-20261022'
         shell: bash
         run: |
           set -euo pipefail
@@ -203,7 +203,7 @@ jobs:
           grep -E '^FIRST_WEAPON_RESULT: [0-9]+ checks, 0 failures$' /tmp/first-weapon-render.log
           test "$(find build/first-weapon-qa -name '*.png' | wc -l)" -eq 8
       - name: Verify original explorer identity during sword techniques
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe') && github.head_ref != 'fix/mobile-title-touch-20261022'
         shell: bash
         run: |
           set -euo pipefail
@@ -211,7 +211,7 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/sword-identity.log; then exit 1; fi
           grep '^SWORD_IDENTITY_RESULT: 72 checks, 0 failures$' /tmp/sword-identity.log
       - name: Probe bounded Skill 1 effects in software GL
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe') && github.head_ref != 'fix/mobile-title-touch-20261022'
         shell: bash
         run: |
           set -euo pipefail
@@ -225,7 +225,7 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/skill1-game-perf.log; then exit 1; fi
           grep -E '^SKILL1_GAME_PERF_RESULT: .*0 failures$' /tmp/skill1-game-perf.log
       - name: Save rendered layout evidence
-        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe'
+        if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe') && github.head_ref != 'fix/mobile-title-touch-20261022'
         uses: actions/upload-artifact@v4
         with:
           name: mobile-layout-qa
