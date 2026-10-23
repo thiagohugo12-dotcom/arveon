@@ -1039,6 +1039,11 @@ func _add_row(item: String, count: String, left: String, right: String, can_left
 		buttons.add_child(button)
 
 func _input(event: InputEvent) -> void:
+	if death_panel.visible and event is InputEventScreenTouch and event.pressed and OS.has_feature("web") and bool(JavaScriptBridge.eval("window.__ARVEON_UI2_TEST__ === true", true)):
+		var panel_touch := death_panel.make_input_local(event) as InputEventScreenTouch
+		var scroll_touch_event := death_scroll.make_input_local(event) as InputEventScreenTouch
+		var touch_diagnostic := {"stage":"input","raw":[event.position.x,event.position.y],"panel":[panel_touch.position.x,panel_touch.position.y],"panel_size":[death_panel.size.x,death_panel.size.y],"scroll":[scroll_touch_event.position.x,scroll_touch_event.position.y],"scroll_size":[death_scroll.size.x,death_scroll.size.y]}
+		JavaScriptBridge.eval("console.log("+JSON.stringify("ARVEON_UI2_TOUCH "+JSON.stringify(touch_diagnostic))+")")
 	if event is InputEventScreenDrag and event.index == scroll_touch and is_instance_valid(touch_scroll):
 		var local_drag := touch_scroll.make_input_local(event) as InputEventScreenDrag
 		if local_drag.position.distance_to(inventory_touch_origin) > 8.0:
