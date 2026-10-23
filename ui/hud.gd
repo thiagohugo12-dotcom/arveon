@@ -89,6 +89,7 @@ var death_body: VBoxContainer
 var death_details: VBoxContainer
 var death_details_button: Button
 var death_details_open := false
+var death_result: Dictionary = {}
 var cooldown: float = 0.0
 var notice_left := 0.0
 var health_flash_left := 0.0
@@ -822,6 +823,7 @@ func close_inventory() -> void:
 	_sync_controls()
 
 func show_death(result: Dictionary = {}) -> void:
+	death_result = result.duplicate(true)
 	save_panel.hide()
 	close_inventory()
 	close_station()
@@ -1840,6 +1842,7 @@ func _qa_ui_state(kind: String) -> void:
 	var payload := {"screen":kind,"panel_visible":root_node.visible,"viewport":[size.x,size.y],"buttons":buttons,"labels":labels,
 		"joystick":{"x":joy_rect.position.x,"y":joy_rect.position.y,"w":joy_rect.size.x,"h":joy_rect.size.y},
 		"interact":{"visible":interact_button.visible,"caption":interact_button.caption.text,"x":interact_rect.position.x,"y":interact_rect.position.y,"w":interact_rect.size.x,"h":interact_rect.size.y}}
+	if kind == "death": payload["death_result"] = death_result
 	if kind == "blacksmith": payload["scroll_y"] = station_scroll.scroll_vertical
 	var message := "ARVEON_UI2_STATE "+JSON.stringify(payload)
 	JavaScriptBridge.eval("if(window.__ARVEON_UI2_TEST__===true) console.log("+JSON.stringify(message)+")")

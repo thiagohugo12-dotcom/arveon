@@ -117,8 +117,10 @@ async function session(mode){
   await evaluate('window.ui2TriggerDeath()');
   await until(()=>current('death'),'real Health death displays the result panel');
   await shot('death');
-  check(current('death').labels.some(s=>s.includes('Inimigo de teste')),mode+': death panel reports the source recorded by the real death transaction');
-  check(current('death').labels.some(s=>s.includes('Ouro perdido: 0')&&s.includes('XP perdido: 0')&&s.includes('Nenhum item perdido')),mode+': death panel shows the exact zero-loss result');
+  const death=current('death'),outcome=death.death_result;
+  check(death.labels.includes('Derrotado por: '+outcome.enemy)&&outcome.enemy==='Inimigo de teste',mode+': death panel reports the source recorded by the real death transaction');
+  check(death.labels.includes('Ouro perdido: '+outcome.gold_lost)&&death.labels.includes('XP perdido: '+outcome.xp_lost),mode+': death panel displays the exact gold and XP deltas returned by the death transaction');
+  check(outcome.item_count>0?death.labels.includes(`Item perdido: ${outcome.item_lost} × ${outcome.item_count}`):death.labels.includes('Nenhum item perdido'),mode+': death panel displays the exact item loss or no-loss message');
   const details={...button('death',b=>b.text==='Ver detalhes'),screen:'death'};await tap(details);
   await until(()=>current('death')?.buttons.some(b=>b.text==='Ocultar detalhes'),'death details open from touch/mouse');
   await shot('death-details');
