@@ -24,6 +24,7 @@ async function session(mode){
  const browser=spawn(process.env.CHROME_BIN||'google-chrome',['--headless=new','--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader','--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','pipe']});
  let diagnostics='';browser.stderr.on('data',b=>diagnostics=(diagnostics+b).slice(-4000));
  let target,socket,id=0;const pending=new Map(),titles=[],ui=[],errors=[];
+ let canvasRect;
  for(let n=0;n<200;n++){try{const port=(await readFile(path.join(profile,'DevToolsActivePort'),'utf8')).split('\n')[0];target=(await(await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find(t=>t.type==='page');if(target)break;}catch{}await delay(100);}
  if(!target)throw Error('Chromium startup: '+diagnostics);
  socket=new WebSocket(target.webSocketDebuggerUrl);await new Promise(r=>socket.addEventListener('open',r,{once:true}));
@@ -48,7 +49,7 @@ async function session(mode){
   await until(()=>titles.some(s=>s.buttons),'title buttons ready');
   const titleButton=text=>{const b=titles.filter(s=>s.buttons).at(-1).buttons.find(x=>x.text===text);assert.ok(b,'title '+text);return b;};
   const titleState=titles.filter(s=>s.buttons).at(-1);const play=titleButton('Jogar · novo jogo');
-  const canvasRect=await evaluate('(()=>{const r=document.querySelector("canvas").getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,top:r.top}})()');
+  canvasRect=await evaluate('(()=>{const r=document.querySelector("canvas").getBoundingClientRect();return {width:r.width,height:r.height,left:r.left,top:r.top}})()');
   await shot('title-before');
   const p={x:canvasRect.left+play.x*canvasRect.width/titleState.viewport[0],y:canvasRect.top+play.y*canvasRect.height/titleState.viewport[1]};await input(p,'down');await delay(70);await input(p,'up');
   await until(()=>titles.some(s=>s.started),'new game starts');
