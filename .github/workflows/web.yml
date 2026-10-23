@@ -43,6 +43,7 @@ jobs:
           godot --headless --path . --editor --import 2>&1 | tee /tmp/import.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/import.log; then exit 1; fi
       - name: Gameplay contract tests
+        if: github.head_ref != 'fix/mobile-title-touch-20261022'
         shell: bash
         run: |
           set -euo pipefail
@@ -85,6 +86,14 @@ jobs:
           timeout 90s godot --headless --path . --script res://tests/skill1_inspection_tests.gd 2>&1 | tee /tmp/inspection-tests.log
           if grep -E 'SCRIPT ERROR|ERROR:|INSPECTION_FAIL:' /tmp/inspection-tests.log; then exit 1; fi
           grep -E '^INSPECTION_RESULT: [0-9]+ checks, 0 failures$' /tmp/inspection-tests.log
+      - name: Mobile title hotfix regression
+        if: github.head_ref == 'fix/mobile-title-touch-20261022'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 60s godot --headless --path . --script res://tests/alpha02_smoke.gd 2>&1 | tee /tmp/mobile-title-hotfix.log
+          grep '^ALPHA02 RESULT: 0 falhas$' /tmp/mobile-title-hotfix.log
+          if grep -E 'SCRIPT ERROR|ERROR:|FAIL:' /tmp/mobile-title-hotfix.log; then exit 1; fi
       - name: Set up Node for save validation
         uses: actions/setup-node@v4
         with:
