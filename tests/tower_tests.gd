@@ -149,7 +149,8 @@ static func run_world(suite) -> void:
 	suite.check(route_clear and player.position.distance_to(approach) < 0.5, "ordinary walking route reaches southern tower from camp without dash or teleport")
 	suite.check(TowerEntrance.POSITION.distance_to(SafeCamp.RESPAWN) > 3.0 * Vector2(600, 280).distance_to(SafeCamp.RESPAWN), "tower is over three times farther from camp than previous location")
 	suite.check(not SafeCamp.AREA.grow(SafeCamp.CLEARANCE).has_point(TowerEntrance.POSITION), "tower stands outside camp and safe clearance")
-	suite.check(Rect2(16, 16, 1668, 1318).encloses(TowerEntrance.BODY.grow(12)), "tower footprint remains inside expanded map walls")
+	var tower_footprint: Rect2 = TowerEntrance.ANDAR1_SIDES[0].merge(TowerEntrance.ANDAR1_SIDES[1])
+	suite.check(Rect2(16, 16, 1668, 1318).encloses(tower_footprint.grow(12)), "tower footprint remains inside expanded map walls")
 	var walls := main.get_node("Andar1/Walls")
 	suite.check(walls.get_node("Top").position == Vector2(850, 0) and walls.get_node("Bottom").position == Vector2(850, 1350) and walls.get_node("Left").position == Vector2(0, 675) and walls.get_node("Right").position == Vector2(1700, 675), "Andar 1 boundaries surround the expanded world")
 	var camera := player.get_node("Camera2D") as Camera2D

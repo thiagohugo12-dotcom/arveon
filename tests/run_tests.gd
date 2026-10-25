@@ -44,6 +44,8 @@ func _run() -> void:
 	preload("res://tests/etapa2_progression_tests.gd").run(self)
 	preload("res://tests/sword_evolution_tests.gd").run(self)
 	preload("res://tests/sword_technique_timing_tests.gd").run(self)
+	preload("res://tests/floor_catalog_tests.gd").run(self)
+	await preload("res://tests/floor_catalog_tests.gd").run_world(self)
 	var health := Health.new()
 	root.add_child(health)
 	health.initialize(10)
