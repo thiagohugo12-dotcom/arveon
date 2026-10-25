@@ -62,7 +62,9 @@ func shadow(at: Vector2, width: float, height: float) -> void:
 func paint() -> void:
 	if layout == null: return
 	depth_commands.clear()
-	_paint_clean_ground()
+	if layout.expanded_world:
+		_paint_expansion_ground()
+	layout.draw_texture_rect(GROUND,Rect2(0,0,1200,900),false)
 	if layout.expanded_world:
 		_paint_expansion_ground_details()
 		_paint_biome_ground()
@@ -225,7 +227,10 @@ func _draw_ruins() -> void:
 	var blocks: Array[Rect2] = FloorView._ruin_blocks()
 	for i in range(blocks.size()):
 		var block: Rect2 = blocks[i]
-		_ruin_wall(block,i)
+		if block.size.x>=block.size.y:
+			ruin_sprite(i%2,Vector2(block.get_center().x,block.end.y),Vector2(block.size.x+8,54.0))
+		else:
+			ruin_sprite(2,Vector2(block.get_center().x,block.end.y),Vector2(42.0,58.0))
 	for at: Vector2 in [Vector2(1348,310),Vector2(1395,323),Vector2(1515,313)]:
 		_draw_ruin_rubble(at)
 	_draw_ruin_paving()
@@ -235,24 +240,17 @@ func _draw_ruin_courtyard() -> void:
 	# Broken, mossy paving clusters leave bare earth between the slabs.
 	for entry: Array in [[Vector2(1384,224),Vector2(64,38)],[Vector2(1415,284),Vector2(70,40)],
 		[Vector2(1515,278),Vector2(62,36)],[Vector2(1532,205),Vector2(58,36)]]:
-		_slab(entry[0] - Vector2(0,entry[1].y * 0.5),entry[1])
+		ruin_sprite(5,entry[0],entry[1])
 
 func _draw_ruin_paving() -> void:
 	for at: Vector2 in [Vector2(1402,203),Vector2(1456,285),Vector2(1510,250)]:
-		_slab(at - Vector2(0,13),Vector2(46,26))
+		ruin_sprite(5,at,Vector2(48,27))
 
 func _draw_ruin_rubble(at: Vector2) -> void:
-	shadow(at + Vector2(3,2),26,8)
-	stone_piece(at,0.5,Color(1.2,1.15,0.95))
-	stone_piece(at + Vector2(15,3),0.5,Color(1.1,1.05,0.88))
+	ruin_sprite(3,at,Vector2(42,32))
 
 func _draw_ruin_altar(feet: Vector2) -> void:
-	# Altar baixo: duas pedras de base, uma sobre elas e uma laje no topo.
-	shadow(feet + Vector2(4,3),84,16)
-	stone_piece(feet + Vector2(-24,0),1.0,Color(1.2,1.15,0.95))
-	stone_piece(feet + Vector2(24,0),1.0,Color(1.1,1.05,0.88))
-	stone_piece(feet + Vector2(0,-14),1.0,Color(1.3,1.25,1.05))
-	_slab(feet + Vector2(0,-48),Vector2(50,14))
+	ruin_sprite(4,feet,Vector2(76,52))
 
 func _draw_danger_arena() -> void:
 	# Boulder clusters and edge growth frame the same clear central combat floor.
@@ -374,128 +372,3 @@ func _camp() -> void:
 		flowers(at)
 	for at: Vector2 in [Vector2(584,432),Vector2(574,608),Vector2(340,530)]:
 		sprite(PROPS,PEBBLES,at,1)
-
-# ── Terreno limpo do Andar 1 (substitui as texturas assadas) ───────────────────────────────
-# Grama em duas tonalidades, trilhas lisas com borda de pixel e praça do acampamento: tudo vem
-# dos mesmos dados (FloorView.TRAILS/EXPANSION_TRAILS) que o mapa usa, sem emendas retas.
-const GRASS_BASE := Color("#b4c957")
-const GRASS_DARK := Color("#a6bc4d")
-const GRASS_LIGHT := Color("#c0d263")
-const ROAD_FILL := Color("#efcd86")
-const ROAD_EDGE := Color("#c5a35d")
-
-func _paint_clean_ground() -> void:
-	var expanded := layout.expanded_world
-	var world := Rect2(0,0,1700,1350) if expanded else Rect2(0,0,1200,900)
-	layout.draw_rect(Rect2(-600,-600,2900,2550) if expanded else world,GRASS_BASE)
-	var step := 110
-	for gy in range(-1,int(world.size.y / step) + 2):
-		for gx in range(-1,int(world.size.x / step) + 2):
-			var h := absi(layout._hash(gx + 31,gy + 17))
-			if h % 100 >= 58: continue
-			var center := Vector2(gx * step + h % 80,gy * step + (h / 80) % 80)
-			var radius := 22.0 + float(h % 34)
-			var color := GRASS_LIGHT if (h / 7) % 3 == 0 else GRASS_DARK
-			_soft_blob(center,radius,radius * 0.68,color,h)
-	_paint_roads(expanded)
-
-func _soft_blob(center: Vector2, radius_x: float, radius_y: float, color: Color, seed: int) -> void:
-	var points := PackedVector2Array()
-	for i in range(28):
-		var angle := TAU * float(i) / 28.0
-		var wobble := 0.86 + float(layout._hash(seed + i * 13,i) % 29) / 100.0
-		points.append((center + Vector2(cos(angle) * radius_x,sin(angle) * radius_y) * wobble).snapped(Vector2(2,2)))
-	layout.draw_colored_polygon(points,color)
-
-func _paint_roads(expanded: bool) -> void:
-	var routes: Array = []
-	for i in range(FloorView.TRAILS.size()):
-		routes.append({"points":FloorView.TRAILS[i],"width":FloorView.TRAIL_WIDTHS[i]})
-	if expanded: routes.append_array(FloorView.EXPANSION_TRAILS)
-	var plaza := _plaza(0.0)
-	var plaza_fill := _plaza(-4.0)
-	# Bordas primeiro, depois os miolos: os cruzamentos ficam fundidos, sem costura.
-	layout.draw_colored_polygon(plaza,ROAD_EDGE)
-	for index in range(routes.size()):
-		layout.draw_colored_polygon(_road_polygon(routes,index,4.0),ROAD_EDGE)
-	layout.draw_colored_polygon(plaza_fill,ROAD_FILL)
-	for index in range(routes.size()):
-		layout.draw_colored_polygon(_road_polygon(routes,index,0.0),ROAD_FILL)
-	# Marcas de uso: pontinhos mais claros ao longo do caminho.
-	for route: Dictionary in routes:
-		var points: Array = route.points
-		for j in range(points.size() - 1):
-			var mark: Vector2 = (points[j] as Vector2).lerp(points[j + 1],0.5).snapped(Vector2(2,2))
-			layout.draw_rect(Rect2(mark,Vector2(6,2)),Color("#f7e3ae"))
-
-func _plaza(grow: float) -> PackedVector2Array:
-	var points := PackedVector2Array()
-	for i in range(56):
-		var angle := TAU * float(i) / 56.0
-		var wobble := 0.93 + float(layout._hash(i * 7,91) % 15) / 100.0
-		points.append((Vector2(560,478) + Vector2(cos(angle) * (250.0 + grow),sin(angle) * (176.0 + grow)) * wobble).snapped(Vector2(2,2)))
-	return points
-
-func _road_polygon(routes: Array, index: int, border: float) -> PackedVector2Array:
-	var route: Dictionary = routes[index]
-	var points: Array = route.points
-	var width: float = route.width
-	var curve := Curve2D.new()
-	for i in range(points.size()):
-		var before: Vector2 = points[maxi(0,i - 1)]
-		var after: Vector2 = points[mini(i + 1,points.size() - 1)]
-		var tangent := (after - before) / 6.0
-		curve.add_point(points[i],-tangent,tangent)
-	var centers := curve.get_baked_points()
-	var travelled: Array[float] = [0.0]
-	for n in range(1,centers.size()): travelled.append(travelled[n - 1] + centers[n - 1].distance_to(centers[n]))
-	var total: float = travelled[travelled.size() - 1]
-	var start_join := _road_join(points[0],routes,index)
-	var end_join := _road_join(points[points.size() - 1],routes,index)
-	var left := PackedVector2Array()
-	var right := PackedVector2Array()
-	for n in range(centers.size()):
-		var previous: Vector2 = centers[maxi(0,n - 1)]
-		var next: Vector2 = centers[mini(n + 1,centers.size() - 1)]
-		var normal := (next - previous).normalized().orthogonal()
-		var taper := minf(1.0 if start_join else smoothstep(0.0,34.0,travelled[n]),1.0 if end_join else smoothstep(0.0,34.0,total - travelled[n]))
-		var half := width * 0.5 * maxf(0.35,taper) + border + sin(float(n) * 0.13 + width) * 0.9
-		left.append((centers[n] + normal * half).snapped(Vector2(2,2)))
-		right.append((centers[n] - normal * half).snapped(Vector2(2,2)))
-	for n in range(right.size() - 1,-1,-1): left.append(right[n])
-	return left
-
-func _road_join(point: Vector2, routes: Array, own: int) -> bool:
-	if point.distance_to(Vector2(560,478)) < 280.0: return true
-	for i in range(routes.size()):
-		if i == own: continue
-		for candidate: Vector2 in routes[i].points:
-			if candidate.distance_to(point) < 44.0: return true
-	return false
-
-# Pedra do próprio jogo (nature.png) ancorada nos pés; "tone" tinge de areia as ruínas.
-func stone_piece(feet: Vector2, scale: float, tone: Color = Color.WHITE) -> void:
-	var size := STONE.size * scale
-	layout.draw_texture_rect_region(NATURE,Rect2((feet - Vector2(size.x * 0.5,size.y)).round(),size),STONE,tone)
-
-func _ruin_wall(block: Rect2, index: int) -> void:
-	var horizontal := block.size.x >= block.size.y
-	var length := block.size.x if horizontal else block.size.y
-	var big := length >= 50.0
-	var spacing := 36.0 if big else 20.0
-	var count := maxi(1,roundi(length / spacing))
-	for n in range(count):
-		var t := (float(n) + 0.5) / float(count)
-		var feet := Vector2(block.position.x + block.size.x * t,block.end.y + 2.0) if horizontal else Vector2(block.get_center().x,block.position.y + block.size.y * t + 8.0)
-		shadow(feet + Vector2(4,2),30 if big else 18,8)
-		stone_piece(feet,1.0 if big and (n + index) % 2 == 0 else 0.5,Color(1.2,1.15,0.95) if (n + index) % 3 else Color(1.08,1.03,0.88))
-
-# Laje de piso: pedra lisa em pixels, com brilho no topo, junta ao meio e um toque de musgo.
-func _slab(center: Vector2, size: Vector2) -> void:
-	var rect := Rect2((center - size * 0.5).snapped(Vector2(2,2)),size.snapped(Vector2(2,2)))
-	layout.draw_rect(rect.grow(2),Color("#77735a"))
-	layout.draw_rect(rect,Color("#b9b08c"))
-	layout.draw_rect(Rect2(rect.position,Vector2(rect.size.x,2)),Color("#d3ccaa"))
-	layout.draw_rect(Rect2(rect.position + Vector2(0,rect.size.y - 2),Vector2(rect.size.x,2)),Color("#948d6d"))
-	layout.draw_rect(Rect2(rect.position + Vector2(roundf(rect.size.x * 0.25) * 2.0,2),Vector2(2,rect.size.y - 4)),Color("#968f70"))
-	layout.draw_rect(Rect2(rect.position + Vector2(2,2),Vector2(8,4)),Color("#7fa04a"))
