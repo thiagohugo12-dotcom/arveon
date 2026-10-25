@@ -75,23 +75,25 @@ var attributes: Dictionary = RPGRules.empty_attributes()
 var skills: Dictionary = {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral": 1}
 # Recipe IDs are unique inventory identities; equipping never removes ownership.
 var equipment: Dictionary = {"espada": 0}
-var equipped: Dictionary = {"Arma": "espada", "Armadura": "", "Acessório": ""}
+var equipped: Dictionary = {"Arma": "espada", "Capacete": "", "Armadura": "", "Luvas": "", "Botas": "", "Anel": "", "Acessório": "", "Amuleto": ""}
 var weapon_instances: Dictionary = {}
 var equipped_weapon_uid := ""
 var next_weapon_uid := 1
 # Marco 5: contadores de azar (raro/épico) e receitas de conjunto liberadas por Fragmento.
 var pity: Dictionary = LootRules.new_pity()
+var gems := 0 # Moeda premium futura: ainda sem fonte no jogo, salva como campo opcional.
 var recipes: Array[String] = []
 # Existing snapshots are exempt; only the no-save runtime starts the introduction.
 var introduction: Dictionary = {"status":"legacy","met_smith":false,"weapon":""}
 
 func begin_new_character() -> void:
 	equipment = {}
-	equipped = {"Arma":"","Armadura":"","Acessório":""}
+	equipped = {"Arma":"","Capacete":"","Armadura":"","Luvas":"","Botas":"","Anel":"","Acessório":"","Amuleto":""}
 	weapon_instances = {}
 	equipped_weapon_uid = ""
 	next_weapon_uid = 1
 	pity = LootRules.new_pity()
+	gems = 0
 	recipes = []
 	introduction = {"status":"active","met_smith":false,"weapon":""}
 
@@ -416,6 +418,8 @@ func combat_stats() -> Dictionary:
 	var magical_bonus := 0
 	var critical_bonus := 0.0
 	var attack_speed_bonus := 0.0
+	var crit_damage_bonus := 0.0
+	var resist_bonus := 0.0
 	var result := {"physical": 12 + int(attributes["Força"]) * 2, "magical": 12 + int(attributes["Espírito"]) * 2,
 		"hp": 100 + int(attributes["Vitalidade"]) * 8, "speed": 180.0,
 		"spirit": int(attributes["Espírito"]), "armor": 0, "cooldown": 1.0,
@@ -449,6 +453,9 @@ func combat_stats() -> Dictionary:
 		result.physical += int(bonus.damage)
 		result.magical += int(bonus.damage) + int(bonus.spirit) * 2
 		for key: String in ["hp","speed","spirit","armor"]: result[key] += bonus[key]
+		critical_bonus += float(bonus.crit)
+		crit_damage_bonus += float(bonus.crit_damage)
+		resist_bonus += float(bonus.resist)
 	var passive := {"damage":0,"hp":0,"armor":0} if etapa2_enabled else talents.bonuses(active_category())
 	result.physical += int(passive.damage)
 	result.magical += int(passive.damage)
@@ -460,6 +467,8 @@ func combat_stats() -> Dictionary:
 	result.physical += physical_bonus
 	result.magical += magical_bonus
 	result.critical_chance = minf(0.15,float(result.critical_chance)+critical_bonus)
+	result.critical_multiplier = float(result.critical_multiplier) + crit_damage_bonus
+	result.resistance = minf(0.25,float(result.resistance) + resist_bonus)
 	result.basic_interval_factor = maxf(0.7,float(result.basic_interval_factor)-attack_speed_bonus)
 	result.damage = roundi(float(result[result.damage_type]) * (1.0+result.automatic+result.basic))
 	return result
@@ -563,6 +572,7 @@ func to_json() -> String:
 		payload["equipped_weapon_uid"] = equipped_weapon_uid
 		payload["next_weapon_uid"] = next_weapon_uid
 		payload["pity"] = pity
+		payload["gems"] = gems
 		payload["recipes"] = recipes
 	return JSON.stringify(payload)
 
@@ -780,7 +790,7 @@ func load_text(text: String) -> bool:
 		new_discovered = discovered_value
 	var new_rpg: Dictionary = {"attributes": RPGRules.empty_attributes(),
 		"skills": {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral": 1},
-		"equipment": {"espada": 0}, "equipped": {"Arma": "espada", "Armadura": "", "Acessório": ""}}
+		"equipment": {"espada": 0}, "equipped": {"Arma": "espada", "Capacete": "", "Armadura": "", "Luvas": "", "Botas": "", "Anel": "", "Acessório": "", "Amuleto": ""}}
 	if loaded_version == 4:
 		var legacy_attributes: Variant = parsed.get("attributes")
 		if not legacy_attributes is Dictionary or legacy_attributes.size() != 4:
@@ -874,6 +884,10 @@ func load_text(text: String) -> bool:
 	if parsed.has("pity"):
 		if not LootRules.valid_pity(parsed.pity): return false
 		new_pity = {"raro": int(parsed.pity.raro), "epico": int(parsed.pity.epico)}
+	var new_gems := 0
+	if parsed.has("gems"):
+		if not _bounded_integer(parsed.gems,0,100000000): return false
+		new_gems = int(parsed.gems)
 	if parsed.has("recipes"):
 		if not parsed.recipes is Array or parsed.recipes.size() > 20: return false
 		for id: Variant in parsed.recipes:
@@ -927,6 +941,7 @@ func load_text(text: String) -> bool:
 	opened_caches = new_opened
 	discovered_pois = new_discovered
 	pity = new_pity
+	gems = new_gems
 	recipes = new_recipes
 	attributes = new_rpg.attributes
 	skills = new_rpg.skills
@@ -952,7 +967,7 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 		if not value.get(field) is Dictionary:
 			return null
 	var attribute_names: Array = RPGRules.LEGACY_ATTRIBUTES if version < 8 else RPGRules.ATTRIBUTES
-	if value.attributes.size() != attribute_names.size() or value.skills.size() != (0 if version >= 10 else 3) or value.equipped.size() != 3:
+	if value.attributes.size() != attribute_names.size() or value.skills.size() != (0 if version >= 10 else 3) or not value.equipped.size() in [3,8]:
 		return null
 	var attribute_spent := 0
 	var skill_spent := 0
@@ -988,9 +1003,10 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 				if meta.get(field) != canonical[field]:
 					return null
 	for slot: String in RPGRules.SLOTS:
-		var id: Variant = value.equipped.get(slot)
+		var id: Variant = value.equipped.get(slot,"" if value.equipped.size() == 3 and not RPGRules.LEGACY_SLOTS.has(slot) else null)
 		if not id is String:
 			return null
+		result.equipped[slot] = id
 		if id != "" and (not value.equipment.has(id) or RPGRules.EQUIPMENT[id].slot != slot):
 			return null
 	return result

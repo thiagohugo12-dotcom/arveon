@@ -40,6 +40,27 @@ const MAPS := {
 		"..kcccccccccck..", "..kckkkkkkkkck..", "..kcccccccccck..", "..kckkkkkkkkck..",
 		"..kcccccccccck..", "..kckkkkkkkkck..", "..kcccccccccck..", "...kkkkkkkkkk...",
 		"................", "................", "................", "................"],
+	"helmet": [
+		"................", "......krrk......", ".....kkrrkk.....", "...kkssssssSkk..",
+		"..kssssssssssSk.", "..ksshssssssSSk.", ".kssssssssssSSSk", ".kssPPPPPPPPSSSk",
+		".kssPkkkkkkPSSSk", ".kssPPPPPPPPSSSk", ".ksssk....kSSSk.", ".ksssk....kSSSk.",
+		".kkkkk....kkkkk.", "................", "................", "................"],
+	"gloves": [
+		"................", "....kk.kk.kk....", "...kSskSskSSk...", "...kSskSskSSk.kk",
+		"...kSsssssSSkksk", "..kkSsssssSSksSk", "..kSsssssssSSSk.", "..kSssPPPPSSSk..",
+		"...kSsssssSSSk..", "...kPssssSSSk...", "....kPPPPPPk....", "....kBBBBBBk....",
+		"....kBbbbbBk....", ".....kkkkkk.....", "................", "................"],
+	"ring": [
+		"................", "................", ".....kkkkkk.....", "....kuhuuuUk....",
+		"....kuuuuUUk....", ".....kkkkkk.....", "...kggggggggk...", "..kgGkkkkkkGgk..",
+		"..kgk......kGk..", "..kgk......kGk..", "..kgk......kGk..", "..kgGk....kGgk..",
+		"...kgGkkkkGgk...", "....kkggggkk....", ".....kkkkkk.....", "................"],
+	"amulet": [
+		"................", ".k............k.", ".kg..........gk.", "..kg........gk..",
+		"..kGg......gGk..", "...kGg....gGk...", "....kGg..gGk....", ".....kGggGk.....",
+		"......kggk......", ".....kkGGkk.....", "....kuuhuuUk....", "....kuuuuUUk....",
+		"....kUuuuUUk....", ".....kUUUUk.....", "......kkkk......", "................"],
+	"map": ["kkkkkkkk","kcBeeBrk","kcBeeBck","kcBccBck","kcBecBck","kcBccBck","kcBccBck","kkkkkkkk"],
 	"bolt": ["....yy..", "...yy...", "..yy....", ".yyyyyy.", "...yy...", "..yy....", ".yy.....", "y......."],
 	"heart": [".rr..rr.", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr", ".rrrrrr.", "..rrrr..", "...rr...", "........"],
 	"clover": [".ee..ee.", "eeeeeeee", "eeEeeEee", ".eeEEee.", ".eeEEee.", "eeEeeEee", "eeeeeeee", ".ee..ee."],

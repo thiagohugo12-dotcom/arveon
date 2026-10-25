@@ -19,7 +19,7 @@ static func metadata(id: String) -> Dictionary:
 	var item: Dictionary = RPGRules.EQUIPMENT.get(id, {})
 	if item.is_empty():
 		return {}
-	return {"category": id if CATEGORIES.has(id) else item.slot, "rarity": "incomum" if id in ["lanca","cajado","trama","semente"] else "comum", "icon": id if CATEGORIES.has(id) else item.slot, "level": 1}
+	return {"category": id if CATEGORIES.has(id) else item.slot, "rarity": str(item.get("rarity","incomum" if id in ["lanca","cajado","trama","semente"] else "comum")), "icon": id if CATEGORIES.has(id) else item.slot, "level": 1}
 static func profile(id: String) -> Dictionary:
 	return CATEGORIES.get(weapon_category(id), CATEGORIES.espada).duplicate()
 static func weapon_category(id: String) -> String:

@@ -22,7 +22,13 @@ static func received_damage(amount: int, damage_type: String, armor: int, resist
 	var after_armor := maxi(1, amount - armor) if damage_type == "physical" else amount
 	return maxi(1, ceili(after_armor * (1.0-clampf(resistance,0,0.25)) * (1.0-clampf(fury,0,0.4))))
 const SKILLS := ["Corte Circular", "Investida", "Fúria Ancestral"]
-const SLOTS := ["Arma", "Armadura", "Acessório"]
+# Oito espaços. "Acessório" é o Colar (nome interno mantido por compatibilidade com saves antigos).
+const LEGACY_SLOTS := ["Arma", "Armadura", "Acessório"]
+const SLOTS := ["Arma", "Capacete", "Armadura", "Luvas", "Botas", "Anel", "Acessório", "Amuleto"]
+const SLOT_TITLES := {"Acessório": "Colar"}
+
+static func slot_title(slot: String) -> String:
+	return str(SLOT_TITLES.get(slot, slot))
 const EQUIPMENT := {
 	"espada": {"name": "Espada Inicial", "slot": "Arma", "damage": 0, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "gold": 30, "materials": {"Madeira": 3, "Pedras": 2}},
 	"machado": {"name": "Machado Inicial", "slot": "Arma", "damage": 4, "hp": 0, "speed": -4, "spirit": 0, "armor": 0, "gold": 35, "materials": {"Madeira": 3, "Pedras": 4}},
@@ -32,7 +38,22 @@ const EQUIPMENT := {
 	"couro": {"name": "Colete de couro", "slot": "Armadura", "damage": 0, "hp": 12, "speed": 0, "spirit": 0, "armor": 1, "gold": 25, "materials": {"Couro": 4, "Madeira": 1}},
 	"trama": {"name": "Trama de seda", "slot": "Armadura", "damage": 0, "hp": 6, "speed": 4, "spirit": 2, "armor": 0, "gold": 30, "materials": {"Seda": 4, "Ervas": 2}},
 	"pedra": {"name": "Amuleto de pedra", "slot": "Acessório", "damage": 1, "hp": 6, "speed": 0, "spirit": 0, "armor": 0, "gold": 20, "materials": {"Pedras": 3, "Essência": 1}},
-	"semente": {"name": "Talismã da mata", "slot": "Acessório", "damage": 0, "hp": 0, "speed": 4, "spirit": 3, "armor": 0, "gold": 25, "materials": {"Madeira": 2, "Ervas": 3, "Essência": 2}}
+	"semente": {"name": "Talismã da mata", "slot": "Acessório", "damage": 0, "hp": 0, "speed": 4, "spirit": 3, "armor": 0, "gold": 25, "materials": {"Madeira": 2, "Ervas": 3, "Essência": 2}},
+# Conjuntos de andar (Marco 6): Mata = Raro, Vale = Épico. Só podem ser forjados com a receita do andar.
+	"elmo_mata": {"name": "Elmo da Mata", "slot": "Capacete", "rarity": "raro", "set_floor": 1, "damage": 0, "hp": 16, "speed": 0, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"colete_mata": {"name": "Armadura da Mata", "slot": "Armadura", "rarity": "raro", "set_floor": 1, "damage": 0, "hp": 19, "speed": 0, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"luvas_mata": {"name": "Luvas da Mata", "slot": "Luvas", "rarity": "raro", "set_floor": 1, "damage": 3, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.008, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"botas_mata": {"name": "Botas da Mata", "slot": "Botas", "rarity": "raro", "set_floor": 1, "damage": 0, "hp": 0, "speed": 6, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"anel_mata": {"name": "Anel da Mata", "slot": "Anel", "rarity": "raro", "set_floor": 1, "damage": 0, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.016, "crit_damage": 0.05, "resist": 0.0, "gold": 0, "materials": {}},
+	"colar_mata": {"name": "Colar da Mata", "slot": "Acessório", "rarity": "raro", "set_floor": 1, "damage": 0, "hp": 13, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.008, "gold": 0, "materials": {}},
+	"amuleto_mata": {"name": "Amuleto da Mata", "slot": "Amuleto", "rarity": "raro", "set_floor": 1, "damage": 0, "hp": 0, "speed": 0, "spirit": 2, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.008, "gold": 0, "materials": {}},
+	"elmo_vale": {"name": "Elmo do Vale", "slot": "Capacete", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 21, "speed": 0, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"colete_vale": {"name": "Armadura do Vale", "slot": "Armadura", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 25, "speed": 0, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"luvas_vale": {"name": "Luvas do Vale", "slot": "Luvas", "rarity": "epico", "set_floor": 2, "damage": 4, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.011, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"botas_vale": {"name": "Botas do Vale", "slot": "Botas", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 0, "speed": 8, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"anel_vale": {"name": "Anel do Vale", "slot": "Anel", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.021, "crit_damage": 0.06, "resist": 0.0, "gold": 0, "materials": {}},
+	"colar_vale": {"name": "Colar do Vale", "slot": "Acessório", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 17, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.011, "gold": 0, "materials": {}},
+	"amuleto_vale": {"name": "Amuleto do Vale", "slot": "Amuleto", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 0, "speed": 0, "spirit": 2, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.011, "gold": 0, "materials": {}}
 }
 
 static func level_for_xp(total: int) -> int:
@@ -49,18 +70,24 @@ static func xp_floor(level: int) -> int:
 
 static func bonuses(id: String, upgrade: int) -> Dictionary:
 	var item: Dictionary = EQUIPMENT[id]
-	var result := {"damage": int(item.damage), "hp": int(item.hp), "speed": int(item.speed), "spirit": int(item.spirit), "armor": int(item.armor)}
-	if item.slot == "Arma":
-		result.damage += upgrade
-	elif item.slot == "Armadura":
-		result.hp += upgrade * 4
-	else:
-		result.spirit += upgrade
+	var result := {"damage": int(item.damage), "hp": int(item.hp), "speed": int(item.speed), "spirit": int(item.spirit), "armor": int(item.armor),
+		"crit": float(item.get("crit",0.0)), "crit_damage": float(item.get("crit_damage",0.0)), "resist": float(item.get("resist",0.0))}
+	match str(item.slot):
+		"Arma": result.damage += upgrade
+		"Armadura": result.hp += upgrade * 4
+		"Capacete": result.hp += upgrade * 3
+		"Luvas": result.damage += upgrade
+		"Botas": result.speed += upgrade
+		"Anel": result.crit += upgrade * 0.002
+		_: result.spirit += upgrade
 	return result
 
 static func bonus_text(id: String, upgrade: int) -> String:
 	var b := bonuses(id, upgrade)
-	return "Dano %+d · HP %+d\nVel %+d · Espírito %+d · Defesa %d" % [b.damage, b.hp, b.speed, b.spirit, b.armor]
+	var text := "Dano %+d · HP %+d\nVel %+d · Espírito %+d · Defesa %d" % [b.damage, b.hp, b.speed, b.spirit, b.armor]
+	if b.crit > 0.0 or b.crit_damage > 0.0 or b.resist > 0.0:
+		text += "\nCrítico %+.1f%% · Dano crít. %+.0f%% · Resist. %+.1f%%" % [b.crit * 100.0, b.crit_damage * 100.0, b.resist * 100.0]
+	return text
 
 static func recipe(id: String, owned: bool, upgrade: int) -> Dictionary:
 	if owned:

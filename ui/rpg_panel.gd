@@ -834,7 +834,7 @@ func _equipment_strip() -> void:
 	grid.add_theme_constant_override("v_separation",4)
 	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_child(grid)
-	for slot: String in RPGRules.SLOTS:
+	for slot: String in RPGRules.LEGACY_SLOTS:
 		var id: String = str(progress.equipped.get(slot,""))
 		var card := _card(grid)
 		card.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -866,7 +866,7 @@ func _profile_equipment(with_heading: bool = true, with_button: bool = true) -> 
 	grid.add_theme_constant_override("h_separation",5)
 	grid.add_theme_constant_override("v_separation",5)
 	content.add_child(grid)
-	for slot: String in RPGRules.SLOTS:
+	for slot: String in RPGRules.LEGACY_SLOTS:
 		var id: String = str(progress.equipped.get(slot,""))
 		var card := _card(grid)
 		var icon := PixelItemIcon.new(ArsenalRules.metadata(id).icon if not id.is_empty() else slot)
