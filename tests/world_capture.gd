@@ -25,13 +25,16 @@ func _run() -> void:
 	for actor in get_nodes_in_group("damageable_enemies"): actor.queue_free()
 	main.progress.introduction = {"status":"legacy","met_smith":false,"weapon":""}
 	main.hud.hide()
+	var floor_view := main.world.get_node("FloorView") as FloorView
+	floor_view.secret_path_revealed = true
+	floor_view.queue_redraw()
 	var camera := main.player.get_node("Camera2D") as Camera2D
 	camera.position_smoothing_enabled = false
 	camera.limit_left = -5000
 	camera.limit_top = -5000
 	camera.limit_right = 5000
 	camera.limit_bottom = 5000
-	var spots := {"atras": Vector2(840,1225), "lado": Vector2(900,1280), "frente": Vector2(830,1325)}
+	var spots := {"trilha": Vector2(1340,1150)}
 	for key in spots:
 		main.player.position = spots[key]
 		await capture("mundo-" + key)

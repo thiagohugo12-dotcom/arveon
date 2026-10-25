@@ -171,7 +171,7 @@ func _draw_broken_patch(center: Vector2, radius_x: float, radius_y: float, color
 func _draw_expansion_trails() -> void:
 	# Main trails are baked into the matching pixel ground texture.
 	if layout.secret_path_revealed:
-		_draw_trail(FloorView.SECRET_TRAIL,23.0,-1)
+		_draw_trail(FloorView.SECRET_TRAIL,30.0,-1)
 
 func _draw_trail(points: Array, width: float, route_index: int) -> void:
 	if points.size()<2: return
@@ -190,7 +190,8 @@ func _draw_trail(points: Array, width: float, route_index: int) -> void:
 	var total_distance: float = distance_from_start[distance_from_start.size()-1]
 	var start_is_junction := _shared_trail_endpoint(points[0],route_index)
 	var end_is_junction := _shared_trail_endpoint(points[points.size()-1],route_index)
-	for border in [5.0,0.0]:
+	# Mesmo padrão das trilhas do chão: miolo liso na cor da trilha, sem contorno escuro.
+	for border in [0.0]:
 		var left := PackedVector2Array()
 		var right := PackedVector2Array()
 		for n in range(centers.size()):
@@ -205,8 +206,7 @@ func _draw_trail(points: Array, width: float, route_index: int) -> void:
 			left.append((centers[n]+normal*half_width).floor())
 			right.append((centers[n]-normal*half_width).floor())
 		for n in range(right.size()-1,-1,-1): left.append(right[n])
-		layout.draw_colored_polygon(left,Color("#9b8953") if border>0 else Color("#edcd80"))
-		var cap_color := Color("#9b8953") if border>0 else Color("#edcd80")
+		layout.draw_colored_polygon(left,Color("#f4ce7e"))
 	# The last 40 world units taper into the grass unless another trail joins there.
 
 func _shared_trail_endpoint(point: Vector2, route_index: int) -> bool:
@@ -294,8 +294,6 @@ func _draw_secret_grove() -> void:
 	# A small, broken stone pair hints at the concealed western entry before discovery.
 	for at: Vector2 in [Vector2(1318,1156),Vector2(1342,1145),Vector2(1367,1132),Vector2(1392,1118)]:
 		layout.draw_texture_rect_region(NATURE,Rect2(at-Vector2(8,6),Vector2(16,12)),STONE)
-	for at: Vector2 in [Vector2(1370,1168),Vector2(1398,1148),Vector2(1418,1136),Vector2(1436,1128)]:
-		layout.draw_texture_rect_region(NATURE,Rect2(at-Vector2(11,8),Vector2(22,16)),GRASS,Color("#7e9e4b"))
 
 func _draw_ancestral_roots(foot: Vector2) -> void:
 	for root: Array in [[Vector2(-5,-2),Vector2(-47,9)],[Vector2(5,-2),Vector2(48,10)],[Vector2(-2,2),Vector2(-24,20)],[Vector2(3,2),Vector2(24,22)]]:
