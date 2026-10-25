@@ -114,5 +114,32 @@ func _run() -> void:
 	check(not GameProgress.new().load_text(JSON.stringify(bag_parsed)), "an invalid expansion count is rejected")
 	bag_parsed.erase("bag_expansions")
 	check(GameProgress.new().load_text(JSON.stringify(bag_parsed)), "a save without the expansion field still loads")
+	# Conjuntos de equipamento.
+	var sets := fresh()
+	for pair: Array in [["Capacete","elmo_mata"],["Luvas","luvas_mata"],["Acessório","colar_mata"]]:
+		sets.equipment[pair[1]] = 0
+		sets.equip(pair[1])
+	var sword_uid: String = sets._create_weapon("espada","raro")
+	sets.equip_weapon_instance(sword_uid)
+	check(not sets.has_loadout(0) and not sets.apply_loadout(0), "an empty set cannot be applied")
+	check(sets.save_loadout(0) and sets.has_loadout(0) and not sets.has_loadout(1), "the current equipment can be saved in set 1")
+	sets.unequip("Capacete")
+	sets.unequip("Luvas")
+	sets.equipped.Acessório = ""
+	check(sets.apply_loadout(0) and sets.equipped.Capacete == "elmo_mata" and sets.equipped.Luvas == "luvas_mata" and sets.equipped.Acessório == "colar_mata", "applying a set puts every saved piece back on")
+	var axe_uid: String = sets._create_weapon("machado","comum")
+	sets.equip_weapon_instance(axe_uid)
+	check(sets.save_loadout(1) and sets.apply_loadout(0) and sets.equipped_weapon_uid == sword_uid and sets.equipped.Arma == "espada", "a set also restores the saved weapon copy")
+	sets.equipment.erase("luvas_mata")
+	sets.equipped.Luvas = ""
+	check(sets.apply_loadout(0) and sets.equipped.Luvas == "", "a piece that no longer exists is skipped instead of breaking the set")
+	var sets_restored := GameProgress.new()
+	check(sets_restored.load_text(sets.to_json()) and sets_restored.has_loadout(0) and sets_restored.has_loadout(1) and not sets_restored.has_loadout(2), "saved sets survive the save")
+	var sets_parsed: Dictionary = JSON.parse_string(sets.to_json())
+	sets_parsed.loadouts[0].slots["Capacete"] = "botas_mata"
+	check(not GameProgress.new().load_text(JSON.stringify(sets_parsed)), "a saved set with a piece in the wrong slot is rejected")
+	sets_parsed = JSON.parse_string(sets.to_json())
+	sets_parsed.erase("loadouts")
+	check(GameProgress.new().load_text(JSON.stringify(sets_parsed)), "a save without sets still loads")
 	print("EQUIP_RESULT: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)

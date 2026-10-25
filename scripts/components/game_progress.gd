@@ -83,6 +83,8 @@ var next_weapon_uid := 1
 var pity: Dictionary = LootRules.new_pity()
 var gems := 0 # Moeda premium futura: ainda sem fonte no jogo, salva como campo opcional.
 var bag_expansions := 0
+# Três conjuntos de equipamento salvos: {} (vazio) ou {"slots": {espaço: id}, "weapon_uid": uid}.
+var loadouts: Array = [{}, {}, {}]
 var overflowed := false # O último add_item mandou o excedente para o Baú.
 const BAG_CAPACITY := 40
 const BAG_STEP := 10
@@ -101,6 +103,7 @@ func begin_new_character() -> void:
 	pity = LootRules.new_pity()
 	gems = 0
 	bag_expansions = 0
+	loadouts = [{}, {}, {}]
 	recipes = []
 	introduction = {"status":"active","met_smith":false,"weapon":""}
 
@@ -532,6 +535,48 @@ func expand_bag(with_gems: bool) -> bool:
 	bag_expansions += 1
 	return true
 
+# ── Conjuntos de equipamento (Marco 6) ──────────────────────────────────────────────────
+func has_loadout(index: int) -> bool:
+	return index >= 0 and index < loadouts.size() and not (loadouts[index] as Dictionary).is_empty()
+
+func save_loadout(index: int) -> bool:
+	if index < 0 or index >= loadouts.size() or save_blocked or introduction_active(): return false
+	loadouts[index] = {"slots": equipped.duplicate(), "weapon_uid": equipped_weapon_uid}
+	return true
+
+# Veste o conjunto salvo: o que não existe mais no equipamento é ignorado e o espaço fica como está.
+func apply_loadout(index: int) -> bool:
+	if not has_loadout(index) or save_blocked or introduction_active(): return false
+	var data: Dictionary = loadouts[index]
+	var uid := str(data.weapon_uid)
+	if uid != "" and weapon_instances.has(uid): equip_weapon_instance(uid)
+	for slot: String in RPGRules.SLOTS:
+		if slot == "Arma": continue
+		var id := str(data.slots.get(slot,""))
+		if id.is_empty(): unequip(slot)
+		elif equipment.has(id) and RPGRules.EQUIPMENT.has(id) and RPGRules.EQUIPMENT[id].slot == slot: equip(id)
+	return true
+
+func _valid_loadouts(value: Variant) -> Variant:
+	if not value is Array or value.size() != 3: return null
+	var result: Array = []
+	for entry: Variant in value:
+		if not entry is Dictionary: return null
+		if (entry as Dictionary).is_empty():
+			result.append({})
+			continue
+		if entry.size() != 2 or not entry.get("slots") is Dictionary or not entry.get("weapon_uid") is String: return null
+		var uid: String = entry.weapon_uid
+		if uid != "" and (not uid.begins_with("w") or not uid.substr(1).is_valid_int()): return null
+		var slots := {}
+		for slot: String in entry.slots:
+			var id: Variant = entry.slots[slot]
+			if not RPGRules.SLOTS.has(slot) or not id is String: return null
+			if id != "" and (not RPGRules.EQUIPMENT.has(id) or RPGRules.EQUIPMENT[id].slot != slot): return null
+			slots[slot] = id
+		result.append({"slots": slots, "weapon_uid": uid})
+	return result
+
 func grant_gems(amount: int) -> void:
 	gems = clampi(gems + amount,0,100000000)
 
@@ -624,6 +669,7 @@ func to_json() -> String:
 		payload["pity"] = pity
 		payload["gems"] = gems
 		payload["bag_expansions"] = bag_expansions
+		payload["loadouts"] = loadouts
 		payload["recipes"] = recipes
 	return JSON.stringify(payload)
 
@@ -935,6 +981,11 @@ func load_text(text: String) -> bool:
 	if parsed.has("pity"):
 		if not LootRules.valid_pity(parsed.pity): return false
 		new_pity = {"raro": int(parsed.pity.raro), "epico": int(parsed.pity.epico)}
+	var new_loadouts: Array = [{}, {}, {}]
+	if parsed.has("loadouts"):
+		var checked: Variant = _valid_loadouts(parsed.loadouts)
+		if checked == null: return false
+		new_loadouts = checked
 	var new_expansions := 0
 	if parsed.has("bag_expansions"):
 		if not _bounded_integer(parsed.bag_expansions,0,EXPANSION_GOLD.size()): return false
@@ -998,6 +1049,7 @@ func load_text(text: String) -> bool:
 	pity = new_pity
 	gems = new_gems
 	bag_expansions = new_expansions
+	loadouts = new_loadouts
 	recipes = new_recipes
 	attributes = new_rpg.attributes
 	skills = new_rpg.skills
