@@ -84,6 +84,7 @@ var minimap: MiniMap
 var damage_occluders: Array[Rect2] = []
 var restart: Button
 var death_panel: Panel
+var death_shade: ColorRect
 var death_scroll: ScrollContainer
 var death_body: VBoxContainer
 var death_details: VBoxContainer
@@ -475,41 +476,47 @@ func _ready() -> void:
 	death_panel.visible = false
 	death_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	death_panel.clip_contents = true
-	death_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",18))
+	death_panel.add_theme_stylebox_override("panel",DefeatArt.plate("frame",0))
+	death_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	death_shade = ColorRect.new()
+	death_shade.color = Color(0.17,0.03,0.03,0.66)
+	death_shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	death_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	death_shade.z_index = 19
+	death_shade.hide()
+	add_child(death_shade)
 	add_child(death_panel)
 	var death_column := VBoxContainer.new()
 	death_column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	death_column.offset_left = 16
-	death_column.offset_top = 16
-	death_column.offset_right = -16
-	death_column.offset_bottom = -16
-	death_column.add_theme_constant_override("separation",6)
+	death_column.offset_left = 10
+	death_column.offset_top = 6
+	death_column.offset_right = -10
+	death_column.offset_bottom = -10
+	death_column.add_theme_constant_override("separation",4)
 	death_panel.add_child(death_column)
-	var death_heading := DiaryTheme.label("VOCÊ FOI DERROTADO",26)
-	death_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	death_heading.add_theme_font_override("font",DiaryTheme.heading_font())
-	death_heading.add_theme_color_override("font_color",Color("#8b3328"))
-	death_column.add_child(death_heading)
+	death_column.add_child(DefeatView.title())
 	death_scroll = ScrollContainer.new()
 	death_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	death_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	death_column.add_child(death_scroll)
 	death_body = VBoxContainer.new()
 	death_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	death_body.add_theme_constant_override("separation",6)
+	death_body.add_theme_constant_override("separation",4)
 	death_scroll.add_child(death_body)
+	var return_button := Button.new()
+	return_button.text = "Voltar ao acampamento"
+	return_button.custom_minimum_size.y = 54
+	DefeatView.style_button(return_button,"button","home",22)
+	return_button.pressed.connect(func(): restart_pressed.emit())
+	death_column.add_child(return_button)
 	death_details_button = Button.new()
 	death_details_button.text = "Ver detalhes"
-	death_details_button.custom_minimum_size.y = 44
+	death_details_button.custom_minimum_size = Vector2(190,44)
+	death_details_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	DefeatView.style_button(death_details_button,"ghost","scroll",18)
 	death_details_button.pressed.connect(func(): death_details_open = not death_details_open; death_details.visible = death_details_open; death_details_button.text = "Ocultar detalhes" if death_details_open else "Ver detalhes")
 	death_details_button.pressed.connect(func(): call_deferred("_qa_ui_state","death"))
 	death_column.add_child(death_details_button)
-	var return_button := Button.new()
-	return_button.text = "⌂  Voltar ao acampamento"
-	return_button.custom_minimum_size.y = 54
-	DiaryTheme.primary(return_button)
-	return_button.pressed.connect(func(): restart_pressed.emit())
-	death_column.add_child(return_button)
 	boss_name = Label.new()
 	boss_name.add_theme_font_size_override("font_size", 12)
 	boss_name.add_theme_color_override("font_color", Color("#fff0c3"))
@@ -650,7 +657,7 @@ func _layout() -> void:
 	rpg_panel.size = Vector2(minf(820 if landscape else 640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(780, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
 	DiaryArt.skin(rpg_panel)
-	death_panel.size = Vector2(minf(520,size.x-24),minf(740,size.y-24))
+	death_panel.size = Vector2(minf(520,size.x-16),minf(784,size.y-16))
 	death_panel.position = (size-death_panel.size)*0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
 	restart.size = Vector2(240, 48)
@@ -838,24 +845,19 @@ func show_death(result: Dictionary = {}) -> void:
 	for child in death_body.get_children():
 		death_body.remove_child(child)
 		child.queue_free()
-	death_body.add_child(_death_label("Derrotado por: %s" % str(result.get("enemy","Inimigo não identificado")),16,true))
-	death_body.add_child(_death_section("PERDAS DESTA DERROTA"))
-	death_body.add_child(_death_label("Ouro perdido: %d" % int(result.get("gold_lost",0)),15))
-	death_body.add_child(_death_label("XP perdido: %d" % int(result.get("xp_lost",0)),15))
-	var item_name := str(result.get("item_lost",""))
-	var item_count := int(result.get("item_count",0))
-	death_body.add_child(_death_label("Item perdido: %s × %d" % [item_name,item_count] if item_count > 0 else "Nenhum item perdido",15))
-	death_body.add_child(_death_section("EQUIPAMENTOS"))
-	var equipment_lost: Array = result.get("equipment_lost",[])
-	death_body.add_child(_death_label("Equipamento perdido: %s" % ", ".join(PackedStringArray(equipment_lost)) if not equipment_lost.is_empty() else "Nenhum equipamento foi perdido.",14))
-	death_body.add_child(_death_section("RETORNO"))
-	death_body.add_child(_death_label("Retorno: Acampamento do Andar %d" % int(result.get("floor",1)),14,true))
-	death_body.add_child(_death_label("A confirmação leva você ao acampamento deste andar.",13))
+	death_shade.show()
+	death_body.add_child(DefeatView.enemy_card(str(result.get("enemy","Inimigo não identificado"))))
+	death_body.add_child(DefeatView.section("bag","PERDAS DESTA DERROTA"))
+	death_body.add_child(DefeatView.losses(result))
+	death_body.add_child(DefeatView.section("swords","EQUIPAMENTOS"))
+	death_body.add_child(DefeatView.equipment(result))
+	death_body.add_child(DefeatView.section("home","RETORNO"))
+	death_body.add_child(DefeatView.return_card(int(result.get("floor",1))))
 	death_details = VBoxContainer.new()
 	death_details.visible = false
 	death_body.add_child(death_details)
-	death_details.add_child(_death_section("DETALHES DA DERROTA"))
-	death_details.add_child(_death_label("Resultado registrado pelo sistema de morte. Valores zero indicam que não houve perda de ouro ou XP.",12))
+	death_details.add_child(DefeatView.section("scroll","DETALHES DA DERROTA"))
+	death_details.add_child(_death_label("Resultado registrado pelo sistema de morte. Valores zero indicam que não houve perda de ouro ou XP.",13))
 	death_scroll.scroll_vertical = 0
 	rpg_panel.hide()
 	map_panel.hide()
