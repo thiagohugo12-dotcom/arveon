@@ -50,7 +50,9 @@ static func style_close(button: Button, forge: bool) -> void:
 		button.remove_theme_constant_override("h_separation")
 		button.icon = null
 
-static func picker(items: Array, selected: String, on_pick: Callable, buttons: Dictionary, columns: int = 2) -> Control:
+static func picker(items: Array, selected: String, on_pick: Callable, buttons: Dictionary, columns: int = 2, strip: bool = false) -> Control:
+	if strip:
+		return _picker_strip(items, selected, on_pick, buttons)
 	var grid := GridContainer.new()
 	grid.columns = columns
 	grid.add_theme_constant_override("h_separation",6)
@@ -94,6 +96,62 @@ static func picker(items: Array, selected: String, on_pick: Callable, buttons: D
 		grid.add_child(button)
 		buttons[str(item.id)] = button
 	return grid
+
+# Vertical: as armas ficam numa faixa de cartões compactos (ícone, nome e nível) que
+# quebra de linha só se houver muitas, em vez de uma lista que ocupa a tela toda.
+static func _picker_strip(items: Array, selected: String, on_pick: Callable, buttons: Dictionary) -> Control:
+	var flow := GridContainer.new()
+	flow.columns = clampi(items.size(),1,5)
+	flow.add_theme_constant_override("h_separation",4)
+	flow.add_theme_constant_override("v_separation",4)
+	flow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for item: Dictionary in items:
+		var card := Button.new()
+		card.custom_minimum_size = Vector2(UiScale.px(48),UiScale.px(78))
+		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var plate := "item_on" if str(item.id) == selected else "item"
+		for state in ["normal","hover","focus"]: card.add_theme_stylebox_override(state,DefeatArt.plate(plate,3))
+		card.add_theme_stylebox_override("pressed",DefeatArt.plate("item_on",3))
+		card.pressed.connect(on_pick.bind(str(item.id)))
+		var column := VBoxContainer.new()
+		column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		column.offset_left = 2
+		column.offset_right = -2
+		column.offset_top = 3
+		column.offset_bottom = -2
+		column.add_theme_constant_override("separation",0)
+		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(column)
+		var art := DefeatView.slot(icon(str(item.get("icon",item.id)),28))
+		art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		column.add_child(art)
+		var title := DefeatView.text(str(item.title),13,DefeatView.INK)
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.autowrap_mode = TextServer.AUTOWRAP_OFF
+		title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		column.add_child(title)
+		var sub := str(item.get("sub",""))
+		if not sub.is_empty():
+			var detail := DefeatView.text(sub,11,item.get("color",DefeatView.MUTED))
+			detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			detail.autowrap_mode = TextServer.AUTOWRAP_OFF
+			detail.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			column.add_child(detail)
+		if bool(item.get("tag",false)):
+			var tag := DefeatView.text("E",11,Color.WHITE)
+			tag.autowrap_mode = TextServer.AUTOWRAP_OFF
+			tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			tag.add_theme_stylebox_override("normal",DefeatArt.plate("chip_on",1))
+			tag.custom_minimum_size = Vector2(15,15)
+			tag.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+			tag.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+			tag.offset_top = 2
+			tag.offset_right = -2
+			tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			card.add_child(tag)
+		flow.add_child(card)
+		buttons[str(item.id)] = card
+	return flow
 
 static func chips(options: Array, selected: String, on_pick: Callable) -> Control:
 	var row := HBoxContainer.new()
@@ -142,7 +200,7 @@ static func compare_card(item: String, title: String, subtitle: String, from_bad
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(column)
 	column.add_child(DefeatView.text(title,20,DefeatView.INK))
-	if not UiScale.compact: column.add_child(DefeatView.text(subtitle,14,DefeatView.MUTED))
+	if not UiScale.compact and not UiScale.dense: column.add_child(DefeatView.text(subtitle,14,DefeatView.MUTED))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation",12)

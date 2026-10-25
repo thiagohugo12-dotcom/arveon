@@ -198,6 +198,29 @@ static func tree_summary(nodes: Array, current: int, next_title: String, next_de
 	next.add_child(DefeatView.text(next_text,13,Color("#d8c9a0")))
 	return plate
 
+# Cabeçalho de seção que abre e fecha (Evolução): o título inteiro é um botão e a seta
+# mostra o estado. O estado vive em quem chama; aqui só o toque e o desenho.
+static func accordion_header(icon_id: String, caption: String, trailing: String, opened: bool, on_toggle: Callable) -> Control:
+	var plate: PanelContainer = DefeatView.section(icon_id,caption,1,trailing)
+	var row: HBoxContainer = plate.get_child(0)
+	row.remove_child(row.get_child(row.get_child_count()-1))
+	var arrow := DefeatView.picture("chev_down" if opened else "chev_right",2)
+	row.add_child(arrow)
+	var button := Button.new()
+	button.name = "Toggle"
+	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
+	button.set_meta("skin_done",true)
+	for state in ["normal","hover","pressed","focus","disabled"]: button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	button.tooltip_text = "Abrir ou fechar a seção"
+	var open_now := [opened]
+	button.pressed.connect(func():
+		open_now[0] = not open_now[0]
+		arrow.texture = DefeatArt.texture("chev_down" if open_now[0] else "chev_right",UiScale.icon_scale(2))
+		on_toggle.call(open_now[0]))
+	plate.add_child(button)
+	return plate
+
 # Re-skins widgets built by the shared legacy helpers so the whole page uses the
 # approved kit. Behaviour, signals and disabled states are left untouched.
 static func reskin(node: Node) -> void:

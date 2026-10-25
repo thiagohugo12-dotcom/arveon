@@ -65,7 +65,9 @@ func _run() -> void:
 	hud.smith_tab = 1
 	hud.refresh_station(main.progress)
 	await frames()
-	check(not UiScale.compact and hud.station_tab_host.get_parent() == hud.station_column and hud.station_footer.get_child_count() == 0, "portrait keeps the tabs under the title and no pinned footer")
+	check(not UiScale.compact and hud.station_tab_host.get_parent() == hud.station_column and hud.station_footer.get_child_count() == 1, "portrait keeps the tabs under the title and pins the action")
+	var portrait_range: float = hud.station_scroll.get_v_scroll_bar().max_value - hud.station_scroll.get_v_scroll_bar().page
+	check(portrait_range <= 8.0, "portrait Enhance page fits without scrolling (%.0f px)" % portrait_range)
 	hud.close_station()
 	# Horizontal: Ferreiro.
 	for size in [Vector2i(640, 360), Vector2i(960, 540)]:
@@ -90,6 +92,15 @@ func _run() -> void:
 		hud.smith_confirm = false
 		check(int(main.progress.weapon(uid).level) == before, "selecting the pinned action spends nothing " + label)
 		hud.close_station()
+	# Vertical: a Evolução mostra todos os títulos de seção em pouco mais de uma tela.
+	resize(main, Vector2i(360, 800))
+	main._toggle_character()
+	await frames()
+	var portrait_panel: RPGPanel = hud.rpg_panel
+	var evolution_range: float = portrait_panel.scroll.get_v_scroll_bar().max_value - portrait_panel.scroll.get_v_scroll_bar().page
+	check(evolution_range <= 420.0 and portrait_panel.open_sections.size() >= 2, "portrait Evolution keeps its page short with collapsible sections (%.0f px)" % evolution_range)
+	main._toggle_character()
+	await frames()
 	# Horizontal: Evolução.
 	resize(main, Vector2i(640, 360))
 	main._toggle_character()

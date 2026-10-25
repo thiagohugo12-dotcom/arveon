@@ -43,6 +43,8 @@ var skill_slots: Array[Button] = []
 var passive_buttons: Dictionary = {}
 var specialization_buttons: Dictionary = {}
 var evolution_tree_expanded := false
+var open_sections := {"PERSONAGEM": true, "ATRIBUTOS": true}
+var _page_content: VBoxContainer
 
 func _ready() -> void:
 	resized.connect(_reflow_stats)
@@ -216,10 +218,11 @@ func _apply_look() -> void:
 	ForgeView.style_close(header_close,true)
 
 func _evolution_page() -> void:
-	_heading("PERSONAGEM")
+	_begin_section("person","PERSONAGEM","PERSONAGEM")
 	content.add_child(EvolutionView.character(progress,func(): bag_requested.emit()))
-	_profile_equipment(false,false)
-	_heading("ATRIBUTOS","Pontos disponíveis: %d" % progress.attribute_points())
+	_equipment_strip()
+	_end_section()
+	_begin_section("chart","ATRIBUTOS","ATRIBUTOS","Pontos disponíveis: %d" % progress.attribute_points())
 	var attribute_parent: Container = _two_columns()
 	for name: String in RPGRules.ATTRIBUTES:
 		var enabled := allow_respec and progress.attribute_points() >= 1 and int(progress.attributes[name]) < 198
@@ -228,13 +231,17 @@ func _evolution_page() -> void:
 		attribute_parent.add_child(parts[0])
 		attribute_buttons[name] = parts[1]
 	if not allow_respec: _label("Somente consulta · distribua os pontos no acampamento.")
-	_heading("HABILIDADES EQUIPADAS")
+	_end_section()
+	_begin_section("swords","HABILIDADES","HABILIDADES EQUIPADAS")
 	_skills_page()
-	_heading("TALENTOS E PASSIVAS")
+	_end_section()
+	_begin_section("star","TALENTOS","TALENTOS E PASSIVAS")
 	_passive_cards()
-	_heading("ÁRVORE DA ARMA")
+	_end_section()
+	_begin_section("tree","ARVORE","ÁRVORE DA ARMA")
 	_talent_page(true)
-	_heading("MODO TREINO")
+	_end_section()
+	_begin_section("scroll","TREINO","MODO TREINO")
 	if progress.training_mode:
 		_label("Sessão temporária · alterações não entram no save normal.")
 		if progress.ascension.current_floor == 2:
@@ -247,6 +254,22 @@ func _evolution_page() -> void:
 	else:
 		_label("Experimente as armas, habilidades e talentos sem alterar seu save.")
 		_training_button("Entrar no modo treino","training_start")
+	_end_section()
+
+# Seções que abrem e fecham: o conteúdo continua montado, só fica oculto quando fechado.
+func _begin_section(icon: String, key: String, caption: String, trailing: String = "") -> void:
+	_page_content = content
+	var body := VBoxContainer.new()
+	body.add_theme_constant_override("separation",6)
+	body.visible = bool(open_sections.get(key,false))
+	_page_content.add_child(EvolutionView.accordion_header(icon,caption,trailing,body.visible,func(opened: bool):
+		open_sections[key] = opened
+		body.visible = opened))
+	_page_content.add_child(body)
+	content = body
+
+func _end_section() -> void:
+	content = _page_content
 
 # Horizontal: cartões em duas colunas; na vertical continuam um por linha.
 func _two_columns() -> Container:
@@ -651,6 +674,37 @@ func _profile_stat(destination: Container, title: String, value: String, detail:
 	_label(title+" · "+value,text,true)
 	_label(detail,text)
 
+# Evolução: três espaços em uma linha curta cada (ícone ao lado do nome).
+func _equipment_strip() -> void:
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.add_theme_constant_override("h_separation",4)
+	grid.add_theme_constant_override("v_separation",4)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(grid)
+	for slot: String in RPGRules.SLOTS:
+		var id: String = str(progress.equipped.get(slot,""))
+		var card := _card(grid)
+		card.get_parent().size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		# Vertical: ícone em cima e nome embaixo (a coluna é estreita); horizontal: lado a lado.
+		var line: BoxContainer = HBoxContainer.new() if UiScale.compact else VBoxContainer.new()
+		line.add_theme_constant_override("separation",5 if UiScale.compact else 0)
+		card.add_child(line)
+		var icon := PixelItemIcon.new(ArsenalRules.metadata(id).icon if not id.is_empty() else slot)
+		icon.framed = false
+		icon.custom_minimum_size = Vector2(UiScale.px(30),UiScale.px(30))
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		line.add_child(icon)
+		var text := VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.add_theme_constant_override("separation",-2)
+		line.add_child(text)
+		var upgrade := int(progress.equipment.get(id,0)) if not id.is_empty() else 0
+		var name_label := _label((str(RPGRules.EQUIPMENT[id].name) + ("  +%d" % upgrade)) if not id.is_empty() else "%s vazio" % slot,text)
+		if not UiScale.compact: name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		card.get_parent().tooltip_text = slot
+
 func _profile_equipment(with_heading: bool = true, with_button: bool = true) -> void:
 	if with_heading: _heading("EQUIPAMENTO")
 	var grid := GridContainer.new()
@@ -717,7 +771,7 @@ func _card(destination: Container = null) -> VBoxContainer:
 	panel.add_child(body)
 	return body
 
-func _label(text: String, destination: Container = null, heading: bool = false) -> void:
+func _label(text: String, destination: Container = null, heading: bool = false) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", 13 if not heading else 14)
@@ -726,6 +780,7 @@ func _label(text: String, destination: Container = null, heading: bool = false) 
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	(destination if destination != null else content).add_child(label)
+	return label
 
 func _category_selector(compact: bool = true) -> void:
 	if not compact: _heading("PROFICIÊNCIAS DAS ARMAS")

@@ -124,7 +124,7 @@ func _run() -> void:
 	hud.refresh_station(main.progress)
 	await capture("blacksmith-aprimorar-360x800")
 	action = hud.smith_action_buttons.get(uid)
-	check(action != null and action.text == "Aprimorar" and contains_text(hud.station_content,"Chance de Sucesso") and contains_text(hud.station_content,"MATERIAIS NECESSÁRIOS") and contains_text(hud.station_content,"Custo em Ouro"),"enhance page shows chance, materials and gold from the real recipe")
+	check(action != null and action.text == "Aprimorar" and contains_text(hud.station_content,"Chance de Sucesso") and contains_text(hud.station_content,"Custo em Ouro"),"enhance page shows chance, materials and gold from the real recipe")
 	if action != null: action.pressed.emit()
 	confirm = hud.smith_action_buttons.get(uid)
 	if confirm != null: confirm.pressed.emit()

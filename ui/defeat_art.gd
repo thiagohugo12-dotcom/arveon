@@ -45,6 +45,8 @@ const MAPS := {
 	"clover": [".ee..ee.", "eeeeeeee", "eeEeeEee", ".eeEEee.", ".eeEEee.", "eeEeeEee", "eeeeeeee", ".ee..ee."],
 	"up": ["....cc....", "...cccc...", "..cccccc..", ".cccccccc.", "cccccccccc", "...cccc...", "...cccc...", "...cccc...", "...cccc...", ".........."],
 	"star": ["....cc....", "....cc....", "...cccc...", "cccccccccc", ".cccccccc.", "..cccccc..", "..cccccc..", ".cccccccc.", ".ccc..ccc.", ".cc....cc."],
+	"chev_down": ["........", "cccccccc", ".cccccc.", "..cccc..", "...cc...", "........", "........", "........"],
+	"chev_right": ["..c.....", "..cc....", "..ccc...", "..cccc..", "..ccc...", "..cc....", "..c.....", "........"],
 	"person": ["..cccc..", ".cccccc.", ".cccccc.", "..cccc..", ".cccccc.", "cccccccc", "cccccccc", "cccccccc"],
 	"chart": ["......cc", "......cc", "...cc.cc", "...cc.cc", "cc.cc.cc", "cc.cc.cc", "cc.cc.cc", "cccccccc"],
 	"tree": [".cc..cc.", ".cc..cc.", "..c..c..", "..cccc..", "...cc...", "...cc...", ".cccccc.", "........"],
