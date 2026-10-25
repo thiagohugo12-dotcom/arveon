@@ -118,8 +118,20 @@ func _draw_vale() -> void:
 # ── Mapa expandido estilizado (Interface 2.0) ───────────────────────────────────────────
 # Mesmos dados reais do minimapa (trilhas, rochas, acampamento, coletas e baús descobertos,
 # posição do jogador), desenhados em escala uniforme com ícones. O minimapa pequeno não usa isto.
-const HERO := preload("res://assets/art/actors_v4/people.png")
-const HERO_HEAD := Rect2(8,6,16,16)
+static var _dot: ImageTexture
+
+# Bolinha verde do jogador, com contorno claro (mapa e legenda).
+static func dot_texture() -> ImageTexture:
+	if _dot == null:
+		var image := Image.create(18,18,false,Image.FORMAT_RGBA8)
+		for y in range(18):
+			for x in range(18):
+				var distance := Vector2(x + 0.5,y + 0.5).distance_to(Vector2(9,9))
+				if distance <= 4.8: image.set_pixel(x,y,Color("#5fdc5a") if distance > 2.0 else Color("#a6f59a"))
+				elif distance <= 6.2: image.set_pixel(x,y,Color("#173d1f"))
+				elif distance <= 8.6: image.set_pixel(x,y,Color("#f4ecc2") if distance <= 7.4 else Color(0,0,0,0.0))
+		_dot = ImageTexture.create_from_image(image)
+	return _dot
 var styled := false
 
 func _fit() -> Rect2:
@@ -260,13 +272,11 @@ func _styled_discoveries(floor_id: int) -> void:
 
 func _styled_player(field: Rect2) -> void:
 	var center := _styled_point(player_position).clamp(field.position + Vector2(18,18),field.end - Vector2(18,28))
-	draw_rect(Rect2(center - Vector2(17,17),Vector2(34,34)),Color(0.62,0.9,0.45,0.55))
-	draw_rect(Rect2(center - Vector2(17,17),Vector2(34,34)),Color("#f0c850"),false,2.0)
-	draw_texture_rect_region(HERO,Rect2(center - Vector2(15,15),Vector2(30,30)),HERO_HEAD)
+	draw_texture(dot_texture(),(center - dot_texture().get_size() / 2.0).floor())
 	var font := DefeatView.font()
 	var label := "Você"
 	var width := font.get_string_size(label,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x
-	var plate := Rect2(center + Vector2(-width / 2.0 - 7,19),Vector2(width + 14,19))
+	var plate := Rect2(center + Vector2(-width / 2.0 - 7,11),Vector2(width + 14,19))
 	draw_rect(plate.grow(1),Color("#e8d6a0"))
 	draw_rect(plate,Color("#10261b"))
 	draw_string(font,plate.position + Vector2(7,14),label,HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color("#fff0c3"))

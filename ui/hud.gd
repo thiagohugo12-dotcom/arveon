@@ -1561,11 +1561,8 @@ func _style_map_panel(arena: bool, progress: GameProgress) -> void:
 	map_legend_grid.visible = not arena
 	if arena:
 		return
-	var head := AtlasTexture.new()
-	head.atlas = MiniMap.HERO
-	head.region = MiniMap.HERO_HEAD
 	var entries := [
-		{"icon":head,"title":"Você","text":"Sua posição atual no mapa."},
+		{"icon":MiniMap.dot_texture(),"title":"Você","text":"Sua posição atual no mapa."},
 		{"icon":DefeatArt.texture("fire",2),"title":"Acampamento","text":"Ponto de retorno deste andar."},
 		{"icon":DefeatArt.texture("chest",2),"title":"Baú descoberto","text":"Baús que você encontrou."},
 		{"icon":DefeatArt.texture("leaf_badge",2),"title":"Coleta descoberta","text":"Pontos de coleta que você encontrou."}]
