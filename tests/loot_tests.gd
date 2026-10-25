@@ -146,6 +146,15 @@ func _run() -> void:
 	for _i in range(4): await process_frame
 	text = _all_text(hud.station_panel)
 	check(text.contains("Receita desbloqueada") and text.contains("Forjar Espada da Mata"), "the recipe opens after the floor's Guardian is defeated")
+	hud.smith_set_category = "elmo_mata"
+	hud.refresh_station(main.progress)
+	for _i in range(4): await process_frame
+	text = _all_text(hud.station_panel)
+	check(text.contains("Forjar Elmo da Mata") and text.contains("Capacete") == false or text.contains("Forjar Elmo da Mata"), "the recipe list also offers the floor-set pieces")
+	hud.smith_set_floor = 2
+	hud.refresh_station(main.progress)
+	for _i in range(4): await process_frame
+	check(hud.smith_set_category == "espada" and _all_text(hud.station_panel).contains("Elmo do Vale"), "switching floors lists that floor's pieces")
 	main.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))

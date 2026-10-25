@@ -1981,7 +1981,7 @@ func _smith_craft(progress: GameProgress) -> void:
 	_smith_sets(progress)
 	_smith_section("shield","ARMADURAS E ACESSÓRIOS",1,true)
 	for id: String in RPGRules.EQUIPMENT:
-		if not ArsenalRules.CATEGORIES.has(id): _add_equipment(id,progress,station_content,false)
+		if not ArsenalRules.CATEGORIES.has(id) and (not RPGRules.EQUIPMENT[id].has("set_floor") or progress.equipment.has(id)): _add_equipment(id,progress,station_content,false)
 	var shop_toggle := Button.new()
 	shop_toggle.text = ("− " if smith_shop_expanded else "+ ")+"Armas iniciais por ouro"
 	shop_toggle.custom_minimum_size.y = 44
@@ -1997,24 +1997,39 @@ func _smith_sets(progress: GameProgress) -> void:
 	_smith_section("star","RECEITAS DO ANDAR",1,true)
 	var floors: Array = []
 	for id: int in FloorCatalog.LOOT.sets: floors.append({"id":str(id),"title":"Andar %d" % id})
-	station_content.add_child(ForgeView.chips(floors,str(smith_set_floor),func(id: String): smith_set_floor = int(id); smith_confirm = false; refresh_station(progress)))
-	var weapons: Array = []
+	station_content.add_child(ForgeView.chips(floors,str(smith_set_floor),func(id: String):
+		smith_set_floor = int(id)
+		if LootRules.is_piece(smith_set_category): smith_set_category = "espada"
+		smith_confirm = false
+		refresh_station(progress)))
+	if LootRules.is_piece(smith_set_category) and int(RPGRules.EQUIPMENT[smith_set_category].set_floor) != smith_set_floor: smith_set_category = "espada"
+	var choices: Array = []
 	for id: String in ArsenalRules.CATEGORIES:
-		weapons.append({"id":id,"title":LootRules.weapon_title(smith_set_floor,id),"tag":false})
-	station_content.add_child(ForgeView.picker(weapons,smith_set_category,func(id: String): smith_set_category = id; smith_confirm = false; refresh_station(progress),{},2,false))
+		choices.append({"id":id,"title":LootRules.weapon_title(smith_set_floor,id),"tag":false})
+	for id: String in RPGRules.EQUIPMENT:
+		if int(RPGRules.EQUIPMENT[id].get("set_floor",0)) == smith_set_floor:
+			choices.append({"id":id,"title":str(RPGRules.EQUIPMENT[id].name),"tag":progress.equipment.has(id)})
+	station_content.add_child(ForgeView.picker(choices,smith_set_category,func(id: String): smith_set_category = id; smith_confirm = false; refresh_station(progress),{},2,false))
 	var recipe := LootRules.set_recipe(smith_set_floor,smith_set_category)
 	if recipe.is_empty(): return
 	var payload := "%d|%s" % [smith_set_floor,smith_set_category]
 	var unlocked := progress.recipe_unlocked(smith_set_floor,smith_set_category)
 	var title := LootRules.weapon_title(smith_set_floor,smith_set_category)
+	var piece := LootRules.is_piece(smith_set_category)
+	if piece and progress.equipment.has(smith_set_category):
+		station_content.add_child(ForgeView.note("Peça já forjada","%s está no seu equipamento. Para fortalecê-la, use o aprimoramento normal." % title))
+		return
 	if not unlocked:
 		station_content.add_child(ForgeView.note("Receita bloqueada","Derrote o Guardião do Andar %d ou use um Fragmento de Receita (você tem %d)." % [smith_set_floor,progress.fragments()]))
 	_smith_requirements(recipe,progress)
 	if unlocked:
-		_add_description("Gera %s %s +0. Receita desbloqueada." % [title,ArsenalRules.RARITIES[recipe.rarity].name])
+		var output := "%s %s" % [title,ArsenalRules.RARITIES[recipe.rarity].name] if piece else "%s %s +0" % [title,ArsenalRules.RARITIES[recipe.rarity].name]
+		_add_description("Gera %s. Receita desbloqueada." % output)
+		if piece: _add_description(RPGRules.bonus_text(smith_set_category,0))
 		_smith_action("Forjar " + title,"anvil","craft_set",payload,progress.can_craft_set(smith_set_floor,smith_set_category),progress)
 	else:
 		_smith_action("Usar Fragmento · " + title,"star","use_fragment",payload,progress.can_use_fragment(smith_set_floor,smith_set_category),progress)
+
 
 func _smith_instance_page(progress: GameProgress, page: String) -> void:
 	if not progress.weapon_instances.has(smith_instance_selected) and not progress.weapon_instances.is_empty():

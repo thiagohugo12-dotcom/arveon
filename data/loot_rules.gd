@@ -24,20 +24,27 @@ static func is_named(item: String) -> bool:
 	return named_items().has(item)
 
 # Identificador de uma receita de conjunto: "set:<andar>:<arma>".
-static func recipe_id(floor_id: int, category: String) -> String:
-	return "set:%d:%s" % [floor_id, category]
+static func is_piece(key: String) -> bool:
+	return RPGRules.EQUIPMENT.has(key) and not ArsenalRules.CATEGORIES.has(key) and RPGRules.EQUIPMENT[key].has("set_floor")
+
+static func recipe_id(floor_id: int, key: String) -> String:
+	return "piece:%d:%s" % [floor_id, key] if is_piece(key) else "set:%d:%s" % [floor_id, key]
 
 static func valid_recipe_id(value: Variant) -> bool:
 	if not value is String: return false
 	var parts: PackedStringArray = (value as String).split(":")
-	return parts.size() == 3 and parts[0] == "set" and parts[1].is_valid_int() and FloorCatalog.LOOT.sets.has(int(parts[1])) and ArsenalRules.CATEGORIES.has(parts[2])
+	if parts.size() != 3 or not parts[1].is_valid_int() or not FloorCatalog.LOOT.sets.has(int(parts[1])): return false
+	if parts[0] == "set": return ArsenalRules.CATEGORIES.has(parts[2])
+	return parts[0] == "piece" and is_piece(parts[2]) and int(RPGRules.EQUIPMENT[parts[2]].set_floor) == int(parts[1])
 
 static func weapon_title(floor_id: int, category: String) -> String:
+	if is_piece(category): return str(RPGRules.EQUIPMENT[category].name)
 	var biome := "Mata" if floor_id == 1 else "Vale" if floor_id == 2 else "Andar %d" % floor_id
 	return "%s da %s" % [ArsenalRules.category_name(category), biome] if floor_id == 1 else "%s do %s" % [ArsenalRules.category_name(category), biome]
 
 # Custo e raridade de saída da receita de conjunto; vazio se o andar não tem conjunto.
 static func set_recipe(floor_id: int, category: String) -> Dictionary:
+	if is_piece(category): return piece_recipe(floor_id,category)
 	if not FloorCatalog.LOOT.sets.has(floor_id) or not ArsenalRules.CATEGORIES.has(category): return {}
 	var data: Dictionary = FloorCatalog.LOOT.sets[floor_id]
 	var base := "Couro" if category in ["espada", "machado", "lanca"] else "Seda"
@@ -96,3 +103,16 @@ static func tower_boss(floor_id: int) -> Array[Dictionary]:
 	if FloorCatalog.LOOT.trophy.has(floor_id): result.append(_named(FloorCatalog.LOOT.trophy[floor_id]))
 	result.append(_named(FloorCatalog.LOOT.fragment))
 	return result
+
+# Peças de conjunto (Capacete, Armadura, Luvas, Botas, Anel, Colar, Amuleto): 4 do material nomeado
+# do andar, 2 do material base e ouro; o item é único e depois evolui pelo aprimoramento normal.
+static func piece_recipe(floor_id: int, item_id: String) -> Dictionary:
+	if not is_piece(item_id) or not FloorCatalog.LOOT.sets.has(floor_id): return {}
+	var item: Dictionary = RPGRules.EQUIPMENT[item_id]
+	if int(item.set_floor) != floor_id: return {}
+	var data: Dictionary = FloorCatalog.LOOT.sets[floor_id]
+	var base := "Couro" if str(item.slot) in ["Capacete", "Armadura", "Luvas", "Botas"] else "Seda"
+	var materials := {}
+	materials[data.pieces[item.slot]] = 4
+	materials[EquipmentEconomy.key(base, data.base_rarity)] = 2
+	return {"gold": int(data.piece_gold), "materials": materials, "rarity": item.rarity, "piece": item_id}

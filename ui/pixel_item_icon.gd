@@ -6,24 +6,41 @@ var frame_color := Color("#67805b")
 var framed := true
 var smooth := false
 
+# Peças de equipamento sem arte no Diário usam os ícones em alta definição (SlotArtHD).
+const HD_SLOTS := {"Capacete":"helmet","Luvas":"gloves","Botas":"boots","Anel":"ring","Amuleto":"amulet"}
+
+static func hd_name(value: String) -> String:
+	var key := value
+	if RPGRules.EQUIPMENT.has(key) and not ArsenalRules.CATEGORIES.has(key): key = str(RPGRules.EQUIPMENT[key].slot)
+	return str(HD_SLOTS.get(key,""))
+
 func _init(value: String = "Arma", color: Color = Color("#67805b")) -> void:
 	slot = value
 	frame_color = color
 	custom_minimum_size = Vector2(30, 30)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR if not hd_name(value).is_empty() else CanvasItem.TEXTURE_FILTER_NEAREST
+
+func _art_name() -> String:
+	if RPGRules.EQUIPMENT.has(slot) and not ArsenalRules.CATEGORIES.has(slot): return str(RPGRules.EQUIPMENT[slot].slot)
+	return slot
 
 func _draw() -> void:
 	draw_set_transform(Vector2.ZERO,0,size/30.0)
 	if framed:
 		draw_style_box(DiaryTheme.piece("slot",0),Rect2(0,0,30,30))
+	var hd := hd_name(slot)
+	if not hd.is_empty():
+		var target := Rect2(2,2,26,26) if framed else Rect2(0,0,30,30)
+		draw_texture_rect(SlotArtHD.texture(hd,48),target,false)
+		return
 	if smooth and not framed:
-		var texture := DiaryArt.smooth_texture(slot,roundi(minf(size.x,size.y)))
+		var texture := DiaryArt.smooth_texture(_art_name(),roundi(minf(size.x,size.y)))
 		if texture != null:
 			draw_set_transform(Vector2.ZERO,0,Vector2.ONE)
 			draw_texture(texture,Vector2((size.x-texture.get_width())*0.5,(size.y-texture.get_height())*0.5).floor())
 			return
-	if DiaryArt.icon(self,slot,Rect2(2,2,26,26) if framed else Rect2(0,0,30,30)): return
+	if DiaryArt.icon(self,_art_name(),Rect2(2,2,26,26) if framed else Rect2(0,0,30,30)): return
 	var gold := Color("#697f78")
 	match slot:
 		"Ouro":

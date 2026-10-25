@@ -238,12 +238,16 @@ func use_fragment(floor_id: int, category: String) -> bool:
 	return true
 
 func can_craft_set(floor_id: int, category: String) -> bool:
+	if LootRules.is_piece(category) and equipment.has(category): return false
 	return not introduction_active() and not save_blocked and recipe_unlocked(floor_id,category) and _can_pay(LootRules.set_recipe(floor_id,category))
 
 func craft_set(floor_id: int, category: String) -> String:
 	if not can_craft_set(floor_id,category): return ""
 	var recipe := LootRules.set_recipe(floor_id,category)
 	_pay(recipe)
+	if LootRules.is_piece(category):
+		equipment[category] = 0
+		return category
 	var uid := _create_weapon(category,recipe.rarity)
 	if not equipment.has(category): equipment[category] = 0
 	return uid

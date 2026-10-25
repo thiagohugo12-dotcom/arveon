@@ -59,8 +59,8 @@ const LOOT := {
 	"fragment_elite_chance": 0.02,
 	"pity": {"raro": 25, "epico": 60},
 	"sets": {
-		1: {"rarity": "raro", "gold": 120, "base_rarity": "incomum", "named": {"espada": "Presa de Javali", "machado": "Presa de Javali", "lanca": "Espinho Seco", "arco": "Teia Reforçada", "cajado": "Espinho Seco"}},
-		2: {"rarity": "epico", "gold": 240, "base_rarity": "raro", "named": {"espada": "Pepita Dourada", "machado": "Placa de Tatu", "lanca": "Ferrão da Chapada", "arco": "Ferrão da Chapada", "cajado": "Pepita Dourada"}}}}
+		1: {"rarity": "raro", "gold": 120, "base_rarity": "incomum", "piece_gold": 90, "pieces": {"Capacete": "Presa de Javali", "Armadura": "Teia Reforçada", "Luvas": "Espinho Seco", "Botas": "Presa de Javali", "Anel": "Espinho Seco", "Acessório": "Teia Reforçada", "Amuleto": "Espinho Seco"}, "named": {"espada": "Presa de Javali", "machado": "Presa de Javali", "lanca": "Espinho Seco", "arco": "Teia Reforçada", "cajado": "Espinho Seco"}},
+		2: {"rarity": "epico", "gold": 240, "base_rarity": "raro", "piece_gold": 180, "pieces": {"Capacete": "Placa de Tatu", "Armadura": "Placa de Tatu", "Luvas": "Pepita Dourada", "Botas": "Ferrão da Chapada", "Anel": "Pepita Dourada", "Acessório": "Ferrão da Chapada", "Amuleto": "Pepita Dourada"}, "named": {"espada": "Pepita Dourada", "machado": "Placa de Tatu", "lanca": "Ferrão da Chapada", "arco": "Ferrão da Chapada", "cajado": "Pepita Dourada"}}}}
 
 const FLOORS := {
 	1: {

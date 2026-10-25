@@ -710,7 +710,7 @@ func _station_action(action: String, item: String) -> void:
 				if set_parts.size() == 2 and set_parts[0].is_valid_int():
 					var set_uid := progress.craft_set(int(set_parts[0]),set_parts[1])
 					success = set_uid != ""
-					if success: hud.smith_instance_selected = set_uid
+					if success and progress.weapon_instances.has(set_uid): hud.smith_instance_selected = set_uid
 		["Ferreiro", "use_fragment"]:
 			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro":
 				var fragment_parts := item.split("|")
