@@ -3,8 +3,8 @@ extends RefCounted
 
 # Attempt state never enters GameProgress or the save. Only the entrance is permanent.
 enum Phase { IDLE, PREPARING, FIGHTING, INTERVAL, AWAITING_GUARDIAN, GUARDIAN, VICTORY }
-const WAVES := [[0, 1, 2, 0], [0, 1, 2, 0, 1, 2], [0, 1, 2, 0, 1, 3]]
-const VALE_WAVES := [[5, 6, 7, 5], [5, 6, 7, 5, 6, 7], [5, 6, 7, 5, 6, 7]]
+const WAVES: Array = FloorCatalog.FLOORS[1]["waves"]
+const VALE_WAVES: Array = FloorCatalog.FLOORS[2]["waves"]
 const PREPARATION_SECONDS := 4.0
 const ORIGIN := Vector2(1600, 0)
 const SIZE := Vector2(720, 540)
@@ -26,7 +26,8 @@ func active() -> bool:
 	return phase != Phase.IDLE
 
 func wave_kinds() -> Array:
-	return (VALE_WAVES if floor_id == 2 else WAVES)[wave - 1] if wave >= 1 and wave <= WAVES.size() else []
+	var list := FloorCatalog.waves(floor_id)
+	return list[wave - 1] if wave >= 1 and wave <= list.size() else []
 
 func start(id: int = 1) -> bool:
 	if active() or not FloorConfig.valid(id):
@@ -68,7 +69,7 @@ func record_defeat(actor_id: int, dead: bool, token: int) -> bool:
 	if not pending.is_empty():
 		return false
 	cleared_waves += 1
-	phase = Phase.AWAITING_GUARDIAN if wave == WAVES.size() else Phase.INTERVAL
+	phase = Phase.AWAITING_GUARDIAN if wave == FloorCatalog.waves(floor_id).size() else Phase.INTERVAL
 	preparation_left = PREPARATION_SECONDS if phase == Phase.INTERVAL else PREPARATION_SECONDS
 	return true # One completion notification and at most one heal per interval.
 
@@ -91,11 +92,9 @@ func spawn_positions(player_position: Vector2, count: int) -> Array[Vector2]:
 	return selected
 
 func guardian_spawn_position(player_position: Vector2) -> Vector2:
-	if floor_id != 1 and floor_id != 2:
+	if not FloorCatalog.has_floor(floor_id):
 		return spawn_positions(player_position, 1)[0]
-	var candidates: Array[Vector2] = [Vector2(360, 245), Vector2(200, 300), Vector2(520, 300), Vector2(360, 350)]
-	if floor_id == 2:
-		candidates = [Vector2(360, 190), Vector2(200, 260), Vector2(520, 260), Vector2(360, 350)]
+	var candidates: Array = FloorCatalog.floor_def(floor_id).guardian_spawn_candidates
 	for local_point: Vector2 in candidates:
 		var point := ORIGIN + local_point
 		if point.distance_squared_to(player_position) >= 170.0 * 170.0:

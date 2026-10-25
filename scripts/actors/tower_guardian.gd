@@ -4,7 +4,7 @@ extends EnemyActor
 # Gameplay does not depend on the procedural view; replace View to upgrade art.
 enum Action { ROOTS, SPIKES, CHARGE, ROOT_WAVE, SEEDS }
 enum State { APPROACH, WINDUP, ACTIVE, RECOVERY }
-const MAX_HP := 360
+const MAX_HP: int = FloorCatalog.FLOORS[1]["tower_guardian"]["hp"]
 const ROOT_RANGE := 90.0
 const SPIKE_RADIUS := 26.0
 const CHARGE_SPEED := 320.0

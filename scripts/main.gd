@@ -25,21 +25,13 @@ const GUARDIAN_SCRIPT = preload("res://scripts/actors/root_guardian.gd")
 const GUARDIAN_VIEW = preload("res://scripts/presentation/guardian_view.gd")
 const SANDSTONE_COLOSSUS_SCRIPT = preload("res://scripts/actors/sandstone_colossus.gd")
 const SANDSTONE_COLOSSUS_VIEW = preload("res://scripts/presentation/sandstone_colossus_view.gd")
-const GUARDIAN_ALTAR := Vector2(1060, 155)
+const GUARDIAN_ALTAR: Vector2 = FloorCatalog.FLOORS[1]["guardian_altar"]
 var guardian: EnemyActor
 
 const MAX_ENEMIES := 5
 const SPAWN_INTERVAL := 2.8
-const ENEMY_POSITIONS := [
-	Vector2(850, 400), Vector2(930, 440), Vector2(610, 750),
-	Vector2(180, 460), Vector2(630, 135), Vector2(955, 665)
-]
-const ANDAR1_ENEMY_POSITIONS := [
-	Vector2(1350,250),Vector2(1510,260),Vector2(1600,365),Vector2(1335,400),
-	Vector2(1360,560),Vector2(1510,590),Vector2(1630,650),Vector2(1530,770),
-	Vector2(1370,760),Vector2(630,1015),Vector2(800,1110),Vector2(980,1045),
-	Vector2(1090,1190),Vector2(660,1250),Vector2(1000,1260),Vector2(1640,1310)
-]
+const ENEMY_POSITIONS: Array = FloorCatalog.FLOORS[1]["enemy_spawn_groups"][0]
+const ANDAR1_ENEMY_POSITIONS: Array = FloorCatalog.FLOORS[1]["enemy_spawn_groups"][1]
 
 @onready var player: PlayerActor = $Player
 @onready var enemy: EnemyActor = $Enemy
@@ -87,20 +79,21 @@ func _ready() -> void:
 	elif not progress.save_blocked:
 		progress.begin_new_character()
 	SafeCamp.active_floor = progress.ascension.current_floor
-	if progress.ascension.current_floor == 2:
+	var start_floor := progress.ascension.current_floor
+	if FloorConfig.world_scene(start_floor) != FloorConfig.WORLD_SCENE:
 		remove_child(world)
 		world.free()
-		world = (load(FloorConfig.world_scene(2)) as PackedScene).instantiate()
+		world = (load(FloorConfig.world_scene(start_floor)) as PackedScene).instantiate()
 		add_child(world)
 		move_child(world, 0)
 		exploration_view = world.get_node("ExploreView") as ExplorationView
 		tower_view = world.get_node("TowerView") as TowerView
-		player.position = SafeCamp.respawn_for_floor(2)
+		player.position = SafeCamp.respawn_for_floor(start_floor)
 		var old_enemy := enemy
 		remove_child(old_enemy)
 		old_enemy.free()
-		enemy = _make_enemy(Floor2Layout.ENEMY_SPAWN_KINDS[0])
-		enemy.position = Floor2Layout.ENEMY_SPAWNS[0]
+		enemy = _make_enemy(FloorCatalog.first_enemy_kind(start_floor))
+		enemy.position = FloorCatalog.first_enemy_position(start_floor)
 		add_child(enemy)
 	mission.enabled = not progress.introduction_active()
 	collected_materials = progress.bag
@@ -178,7 +171,7 @@ func _process(delta: float) -> void:
 		_save_progress()
 	if transitioning:
 		return
-	if progress.ascension.current_floor == 2 and world is Andar2World:
+	if FloorCatalog.feature(progress.ascension.current_floor,"mining") and world is Andar2World:
 		(world.get_node("FloorView") as Floor2View).set_mining_state(progress, int(Time.get_unix_time_from_system()))
 	hud.set_dash_cooldown(player.dash.cooldown_left)
 	rpg_refresh -= delta
@@ -189,7 +182,7 @@ func _process(delta: float) -> void:
 		return
 	if progress.training_mode:
 		hud.minimap.update_player(player.global_position)
-		if progress.ascension.current_floor == 2:
+		if FloorCatalog.feature(progress.ascension.current_floor,"mining"):
 			var training_near: String = _interaction_target().get("label", "")
 			if training_near != station_nearby and not hud.station_panel.visible:
 				station_nearby = training_near
@@ -237,31 +230,11 @@ func _make_enemy(kind: int) -> EnemyActor:
 		(actor.get_node("View") as Floor2MonsterView).monster_index = kind - 5
 	# Duplicating the resource ensures variants never mutate the original enemy template.
 	actor.stats = actor.stats.duplicate() as ActorData
-	match actor.kind:
-		1:
-			actor.stats.max_hp = 36
-			actor.stats.move_speed = 92.0
-			actor.stats.contact_damage = 7
-		2:
-			actor.stats.max_hp = 64
-			actor.stats.move_speed = 48.0
-			actor.stats.contact_damage = 10
-		3:
-			actor.stats.max_hp = 120
-			actor.stats.move_speed = 60.0
-			actor.stats.contact_damage = 12
-		5: # Goblin Garimpeiro: quick melee opportunist.
-			actor.stats.max_hp = 52
-			actor.stats.move_speed = 95.0
-			actor.stats.contact_damage = 8
-		6: # Tatu Rochoso: durable charge attacker.
-			actor.stats.max_hp = 108
-			actor.stats.move_speed = 54.0
-			actor.stats.contact_damage = 11
-		7: # Escorpião da Chapada: fast, dangerous melee.
-			actor.stats.max_hp = 72
-			actor.stats.move_speed = 105.0
-			actor.stats.contact_damage = 13
+	var definition := FloorCatalog.monster(FloorCatalog.monster_id_for_kind(kind))
+	if not definition.is_empty():
+		actor.stats.max_hp = int(definition.hp)
+		actor.stats.move_speed = float(definition.speed)
+		actor.stats.contact_damage = int(definition.contact)
 	_apply_floor_stats(actor)
 	return actor
 
@@ -284,9 +257,9 @@ func _spawn_enemy() -> void:
 		return
 	var spawn_position := Vector2.ZERO
 	var kind := 3 if spawn_count % 8 == 7 else (spawn_count + 1) % 3
-	if progress.ascension.current_floor == 1 or progress.ascension.current_floor == 2:
+	if FloorCatalog.has_floor(progress.ascension.current_floor):
 		var candidates: Array[int] = []
-		var positions: Array = ENEMY_POSITIONS + ANDAR1_ENEMY_POSITIONS if progress.ascension.current_floor == 1 else Floor2Layout.ENEMY_SPAWNS
+		var positions: Array = FloorCatalog.enemy_spawns(progress.ascension.current_floor)
 		for index in range(positions.size()):
 			var at: Vector2 = positions[index]
 			if SafeCamp.in_clearance(at) or at.distance_to(player.global_position) > EnemyActor.SLEEP_ENTER-40.0:
@@ -300,8 +273,9 @@ func _spawn_enemy() -> void:
 		if candidates.is_empty(): return
 		var selected: int = candidates[spawn_count % candidates.size()]
 		spawn_position = positions[selected]
-		if progress.ascension.current_floor == 2:
-			kind = Floor2Layout.ENEMY_SPAWN_KINDS[selected]
+		var fixed_kinds := FloorCatalog.enemy_spawn_kinds(progress.ascension.current_floor)
+		if not fixed_kinds.is_empty():
+			kind = fixed_kinds[selected]
 	else:
 		spawn_position = ENEMY_POSITIONS[spawn_count % ENEMY_POSITIONS.size()]
 	var actor := _make_enemy(kind)
@@ -326,7 +300,7 @@ func _on_enemy_projectile(origin: Vector2, direction: Vector2, damage: int, sour
 		projectile.arena_bounds = TowerTrial.BOUNDS
 
 func _register_enemy_defeat(actor: EnemyActor) -> void:
-	(actor.get_node("View") as ActorView).village_scale = progress.ascension.current_floor == 1 or progress.ascension.current_floor == 2
+	(actor.get_node("View") as ActorView).village_scale = FloorCatalog.feature(progress.ascension.current_floor,"modern_art")
 	actor.set_meta("floor_id", progress.ascension.current_floor)
 	actor.set_meta("floor_epoch", floor_epoch)
 	actor.defeated.connect(_on_enemy_defeated.bind(actor), CONNECT_ONE_SHOT)
@@ -363,8 +337,8 @@ func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 		if source.get_meta("floor_id", 0) == progress.ascension.current_floor:
 			progress.ascension.record_defeat(progress.ascension.current_floor)
 	defeated_count += 1
-	var gained_xp := FloorConfig.reward([12, 10, 16, 35, 80, 10, 16, 20][kind], progress.ascension.current_floor)
-	var gained_gold := FloorConfig.reward(loot_rng.randi_range(2, 5), progress.ascension.current_floor)
+	var gained_xp := FloorConfig.reward(FloorCatalog.xp_for_kind(kind), progress.ascension.current_floor)
+	var gained_gold := FloorConfig.reward(loot_rng.randi_range(FloorCatalog.GOLD_RANGE.x, FloorCatalog.GOLD_RANGE.y), progress.ascension.current_floor)
 	earned_xp += gained_xp
 	earned_gold += gained_gold
 	var drop_text := "+%d XP · +%d ouro" % [gained_xp, gained_gold]
@@ -558,10 +532,10 @@ func _interaction_target() -> Dictionary:
 		return {}
 	if TowerEntrance.is_near(player.global_position,progress.ascension.current_floor):
 		return {"kind": "tower", "label": progress.ascension.summary()}
-	var deposit: Dictionary = MiningRules.near(2, player.global_position) if progress.ascension.current_floor == 2 else {}
+	var deposit: Dictionary = MiningRules.near(progress.ascension.current_floor, player.global_position) if FloorCatalog.feature(progress.ascension.current_floor,"mining") else {}
 	if player.global_position.distance_to(_guardian_altar_position()) <= 58.0 and not progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated and not is_instance_valid(guardian):
-		return {"kind": "guardian", "label": "Desafiar Colosso" if progress.ascension.current_floor == 2 else "Desafiar Guardião (opcional)"}
-	var station := SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1)
+		return {"kind": "guardian", "label": str(FloorCatalog.def_or_default(progress.ascension.current_floor).field_guardian.challenge_label)}
+	var station := SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp"))
 	if not station.is_empty():
 		return {"kind": "station", "id": station, "label": station}
 	var now := int(Time.get_unix_time_from_system())
@@ -582,7 +556,7 @@ func _interaction_target() -> Dictionary:
 	return {}
 
 func _start_mining(id: String) -> void:
-	if mining_active or transitioning or trial.active() or progress.ascension.current_floor != 2 or not player.health.is_alive(): return
+	if mining_active or transitioning or trial.active() or not FloorCatalog.feature(progress.ascension.current_floor,"mining") or not player.health.is_alive(): return
 	var config := MiningRules.definition(2, id)
 	if config.is_empty() or player.global_position.distance_to(config.position) > MiningRules.RANGE: return
 	var now := int(Time.get_unix_time_from_system())
@@ -600,7 +574,7 @@ func _start_mining(id: String) -> void:
 	if not is_inside_tree() or token != mining_token: return
 	mining_active = false
 	input_driver.blocked = false
-	if transitioning or trial.active() or not player.health.is_alive() or progress.ascension.current_floor != 2 or player.global_position.distance_to(config.position) > MiningRules.RANGE or player.global_position.distance_to(start_position) > 25.0:
+	if transitioning or trial.active() or not player.health.is_alive() or not FloorCatalog.feature(progress.ascension.current_floor,"mining") or player.global_position.distance_to(config.position) > MiningRules.RANGE or player.global_position.distance_to(start_position) > 25.0:
 		return
 	var outcome := progress.mine_deposit(2, id, int(Time.get_unix_time_from_system()), mining_rng)
 	if outcome.is_empty(): return
@@ -632,7 +606,7 @@ func _station_action(action: String, item: String) -> void:
 	var success := false
 	match [hud.station_name, action]:
 		["Ferreiro", "first_weapon"]:
-			var at_smith := not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro"
+			var at_smith := not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro"
 			if progress.claim_first_weapon(item,at_smith):
 				mission.enabled = true
 				player.apply_progression(progress)
@@ -646,7 +620,7 @@ func _station_action(action: String, item: String) -> void:
 			else:
 				hud.show_notice(progress.save_status if not progress.save_status.is_empty() else "Escolha indisponível. Nenhuma arma concedida.")
 		["Ferreiro", "buy_starter"]:
-			var at_smith := not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro"
+			var at_smith := not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro"
 			success = progress.purchase_starter_weapon(item,at_smith)
 			if success:
 				player.apply_progression(progress)
@@ -654,26 +628,26 @@ func _station_action(action: String, item: String) -> void:
 			else:
 				hud.show_notice(progress.save_status if progress.save_blocked else "Compra indisponível: confira seu ouro e as armas possuídas.")
 		["Ferreiro", "craft_weapon"]:
-			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro":
+			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro":
 				var parts := item.split("|")
 				if parts.size() == 2:
 					var uid := progress.craft_weapon(parts[0],parts[1])
 					success = uid != ""
 					if success: hud.smith_instance_selected = uid
 		["Ferreiro", "craft_vale_iron"]:
-			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro":
+			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro":
 				var uid := progress.craft_vale_iron(item)
 				success = uid != ""
 				if success: hud.smith_instance_selected = uid
 		["Ferreiro", "evolve_weapon"]:
-			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro": success = progress.evolve_weapon(item)
+			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro": success = progress.evolve_weapon(item)
 		["Ferreiro", "enhance_weapon"]:
-			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro":
+			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro":
 				var outcome := progress.enhance_weapon(item,hud.smith_use_seal)
 				success = not outcome.is_empty()
 				if success: hud.show_notice("Aprimoramento +%d %s" % [outcome.level,"concluído" if outcome.success else "falhou"])
 		["Ferreiro", "weapon_bonus"]:
-			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,progress.ascension.current_floor == 1) == "Ferreiro":
+			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro":
 				var parts := item.split("|")
 				if parts.size() == 3 and parts[1].is_valid_int(): success = progress.choose_weapon_bonus(parts[0],int(parts[1]),parts[2])
 		["Baú", "Guardar"]: success = progress.transfer(item, true)
@@ -779,7 +753,7 @@ func _toggle_map() -> void:
 
 
 func _rpg_action(action: String, id: String, expected: int) -> void:
-	if progress.training_mode and progress.ascension.current_floor == 2 and action.begins_with("training_mining_"):
+	if progress.training_mode and FloorCatalog.feature(progress.ascension.current_floor,"mining") and action.begins_with("training_mining_"):
 		match action:
 			"training_mining_reset": progress.reset_mining_for_training(2)
 			"training_mining_common": progress.add_item(EquipmentEconomy.key("Minério de Ferro", "comum"), 5)
@@ -871,7 +845,7 @@ func _start_training() -> void:
 	input_driver.reset()
 	input_driver.blocked = false
 	# The east clearing keeps the explorer and target visible below the canopies.
-	player.position = Vector2(560, 350) if training_floor == 2 else Vector2(900,440)
+	player.position = FloorCatalog.def_or_default(training_floor).training_spawn
 	player.last_direction = Vector2.RIGHT
 	player.view.set_facing(Vector2.RIGHT)
 	player.apply_progression(progress,true)
@@ -901,7 +875,7 @@ func _adapt_orientation() -> void:
 	# Cap tall embedded views to the world height instead of showing blank land.
 	var camera := player.get_node("Camera2D") as Camera2D
 	var visible_height := float(desired.x)*window.size.y/window.size.x if window.size.y > window.size.x else float(desired.y)
-	var village := progress != null and progress.ascension.current_floor == 1 and not trial.active()
+	var village := progress != null and FloorCatalog.feature(progress.ascension.current_floor,"village_camp") and not trial.active()
 	var landscape_village := village and window.size.x >= window.size.y
 	camera.zoom = Vector2.ONE * (0.75 if landscape_village else maxf(1.0,visible_height/850.0) if village else 1.0)
 	camera.offset = Vector2(0,-35) if landscape_village else Vector2.ZERO
@@ -928,16 +902,17 @@ func _start_guardian() -> void:
 		return
 	guardian = ENEMY_SCENE.instantiate() as EnemyActor
 	var template := guardian.stats.duplicate() as ActorData
-	var vale := progress.ascension.current_floor == 2
+	var boss: Dictionary = FloorCatalog.def_or_default(progress.ascension.current_floor).field_guardian
+	var vale: bool = boss.variant == "colossus"
 	guardian.set_script(SANDSTONE_COLOSSUS_SCRIPT if vale else GUARDIAN_SCRIPT)
 	guardian.get_node("View").set_script(SANDSTONE_COLOSSUS_VIEW if vale else GUARDIAN_VIEW)
 	guardian.kind = 4
 	guardian.stats = template
-	guardian.stats.max_hp = 540 if vale else 320
-	guardian.stats.move_speed = 38.0 if vale else 45.0
-	if vale:
+	guardian.stats.max_hp = int(boss.hp)
+	guardian.stats.move_speed = float(boss.speed)
+	if float(boss.radius) > 0.0:
 		var body := CircleShape2D.new()
-		body.radius = 34.0
+		body.radius = float(boss.radius)
 		guardian.get_node("Collision").shape = body
 	guardian.position = _guardian_altar_position() + Vector2(0, 80)
 	guardian.target = player
@@ -946,10 +921,10 @@ func _start_guardian() -> void:
 	guardian.projectile_requested.connect(_on_enemy_projectile)
 	add_child(guardian)
 	guardian.view.damage_occluders = hud.damage_occluders
-	hud.show_notice("Colosso de Arenito · evite as áreas avisadas!" if vale else "Guardião: evite as áreas douradas. Desafio opcional!")
+	hud.show_notice(str(boss.notice))
 
 func _guardian_altar_position() -> Vector2:
-	return Floor2Layout.GUARDIAN_ALTAR if progress.ascension.current_floor == 2 else GUARDIAN_ALTAR
+	return FloorCatalog.guardian_altar(progress.ascension.current_floor)
 
 func _refresh_mission() -> void:
 	if progress.training_mode:
@@ -1209,15 +1184,16 @@ func _spawn_tower_guardian() -> void:
 	var actor := ENEMY_SCENE.instantiate() as EnemyActor
 	var template := actor.stats.duplicate() as ActorData
 	actor.set_script(TOWER_GUARDIAN_SCRIPT)
-	actor.get_node("View").set_script(SANDSTONE_TOWER_GUARDIAN_VIEW if trial.floor_id == 2 else TOWER_GUARDIAN_VIEW)
+	var tower_boss: Dictionary = FloorCatalog.def_or_default(trial.floor_id).tower_guardian
+	actor.get_node("View").set_script(SANDSTONE_TOWER_GUARDIAN_VIEW if tower_boss.variant == "arenito" else TOWER_GUARDIAN_VIEW)
 	tower_guardian = actor as TowerGuardian
 	var body := CircleShape2D.new()
-	body.radius = 34.0 if trial.floor_id == 2 else 26.0
+	body.radius = float(tower_boss.radius)
 	tower_guardian.get_node("Collision").shape = body
 	tower_guardian.kind = 4
 	tower_guardian.stats = template
-	tower_guardian.stats.max_hp = 520 if trial.floor_id == 2 else TowerGuardian.MAX_HP
-	tower_guardian.stats.move_speed = 52.0 if trial.floor_id == 2 else 65.0
+	tower_guardian.stats.max_hp = int(tower_boss.hp)
+	tower_guardian.stats.move_speed = float(tower_boss.speed)
 	tower_guardian.target = player
 	_apply_floor_stats(tower_guardian)
 	tower_guardian.set_meta("floor_id", trial.floor_id)
@@ -1252,8 +1228,8 @@ func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> 
 
 func _update_floor_identity() -> void:
 	var floor_id := progress.ascension.current_floor
-	var expanded_first := floor_id == 1
-	var modern_art := floor_id == 1 or floor_id == 2
+	var expanded_first := FloorCatalog.feature(floor_id,"expanded_world")
+	var modern_art := FloorCatalog.feature(floor_id,"modern_art")
 	SafeCamp.active_floor = floor_id
 	player.view.village_scale = modern_art
 	player.view.queue_redraw()
@@ -1266,11 +1242,11 @@ func _update_floor_identity() -> void:
 	tower_view.queue_redraw()
 	exploration_view.visual_v2 = modern_art
 	exploration_view.current_floor = floor_id
-	if floor_id == 2: (world.get_node("FloorView") as Floor2View).set_mining_state(progress, int(Time.get_unix_time_from_system()))
+	if FloorCatalog.feature(floor_id,"mining"): (world.get_node("FloorView") as Floor2View).set_mining_state(progress, int(Time.get_unix_time_from_system()))
 	exploration_view.queue_redraw()
 	(world.get_node("FloorView") as FloorView).secret_path_revealed = floor_id == 1 and progress.discovered_pois.has("secretwood_wood_southeast")
 	_camera_bounds(Rect2(Vector2.ZERO,FloorConfig.world_size(floor_id)))
-	hud.heading.text = "TREINO · Andar %d" % floor_id if progress.training_mode else "Vale das Pedras · Andar 2" if floor_id == 2 else "Mata · Andar %d" % floor_id
+	hud.heading.text = "TREINO · Andar %d" % floor_id if progress.training_mode else FloorCatalog.heading(floor_id)
 	hud.minimap.queue_redraw()
 
 func _travel_floor(destination: int) -> void:
@@ -1303,8 +1279,8 @@ func _travel_floor(destination: int) -> void:
 	player.charge_left = 0
 	player.dash.time_left = 0
 	guardian = null
-	enemy = _make_enemy(Floor2Layout.ENEMY_SPAWN_KINDS[0] if destination == 2 else 0)
-	enemy.position = Floor2Layout.ENEMY_SPAWNS[0] if destination == 2 else ENEMY_POSITIONS[0]
+	enemy = _make_enemy(FloorCatalog.first_enemy_kind(destination))
+	enemy.position = FloorCatalog.first_enemy_position(destination)
 	enemy.target = player
 	_register_enemy_defeat(enemy)
 	enemy.projectile_requested.connect(_on_enemy_projectile)

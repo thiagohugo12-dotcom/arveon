@@ -3,15 +3,15 @@ extends RefCounted
 
 # Baseado na planta do Vale; objetos locais ajustados para circulacao e clareiras.
 const WORLD_SIZE := Vector2(1700, 1350)
-const CAMP_AREA := Rect2(190, 715, 350, 300)
-const RESPAWN := Vector2(340, 885)
-const TOWER_POSITION := Vector2(216, 782)
-const GUARDIAN_ALTAR := Vector2(1380, 1070)
-const STATIONS := {"Baú": Vector2(282, 940), "Ferreiro": Vector2(285, 855), "Vendedor": Vector2(450, 928)}
-const ENEMY_SPAWNS := [Vector2(750, 700), Vector2(945, 930), Vector2(1040, 690), Vector2(1260, 790), Vector2(1390, 1080), Vector2(490, 350), Vector2(1200, 410), Vector2(900, 1120)]
+const CAMP_AREA: Rect2 = FloorCatalog.FLOORS[2]["camp"]["area"]
+const RESPAWN: Vector2 = FloorCatalog.FLOORS[2]["camp"]["respawn"]
+const TOWER_POSITION: Vector2 = FloorCatalog.FLOORS[2]["tower_position"]
+const GUARDIAN_ALTAR: Vector2 = FloorCatalog.FLOORS[2]["guardian_altar"]
+const STATIONS: Dictionary = FloorCatalog.FLOORS[2]["camp"]["stations"]
+const ENEMY_SPAWNS: Array = FloorCatalog.FLOORS[2]["enemy_spawn_groups"][0]
 # Goblin by the quarry, armadillos in open fields, scorpions by ruins/danger.
 # Kind IDs are defined by EnemyActor; positions and species stay aligned.
-const ENEMY_SPAWN_KINDS := [6, 6, 7, 7, 7, 5, 7, 6]
+const ENEMY_SPAWN_KINDS: Array = FloorCatalog.FLOORS[2]["enemy_spawn_kinds"]
 const DEPOSITS := [Vector2(310, 246), Vector2(616, 220), Vector2(358, 426), Vector2(674, 422)]
 const PATHS := [
 	[Vector2(310, 882), Vector2(346, 862), Vector2(382, 844), Vector2(418, 826), Vector2(456, 806), Vector2(494, 786), Vector2(534, 764), Vector2(578, 738), Vector2(624, 710), Vector2(674, 676)],

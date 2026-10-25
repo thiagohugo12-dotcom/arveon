@@ -1,35 +1,31 @@
 class_name FloorConfig
 extends RefCounted
 
+# Fachada estável sobre FloorCatalog (Marco 2): os valores vivem no catálogo.
 const MAX_FLOORS := 5
 const REQUIRED_DEFEATS := 50
 const DEFAULT_WORLD_SIZE := Vector2(1200, 900)
-const ANDAR1_WORLD_SIZE := Vector2(1700, 1350)
-const ANDAR2_WORLD_SIZE := Vector2(1700, 1350)
-const WORLD_SCENE := "res://scenes/world/andar_1.tscn"
-const ANDAR2_WORLD_SCENE := "res://scenes/world/andar_2.tscn"
+const ANDAR1_WORLD_SIZE: Vector2 = FloorCatalog.FLOORS[1]["world_size"]
+const ANDAR2_WORLD_SIZE: Vector2 = FloorCatalog.FLOORS[2]["world_size"]
+const WORLD_SCENE: String = FloorCatalog.FLOORS[1]["world_scene"]
+const ANDAR2_WORLD_SCENE: String = FloorCatalog.FLOORS[2]["world_scene"]
 const ARENA_SCENE := "res://scenes/world/tower_arena.tscn"
 const TOWER_SCRIPT := "res://scripts/components/tower_entrance.gd"
-const FLOORS := {
-	"1": {"difficulty": 1.0, "rewards": 1.0},
-	"2": {"difficulty": 1.5, "rewards": 1.1},
-	"3": {"difficulty": 1.4, "rewards": 1.2},
-	"4": {"difficulty": 1.6, "rewards": 1.3},
-	"5": {"difficulty": 1.8, "rewards": 1.4}}
+const FLOORS := FloorCatalog.SCALE
 static func valid(id: int) -> bool:
-	return FLOORS.has(str(id))
+	return FloorCatalog.valid_scale(id)
 static func difficulty(id: int) -> float:
-	return float(FLOORS[str(id)].difficulty) if valid(id) else 1.0
+	return FloorCatalog.difficulty(id)
 static func reward(amount: int, id: int) -> int:
-	return roundi(amount * float(FLOORS[str(id)].rewards)) if valid(id) else 0
+	return FloorCatalog.reward(amount, id)
 static func tower_guardian_name(id: int) -> String:
-	return "Guardião de Arenito" if id == 2 else "Guardião da Mata"
+	return FloorCatalog.tower_guardian_name(id)
 static func tower_return_name(id: int) -> String:
-	return "Vale" if id == 2 else "Mata"
+	return FloorCatalog.return_name(id)
 static func world_size(id: int) -> Vector2:
-	return ANDAR1_WORLD_SIZE if id == 1 else ANDAR2_WORLD_SIZE if id == 2 else DEFAULT_WORLD_SIZE
+	return FloorCatalog.world_size(id, DEFAULT_WORLD_SIZE)
 static func world_scene(id: int) -> String:
-	return ANDAR2_WORLD_SCENE if id == 2 else WORLD_SCENE
+	return FloorCatalog.world_scene(id, WORLD_SCENE)
 static func configuration(id: int) -> Dictionary:
 	if not valid(id):
 		return {}

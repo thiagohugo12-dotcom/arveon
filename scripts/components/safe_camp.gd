@@ -12,14 +12,15 @@ const DISPLAY_STATIONS := {"Baú": Vector2(500, 525), "Ferreiro": Vector2(486, 4
 static var active_floor := 1
 
 static func area_for_floor(floor_id: int) -> Rect2:
-	return Floor2Layout.CAMP_AREA if floor_id == 2 else AREA
+	return FloorCatalog.camp_area(floor_id, AREA)
 
 static func respawn_for_floor(floor_id: int) -> Vector2:
-	return Floor2Layout.RESPAWN if floor_id == 2 else RESPAWN
+	return FloorCatalog.camp_respawn(floor_id, RESPAWN)
 
 static func stations_for_floor(floor_id: int, village: bool = false) -> Dictionary:
-	if floor_id == 2:
-		return Floor2Layout.STATIONS
+	var own := FloorCatalog.camp_stations(floor_id)
+	if not own.is_empty():
+		return own
 	return DISPLAY_STATIONS if village else STATIONS
 
 static func contains(point: Vector2) -> bool:

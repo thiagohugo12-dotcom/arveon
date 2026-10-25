@@ -954,7 +954,7 @@ func refresh_station(progress: GameProgress) -> void:
 		var guardian_name := FloorConfig.tower_guardian_name(progress.ascension.current_floor)
 		var return_name := FloorConfig.tower_return_name(progress.ascension.current_floor)
 		_add_description("Vitória · %s!" % guardian_name if cleared else tower_trial.summary() if active else "Andar %d · Torre: %d/50 criaturas" % [selected_floor, progress.ascension.defeats[str(selected_floor)]])
-		_add_description("Ascensão do Andar %d concluída%s" % [progress.ascension.current_floor, " · Selo da Mata" if progress.ascension.current_floor == 1 else ""] if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova concluída" if progress.ascension.completed_trials[str(selected_floor)] else "Prova de Ascensão liberada" if progress.ascension.entrance_unlocked(selected_floor) else "Prova bloqueada: derrote 50 criaturas neste andar.")
+		_add_description("Ascensão do Andar %d concluída%s" % [progress.ascension.current_floor, FloorCatalog.seal_note(progress.ascension.current_floor)] if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova concluída" if progress.ascension.completed_trials[str(selected_floor)] else "Prova de Ascensão liberada" if progress.ascension.entrance_unlocked(selected_floor) else "Prova bloqueada: derrote 50 criaturas neste andar.")
 		_add_description("+%d XP · +%d ouro" % [FloorConfig.reward(AscensionProgress.GUARDIAN_XP, progress.ascension.current_floor), FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, progress.ascension.current_floor)] if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e %s." % guardian_name)
 		_add_description(("Campanha inicial conquistada! Cinco andares superados." if progress.ascension.current_floor == 5 else "Andar %d desbloqueado · viaje pela Torre no %s." % [progress.ascension.current_floor + 1, return_name]) if cleared else "Se morrer, a prova recomeça da primeira horda.")
 		_add_description("Retorne ao %s em segurança." % return_name if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
@@ -1328,7 +1328,7 @@ func show_map(progress: GameProgress) -> void:
 		return
 	expanded_map.progress = progress
 	expanded_map.arena_bounds = minimap.arena_bounds
-	map_title.text = "Mapa · Arena da Torre" if minimap.arena_bounds.has_area() else "Mapa · Vale · Andar 2" if progress.ascension.current_floor == 2 else "Mapa · Mata · Andar %d" % progress.ascension.current_floor
+	map_title.text = "Mapa · Arena da Torre" if minimap.arena_bounds.has_area() else FloorCatalog.map_title(progress.ascension.current_floor)
 	map_legend.text = "● Você · Dourado: portais\nSaída para o %s ao sul" % FloorConfig.tower_return_name(progress.ascension.current_floor) if minimap.arena_bounds.has_area() else "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
 	expanded_map.player_position = minimap.player_position
 	expanded_map.queue_redraw()
@@ -1540,7 +1540,7 @@ func _smith_craft(progress: GameProgress) -> void:
 	_smith_requirements(EquipmentEconomy.craft_recipe(smith_craft_category,smith_craft_rarity),progress)
 	_add_description("Nova %s %s +0 · Cópias são independentes." % [ArsenalRules.category_name(smith_craft_category),ArsenalRules.RARITIES[smith_craft_rarity].name])
 	_smith_action("Forjar","hammer","craft_weapon",smith_craft_category+"|"+smith_craft_rarity,progress.can_craft_weapon(smith_craft_category,smith_craft_rarity),progress)
-	if progress.ascension.current_floor == 2:
+	if FloorCatalog.feature(progress.ascension.current_floor,"vale_iron"):
 		_smith_section("bag","FERRO DO VALE · RECEITA DE TESTE")
 		for iron_rarity: String in ["comum", "raro"]:
 			_smith_requirements(EquipmentEconomy.vale_iron_recipe(iron_rarity),progress)
