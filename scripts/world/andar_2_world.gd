@@ -6,6 +6,7 @@ func _ready() -> void:
 	_set_world_boundaries(Floor2Layout.WORLD_SIZE)
 	for side: Rect2 in TowerEntrance.ANDAR2_SIDES:
 		_add_box(side)
+	_add_box(TowerEntrance.ANDAR2_UPPER)
 	for object: Dictionary in Floor2Layout.OBJECTS:
 		var kind: String = object.kind
 		var feet: Vector2 = object.feet

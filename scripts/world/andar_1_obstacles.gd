@@ -65,6 +65,7 @@ func set_expanded_world(enabled: bool) -> void:
 func _build_expansion_solids() -> void:
 	for side: Rect2 in TowerEntrance.ANDAR1_SIDES:
 		expansion_solids.append(_add_box(side))
+	expansion_solids.append(_add_box(TowerEntrance.ANDAR1_UPPER))
 	for feet: Vector2 in floor_view.expansion_tree_positions():
 		expansion_solids.append(_add_circle(feet+Vector2(0,1),9.0))
 	for rock: Rect2 in FloorView.EXPANSION_ROCKS:

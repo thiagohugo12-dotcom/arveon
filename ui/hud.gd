@@ -443,7 +443,8 @@ func _ready() -> void:
 		actions[i].set_caption("")
 	interact_button = TouchActionButton.new()
 	interact_button.title = "Interagir"
-	interact_button.size = Vector2(96, 44)
+	interact_button.size = Vector2(72, 30)
+	interact_button.touch_margin = 7.0
 	interact_button.visible = false
 	interact_button.activated.connect(func():
 		dismiss_interaction()
@@ -451,6 +452,7 @@ func _ready() -> void:
 	)
 	add_child(interact_button)
 	interact_button.caption.add_theme_font_size_override("font_size",11)
+	interact_button.caption.add_theme_constant_override("outline_size",2)
 	station_panel = PanelContainer.new()
 	station_panel.z_index = 10
 	station_panel.visible = false
@@ -732,13 +734,13 @@ func _layout() -> void:
 		actions[i].position = Vector2(size.x - right_inset - 120 + (slot % 2) * 64, size.y - bottom_inset - 120 + (slot / 2) * 64)
 	actions[3].position = Vector2(size.x-right_inset-56,size.y-bottom_inset-184)
 	actions[4].position = Vector2(size.x-right_inset-120,size.y-bottom_inset-184)
-	interact_button.position = Vector2(size.x * 0.5 - interact_button.size.x * 0.5, size.y - bottom_inset - (177 if size.y > size.x else 59))
+	_place_interact(bottom_inset)
 	var service := station_name in ["Ferreiro","Vendedor"]
 	var large := service or station_name == TowerEntrance.NAME
 	station_title.add_theme_font_size_override("font_size",24 if service else 17)
 	if service: station_title.add_theme_font_override("font",DiaryTheme.heading_font())
 	else: station_title.remove_theme_font_override("font")
-	station_panel.size = Vector2(minf(720 if landscape and large else 560 if large else 460 if landscape else 340, size.x - margin.x - right_inset - 12), minf(780 if large else 320, size.y - margin.y - bottom_inset - 12))
+	station_panel.size = Vector2(minf(720 if landscape and large else 560 if large else 460 if landscape else 340, size.x - margin.x - right_inset - 12), minf(780 if large else 600 if station_name == "Baú" else 320, size.y - margin.y - bottom_inset - 12))
 	station_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",22) if service else _panel_style())
 	station_panel.position = (size - station_panel.size) * 0.5
 	_apply_station_look()
@@ -997,7 +999,24 @@ func set_nearby_station(name: String) -> void:
 	interact_button.enabled = not name.is_empty() and not restart.visible and not station_panel.visible and not inventory_open and not rpg_panel.visible and not map_panel.visible
 	interact_button.visible = interact_button.enabled
 	interact_button.set_caption(("E · Guardião\nOpcional" if name == "Desafiar Guardião (opcional)" else "E · " + name) if interact_button.enabled else "Interagir")
+	if interact_button.enabled: _fit_interact()
 	if interact_button.visible: call_deferred("_qa_ui_state","hud")
+
+# Botão de interação compacto: largura pelo texto, 30 px de altura (40 com duas linhas).
+func _fit_interact() -> void:
+	var width := 0.0
+	var lines := interact_button.caption.text.split("
+")
+	for line in lines: width = maxf(width,ThemeDB.fallback_font.get_string_size(line,HORIZONTAL_ALIGNMENT_LEFT,-1,11).x)
+	interact_button.size = Vector2(ceilf(width) + 22.0,30.0 if lines.size() == 1 else 40.0)
+	_place_interact(_last_bottom_inset)
+
+var _last_bottom_inset := 0.0
+
+func _place_interact(bottom_inset: float) -> void:
+	_last_bottom_inset = bottom_inset
+	var top := size.y - bottom_inset - (177 if size.y > size.x else 59)
+	interact_button.position = Vector2(roundf(size.x * 0.5 - interact_button.size.x * 0.5),top + 44.0 - interact_button.size.y)
 
 func dismiss_interaction() -> void:
 	interact_button.enabled = false
@@ -1135,14 +1154,14 @@ func refresh_station(progress: GameProgress) -> void:
 			1: _smith_instance_page(progress,"enhance")
 			2: _smith_instance_page(progress,"rarity")
 	elif station_name == "Baú":
-		_add_description("Mochila/Baú · itens guardados ficam protegidos.")
+		station_content.add_child(DefeatView.text("Itens guardados no baú ficam protegidos.",15,DefeatView.MUTED))
 		var chest_items := GameProgress.ITEMS.duplicate()
 		for item: String in progress.bag.keys():
 			if not chest_items.has(item): chest_items.append(item)
 		for item: String in progress.chest.keys():
 			if not chest_items.has(item): chest_items.append(item)
 		for item: String in _page_items(chest_items):
-			_add_row(item, "%d/%d" % [progress.bag.get(item, 0), progress.chest.get(item, 0)], "Guardar", "Retirar", int(progress.bag.get(item, 0)) > 0, int(progress.chest.get(item, 0)) > 0)
+			station_content.add_child(_chest_row(item,int(progress.bag.get(item,0)),int(progress.chest.get(item,0))))
 		_add_page_navigation(chest_items.size(), progress)
 	elif station_name == "Vendedor":
 		_vendor_shop(progress)
@@ -1160,9 +1179,10 @@ func _place_station_tabs() -> void:
 func _apply_station_look() -> void:
 	var forge := station_name == "Ferreiro" and not station_intro
 	var tower := station_name == TowerEntrance.NAME
-	var dark := forge or tower
+	var chest := station_name == "Baú"
+	var dark := forge or tower or chest
 	station_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if dark else CanvasItem.TEXTURE_FILTER_PARENT_NODE
-	_style_tower_buttons(tower)
+	_style_tower_buttons(tower or chest)
 	station_tab_host.visible = forge
 	station_close_button.visible = not forge
 	ForgeView.style_close(station_header_close,forge)
@@ -1170,7 +1190,7 @@ func _apply_station_look() -> void:
 	_place_station_tabs()
 	if dark:
 		station_panel.add_theme_stylebox_override("panel",DefeatArt.plate("frame",UiScale.px(12)))
-		if forge: station_scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",UiScale.px(6)))
+		if forge or chest: station_scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",UiScale.px(6)))
 		else: station_scroll.remove_theme_stylebox_override("panel")
 		station_title.add_theme_stylebox_override("normal",DefeatArt.plate("title",UiScale.px(6)))
 		station_title.add_theme_font_override("font",DefeatView.font())
@@ -1223,12 +1243,15 @@ func _style_tower_buttons(on: bool) -> void:
 		button.add_theme_color_override("font_disabled_color",Color("#b8b8a8"))
 		button.custom_minimum_size.y = maxi(44,UiScale.px(48))
 
+func _per_page() -> int:
+	return 5 if station_name == "Baú" else ITEMS_PER_PAGE
+
 func _page_items(items: Array) -> Array:
-	var start := station_page * ITEMS_PER_PAGE
-	return items.slice(start, mini(start + ITEMS_PER_PAGE, items.size()))
+	var start := station_page * _per_page()
+	return items.slice(start, mini(start + _per_page(), items.size()))
 
 func _add_page_navigation(count: int, progress: GameProgress) -> void:
-	var total := ceili(float(count) / ITEMS_PER_PAGE)
+	var total := ceili(float(count) / _per_page())
 	var row := HBoxContainer.new()
 	station_content.add_child(row)
 	var previous := Button.new()
@@ -1239,6 +1262,7 @@ func _add_page_navigation(count: int, progress: GameProgress) -> void:
 		station_page -= 1
 		refresh_station(progress)
 	)
+	if station_name == "Baú": _dark_nav_button(previous)
 	row.add_child(previous)
 	var label := Label.new()
 	label.text = "Página %d/%d" % [station_page + 1, total]
@@ -1253,6 +1277,7 @@ func _add_page_navigation(count: int, progress: GameProgress) -> void:
 		station_page += 1
 		refresh_station(progress)
 	)
+	if station_name == "Baú": _dark_nav_button(following)
 	row.add_child(following)
 
 func _add_description(value: String) -> void:
@@ -1261,6 +1286,41 @@ func _add_description(value: String) -> void:
 	label.add_theme_font_size_override("font_size", 13)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	station_content.add_child(label)
+
+func _dark_nav_button(button: Button) -> void:
+	DefeatView.style_button(button,"ghost","plus",18,1)
+	button.icon = null
+	button.custom_minimum_size = Vector2(52,44)
+	button.add_theme_stylebox_override("disabled",DefeatArt.plate("dim",6))
+	button.add_theme_color_override("font_disabled_color",Color("#b8b8a8"))
+
+# Linha do Baú no kit novo: ícone do material, quantidades e os dois botões.
+func _chest_row(item: String, in_bag: int, in_chest: int) -> Control:
+	var plate := DefeatView.card("item",6)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation",8)
+	plate.add_child(row)
+	row.add_child(DefeatView.slot(ForgeView.icon(item,28)))
+	var names := VBoxContainer.new()
+	names.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	names.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	names.add_theme_constant_override("separation",-2)
+	names.add_child(DefeatView.text(item,17))
+	names.add_child(DefeatView.text("Mochila %d · Baú %d" % [in_bag,in_chest],13,DefeatView.MUTED))
+	row.add_child(names)
+	for spec: Array in [["Guardar","button",in_bag > 0],["Retirar","ghost",in_chest > 0]]:
+		var button := Button.new()
+		button.text = spec[0]
+		button.disabled = not spec[2]
+		button.custom_minimum_size = Vector2(UiScale.px(70),44)
+		DefeatView.style_button(button,spec[1],"plus",14,1)
+		button.icon = null
+		button.add_theme_constant_override("h_separation",0)
+		button.add_theme_stylebox_override("disabled",DefeatArt.plate("dim",6))
+		button.add_theme_color_override("font_disabled_color",Color("#b8b8a8"))
+		button.pressed.connect(func(): station_action.emit(spec[0],item))
+		row.add_child(button)
+	return plate
 
 func _add_row(item: String, count: String, left: String, right: String, can_left: bool, can_right: bool) -> void:
 	var buttons := HBoxContainer.new()
@@ -1498,13 +1558,15 @@ func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	var category := progress.active_category()
 	for i in range(3):
 		var rule := AbilityRules.skill1(progress.equipped.Arma) if i == 0 else AbilityRules.active_skill(category,progress.abilities.loadouts[category].skills[i-1]) if not category.is_empty() else {}
-		actions[i].legend = "Skill %d" % (i+1)
+		var first_word := str(rule.get("name","")).get_slice(" ",0)
+		actions[i].legend = first_word if not first_word.is_empty() and first_word.length() <= 9 else "Skill %d" % (i+1)
+		actions[i].slot_number = i + 1
+		actions[i].empty = rule.is_empty()
 		actions[i].tooltip_text = rule.get("name","Slot vazio")
 		actions[i].icon = category if i == 0 and not category.is_empty() else "charge"
 		actions[i].charge_fraction = -1.0
 		var left := player.skill_cooldowns[i]
 		actions[i].set_recharge(left,float(rule.get("cooldown",10.0)),false)
-		if rule.is_empty(): actions[i].set_caption("—")
 		var enabled := not blocked and player.skill_ready(i)
 		skill_available[i] = player.skill_ready(i)
 		if actions[i].enabled != enabled:

@@ -223,7 +223,7 @@ func _run() -> void:
 	hud.interact_button._input(open_touch)
 	open_touch.pressed = false
 	hud.interact_button._input(open_touch)
-	check(not hud.interact_button.visible and not hud.interact_button.enabled and hud.interact_button.size == Vector2(96,44), "used interaction prompt hides immediately and keeps a compact touch target")
+	check(not hud.interact_button.visible and not hud.interact_button.enabled and hud.interact_button.size.y >= 30.0 and hud.interact_button.size.x <= 120.0, "used interaction prompt hides immediately and keeps a compact touch target")
 	await frames()
 	var vendor_sell: Button = hud.vendor_buttons["Vender:Couro"]
 	hud.station_scroll.ensure_control_visible(vendor_sell)

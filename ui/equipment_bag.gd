@@ -31,7 +31,7 @@ func _init(value: GameProgress = null, selection: String = "", comparing: bool =
 	# Empty cells are presentation, never fake owned items or a capacity limit.
 	for i in range(maxi(0,12-progress.equipment.size())):
 		var empty := PanelContainer.new()
-		empty.custom_minimum_size = Vector2(60,68)
+		empty.custom_minimum_size = Vector2(60,62)
 		empty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		empty.add_theme_stylebox_override("panel",DiaryTheme.piece("empty",0))
@@ -93,7 +93,7 @@ func _label(text: String, color: Color = DiaryTheme.INK, font_size: int = 12) ->
 func _overview() -> void:
 	spread = BoxContainer.new()
 	spread.vertical = true
-	spread.add_theme_constant_override("separation",22)
+	spread.add_theme_constant_override("separation",16)
 	add_child(spread)
 	items_page = VBoxContainer.new()
 	items_page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -127,18 +127,22 @@ func _overview() -> void:
 	var summary := VBoxContainer.new()
 	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	profile.add_child(summary)
-	var level := _label("Nv. %d" % progress.level(),DiaryTheme.INK,18)
-	level.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	summary.add_child(level)
 	var stats := progress.combat_stats()
+	# Nível, dano e defesa numa só linha: sobra altura para as armas e os equipamentos.
 	var attributes := HBoxContainer.new()
+	attributes.add_theme_constant_override("separation",6)
 	summary.add_child(attributes)
+	var level := _label("Nv. %d" % progress.level(),DiaryTheme.INK,16)
+	level.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	level.autowrap_mode = TextServer.AUTOWRAP_OFF
+	level.add_theme_font_override("font",DiaryTheme.heading_font())
+	attributes.add_child(level)
 	for stat: String in ["Dano","Defesa"]:
 		var tile := PanelContainer.new()
 		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tile.add_theme_stylebox_override("panel",DiaryTheme.piece("paper",7))
 		attributes.add_child(tile)
-		var label := _label("%s   %d" % [stat,stats.damage if stat == "Dano" else stats.armor],DiaryTheme.INK,16)
+		var label := _label("%s %d" % [stat,stats.damage if stat == "Dano" else stats.armor],DiaryTheme.INK,15)
 		label.add_theme_font_override("font",DiaryTheme.heading_font())
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tile.add_child(label)
@@ -169,7 +173,7 @@ func _reflow() -> void:
 	portrait.custom_minimum_size.y = 114 if spread.vertical else 118
 	spread.move_child(profile,0 if spread.vertical else 1)
 	grid.columns = 3 if spread.vertical else 4
-	var visible_cells := maxi(progress.equipment.size(),6 if spread.vertical else 12)
+	var visible_cells := maxi(progress.equipment.size(),3 if spread.vertical else 8)
 	for i in range(grid.get_child_count()): grid.get_child(i).visible = i < visible_cells
 
 func _attributes(id: String) -> String:
@@ -190,7 +194,7 @@ func _card(id: String) -> void:
 	var rarity := _rarity_for_category(id)
 	var color := Color(rarity.color).darkened(0.22)
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(60,68)
+	button.custom_minimum_size = Vector2(60,62)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_stylebox_override("normal",DiaryTheme.piece("slot",0))
 	button.add_theme_stylebox_override("hover",DiaryTheme.piece("paper",0))
@@ -209,7 +213,7 @@ func _card(id: String) -> void:
 	button.add_child(row)
 	var icon := PixelItemIcon.new(meta.icon,color)
 	icon.framed = false
-	icon.custom_minimum_size = Vector2(48,48)
+	icon.custom_minimum_size = Vector2(44,44)
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	row.add_child(icon)
 	var name_label := _label(RPGRules.EQUIPMENT[id].name,DiaryTheme.INK,11)
