@@ -288,6 +288,16 @@ func _sword_node_icon(entry: Dictionary) -> String:
 	if entry.kind == "passive": return "Essência"
 	return "espada"
 
+# On the long Evolution page the section buttons must not jump back to the top.
+func _refresh_in_place(top_when_legacy: bool = true) -> void:
+	var keep := scroll.scroll_vertical
+	refresh(progress)
+	if tab != 3:
+		if top_when_legacy: scroll.scroll_vertical = 0
+		return
+	await get_tree().process_frame
+	scroll.scroll_vertical = keep
+
 func _tree_toggle() -> void:
 	var toggle := Button.new()
 	toggle.name = "TreeToggle"
@@ -295,7 +305,7 @@ func _tree_toggle() -> void:
 	toggle.custom_minimum_size.y = 44
 	toggle.pressed.connect(func():
 		evolution_tree_expanded = not evolution_tree_expanded
-		refresh(progress))
+		_refresh_in_place(false))
 	content.add_child(toggle)
 
 func _talent_page(embedded: bool = false) -> void:
@@ -325,8 +335,7 @@ func _talent_page(embedded: bool = false) -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(func():
 			prof_section = i
-			refresh(progress)
-			scroll.scroll_vertical = 0
+			_refresh_in_place()
 		)
 		sections.add_child(button)
 		prof_tabs.append(button)
@@ -714,7 +723,7 @@ func _category_selector(compact: bool = true) -> void:
 		button.tooltip_text = ArsenalRules.category_name(id)
 		button.pressed.connect(func():
 			talent_weapon = id
-			refresh(progress)
+			_refresh_in_place(false)
 		)
 		weapons.add_child(button)
 		category_buttons[id] = button
@@ -802,8 +811,7 @@ func _skills_page() -> void:
 			skill_section = index
 			skill_choice = ""
 			skill_target_slot = -1
-			refresh(progress)
-			scroll.scroll_vertical = 0)
+			_refresh_in_place())
 		sections.add_child(button)
 		skill_section_buttons.append(button)
 	var entries: Array = catalog.normal+[catalog.ultimate] if skill_section == 0 else catalog.passives if skill_section == 1 else []
