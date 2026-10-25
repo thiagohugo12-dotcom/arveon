@@ -1665,12 +1665,12 @@ func _smith_craft(progress: GameProgress) -> void:
 	if not UiScale.compact: _smith_section("bag","MATERIAIS NECESSÁRIOS")
 	_smith_requirements(EquipmentEconomy.craft_recipe(smith_craft_category,smith_craft_rarity),progress)
 	_add_description("Nova %s %s +0 · Cópias são independentes." % [ArsenalRules.category_name(smith_craft_category),ArsenalRules.RARITIES[smith_craft_rarity].name])
-	_smith_action("Forjar","hammer","craft_weapon",smith_craft_category+"|"+smith_craft_rarity,progress.can_craft_weapon(smith_craft_category,smith_craft_rarity),progress,true)
+	_smith_action("Forjar","anvil","craft_weapon",smith_craft_category+"|"+smith_craft_rarity,progress.can_craft_weapon(smith_craft_category,smith_craft_rarity),progress,true)
 	if FloorCatalog.feature(progress.ascension.current_floor,"vale_iron"):
 		_smith_section("bag","FERRO DO VALE · RECEITA DE TESTE",1,true)
 		for iron_rarity: String in ["comum", "raro"]:
 			_smith_requirements(EquipmentEconomy.vale_iron_recipe(iron_rarity),progress)
-			_smith_action("Forjar espada de ferro · " + ArsenalRules.RARITIES[iron_rarity].name,"hammer","craft_vale_iron",iron_rarity,progress.can_craft_vale_iron(iron_rarity),progress)
+			_smith_action("Forjar espada de ferro · " + ArsenalRules.RARITIES[iron_rarity].name,"anvil","craft_vale_iron",iron_rarity,progress.can_craft_vale_iron(iron_rarity),progress)
 	_smith_section("shield","ARMADURAS E ACESSÓRIOS",1,true)
 	for id: String in RPGRules.EQUIPMENT:
 		if not ArsenalRules.CATEGORIES.has(id): _add_equipment(id,progress,station_content,false)
@@ -1729,7 +1729,7 @@ func _smith_stat_rows(current: Dictionary, next: Dictionary, category: String) -
 		{"icon":"bolt","scale":2,"name":"Vel. ataque" if UiScale.compact else "Veloc. de Ataque","now":"%s/s" % String.num(speed_now,2),"next":"%s/s" % String.num(speed_next,2),"better":speed_next > speed_now + 0.0001}]
 
 func _smith_enhance_page(progress: GameProgress, uid: String, weapon: Dictionary) -> void:
-	if not UiScale.compact: _smith_section("hammer","APRIMORAMENTO",2)
+	if not UiScale.compact: _smith_section("anvil","APRIMORAMENTO",2)
 	var level := int(weapon.level)
 	if level >= 20:
 		_add_description("Aprimoramento máximo: +20.")

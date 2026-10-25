@@ -47,6 +47,7 @@ const MAPS := {
 	"star": ["....cc....", "....cc....", "...cccc...", "cccccccccc", ".cccccccc.", "..cccccc..", "..cccccc..", ".cccccccc.", ".ccc..ccc.", ".cc....cc."],
 	"chev_down": ["........", "cccccccc", ".cccccc.", "..cccc..", "...cc...", "........", "........", "........"],
 	"chev_right": ["..c.....", "..cc....", "..ccc...", "..cccc..", "..ccc...", "..cc....", "..c.....", "........"],
+	"anvil": [".......y..y.", "........y...", "sssssssssss.", "ssssssssssss", ".sssssssssS.", "..sssssssS..", "....ssSS....", "....ssSS....", "...ssssSS...", "..ssssssSS..", "..SSSSSSSS.."],
 	"person": ["..cccc..", ".cccccc.", ".cccccc.", "..cccc..", ".cccccc.", "cccccccc", "cccccccc", "cccccccc"],
 	"chart": ["......cc", "......cc", "...cc.cc", "...cc.cc", "cc.cc.cc", "cc.cc.cc", "cc.cc.cc", "cccccccc"],
 	"tree": [".cc..cc.", ".cc..cc.", "..c..c..", "..cccc..", "...cc...", "...cc...", ".cccccc.", "........"],
@@ -144,7 +145,6 @@ static func _build(id: String) -> Image:
 		"coins": return _coins()
 		"xp": return _xp()
 		"swords": return _swords()
-		"hammer": return _hammer()
 		"x": return _cross()
 		"crest": return _crest()
 	var rows: Array = MAPS[id]
@@ -216,13 +216,6 @@ static func _sword(image: Image, tip: Vector2i, hilt: Vector2i, mirror_width: in
 	_line(image,b-side,b+side,COLORS["g"],1)
 	var pommel := b+Vector2i(direction*3.0)
 	_line(image,b,pommel,COLORS["N"],2)
-
-static func _hammer() -> Image:
-	var image := Image.create(10,10,false,Image.FORMAT_RGBA8)
-	image.fill_rect(Rect2i(0,0,7,4),COLORS["s"])
-	image.fill_rect(Rect2i(0,3,7,1),COLORS["S"])
-	_line(image,Vector2i(4,4),Vector2i(8,8),COLORS["n"],2)
-	return image
 
 static func _cross() -> Image:
 	var image := Image.create(10,10,false,Image.FORMAT_RGBA8)

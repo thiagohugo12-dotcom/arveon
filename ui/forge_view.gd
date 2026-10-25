@@ -27,7 +27,7 @@ static func tab_bar(host: HBoxContainer, selected: int, on_pick: Callable) -> vo
 		host.remove_child(child)
 		child.queue_free()
 	var names := ["Forjar","Aprimorar","Evoluir"]
-	var icons := ["hammer","up","star"]
+	var icons := ["anvil","up","star"]
 	for index in range(3):
 		var tab := Button.new()
 		tab.text = names[index]
