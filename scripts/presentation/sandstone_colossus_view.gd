@@ -40,6 +40,12 @@ func _draw() -> void:
 			2:
 				for angle in [-0.38, 0.0, 0.38]:
 					draw_line(Vector2.ZERO, telegraph_direction.rotated(angle) * 200.0, edge, 3.0)
+			3:
+				draw_circle(to_local(telegraph_point), 80.0, fill)
+				draw_arc(to_local(telegraph_point), 80.0, 0.0, TAU, 24, edge, 3.0)
+			4:
+				draw_circle(Vector2.ZERO, 150.0, Color("#c9603a66"))
+				draw_arc(Vector2.ZERO, 150.0, 0.0, TAU, 32, edge, 4.0)
 	_draw_body()
 	_draw_caption("Colosso de Arenito")
 

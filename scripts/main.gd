@@ -278,6 +278,38 @@ func _spawn_camp_member(kind: int, at: Vector2, camp_id: String) -> EnemyActor:
 	actor.view.damage_occluders = hud.damage_occluders
 	return actor
 
+# Fase 3 de um chefe: até "limit" asseclas vivas por vez, que somem junto com o chefe.
+func _on_boss_summon(kinds: Array, limit: int, boss: EnemyActor) -> void:
+	if not is_instance_valid(boss) or not boss.health.is_alive() or boss.get_parent() != self:
+		return
+	var alive := 0
+	for node in get_tree().get_nodes_in_group("damageable_enemies"):
+		if node.get_meta("boss_minion_of",null) == boss: alive += 1
+	var spawned := 0
+	for kind in kinds:
+		if alive + spawned >= limit: break
+		var at := boss.global_position + Vector2(-70.0 if spawned % 2 == 0 else 70.0,45.0)
+		if boss is TowerGuardian: at = at.clamp(TowerTrial.BOUNDS.position + Vector2(40,40),TowerTrial.BOUNDS.end - Vector2(40,40))
+		var minion := _make_enemy(int(kind))
+		minion.position = at
+		minion.target = player
+		minion.set_meta("boss_minion_of",boss)
+		if boss.has_meta("tower_attempt"): minion.set_meta("tower_attempt",boss.get_meta("tower_attempt"))
+		_register_enemy_defeat(minion)
+		minion.projectile_requested.connect(_on_enemy_projectile)
+		add_child(minion)
+		minion.view.damage_occluders = hud.damage_occluders
+		spawned += 1
+	if spawned > 0:
+		hud.show_notice("O chefe chama reforços!")
+		if not boss.defeated.is_connected(_clear_boss_minions):
+			boss.defeated.connect(_clear_boss_minions.bind(boss),CONNECT_ONE_SHOT)
+
+func _clear_boss_minions(_kind: int, boss: EnemyActor) -> void:
+	for node in get_tree().get_nodes_in_group("damageable_enemies"):
+		if node.get_meta("boss_minion_of",null) == boss and node is EnemyActor and (node as EnemyActor).health.is_alive():
+			(node as EnemyActor).queue_free()
+
 func _spawn_enemy() -> void:
 	if trial.active() or transitioning:
 		return
@@ -941,8 +973,10 @@ func _start_guardian() -> void:
 		body.radius = float(boss.radius)
 		guardian.get_node("Collision").shape = body
 	guardian.position = _guardian_altar_position() + Vector2(0, 80)
+	(guardian as RootGuardian).phases.setup(progress.ascension.current_floor,"field")
 	guardian.target = player
 	_apply_floor_stats(guardian)
+	guardian.summon_requested.connect(_on_boss_summon.bind(guardian))
 	_register_enemy_defeat(guardian)
 	guardian.projectile_requested.connect(_on_enemy_projectile)
 	add_child(guardian)
@@ -1221,8 +1255,10 @@ func _spawn_tower_guardian() -> void:
 	tower_guardian.stats = template
 	tower_guardian.stats.max_hp = int(tower_boss.hp)
 	tower_guardian.stats.move_speed = float(tower_boss.speed)
+	tower_guardian.phases.setup(trial.floor_id,"tower")
 	tower_guardian.target = player
 	_apply_floor_stats(tower_guardian)
+	tower_guardian.summon_requested.connect(_on_boss_summon.bind(tower_guardian))
 	tower_guardian.set_meta("floor_id", trial.floor_id)
 	tower_guardian.set_meta("floor_epoch", floor_epoch)
 	tower_guardian.arena_bounds = TowerTrial.BOUNDS

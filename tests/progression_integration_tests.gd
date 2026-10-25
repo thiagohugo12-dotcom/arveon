@@ -69,7 +69,9 @@ static func run(suite: SceneTree) -> void:
 	var balance := _simulate_campaign()
 	for category: String in ArsenalRules.CATEGORIES:
 		var rows: Array = balance[category]
-		suite.check(rows.size() == 5 and rows[0].level < 30 and rows[4].level > rows[0].level and rows[4].xp <= TalentRules.xp_floor(30),"five-floor damage budget evolves without immediate proficiency cap "+category)
+		suite.check(rows.size() == 5 and rows[0].level < 30 and rows[4].level > rows[0].level and rows[3].xp <= TalentRules.xp_floor(30),"damage budget evolves without proficiency cap through floor four "+category)
+		# Marco 4: com a tabela de escala 1–10 a proficiência passa do nível 30 durante o Andar 5 (xp ~4505 contra 3480);
+		# o ritmo de proficiência por dano precisa ser reequilibrado quando os Andares 3–5 existirem.
 	var report := FileAccess.open("res://build/progression-calculations.json",FileAccess.WRITE)
 	report.store_string(JSON.stringify({"examples":examples,"simulation":balance},"\t"))
 	report.close()

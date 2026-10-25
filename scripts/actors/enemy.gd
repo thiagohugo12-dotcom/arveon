@@ -4,6 +4,8 @@ extends CharacterBody2D
 signal defeated(kind: int)
 signal weapon_hit(category: String, effective: int, event: int)
 signal projectile_requested(origin: Vector2, direction: Vector2, damage: int, source_name: String)
+signal phase_changed(phase: int)
+signal summon_requested(kinds: Array, limit: int)
 
 @export var stats: ActorData
 @export_range(0, 7, 1) var kind: int = 0  # 0-4 Mata/Torre; 5 Goblin, 6 Tatu, 7 Escorpião

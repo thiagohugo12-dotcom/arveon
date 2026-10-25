@@ -12,8 +12,9 @@ const ANDAR2_WORLD_SCENE: String = FloorCatalog.FLOORS[2]["world_scene"]
 const ARENA_SCENE := "res://scenes/world/tower_arena.tscn"
 const TOWER_SCRIPT := "res://scripts/components/tower_entrance.gd"
 const FLOORS := FloorCatalog.SCALE
+# A progressão continua limitada a MAX_FLOORS; a tabela de escala já cobre os andares 6–10 para quando existirem.
 static func valid(id: int) -> bool:
-	return FloorCatalog.valid_scale(id)
+	return FloorCatalog.valid_scale(id) and id <= MAX_FLOORS
 static func difficulty(id: int) -> float:
 	return FloorCatalog.difficulty(id)
 static func reward(amount: int, id: int) -> int:

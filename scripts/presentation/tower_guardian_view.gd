@@ -85,6 +85,10 @@ func _draw() -> void:
 	if warning:
 		var fill := Color("#c9893870")
 		var edge := Color("#ffd382")
+		if telegraph_kind >= TowerGuardian.Action.QUAKE:
+			var quake_radius: float = TowerGuardian.QUAKE_RADIUS[telegraph_kind - TowerGuardian.Action.QUAKE]
+			draw_circle(Vector2.ZERO, quake_radius, fill)
+			draw_arc(Vector2.ZERO, quake_radius, 0.0, TAU, 40, edge, 3.0)
 		match telegraph_kind:
 			0:
 				var polygon := PackedVector2Array([Vector2.ZERO])

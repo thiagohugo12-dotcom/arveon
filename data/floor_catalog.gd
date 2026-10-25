@@ -10,9 +10,29 @@ extends RefCounted
 const SCALE := {
 	"1": {"difficulty": 1.0, "rewards": 1.0},
 	"2": {"difficulty": 1.5, "rewards": 1.1},
-	"3": {"difficulty": 1.4, "rewards": 1.2},
-	"4": {"difficulty": 1.6, "rewards": 1.3},
-	"5": {"difficulty": 1.8, "rewards": 1.4}}
+	"3": {"difficulty": 2.1, "rewards": 2.6},
+	"4": {"difficulty": 2.8, "rewards": 3.5},
+	"5": {"difficulty": 3.6, "rewards": 4.5},
+	"6": {"difficulty": 4.5, "rewards": 5.6},
+	"7": {"difficulty": 5.5, "rewards": 6.9},
+	"8": {"difficulty": 6.6, "rewards": 8.3},
+	"9": {"difficulty": 7.8, "rewards": 9.8},
+	"10": {"difficulty": 9.0, "rewards": 11.3}}
+
+# Marco 4 · chefes em fases. Limiares de vida, ritmo e asseclas valem para todos os chefes;
+# "minions" (tipos de monstro da fase 3) fica na definição de cada chefe em FLOORS.
+const BOSS_PHASES := {
+	"thresholds": [0.66, 0.33],
+	"windup": [1.0, 0.9, 0.8],
+	"speed": [1.0, 1.1, 1.2],
+	"transition": 1.0,
+	"max_minions": 2}
+
+# Vida efetiva (já com a dificuldade) dos chefes dos andares ainda sem conteúdo; os Andares 1 e 2
+# seguem com os valores de FLOORS multiplicados pela dificuldade, como antes.
+const BOSS_HP := {
+	"field": {3: 840, 4: 1200, 5: 1700, 6: 2300, 7: 3000, 8: 3900, 9: 5000, 10: 6500},
+	"tower": {3: 800, 4: 1150, 5: 1600, 6: 2200, 7: 2900, 8: 3700, 9: 4800, 10: 6200}}
 
 # "kind" é o id numérico antigo; continua válido para saves, testes e drops.
 const MONSTERS := {
@@ -57,10 +77,10 @@ const FLOORS := {
 			{"id": "sul_oeste", "name": "Sul-oeste", "ring": "B", "respawn": 75.0, "members": [{"kind": 1, "position": Vector2(630, 1015)}, {"kind": 0, "position": Vector2(800, 1110)}, {"kind": 1, "position": Vector2(660, 1250)}]},
 			{"id": "sul_leste", "name": "Sul-leste", "ring": "C", "respawn": 90.0, "members": [{"kind": 1, "position": Vector2(1090, 1190)}, {"kind": 3, "position": Vector2(1000, 1260)}]},
 			{"id": "toca", "name": "Toca do Elite", "ring": "C", "respawn": 90.0, "members": [{"kind": 3, "position": Vector2(1640, 1310)}]}],
-		"field_guardian": {"variant": "root", "name": "Guardião da Mata", "hp": 320, "speed": 45.0, "radius": 0.0,
+		"field_guardian": {"variant": "root", "minions": [1, 1], "name": "Guardião da Mata", "hp": 320, "speed": 45.0, "radius": 0.0,
 			"challenge_label": "Desafiar Guardião (opcional)",
 			"notice": "Guardião: evite as áreas douradas. Desafio opcional!"},
-		"tower_guardian": {"variant": "mata", "hp": 360, "speed": 65.0, "radius": 26.0},
+		"tower_guardian": {"variant": "mata", "minions": [1, 1], "hp": 360, "speed": 65.0, "radius": 26.0},
 		"guardian_spawn_candidates": [Vector2(360, 245), Vector2(200, 300), Vector2(520, 300), Vector2(360, 350)],
 		"waves": [[0, 1, 2, 0], [0, 1, 2, 0, 1, 2], [0, 1, 2, 0, 1, 3]]},
 	2: {
@@ -84,10 +104,10 @@ const FLOORS := {
 			{"id": "chapada_leste", "name": "Chapada Leste", "ring": "B", "respawn": 75.0, "members": [{"kind": 7, "position": Vector2(1260, 790)}, {"kind": 7, "position": Vector2(1390, 1080)}]},
 			{"id": "ruinas", "name": "Ruínas da Chapada", "ring": "C", "respawn": 90.0, "members": [{"kind": 7, "position": Vector2(1200, 410)}]},
 			{"id": "pedreira", "name": "Pedreira Dourada", "ring": "A", "respawn": 75.0, "members": [{"kind": 5, "position": Vector2(490, 350)}, {"kind": 5, "position": Vector2(430, 270)}, {"kind": 5, "position": Vector2(570, 370)}]}],
-		"field_guardian": {"variant": "colossus", "name": "Colosso de Arenito", "hp": 540, "speed": 38.0, "radius": 34.0,
+		"field_guardian": {"variant": "colossus", "minions": [5, 5], "name": "Colosso de Arenito", "hp": 540, "speed": 38.0, "radius": 34.0,
 			"challenge_label": "Desafiar Colosso",
 			"notice": "Colosso de Arenito · evite as áreas avisadas!"},
-		"tower_guardian": {"variant": "arenito", "hp": 520, "speed": 52.0, "radius": 34.0},
+		"tower_guardian": {"variant": "arenito", "minions": [5, 5], "hp": 520, "speed": 52.0, "radius": 34.0},
 		"guardian_spawn_candidates": [Vector2(360, 190), Vector2(200, 260), Vector2(520, 260), Vector2(360, 350)],
 		"waves": [[5, 6, 7, 5], [5, 6, 7, 5, 6, 7], [5, 6, 7, 5, 6, 7]]}}
 
@@ -199,3 +219,13 @@ static func scaled(id: String, floor_id: int) -> Dictionary:
 # Os drops continuam em EquipmentEconomy.DROP_TABLE; aqui só o acesso por tipo.
 static func drops(kind: int) -> Array:
 	return EquipmentEconomy.DROP_TABLE.get(kind, [])
+
+# Vida efetiva planejada de um chefe nos andares 3–10 (role: "field" ou "tower").
+static func planned_boss_hp(id: int, role: String) -> int:
+	return int(BOSS_HP[role].get(id, 0))
+
+# Asseclas da fase 3 do chefe (tipos de monstro); vazio se o andar ou o chefe não tem.
+static func boss_minions(id: int, role: String) -> Array:
+	var def := def_or_default(id)
+	var boss: Dictionary = def.field_guardian if role == "field" else def.tower_guardian
+	return boss.get("minions", [])

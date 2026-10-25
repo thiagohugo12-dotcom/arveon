@@ -4,7 +4,7 @@ extends RefCounted
 # ORIGINAIS do jogo, escritos aqui de propósito: o catálogo é a fonte agora, então
 # comparar o catálogo com ele mesmo não provaria nada.
 
-const GOLDEN_SCALE := {1: [1.0, 1.0], 2: [1.5, 1.1], 3: [1.4, 1.2], 4: [1.6, 1.3], 5: [1.8, 1.4]}
+const GOLDEN_SCALE := {1: [1.0, 1.0], 2: [1.5, 1.1], 3: [2.1, 2.6], 4: [2.8, 3.5], 5: [3.6, 4.5], 6: [4.5, 5.6], 7: [5.5, 6.9], 8: [6.6, 8.3], 9: [7.8, 9.8], 10: [9.0, 11.3]}
 const GOLDEN_XP := [12, 10, 16, 35, 80, 10, 16, 20]
 # kind: [hp, speed, contact_damage, name]
 const GOLDEN_MONSTERS := {

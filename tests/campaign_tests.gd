@@ -85,6 +85,8 @@ static func run_world(suite) -> void:
 		boss.health.damage(ceili(boss.health.maximum * 0.5))
 		boss._physics_process(0)
 		suite.check(boss.phase_two, "existing phase two activates at half health on floor " + str(id))
+		boss._physics_process(1.05)
+		boss._physics_process(0.0)
 		var xp_before: int = main.earned_xp
 		var gold_before: int = main.earned_gold
 		boss.receive_damage(100000)

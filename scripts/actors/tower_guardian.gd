@@ -2,14 +2,17 @@ class_name TowerGuardian
 extends EnemyActor
 
 # Gameplay does not depend on the procedural view; replace View to upgrade art.
-enum Action { ROOTS, SPIKES, CHARGE, ROOT_WAVE, SEEDS }
+enum Action { ROOTS, SPIKES, CHARGE, ROOT_WAVE, SEEDS, QUAKE, FURY }
 enum State { APPROACH, WINDUP, ACTIVE, RECOVERY }
 const MAX_HP: int = FloorCatalog.FLOORS[1]["tower_guardian"]["hp"]
 const ROOT_RANGE := 90.0
 const SPIKE_RADIUS := 26.0
 const CHARGE_SPEED := 320.0
-const WINDUPS := [0.75,1.0,0.8,1.10,0.90]
-const ACTIVES := [0.12,0.45,0.65,0.65,0.90]
+const WINDUPS := [0.75,1.0,0.8,1.10,0.90,1.0,1.2]
+const ACTIVES := [0.12,0.45,0.65,0.65,0.90,0.30,0.40]
+# Golpes de fase: Abalo (fase 2) e Fúria (fase 3) acertam uma área ao redor do chefe.
+const QUAKE_RADIUS := [110.0,160.0]
+const QUAKE_DAMAGE := [22,28]
 const WAVE_START := 28.0
 const WAVE_END := 160.0
 const WAVE_HALF_WIDTH := 12.0
@@ -21,6 +24,7 @@ var seed_blocked := [false,false,false]
 var action := Action.ROOTS
 var state := State.APPROACH
 var phase_two := false
+var phases := BossPhases.new()
 var action_left := 0.0
 var recovery_left := 0.8
 var aim := Vector2.DOWN
@@ -41,15 +45,22 @@ func _physics_process(delta: float) -> void:
 	if target.input_driver != null and target.input_driver.blocked:
 		view.set_moving(false)
 		return
-	phase_two = health.current * 2 <= health.maximum
+	var paused := phases.tick(self,delta)
+	phase_two = phases.phase >= 2
 	view.second_phase = phase_two
+	if paused:
+		_clear_warning()
+		state = State.RECOVERY
+		recovery_left = maxf(recovery_left,0.6)
+		view.set_moving(false)
+		return
 	var offset := target.global_position - global_position
 	match state:
 		State.APPROACH:
 			recovery_left = maxf(0.0, recovery_left - delta)
 			view.set_facing(offset)
 			if offset.length() > 72.0:
-				_move_bounded(offset.normalized() * stats.move_speed * delta)
+				_move_bounded(offset.normalized() * stats.move_speed * phases.speed_scale() * delta)
 			if recovery_left == 0.0:
 				_begin_attack()
 		State.WINDUP:
@@ -61,6 +72,9 @@ func _physics_process(delta: float) -> void:
 				view.play_attack()
 				# The root contact is the WINDUP -> ACTIVE event, shared with the pose.
 				if action == Action.ROOTS and roots_contains(target.global_position): _damage_once(20)
+				if action >= Action.QUAKE:
+					var slot: int = action - Action.QUAKE
+					if global_position.distance_to(target.global_position) <= float(QUAKE_RADIUS[slot]): _damage_once(QUAKE_DAMAGE[slot])
 		State.ACTIVE:
 			if action == Action.CHARGE:
 				var before := global_position
@@ -128,7 +142,7 @@ func _begin_attack() -> void:
 	aim = global_position.direction_to(target.global_position)
 	if aim.is_zero_approx():
 		aim = Vector2.DOWN
-	action_left = WINDUPS[action]
+	action_left = float(WINDUPS[action]) * phases.windup_scale()
 	attack_origin = global_position
 	seed_blocked = [false,false,false]
 	spike_points.clear()
@@ -155,8 +169,11 @@ func _finish_attack() -> void:
 	_clear_warning()
 	state = State.RECOVERY
 	# Missing a charge leaves a longer opening in both phases.
-	recovery_left = 1.4 if action == Action.CHARGE and not attack_hit else 1.0 * (0.8 if phase_two else 1.0)
-	action = (action + 1) % Action.size()
+	recovery_left = 1.4 if action == Action.CHARGE and not attack_hit else [1.0,0.8,0.65][phases.phase - 1]
+	action = (action + 1) % cycle_size()
+
+func cycle_size() -> int:
+	return 5 + (1 if phases.phase >= 2 else 0) + (1 if phases.phase >= 3 else 0)
 
 func _clear_warning() -> void:
 	view.set_warning(false)

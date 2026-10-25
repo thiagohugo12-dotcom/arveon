@@ -3,6 +3,7 @@ extends ActorView
 
 var telegraph_kind := 0
 var telegraph_direction := Vector2.DOWN
+var telegraph_point := Vector2.ZERO
 
 func _draw() -> void:
 	if warning:
@@ -17,6 +18,12 @@ func _draw() -> void:
 			2:
 				for angle in [-0.35, 0.0, 0.35]:
 					draw_line(Vector2.ZERO, telegraph_direction.rotated(angle) * 200.0, Color("#ffc570"), 3.0)
+			3:
+				draw_circle(to_local(telegraph_point), 80.0, Color("#d0a24a55"))
+				draw_arc(to_local(telegraph_point), 80.0, 0.0, TAU, 24, Color("#ffc570"), 3.0)
+			4:
+				draw_circle(Vector2.ZERO, 150.0, Color("#d0603a55"))
+				draw_arc(Vector2.ZERO, 150.0, 0.0, TAU, 32, Color("#ffb070"), 4.0)
 	_draw_body()
 	_draw_caption("Guardião das Raízes")
 

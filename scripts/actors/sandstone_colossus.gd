@@ -25,6 +25,7 @@ func _resolve_attack() -> void:
 		2:
 			for angle in [-0.38, 0.0, 0.38]:
 				projectile_requested.emit(global_position, aim.rotated(angle), roundi(17 * damage_scale),display_name())
+		3, 4: _resolve_extra()
 	if hit:
 		var ray := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
 		if get_world_2d().direct_space_state.intersect_ray(ray).is_empty():

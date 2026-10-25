@@ -134,15 +134,18 @@ static func run_world(suite) -> void:
 	boss._physics_process(0.8)
 	boss._physics_process(0.65)
 	suite.check(TowerTrial.BOUNDS.grow(-32).has_point(boss.position) and boss.position.x < TowerTrial.BOUNDS.end.x - 32, "Guardian cannot charge outside the arena")
-	boss.health.damage(179)
+	boss.health.damage(120)
 	boss.state = TowerGuardian.State.RECOVERY
 	boss._physics_process(0)
-	suite.check(not boss.phase_two, "phase one remains above half HP")
-	boss.health.damage(1)
+	suite.check(not boss.phase_two, "phase one remains above two thirds HP")
+	boss.health.damage(3)
 	boss._physics_process(0)
 	main._process_trial(0)
 	TRIAL_TESTS._freeze(main)
-	suite.check(boss.phase_two and boss.view.second_phase and hud.boss_bar.value == 180 and hud.boss_bar.max_value == 360 and hud.boss_name.text.contains("Fase 2"), "phase two and boss HUD start exactly at half HP")
+	suite.check(boss.phase_two and boss.view.second_phase and hud.boss_bar.value == 237 and hud.boss_bar.max_value == 360 and hud.boss_name.text.contains("Fase 2") and boss.invulnerable, "phase two and boss HUD start at two thirds HP with the invulnerable pause")
+	boss._physics_process(1.05)
+	boss._physics_process(0.0)
+	suite.check(not boss.invulnerable and boss.cycle_size() == 6, "the pause ends and phase two adds the Abalo attack")
 	boss.action = TowerGuardian.Action.ROOTS
 	boss._finish_attack()
 	suite.check(is_equal_approx(boss.recovery_left, 0.8), "phase two moderately shortens normal recovery by twenty percent")
@@ -150,6 +153,29 @@ static func run_world(suite) -> void:
 	boss.attack_hit = false
 	boss._finish_attack()
 	suite.check(boss.recovery_left == 1.4, "phase two preserves missed charge vulnerability")
+	# Fase 3: dois reforços, Fúria no ciclo e Abalo causando dano em área ao redor do chefe.
+	boss.health.damage(120)
+	boss._physics_process(0)
+	var helpers: Array = []
+	for node in main.get_tree().get_nodes_in_group("damageable_enemies"):
+		if node.get_meta("boss_minion_of", null) == boss: helpers.append(node)
+	suite.check(boss.phases.phase == 3 and helpers.size() == 2 and boss.invulnerable, "phase three pauses and summons exactly two helpers")
+	boss._physics_process(1.05)
+	boss._physics_process(0.0)
+	suite.check(boss.cycle_size() == 7 and is_equal_approx(boss.phases.windup_scale(), 0.8), "phase three adds the Furia attack and shortens windups")
+	boss.state = TowerGuardian.State.APPROACH
+	boss.position = center
+	player.position = center + Vector2(100, 0)
+	player.health.initialize(100)
+	boss.action = TowerGuardian.Action.QUAKE
+	boss._begin_attack()
+	suite.check(boss.view.warning and boss.view.telegraph_kind == TowerGuardian.Action.QUAKE and is_equal_approx(boss.action_left, 0.8), "Abalo shows its area warning before hitting")
+	boss._physics_process(0.79)
+	suite.check(player.health.current == 100, "Abalo causes no damage while only warning")
+	boss._physics_process(0.02)
+	suite.check(player.health.current == 100 - roundi(22 * boss.damage_scale), "Abalo hits the player inside its radius when it lands")
+	for node in helpers:
+		if is_instance_valid(node): node.free()
 	boss.position = center
 	player.position = center + Vector2(65, 0)
 	player.health.initialize(100)
@@ -179,7 +205,7 @@ static func run_world(suite) -> void:
 		boss._begin_attack()
 		main._process_trial(10)
 		boss._physics_process(0.5) # Modal guards even a physics tick queued before Main pauses it.
-		suite.check(not boss.is_physics_processing() and boss.action_left == 1.0 and not player.use_skill(0), "mobile modal pauses hazards and skills " + str(resolution))
+		suite.check(not boss.is_physics_processing() and is_equal_approx(boss.action_left, boss.phases.windup_scale()) and not player.use_skill(0), "mobile modal pauses hazards and skills " + str(resolution))
 		TRIAL_TESTS._tap(hud, hud.station_close_button)
 		main._process_trial(0)
 		TRIAL_TESTS._freeze(main)

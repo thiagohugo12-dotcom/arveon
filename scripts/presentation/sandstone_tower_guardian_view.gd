@@ -40,6 +40,10 @@ func _draw() -> void:
 	if warning and boss != null:
 		var fill := Color("#b8814e66")
 		var edge := Color("#ffe1a0")
+		if telegraph_kind >= TowerGuardian.Action.QUAKE:
+			var quake_radius: float = TowerGuardian.QUAKE_RADIUS[telegraph_kind - TowerGuardian.Action.QUAKE]
+			draw_circle(Vector2.ZERO, quake_radius, fill)
+			draw_arc(Vector2.ZERO, quake_radius, 0.0, TAU, 40, edge, 3.0)
 		match telegraph_kind:
 			TowerGuardian.Action.ROOTS:
 				var polygon := PackedVector2Array([Vector2.ZERO])

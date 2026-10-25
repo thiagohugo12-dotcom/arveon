@@ -2355,7 +2355,7 @@ func set_boss(boss: TowerGuardian) -> void:
 	mission_toggle.visible = not active
 	if changed: _layout()
 	if active:
-		boss_name.text = "%s · Fase %d\nHP %d/%d" % [FloorConfig.tower_guardian_name(tower_trial.floor_id if tower_trial != null else 1), 2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
+		boss_name.text = "%s · Fase %d\nHP %d/%d" % [FloorConfig.tower_guardian_name(tower_trial.floor_id if tower_trial != null else 1), boss.phases.phase, boss.health.current, boss.health.maximum]
 		boss_bar.max_value = boss.health.maximum
 		boss_bar.value = boss.health.current
 
