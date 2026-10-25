@@ -40,7 +40,7 @@ static func run_world(suite) -> void:
 		main.player.position = TowerEntrance.position_for_floor(id) + Vector2(0,35)
 		main._interact()
 		await suite.frames()
-		suite.check(main.hud.station_panel.visible and main.hud.floor_buttons.size() == 5 and main.hud.tower_action_button.disabled, "travel panel remains accessible before floor requirement " + str(id))
+		suite.check(main.hud.station_panel.visible and main.hud.floor_buttons.size() == 10 and main.hud.tower_action_button.disabled, "travel panel remains accessible before floor requirement " + str(id))
 		main.hud.close_station()
 		main._enter_trial()
 		suite.check(not main.trial.active() and not main.transitioning, "trial blocked independently at zero on floor " + str(id))

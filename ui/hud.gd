@@ -122,6 +122,10 @@ var station_tab_host: HBoxContainer
 var station_header: HBoxContainer
 var station_column: VBoxContainer
 var station_footer: HBoxContainer
+var station_actions: VBoxContainer
+var station_action_row: HBoxContainer
+var station_body: HBoxContainer
+var station_side: VBoxContainer
 var station_intro := false
 var vendor_buttons: Dictionary = {}
 var vendor_tab := 0
@@ -445,7 +449,18 @@ func _ready() -> void:
 	station_scroll = ScrollContainer.new()
 	station_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	station_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	column.add_child(station_scroll)
+	station_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Corpo: a rolagem de sempre e, na Torre horizontal, uma coluna fixa com o cartão do andar.
+	station_body = HBoxContainer.new()
+	station_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	station_body.add_theme_constant_override("separation",8)
+	column.add_child(station_body)
+	station_body.add_child(station_scroll)
+	station_side = VBoxContainer.new()
+	station_side.custom_minimum_size.x = 270
+	station_side.add_theme_constant_override("separation",6)
+	station_side.hide()
+	station_body.add_child(station_side)
 	station_content = VBoxContainer.new()
 	station_content.custom_minimum_size.x = 220
 	station_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -453,21 +468,31 @@ func _ready() -> void:
 	station_footer = HBoxContainer.new()
 	station_footer.add_theme_constant_override("separation",6)
 	column.add_child(station_footer)
+	station_actions = VBoxContainer.new()
+	station_actions.add_theme_constant_override("separation",6)
+	column.add_child(station_actions)
+	var action_row := HBoxContainer.new()
+	station_action_row = action_row
+	action_row.add_theme_constant_override("separation",6)
+	station_actions.add_child(action_row)
 	tower_action_button = Button.new()
 	tower_action_button.custom_minimum_size.y = 44
+	tower_action_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tower_action_button.size_flags_stretch_ratio = 2.0
 	tower_action_button.hide()
 	tower_action_button.pressed.connect(func(): station_action.emit("Retornar" if tower_trial != null and tower_trial.active() else "Entrar", ""))
-	column.add_child(tower_action_button)
+	action_row.add_child(tower_action_button)
+	station_close_button = Button.new()
+	station_close_button.text = "Fechar"
+	station_close_button.custom_minimum_size.y = 44
+	station_close_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	station_close_button.pressed.connect(func(): close_station())
+	action_row.add_child(station_close_button)
 	travel_button = Button.new()
 	travel_button.custom_minimum_size.y = 44
 	travel_button.hide()
 	travel_button.pressed.connect(func(): station_action.emit("Viajar", str(selected_floor)))
-	column.add_child(travel_button)
-	station_close_button = Button.new()
-	station_close_button.text = "Fechar"
-	station_close_button.custom_minimum_size.y = 44
-	station_close_button.pressed.connect(func(): close_station())
-	column.add_child(station_close_button)
+	station_actions.add_child(travel_button)
 	save_panel = SavePanel.new()
 	save_panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(save_panel)
@@ -676,10 +701,11 @@ func _layout() -> void:
 	actions[4].position = Vector2(size.x-right_inset-120,size.y-bottom_inset-184)
 	interact_button.position = Vector2(size.x * 0.5 - interact_button.size.x * 0.5, size.y - bottom_inset - (177 if size.y > size.x else 59))
 	var service := station_name in ["Ferreiro","Vendedor"]
+	var large := service or station_name == TowerEntrance.NAME
 	station_title.add_theme_font_size_override("font_size",24 if service else 17)
 	if service: station_title.add_theme_font_override("font",DiaryTheme.heading_font())
 	else: station_title.remove_theme_font_override("font")
-	station_panel.size = Vector2(minf(720 if landscape and service else 560 if service else 460 if landscape else 340, size.x - margin.x - right_inset - 12), minf(780 if service else 320, size.y - margin.y - bottom_inset - 12))
+	station_panel.size = Vector2(minf(720 if landscape and large else 560 if large else 460 if landscape else 340, size.x - margin.x - right_inset - 12), minf(780 if large else 320, size.y - margin.y - bottom_inset - 12))
 	station_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",22) if service else _panel_style())
 	station_panel.position = (size - station_panel.size) * 0.5
 	_apply_station_look()
@@ -991,6 +1017,10 @@ func refresh_station(progress: GameProgress) -> void:
 		station_footer.remove_child(child)
 		child.queue_free()
 	station_footer.visible = false
+	for child in station_side.get_children():
+		station_side.remove_child(child)
+		child.queue_free()
+	station_side.hide()
 	station_intro = station_name == "Ferreiro" and progress.introduction_active()
 	_apply_station_look()
 	first_weapon_buttons.clear()
@@ -1009,25 +1039,56 @@ func refresh_station(progress: GameProgress) -> void:
 		var cleared := active and tower_trial.phase == TowerTrial.Phase.VICTORY
 		var guardian_name := FloorConfig.tower_guardian_name(progress.ascension.current_floor)
 		var return_name := FloorConfig.tower_return_name(progress.ascension.current_floor)
-		_add_description("Vitória · %s!" % guardian_name if cleared else tower_trial.summary() if active else "Andar %d · Torre: %d/50 criaturas" % [selected_floor, progress.ascension.defeats[str(selected_floor)]])
-		_add_description("Ascensão do Andar %d concluída%s" % [progress.ascension.current_floor, FloorCatalog.seal_note(progress.ascension.current_floor)] if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova concluída" if progress.ascension.completed_trials[str(selected_floor)] else "Prova de Ascensão liberada" if progress.ascension.entrance_unlocked(selected_floor) else "Prova bloqueada: derrote 50 criaturas neste andar.")
-		_add_description("+%d XP · +%d ouro" % [FloorConfig.reward(AscensionProgress.GUARDIAN_XP, progress.ascension.current_floor), FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, progress.ascension.current_floor)] if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e %s." % guardian_name)
-		_add_description(("Campanha inicial conquistada! Cinco andares superados." if progress.ascension.current_floor == 5 else "Andar %d desbloqueado · viaje pela Torre no %s." % [progress.ascension.current_floor + 1, return_name]) if cleared else "Se morrer, a prova recomeça da primeira horda.")
-		_add_description("Retorne ao %s em segurança." % return_name if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
+		var known := FloorCatalog.has_floor(selected_floor)
+		station_title.text = "Torre Ancestral"
+		var saved_content := station_content
+		if not active:
+			# Torre desenhada: dez andares; só os andares que existem no jogo podem ser visitados.
+			if not UiScale.compact:
+				var subtitle := DefeatView.text("Progressão dos Andares",16,ForgeView.GOLD)
+				subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				station_content.add_child(subtitle)
+			var info: Array = []
+			for id in range(1,TowerArtView.FLOORS + 1):
+				var state := _tower_state(progress,id)
+				info.append({"id":id,"state":state,"selected":id == selected_floor,"caption":"Andar %d · %s%s" % [id,_tower_state_word(state),"  ✓" if id == selected_floor else ""]})
+			var tower := TowerArtView.new()
+			tower.configure(info)
+			if UiScale.compact: tower.custom_minimum_size = Vector2(200,430)
+			station_content.add_child(tower)
+			for node: Button in tower.nodes:
+				var floor_id: int = (node as TowerArtView.Medallion).floor_id
+				node.pressed.connect(func(): selected_floor = floor_id; refresh_station(progress))
+				floor_buttons.append(node)
+			if UiScale.compact:
+				# Horizontal: a torre rola à esquerda e o cartão fica fixo à direita.
+				station_side.show()
+				station_side.add_child(_tower_info_card(progress))
+				_scroll_to_tower_node.call_deferred(tower)
+			else:
+				station_footer.add_child(_tower_info_card(progress))
+				station_footer.visible = true
+		if active or known:
+			_add_description("Vitória · %s!" % guardian_name if cleared else tower_trial.summary() if active else "Andar %d · Torre: %d/50 criaturas" % [selected_floor, progress.ascension.defeats[str(selected_floor)]])
+			_add_description("Ascensão do Andar %d concluída%s" % [progress.ascension.current_floor, FloorCatalog.seal_note(progress.ascension.current_floor)] if cleared else "Abandonar reinicia a tentativa, sem penalidade." if active else "Prova concluída" if progress.ascension.completed_trials[str(selected_floor)] else "Prova de Ascensão liberada" if progress.ascension.entrance_unlocked(selected_floor) else "Prova bloqueada: derrote 50 criaturas neste andar.")
+			_add_description("+%d XP · +%d ouro" % [FloorConfig.reward(AscensionProgress.GUARDIAN_XP, progress.ascension.current_floor), FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, progress.ascension.current_floor)] if cleared and victory_first else "Recompensas únicas já recebidas." if cleared else "Desafio: três hordas e %s." % guardian_name)
+			_add_description(("Campanha inicial conquistada! Cinco andares superados." if progress.ascension.current_floor == 5 else "Andar %d desbloqueado · viaje pela Torre no %s." % [progress.ascension.current_floor + 1, return_name]) if cleared else "Se morrer, a prova recomeça da primeira horda.")
+			_add_description("Retorne ao %s em segurança." % return_name if cleared else "Sem checkpoints. Fechar o jogo encerra a tentativa.")
+		else:
+			_add_description("O Andar %d ainda não existe no jogo. Ele aparecerá aqui quando for lançado." % selected_floor)
+		# Sobre o fundo escuro da Torre os textos de regra ficam em creme.
+		for child in station_content.get_children():
+			if child is Label and child != null:
+				child.add_theme_color_override("font_color",DefeatView.CREAM)
+				child.add_theme_font_override("font",DefeatView.font())
+				child.add_theme_font_size_override("font_size",15)
+		station_content = saved_content
 		tower_action_button.text = ("Retornar à Mata" if return_name == "Mata" else "Retornar ao %s" % return_name) if cleared else "Abandonar Prova" if active else "Entrar na Prova"
 		tower_action_button.disabled = not active and not progress.ascension.entrance_unlocked()
 		tower_action_button.show()
 		if not active:
-			for id in range(1,6):
-				var button := Button.new()
-				button.custom_minimum_size.y = 44
-				button.text = "Andar %d · %s%s" % [id, "Atual" if id == progress.ascension.current_floor else "Disponível" if progress.ascension.can_travel(id) else "Bloqueado", " ✓" if id == selected_floor else ""]
-				button.pressed.connect(func(): selected_floor = id; refresh_station(progress))
-				station_content.add_child(button)
-				floor_buttons.append(button)
-			station_title.text = "Torre · Andar %d" % progress.ascension.current_floor
 			travel_button.text = "Viajar ao Andar %d" % selected_floor
-			travel_button.disabled = selected_floor == progress.ascension.current_floor or not progress.ascension.can_travel(selected_floor)
+			travel_button.disabled = selected_floor == progress.ascension.current_floor or not progress.ascension.can_travel(selected_floor) or not known
 			travel_button.show()
 	elif station_name == "Ferreiro":
 		if progress.introduction_active():
@@ -1065,14 +1126,19 @@ func _place_station_tabs() -> void:
 
 func _apply_station_look() -> void:
 	var forge := station_name == "Ferreiro" and not station_intro
-	station_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if forge else CanvasItem.TEXTURE_FILTER_PARENT_NODE
+	var tower := station_name == TowerEntrance.NAME
+	var dark := forge or tower
+	station_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if dark else CanvasItem.TEXTURE_FILTER_PARENT_NODE
+	_style_tower_buttons(tower)
 	station_tab_host.visible = forge
 	station_close_button.visible = not forge
 	ForgeView.style_close(station_header_close,forge)
+	_place_tower_travel(tower)
 	_place_station_tabs()
-	if forge:
+	if dark:
 		station_panel.add_theme_stylebox_override("panel",DefeatArt.plate("frame",UiScale.px(12)))
-		station_scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",UiScale.px(6)))
+		if forge: station_scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",UiScale.px(6)))
+		else: station_scroll.remove_theme_stylebox_override("panel")
 		station_title.add_theme_stylebox_override("normal",DefeatArt.plate("title",UiScale.px(6)))
 		station_title.add_theme_font_override("font",DefeatView.font())
 		station_title.add_theme_font_size_override("font_size",22 if UiScale.compact else 32)
@@ -1095,6 +1161,34 @@ func _apply_station_look() -> void:
 		station_wallet.remove_theme_color_override("font_color")
 		station_wallet.remove_theme_font_override("font")
 		station_wallet.add_theme_font_size_override("font_size",13)
+
+# Horizontal: "Viajar" sobe para a linha de Entrar e Fechar, para sobrar altura à torre.
+func _place_tower_travel(tower: bool) -> void:
+	var target: Container = station_action_row if tower and UiScale.compact else station_actions
+	if travel_button.get_parent() != target:
+		travel_button.get_parent().remove_child(travel_button)
+		target.add_child(travel_button)
+		if target == station_action_row: target.move_child(travel_button,1)
+	travel_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+# Botões da Torre no mesmo kit visual (Entrar, Viajar e Fechar); nas outras estações voltam ao padrão.
+func _style_tower_buttons(on: bool) -> void:
+	for button: Button in [tower_action_button,travel_button,station_close_button]:
+		if not on:
+			for state in ["normal","hover","pressed","focus","disabled"]: button.remove_theme_stylebox_override(state)
+			for state in ["font_color","font_hover_color","font_pressed_color","font_focus_color","font_disabled_color"]: button.remove_theme_color_override(state)
+			button.remove_theme_font_override("font")
+			button.remove_theme_font_size_override("font_size")
+			button.remove_theme_constant_override("h_separation")
+			button.icon = null
+	if not on: return
+	DefeatView.style_button(tower_action_button,"button","swords",22)
+	DefeatView.style_button(travel_button,"ghost","chev_right",18,1)
+	DefeatView.style_button(station_close_button,"ghost","x",18,1)
+	for button: Button in [tower_action_button,travel_button,station_close_button]:
+		button.add_theme_stylebox_override("disabled",DefeatArt.plate("dim",8))
+		button.add_theme_color_override("font_disabled_color",Color("#b8b8a8"))
+		button.custom_minimum_size.y = maxi(44,UiScale.px(48))
 
 func _page_items(items: Array) -> Array:
 	var start := station_page * ITEMS_PER_PAGE
@@ -2156,3 +2250,61 @@ func set_boss(boss: TowerGuardian) -> void:
 		boss_name.text = "%s · Fase %d\nHP %d/%d" % [FloorConfig.tower_guardian_name(tower_trial.floor_id if tower_trial != null else 1), 2 if boss.health.current * 2 <= boss.health.maximum else 1, boss.health.current, boss.health.maximum]
 		boss_bar.max_value = boss.health.maximum
 		boss_bar.value = boss.health.current
+
+func _scroll_to_tower_node(tower: TowerArtView) -> void:
+	await get_tree().process_frame
+	if is_instance_valid(tower) and is_instance_valid(station_scroll):
+		for node: Button in tower.nodes:
+			if (node as TowerArtView.Medallion).floor_id == selected_floor:
+				station_scroll.ensure_control_visible(node)
+
+# Estado de cada medalhão da Torre. Andares sem conteúdo no jogo (3 em diante) nunca são
+# acessíveis, mesmo que as regras de progressão já os liberem.
+func _tower_state(progress: GameProgress, id: int) -> String:
+	if not FloorCatalog.has_floor(id): return "unavailable"
+	if not progress.ascension.can_travel(id): return "locked"
+	if id == progress.ascension.current_floor: return "current"
+	if progress.ascension.completed_trials[str(id)]: return "completed"
+	return "available"
+
+func _tower_state_word(state: String) -> String:
+	return {"current":"Atual","completed":"Concluído","available":"Disponível","locked":"Bloqueado","unavailable":"Indisponível"}.get(state,"")
+
+# Cartão do andar selecionado: só dados reais de AscensionProgress, FloorConfig e FloorCatalog.
+func _tower_info_card(progress: GameProgress) -> Control:
+	var id := selected_floor
+	var known := FloorCatalog.has_floor(id)
+	var state := _tower_state(progress,id)
+	var plate := DefeatView.card("paper",8)
+	plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation",10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.add_child(row)
+	var emblem := DefeatView.card("banner",6)
+	emblem.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	emblem.add_child(DefeatView.picture("skull",2))
+	row.add_child(emblem)
+	var column := VBoxContainer.new()
+	column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	column.custom_minimum_size.x = 150
+	column.add_theme_constant_override("separation",1)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(column)
+	var heading := "Andar %d" % id
+	if known: heading += " · %s" % str(FloorCatalog.floor_def(id).name)
+	column.add_child(DefeatView.text("%s  ·  %s" % [heading,_tower_state_word(state)],18,DefeatView.INK))
+	if not known:
+		column.add_child(DefeatView.text("Ainda não existe no jogo. Em breve.",14,DefeatView.MUTED))
+		return plate
+	var count := int(progress.ascension.defeats[str(id)])
+	var needed := progress.ascension.required_defeats(id)
+	column.add_child(DefeatView.text("Criaturas derrotadas: %d/%d" % [count,needed],15,DefeatView.INK))
+	column.add_child(EvolutionView.bar(count,needed,10))
+	var done: bool = progress.ascension.completed_trials[str(id)]
+	var ready := progress.ascension.entrance_unlocked(id)
+	column.add_child(DefeatView.text("Próxima prova: %s" % FloorConfig.tower_guardian_name(id) if not done else "Prova concluída · %s" % FloorConfig.tower_guardian_name(id),15,DefeatView.RED))
+	column.add_child(DefeatView.text("Prova liberada: três hordas e o Guardião" if ready and not done else "Requisito: derrotar %d criaturas neste andar" % needed if not done else "Recompensa única já recebida",13,DefeatView.MUTED))
+	if not done:
+		column.add_child(DefeatView.text("Recompensa única: +%d XP · +%d ouro" % [FloorConfig.reward(AscensionProgress.GUARDIAN_XP,id),FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD,id)],13,Color("#24502f")))
+	return plate

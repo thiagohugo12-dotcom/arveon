@@ -48,6 +48,8 @@ const MAPS := {
 	"chev_down": ["........", "cccccccc", ".cccccc.", "..cccc..", "...cc...", "........", "........", "........"],
 	"chev_right": ["..c.....", "..cc....", "..ccc...", "..cccc..", "..ccc...", "..cc....", "..c.....", "........"],
 	"anvil": [".......y..y.", "........y...", "sssssssssss.", "ssssssssssss", ".sssssssssS.", "..sssssssS..", "....ssSS....", "....ssSS....", "...ssssSS...", "..ssssssSS..", "..SSSSSSSS.."],
+	"check": ["....yy", "...yy.", "y.yy..", "yyy...", ".y...."],
+	"trophy": ["gggggggg", "ghhgghgg", ".gggggg.", "..gggg..", "...gg...", "...gg...", "..gGGg..", ".gGGGGg."],
 	"person": ["..cccc..", ".cccccc.", ".cccccc.", "..cccc..", ".cccccc.", "cccccccc", "cccccccc", "cccccccc"],
 	"chart": ["......cc", "......cc", "...cc.cc", "...cc.cc", "cc.cc.cc", "cc.cc.cc", "cc.cc.cc", "cccccccc"],
 	"tree": [".cc..cc.", ".cc..cc.", "..c..c..", "..cccc..", "...cc...", "...cc...", ".cccccc.", "........"],

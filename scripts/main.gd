@@ -622,7 +622,7 @@ func _station_action(action: String, item: String) -> void:
 	if hud.station_name == TowerEntrance.NAME and hud.station_panel.visible:
 		if action == "Entrar" and not trial.active() and TowerEntrance.is_near(player.global_position,progress.ascension.current_floor):
 			_enter_trial()
-		elif action == "Viajar" and item.is_valid_int() and TowerEntrance.is_near(player.global_position,progress.ascension.current_floor):
+		elif action == "Viajar" and item.is_valid_int() and FloorCatalog.has_floor(int(item)) and TowerEntrance.is_near(player.global_position,progress.ascension.current_floor):
 			_travel_floor(int(item))
 		elif action == "Retornar" and trial.active():
 			_return_from_trial(false)

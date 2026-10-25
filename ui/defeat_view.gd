@@ -39,6 +39,9 @@ static func text(value: String, size: int, color: Color = INK) -> Label:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.set_meta("skin_done",true)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Largura inicial razoável: sem ela o texto quebrava letra por letra no primeiro cálculo
+	# de layout e o painel inteiro crescia por um quadro.
+	label.size = Vector2(200,0)
 	return label
 
 static func picture(id: String, scale: int = 2) -> TextureRect:
