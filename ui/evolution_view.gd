@@ -84,6 +84,8 @@ static func character(progress: GameProgress, on_manage: Callable) -> Control:
 	var id := str(progress.equipped.get("Arma",""))
 	var art := PixelItemIcon.new(ArsenalRules.metadata(id).icon if not id.is_empty() else "Arma")
 	art.framed = false
+	art.smooth = true
+	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	art.custom_minimum_size = Vector2(UiScale.px(36),UiScale.px(36))
 	weapon.add_child(DefeatView.slot(art))
 	var text := VBoxContainer.new()

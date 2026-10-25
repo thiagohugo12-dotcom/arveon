@@ -692,6 +692,8 @@ func _equipment_strip() -> void:
 		card.add_child(line)
 		var icon := PixelItemIcon.new(ArsenalRules.metadata(id).icon if not id.is_empty() else slot)
 		icon.framed = false
+		icon.smooth = true
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		icon.custom_minimum_size = Vector2(UiScale.px(30),UiScale.px(30))
 		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER

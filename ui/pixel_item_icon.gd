@@ -4,6 +4,7 @@ extends Control
 var slot := "Arma"
 var frame_color := Color("#67805b")
 var framed := true
+var smooth := false
 
 func _init(value: String = "Arma", color: Color = Color("#67805b")) -> void:
 	slot = value
@@ -16,6 +17,12 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO,0,size/30.0)
 	if framed:
 		draw_style_box(DiaryTheme.piece("slot",0),Rect2(0,0,30,30))
+	if smooth and not framed:
+		var texture := DiaryArt.smooth_texture(slot,roundi(minf(size.x,size.y)))
+		if texture != null:
+			draw_set_transform(Vector2.ZERO,0,Vector2.ONE)
+			draw_texture(texture,Vector2((size.x-texture.get_width())*0.5,(size.y-texture.get_height())*0.5).floor())
+			return
 	if DiaryArt.icon(self,slot,Rect2(2,2,26,26) if framed else Rect2(0,0,30,30)): return
 	var gold := Color("#697f78")
 	match slot:

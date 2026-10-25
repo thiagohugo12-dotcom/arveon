@@ -12,6 +12,8 @@ const RAISED := Color("#24502f")
 static func icon(item: String, size: int = 32) -> Control:
 	var node := PixelItemIcon.new(item)
 	node.framed = false
+	node.smooth = true
+	node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	node.custom_minimum_size = Vector2(UiScale.px(size),UiScale.px(size))
 	node.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	node.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -122,7 +124,7 @@ static func _picker_strip(items: Array, selected: String, on_pick: Callable, but
 		column.add_theme_constant_override("separation",0)
 		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(column)
-		var art := DefeatView.slot(icon(str(item.get("icon",item.id)),28))
+		var art := DefeatView.slot(icon(str(item.get("icon",item.id)),32))
 		art.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		column.add_child(art)
 		var title := DefeatView.text(str(item.title),13,DefeatView.INK)
@@ -173,13 +175,30 @@ static func chips(options: Array, selected: String, on_pick: Callable) -> Contro
 	return row
 
 static func badge_slot(item: String, badge: String, color: Color) -> Control:
+	# Textos longos (nomes de raridade) vão embaixo do quadro; níveis curtos (+7) ficam dentro.
+	if not badge.begins_with("+"):
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation",1)
+		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var frame := DefeatView.card("slot",0)
+		frame.custom_minimum_size = Vector2(UiScale.px(62),UiScale.px(54))
+		var art_long := icon(item,42)
+		art_long.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		art_long.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		frame.add_child(art_long)
+		column.add_child(frame)
+		var caption := DefeatView.text(badge,14,color.darkened(0.35) if color.get_luminance() > 0.6 else color)
+		caption.autowrap_mode = TextServer.AUTOWRAP_OFF
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		column.add_child(caption)
+		return column
 	var plate := DefeatView.card("slot",0)
 	plate.custom_minimum_size = Vector2(UiScale.px(62),UiScale.px(62))
 	var stack := Control.new()
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(stack)
 	var art := icon(item,42)
-	art.position = Vector2(UiScale.px(8),UiScale.px(4))
+	art.position = Vector2(UiScale.px(10),UiScale.px(5))
 	stack.add_child(art)
 	var label := DefeatView.text(badge,15,color)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
