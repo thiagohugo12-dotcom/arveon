@@ -46,6 +46,22 @@ const MONSTERS := {
 	"escorpiao_da_chapada": {"kind": 7, "name": "Escorpião da Chapada", "hp": 72, "speed": 105.0, "contact": 13, "xp": 20}}
 const GOLD_RANGE := Vector2i(2, 5)
 
+# Marco 5 · materiais com nome, troféus, proteção contra azar e conjuntos de arma por andar.
+const LOOT := {
+	"named": {"Presa de Javali": 1, "Teia Reforçada": 1, "Espinho Seco": 1, "Pepita Dourada": 2, "Placa de Tatu": 2, "Ferrão da Chapada": 2},
+	"drops": {
+		0: [{"item": "Presa de Javali", "chance": 0.25}], 3: [{"item": "Presa de Javali", "chance": 0.60}],
+		1: [{"item": "Teia Reforçada", "chance": 0.25}], 2: [{"item": "Espinho Seco", "chance": 0.25}],
+		5: [{"item": "Pepita Dourada", "chance": 0.25}], 6: [{"item": "Placa de Tatu", "chance": 0.25}],
+		7: [{"item": "Ferrão da Chapada", "chance": 0.25}]},
+	"trophy": {1: "Coração da Mata", 2: "Núcleo de Arenito"},
+	"fragment": "Fragmento de Receita",
+	"fragment_elite_chance": 0.02,
+	"pity": {"raro": 25, "epico": 60},
+	"sets": {
+		1: {"rarity": "raro", "gold": 120, "base_rarity": "incomum", "named": {"espada": "Presa de Javali", "machado": "Presa de Javali", "lanca": "Espinho Seco", "arco": "Teia Reforçada", "cajado": "Espinho Seco"}},
+		2: {"rarity": "epico", "gold": 240, "base_rarity": "raro", "named": {"espada": "Pepita Dourada", "machado": "Placa de Tatu", "lanca": "Ferrão da Chapada", "arco": "Ferrão da Chapada", "cajado": "Pepita Dourada"}}}}
+
 const FLOORS := {
 	1: {
 		"id": 1, "name": "Mata", "title": "Mata · Andar 1", "map_title": "Mapa · Mata · Andar 1", "biome": "mata",

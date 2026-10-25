@@ -79,6 +79,41 @@ func _draw() -> void:
 			draw_rect(Rect2(16,4,9,9),Color("#3a7259"))
 			draw_rect(Rect2(18,5,6,7),Color("#8edb8b"))
 			draw_rect(Rect2(19,5,3,3),Color("#ebf0b4"))
+		"Presa de Javali":
+			draw_colored_polygon(PackedVector2Array([Vector2(8,24),Vector2(10,12),Vector2(17,6),Vector2(23,6),Vector2(19,10),Vector2(17,17),Vector2(13,24)]),Color("#f0e6c4"))
+			draw_colored_polygon(PackedVector2Array([Vector2(10,14),Vector2(17,8),Vector2(19,9),Vector2(14,16)]),Color("#fffbe8"))
+		"Teia Reforçada":
+			for angle in range(6):
+				var direction := Vector2.from_angle(angle * PI / 3.0) * 11.0
+				draw_line(Vector2(15,15),Vector2(15,15) + direction,Color("#e9efe6"),1.5)
+			draw_arc(Vector2(15,15),5.0,0.0,TAU,16,Color("#cfd9d2"),1.5)
+			draw_arc(Vector2(15,15),9.0,0.0,TAU,20,Color("#cfd9d2"),1.5)
+		"Espinho Seco":
+			draw_colored_polygon(PackedVector2Array([Vector2(13,25),Vector2(14,6),Vector2(17,25)]),Color("#d8c27a"))
+			draw_rect(Rect2(9,22,12,3),Color("#7c8f4a"))
+		"Pepita Dourada":
+			draw_colored_polygon(PackedVector2Array([Vector2(6,20),Vector2(9,11),Vector2(17,8),Vector2(24,13),Vector2(23,21),Vector2(14,24)]),Color("#d9a73a"))
+			draw_rect(Rect2(11,12,6,3),Color("#ffe58a"))
+		"Placa de Tatu":
+			draw_rect(Rect2(6,9,18,14),Color("#8a7a63"))
+			for column in range(3):
+				draw_rect(Rect2(8 + column * 6,11,4,10),Color("#b7a58b"))
+		"Ferrão da Chapada":
+			draw_colored_polygon(PackedVector2Array([Vector2(8,23),Vector2(14,10),Vector2(20,5),Vector2(18,13),Vector2(13,23)]),Color("#6a4b8f"))
+			draw_rect(Rect2(7,22,8,3),Color("#4a3566"))
+		"Coração da Mata":
+			draw_circle(Vector2(11,13),5.0,Color("#4f9a52"))
+			draw_circle(Vector2(19,13),5.0,Color("#4f9a52"))
+			draw_colored_polygon(PackedVector2Array([Vector2(6,15),Vector2(24,15),Vector2(15,26)]),Color("#3f8248"))
+			draw_rect(Rect2(13,11,4,4),Color("#bfe38f"))
+		"Núcleo de Arenito":
+			draw_colored_polygon(PackedVector2Array([Vector2(15,4),Vector2(25,15),Vector2(15,26),Vector2(5,15)]),Color("#d09a55"))
+			draw_colored_polygon(PackedVector2Array([Vector2(15,8),Vector2(21,15),Vector2(15,22),Vector2(9,15)]),Color("#f2cf8b"))
+		"Fragmento de Receita":
+			draw_rect(Rect2(7,6,16,19),Color("#e8d6a0"))
+			draw_rect(Rect2(10,10,10,2),Color("#8a6a3a"))
+			draw_rect(Rect2(10,14,10,2),Color("#8a6a3a"))
+			draw_rect(Rect2(10,18,6,2),Color("#8a6a3a"))
 		"Armadura":
 			draw_colored_polygon(PackedVector2Array([Vector2(8, 7), Vector2(15, 10), Vector2(22, 7), Vector2(21, 20), Vector2(15, 25), Vector2(9, 20)]), Color("#a3b2a2"))
 			draw_rect(Rect2(14, 12, 3, 9), gold)

@@ -115,6 +115,8 @@ var first_weapon_buttons: Dictionary = {}
 var smith_tab := 0 # Loja (somente ouro) ou Forja (receitas)
 var smith_instance_selected := ""
 var smith_craft_category := "espada"
+var smith_set_floor := 1
+var smith_set_category := "espada"
 var smith_craft_rarity := "comum"
 var smith_use_seal := false
 var smith_shop_selected := ""
@@ -1936,6 +1938,7 @@ func _smith_craft(progress: GameProgress) -> void:
 		for iron_rarity: String in ["comum", "raro"]:
 			_smith_requirements(EquipmentEconomy.vale_iron_recipe(iron_rarity),progress)
 			_smith_action("Forjar espada de ferro · " + ArsenalRules.RARITIES[iron_rarity].name,"anvil","craft_vale_iron",iron_rarity,progress.can_craft_vale_iron(iron_rarity),progress)
+	_smith_sets(progress)
 	_smith_section("shield","ARMADURAS E ACESSÓRIOS",1,true)
 	for id: String in RPGRules.EQUIPMENT:
 		if not ArsenalRules.CATEGORIES.has(id): _add_equipment(id,progress,station_content,false)
@@ -1948,6 +1951,30 @@ func _smith_craft(progress: GameProgress) -> void:
 		_add_description("Armas disponíveis para compra com as regras atuais.")
 		_smith_shop(progress)
 	station_content = real_content
+
+# Receitas de conjunto por andar (Marco 5): bloqueadas até o Guardião do andar ou um Fragmento.
+func _smith_sets(progress: GameProgress) -> void:
+	_smith_section("star","RECEITAS DO ANDAR",1,true)
+	var floors: Array = []
+	for id: int in FloorCatalog.LOOT.sets: floors.append({"id":str(id),"title":"Andar %d" % id})
+	station_content.add_child(ForgeView.chips(floors,str(smith_set_floor),func(id: String): smith_set_floor = int(id); smith_confirm = false; refresh_station(progress)))
+	var weapons: Array = []
+	for id: String in ArsenalRules.CATEGORIES:
+		weapons.append({"id":id,"title":LootRules.weapon_title(smith_set_floor,id),"tag":false})
+	station_content.add_child(ForgeView.picker(weapons,smith_set_category,func(id: String): smith_set_category = id; smith_confirm = false; refresh_station(progress),{},2,false))
+	var recipe := LootRules.set_recipe(smith_set_floor,smith_set_category)
+	if recipe.is_empty(): return
+	var payload := "%d|%s" % [smith_set_floor,smith_set_category]
+	var unlocked := progress.recipe_unlocked(smith_set_floor,smith_set_category)
+	var title := LootRules.weapon_title(smith_set_floor,smith_set_category)
+	if not unlocked:
+		station_content.add_child(ForgeView.note("Receita bloqueada","Derrote o Guardião do Andar %d ou use um Fragmento de Receita (você tem %d)." % [smith_set_floor,progress.fragments()]))
+	_smith_requirements(recipe,progress)
+	if unlocked:
+		_add_description("Gera %s %s +0. Receita desbloqueada." % [title,ArsenalRules.RARITIES[recipe.rarity].name])
+		_smith_action("Forjar " + title,"anvil","craft_set",payload,progress.can_craft_set(smith_set_floor,smith_set_category),progress)
+	else:
+		_smith_action("Usar Fragmento · " + title,"star","use_fragment",payload,progress.can_use_fragment(smith_set_floor,smith_set_category),progress)
 
 func _smith_instance_page(progress: GameProgress, page: String) -> void:
 	if not progress.weapon_instances.has(smith_instance_selected) and not progress.weapon_instances.is_empty():

@@ -1,7 +1,9 @@
 class_name GameProgress
 extends RefCounted
 
-const ITEMS := ["Couro", "Seda", "Essência", "Broto Ancestral", "Ervas", "Cogumelos", "Madeira", "Pedras", "Minério de Ferro"]
+const ITEMS := ["Couro", "Seda", "Essência", "Broto Ancestral", "Ervas", "Cogumelos", "Madeira", "Pedras", "Minério de Ferro",
+	"Presa de Javali", "Teia Reforçada", "Espinho Seco", "Pepita Dourada", "Placa de Tatu", "Ferrão da Chapada",
+	"Coração da Mata", "Núcleo de Arenito", "Fragmento de Receita"]
 const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
@@ -77,6 +79,9 @@ var equipped: Dictionary = {"Arma": "espada", "Armadura": "", "Acessório": ""}
 var weapon_instances: Dictionary = {}
 var equipped_weapon_uid := ""
 var next_weapon_uid := 1
+# Marco 5: contadores de azar (raro/épico) e receitas de conjunto liberadas por Fragmento.
+var pity: Dictionary = LootRules.new_pity()
+var recipes: Array[String] = []
 # Existing snapshots are exempt; only the no-save runtime starts the introduction.
 var introduction: Dictionary = {"status":"legacy","met_smith":false,"weapon":""}
 
@@ -86,6 +91,8 @@ func begin_new_character() -> void:
 	weapon_instances = {}
 	equipped_weapon_uid = ""
 	next_weapon_uid = 1
+	pity = LootRules.new_pity()
+	recipes = []
 	introduction = {"status":"active","met_smith":false,"weapon":""}
 
 func introduction_active() -> bool:
@@ -208,6 +215,35 @@ func craft_vale_iron(rarity: String) -> String:
 	_pay(EquipmentEconomy.vale_iron_recipe(rarity))
 	var uid := _create_weapon("espada", rarity)
 	if not equipment.has("espada"): equipment["espada"] = 0
+	return uid
+
+# ── Receitas de conjunto (Marco 5) ────────────────────────────────────────────────────────
+func recipe_unlocked(floor_id: int, category: String) -> bool:
+	if recipes.has(LootRules.recipe_id(floor_id,category)): return true
+	var state: Dictionary = floor_states.get(str(floor_id),{})
+	return bool(state.get("guardian_defeated",false)) or bool(ascension.completed_trials.get(str(floor_id),false))
+
+func fragments() -> int:
+	return int(bag.get(FloorCatalog.LOOT.fragment,0))
+
+func can_use_fragment(floor_id: int, category: String) -> bool:
+	return not save_blocked and not LootRules.set_recipe(floor_id,category).is_empty() and not recipe_unlocked(floor_id,category) and fragments() > 0
+
+func use_fragment(floor_id: int, category: String) -> bool:
+	if not can_use_fragment(floor_id,category): return false
+	_pay({"gold":0,"materials":{FloorCatalog.LOOT.fragment:1}})
+	recipes.append(LootRules.recipe_id(floor_id,category))
+	return true
+
+func can_craft_set(floor_id: int, category: String) -> bool:
+	return not introduction_active() and not save_blocked and recipe_unlocked(floor_id,category) and _can_pay(LootRules.set_recipe(floor_id,category))
+
+func craft_set(floor_id: int, category: String) -> String:
+	if not can_craft_set(floor_id,category): return ""
+	var recipe := LootRules.set_recipe(floor_id,category)
+	_pay(recipe)
+	var uid := _create_weapon(category,recipe.rarity)
+	if not equipment.has(category): equipment[category] = 0
 	return uid
 
 func mining_snapshot(floor_id: int, id: String, now: int) -> Dictionary:
@@ -526,6 +562,8 @@ func to_json() -> String:
 		payload["weapon_instances"] = weapon_instances
 		payload["equipped_weapon_uid"] = equipped_weapon_uid
 		payload["next_weapon_uid"] = next_weapon_uid
+		payload["pity"] = pity
+		payload["recipes"] = recipes
 	return JSON.stringify(payload)
 
 func _web_save() -> bool:
@@ -830,6 +868,17 @@ func load_text(text: String) -> bool:
 			if not intro.met_smith or not ArsenalRules.CATEGORIES.has(intro.weapon) or not new_rpg.equipment.has(intro.weapon): return false
 		elif intro.weapon != "" or intro.met_smith: return false
 		new_introduction = intro.duplicate()
+	# Campos opcionais do Marco 5: saves anteriores simplesmente começam com os contadores zerados.
+	var new_pity := LootRules.new_pity()
+	var new_recipes: Array[String] = []
+	if parsed.has("pity"):
+		if not LootRules.valid_pity(parsed.pity): return false
+		new_pity = {"raro": int(parsed.pity.raro), "epico": int(parsed.pity.epico)}
+	if parsed.has("recipes"):
+		if not parsed.recipes is Array or parsed.recipes.size() > 20: return false
+		for id: Variant in parsed.recipes:
+			if not LootRules.valid_recipe_id(id) or new_recipes.has(id): return false
+			new_recipes.append(id)
 	var new_instances := {}
 	var new_equipped_uid := ""
 	var new_next_uid := 1
@@ -877,6 +926,8 @@ func load_text(text: String) -> bool:
 	harvested_until = new_harvested
 	opened_caches = new_opened
 	discovered_pois = new_discovered
+	pity = new_pity
+	recipes = new_recipes
 	attributes = new_rpg.attributes
 	skills = new_rpg.skills
 	equipment = new_rpg.equipment

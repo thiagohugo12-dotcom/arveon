@@ -379,6 +379,13 @@ func _on_weapon_hit(category: String, effective: int, event: int, actor: EnemyAc
 		player.apply_progression(progress)
 		hud.show_notice("%s · Proficiência %d" % [ArsenalRules.CATEGORIES[category].name,progress.talents.level(category)])
 
+# Marco 5: drops com nome, troféu do Guardião e proteção contra azar. Chamadas sem criatura real
+# (testes antigos) continuam na tabela original.
+func _roll_loot(kind: int, source: EnemyActor) -> Array[Dictionary]:
+	if source == null: return EquipmentEconomy.roll_drops(kind,loot_rng)
+	if source is RootGuardian: return LootRules.field_boss(progress.ascension.current_floor,loot_rng,progress.pity)
+	return LootRules.roll(kind,loot_rng,progress.pity)
+
 func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 	if transitioning:
 		return
@@ -400,9 +407,9 @@ func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 	earned_xp += gained_xp
 	earned_gold += gained_gold
 	var drop_text := "+%d XP · +%d ouro" % [gained_xp, gained_gold]
-	for drop: Dictionary in EquipmentEconomy.roll_drops(kind,loot_rng):
+	for drop: Dictionary in _roll_loot(kind,source):
 		progress.add_item(drop.key)
-		drop_text += " · +1 %s %s" % [drop.item,ArsenalRules.RARITIES[drop.rarity].name]
+		drop_text += " · +1 %s" % drop.item if drop.get("named",false) else " · +1 %s %s" % [drop.item,ArsenalRules.RARITIES[drop.rarity].name]
 		mission.record_material()
 	if kind == 3:
 		_record_adventure("elite")
@@ -697,6 +704,17 @@ func _station_action(action: String, item: String) -> void:
 				var uid := progress.craft_vale_iron(item)
 				success = uid != ""
 				if success: hud.smith_instance_selected = uid
+		["Ferreiro", "craft_set"]:
+			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro":
+				var set_parts := item.split("|")
+				if set_parts.size() == 2 and set_parts[0].is_valid_int():
+					var set_uid := progress.craft_set(int(set_parts[0]),set_parts[1])
+					success = set_uid != ""
+					if success: hud.smith_instance_selected = set_uid
+		["Ferreiro", "use_fragment"]:
+			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro":
+				var fragment_parts := item.split("|")
+				if fragment_parts.size() == 2 and fragment_parts[0].is_valid_int(): success = progress.use_fragment(int(fragment_parts[0]),fragment_parts[1])
 		["Ferreiro", "evolve_weapon"]:
 			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro": success = progress.evolve_weapon(item)
 		["Ferreiro", "enhance_weapon"]:
@@ -1277,6 +1295,11 @@ func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> 
 	source.set_meta("defeat_recorded", true)
 	trial.phase = TowerTrial.Phase.VICTORY
 	victory_first = progress.ascension.complete_forest_trial()
+	var trophy_text := ""
+	for drop: Dictionary in LootRules.tower_boss(trial.floor_id):
+		progress.add_item(drop.key)
+		trophy_text += (" · " if not trophy_text.is_empty() else "") + "+1 %s" % drop.item
+	if not trophy_text.is_empty(): hud.show_notice(trophy_text)
 	if victory_first:
 		earned_xp += FloorConfig.reward(AscensionProgress.GUARDIAN_XP, trial.floor_id)
 		earned_gold += FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, trial.floor_id)
