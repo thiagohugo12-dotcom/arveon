@@ -228,10 +228,7 @@ func _draw_ruins() -> void:
 	var blocks: Array[Rect2] = FloorView._ruin_blocks()
 	for i in range(blocks.size()):
 		var block: Rect2 = blocks[i]
-		if block.size.x>=block.size.y:
-			ruin_sprite(i%2,Vector2(block.get_center().x,block.end.y),Vector2(block.size.x+8,54.0))
-		else:
-			ruin_sprite(2,Vector2(block.get_center().x,block.end.y),Vector2(42.0,58.0))
+		_ruin_wall(block,i)
 	for at: Vector2 in [Vector2(1348,310),Vector2(1395,323),Vector2(1515,313)]:
 		_draw_ruin_rubble(at)
 	_draw_ruin_paving()
@@ -239,19 +236,25 @@ func _draw_ruins() -> void:
 
 func _draw_ruin_courtyard() -> void:
 	# Broken, mossy paving clusters leave bare earth between the slabs.
-	for entry: Array in [[Vector2(1384,224),Vector2(64,38)],[Vector2(1415,284),Vector2(70,40)],
-		[Vector2(1515,278),Vector2(62,36)],[Vector2(1532,205),Vector2(58,36)]]:
-		ruin_sprite(5,entry[0],entry[1])
+	for entry: Array in [[Vector2(1415,284),Vector2(70,40)],[Vector2(1532,205),Vector2(58,36)]]:
+		_paving_stones(entry[0],entry[1])
 
 func _draw_ruin_paving() -> void:
 	for at: Vector2 in [Vector2(1402,203),Vector2(1456,285),Vector2(1510,250)]:
-		ruin_sprite(5,at,Vector2(48,27))
+		shadow(at + Vector2(2,2),22,6)
+		stone_piece(at,0.5)
 
 func _draw_ruin_rubble(at: Vector2) -> void:
-	ruin_sprite(3,at,Vector2(42,32))
+	_paving_stones(at,Vector2(40,26))
 
 func _draw_ruin_altar(feet: Vector2) -> void:
-	ruin_sprite(4,feet,Vector2(76,52))
+	# Altar baixo: duas pedras grandes de base e uma sobre elas, com pedrinhas ao redor.
+	shadow(feet + Vector2(4,3),92,16)
+	stone_piece(feet + Vector2(-26,0),1.0)
+	stone_piece(feet + Vector2(26,0),1.0)
+	stone_piece(feet + Vector2(0,-16),1.0)
+	stone_piece(feet + Vector2(-44,4),0.5)
+	stone_piece(feet + Vector2(46,5),0.5)
 
 func _draw_danger_arena() -> void:
 	# Boulder clusters and edge growth frame the same clear central combat floor.
@@ -466,3 +469,29 @@ func _seam_bridge(vertical: bool, pair: Array) -> void:
 	bottom.reverse()
 	top.append_array(bottom)
 	layout.draw_colored_polygon(top,SEAM_ROAD)
+
+# ── Ruínas com as pedras do próprio jogo (as mesmas dos pedregulhos da mata) ───────────────
+func stone_piece(feet: Vector2, scale: float) -> void:
+	var size := STONE.size * scale
+	layout.draw_texture_rect_region(NATURE,Rect2((feet - Vector2(size.x * 0.5,size.y)).round(),size),STONE)
+
+# Muro caído: fileira de pedras grandes e pequenas ao longo do bloco que tem colisão.
+func _ruin_wall(block: Rect2, index: int) -> void:
+	var horizontal := block.size.x >= block.size.y
+	var length := block.size.x if horizontal else block.size.y
+	var count := maxi(1,roundi(length / 34.0))
+	for n in range(count):
+		var t := (float(n) + 0.5) / float(count)
+		var feet := Vector2(block.position.x + block.size.x * t,block.end.y + 3.0) if horizontal else Vector2(block.get_center().x,block.position.y + block.size.y * t + 12.0)
+		shadow(feet + Vector2(4,2),38,10)
+		stone_piece(feet,1.0 if (n + index) % 3 != 1 else 0.75)
+		if (n + index) % 2 == 0:
+			stone_piece(feet + Vector2(16 if horizontal else 10,2),0.5)
+
+# Piso quebrado e entulho: três pedras pequenas agrupadas, sem peças retangulares.
+func _paving_stones(center: Vector2, size: Vector2) -> void:
+	var spread := maxf(size.x,20.0) * 0.32
+	shadow(center + Vector2(2,2),size.x * 0.9,8)
+	stone_piece(center + Vector2(-spread,0),0.5)
+	stone_piece(center + Vector2(spread * 0.9,-2),0.5)
+	if size.x >= 44.0: stone_piece(center + Vector2(0,5),0.5)

@@ -34,7 +34,7 @@ func _run() -> void:
 	camera.limit_top = -5000
 	camera.limit_right = 5000
 	camera.limit_bottom = 5000
-	var spots := {"seamx": Vector2(1200,420), "seamx2": Vector2(1200,640), "seamy": Vector2(700,900), "seamy2": Vector2(1000,900)}
+	var spots := {"ruinas": Vector2(1430,250)}
 	for key in spots:
 		main.player.position = spots[key]
 		await capture("mundo-" + key)
