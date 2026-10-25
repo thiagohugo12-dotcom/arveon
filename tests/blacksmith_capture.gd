@@ -8,6 +8,11 @@ func _initialize() -> void:
 	create_timer(80).timeout.connect(func(): quit(1))
 	call_deferred("_run")
 
+func _qa_size() -> Vector2i:
+	# QA_SIZE=640x360 captura em modo horizontal; o padrão é 360x800.
+	var parts := OS.get_environment("QA_SIZE").split("x")
+	return Vector2i(int(parts[0]),int(parts[1])) if parts.size() == 2 else Vector2i(360,800)
+
 func capture(name: String) -> void:
 	for i in range(8): await process_frame
 	await RenderingServer.frame_post_draw
@@ -38,11 +43,12 @@ func _run() -> void:
 		if uid.is_empty(): continue
 		main.progress.weapon_instances[uid].rarity = pair[1]
 		main.progress.weapon_instances[uid].level = pair[2]
-	root.size = Vector2i(360,800)
-	root.content_scale_size = Vector2i(360,800)
+	var qa_size := _qa_size()
+	root.size = qa_size
+	root.content_scale_size = qa_size
 	var hud: GameHUD = main.hud
 	hud.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	hud.size = Vector2(360,800)
+	hud.size = Vector2(qa_size)
 	hud._layout()
 	hud.show_station("Ferreiro",main.progress)
 	hud.smith_tab = 0

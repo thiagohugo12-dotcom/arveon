@@ -118,6 +118,7 @@ func refresh(value: GameProgress) -> void:
 	progress = value
 	var focused_page := false
 	page_title.text = "Evolução"
+	UiScale.update(get_parent().size if get_parent() is Control else size)
 	_apply_look()
 	tabs.visible = false
 	diary_return.visible = false
@@ -202,11 +203,11 @@ func refresh(value: GameProgress) -> void:
 func _apply_look() -> void:
 	set_meta("custom_frame",true)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	add_theme_stylebox_override("panel",DefeatArt.plate("frame",12))
-	scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",6))
-	page_title.add_theme_stylebox_override("normal",DefeatArt.plate("title",6))
+	add_theme_stylebox_override("panel",DefeatArt.plate("frame",UiScale.px(12)))
+	scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",UiScale.px(6)))
+	page_title.add_theme_stylebox_override("normal",DefeatArt.plate("title",UiScale.px(6)))
 	page_title.add_theme_font_override("font",DefeatView.font())
-	page_title.add_theme_font_size_override("font_size",32)
+	page_title.add_theme_font_size_override("font_size",22 if UiScale.compact else 32)
 	page_title.add_theme_color_override("font_color",DefeatView.CREAM)
 	page_title.add_theme_color_override("font_outline_color",Color("#10261b"))
 	page_title.add_theme_constant_override("outline_size",4)
@@ -219,10 +220,12 @@ func _evolution_page() -> void:
 	content.add_child(EvolutionView.character(progress,func(): bag_requested.emit()))
 	_profile_equipment(false,false)
 	_heading("ATRIBUTOS","Pontos disponíveis: %d" % progress.attribute_points())
+	var attribute_parent: Container = _two_columns()
 	for name: String in RPGRules.ATTRIBUTES:
 		var enabled := allow_respec and progress.attribute_points() >= 1 and int(progress.attributes[name]) < 198
 		var parts := EvolutionView.attribute_row(name,RPGRules.ATTRIBUTE_HELP[name],int(progress.attributes[name]),enabled,func(): action_requested.emit("attribute",name,0))
-		content.add_child(parts[0])
+		parts[0].size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		attribute_parent.add_child(parts[0])
 		attribute_buttons[name] = parts[1]
 	if not allow_respec: _label("Somente consulta · distribua os pontos no acampamento.")
 	_heading("HABILIDADES EQUIPADAS")
@@ -245,14 +248,27 @@ func _evolution_page() -> void:
 		_label("Experimente as armas, habilidades e talentos sem alterar seu save.")
 		_training_button("Entrar no modo treino","training_start")
 
+# Horizontal: cartões em duas colunas; na vertical continuam um por linha.
+func _two_columns() -> Container:
+	if not UiScale.compact:
+		return content
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation",6)
+	grid.add_theme_constant_override("v_separation",4)
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_child(grid)
+	return grid
+
 func _passive_cards() -> void:
 	var category := talent_weapon
 	var build: Dictionary = progress.abilities.loadouts[category]
+	var card_parent: Container = _two_columns()
 	for slot in range(2):
 		var id := str(build.passives[slot])
-		content.add_child(EvolutionView.info_card(_passive_name(category,id) if not id.is_empty() else "Passiva %d vazia" % (slot+1),"Passiva %d · equipada" % (slot+1) if not id.is_empty() else "Escolha em Habilidades › Passivas",str(AbilityRules.DESCRIPTIONS.get(id,"")),not id.is_empty()))
+		card_parent.add_child(EvolutionView.info_card(_passive_name(category,id) if not id.is_empty() else "Passiva %d vazia" % (slot+1),"Passiva %d · equipada" % (slot+1) if not id.is_empty() else "Escolha em Habilidades › Passivas",str(AbilityRules.DESCRIPTIONS.get(id,"")),not id.is_empty()))
 	for id: String in progress.abilities.talents[category]:
-		content.add_child(EvolutionView.info_card(str(AbilityRules.TALENT_NAMES.get(id,id)),"Talento aprendido",str(AbilityRules.DESCRIPTIONS.get(id,"")),true))
+		card_parent.add_child(EvolutionView.info_card(str(AbilityRules.TALENT_NAMES.get(id,id)),"Talento aprendido",str(AbilityRules.DESCRIPTIONS.get(id,"")),true))
 
 func _sword_summary() -> void:
 	var entries: Array = []
@@ -594,7 +610,7 @@ func _focus_training() -> void:
 
 func _reflow_stats() -> void:
 	for slot: Button in skill_slots:
-		if is_instance_valid(slot): slot.custom_minimum_size.y = 128
+		if is_instance_valid(slot): slot.custom_minimum_size.y = UiScale.px(128)
 	if is_instance_valid(attribute_grid): attribute_grid.columns = 2 if size.x >= 620 else 1
 	if is_instance_valid(mastery_grid): mastery_grid.columns = 2 if size.x >= 620 else 1
 
@@ -647,7 +663,7 @@ func _profile_equipment(with_heading: bool = true, with_button: bool = true) -> 
 		var card := _card(grid)
 		var icon := PixelItemIcon.new(ArsenalRules.metadata(id).icon if not id.is_empty() else slot)
 		icon.framed = false
-		icon.custom_minimum_size = Vector2(34,34)
+		icon.custom_minimum_size = Vector2(UiScale.px(34),UiScale.px(34))
 		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		card.add_child(icon)
 		var name: String = str(RPGRules.EQUIPMENT[id].name) if not id.is_empty() else "Vazio"
@@ -758,7 +774,7 @@ func _skills_page() -> void:
 	for index in range(4):
 		var id: String = catalog.skill1.id if index == 0 else build.ultimate if index == 3 else build.skills[index-1]
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0,128)
+		button.custom_minimum_size = Vector2(0,UiScale.px(128))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.tooltip_text = "Skill 1 fixa" if index == 0 else "Ultimate equipada" if index == 3 else "Selecione uma técnica para este espaço"
 		button.pressed.connect(func():
@@ -787,7 +803,7 @@ func _skills_page() -> void:
 		box.add_child(label)
 		var icon := PixelItemIcon.new(_ability_icon(id,category))
 		icon.framed = false
-		icon.custom_minimum_size = Vector2(44,44)
+		icon.custom_minimum_size = Vector2(UiScale.px(44),UiScale.px(44))
 		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		icon.visible = not id.is_empty()
 		box.add_child(icon)

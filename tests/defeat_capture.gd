@@ -9,6 +9,11 @@ func _initialize() -> void:
 	create_timer(60).timeout.connect(func(): quit(1))
 	call_deferred("_run")
 
+func _qa_size() -> Vector2i:
+	# QA_SIZE=640x360 captura em modo horizontal; o padrão é 360x800.
+	var parts := OS.get_environment("QA_SIZE").split("x")
+	return Vector2i(int(parts[0]),int(parts[1])) if parts.size() == 2 else Vector2i(360,800)
+
 func capture(name: String) -> void:
 	for i in range(8): await process_frame
 	await RenderingServer.frame_post_draw
@@ -25,11 +30,12 @@ func _run() -> void:
 	main.set_process(false)
 	main.player.set_physics_process(false)
 	for actor in get_nodes_in_group("damageable_enemies"): actor.set_physics_process(false)
-	root.size = Vector2i(360,800)
-	root.content_scale_size = Vector2i(360,800)
+	var qa_size := _qa_size()
+	root.size = qa_size
+	root.content_scale_size = qa_size
 	var hud: GameHUD = main.hud
 	hud.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	hud.size = Vector2(360,800)
+	hud.size = Vector2(qa_size)
 	hud._layout()
 	main.player.last_damage_source = "Tatu Rochoso"
 	main.player.last_damage_time_msec = Time.get_ticks_msec()

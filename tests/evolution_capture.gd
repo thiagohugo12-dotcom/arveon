@@ -7,6 +7,11 @@ func _initialize() -> void:
 	create_timer(90).timeout.connect(func(): quit(1))
 	call_deferred("_run")
 
+func _qa_size() -> Vector2i:
+	# QA_SIZE=640x360 captura em modo horizontal; o padrão é 360x800.
+	var parts := OS.get_environment("QA_SIZE").split("x")
+	return Vector2i(int(parts[0]),int(parts[1])) if parts.size() == 2 else Vector2i(360,800)
+
 func capture(name: String) -> void:
 	for i in range(8): await process_frame
 	await RenderingServer.frame_post_draw
@@ -29,17 +34,18 @@ func _run() -> void:
 	preload("res://tests/etapa2_fixtures.gd").unlock(main.progress,"espada",21)
 	main.progress.learn_talent("espada","sequencia_precisa",true)
 	main.player.position = SafeCamp.RESPAWN
-	root.size = Vector2i(360,800)
-	root.content_scale_size = Vector2i(360,800)
+	var qa_size := _qa_size()
+	root.size = qa_size
+	root.content_scale_size = qa_size
 	var hud: GameHUD = main.hud
 	hud.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-	hud.size = Vector2(360,800)
+	hud.size = Vector2(qa_size)
 	hud._layout()
 	main._toggle_character()
 	await capture("evolucao-1-topo-360x800")
 	var panel: RPGPanel = hud.rpg_panel
-	var step := 640
-	for index in range(2,6):
+	var step := int(qa_size.y * 0.8)
+	for index in range(2,9):
 		panel.scroll.scroll_vertical = step*(index-1)
 		await capture("evolucao-%d-360x800" % index)
 	panel.scroll.scroll_vertical = int(panel.scroll.get_v_scroll_bar().max_value)

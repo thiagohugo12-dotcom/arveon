@@ -40,7 +40,7 @@ static func portrait() -> Control:
 	rect.texture = atlas
 	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	rect.stretch_mode = TextureRect.STRETCH_SCALE
-	rect.custom_minimum_size = Vector2(80,110)
+	rect.custom_minimum_size = Vector2(UiScale.px(80),UiScale.px(110))
 	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
@@ -74,15 +74,17 @@ static func character(progress: GameProgress, on_manage: Callable) -> Control:
 		info.add_child(DefeatView.text("Total %d" % progress.xp,13,DefeatView.MUTED))
 	else:
 		info.add_child(DefeatView.text("Nível máximo · XP total %d" % progress.xp,15,DefeatView.INK))
-	column.add_child(DefeatView.divider())
+	if not UiScale.compact: column.add_child(DefeatView.divider())
 	var weapon := HBoxContainer.new()
 	weapon.add_theme_constant_override("separation",10)
+	weapon.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	weapon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	column.add_child(weapon)
+	# Horizontal: retrato, personagem e arma na mesma linha.
+	(top if UiScale.compact else column).add_child(weapon)
 	var id := str(progress.equipped.get("Arma",""))
 	var art := PixelItemIcon.new(ArsenalRules.metadata(id).icon if not id.is_empty() else "Arma")
 	art.framed = false
-	art.custom_minimum_size = Vector2(36,36)
+	art.custom_minimum_size = Vector2(UiScale.px(36),UiScale.px(36))
 	weapon.add_child(DefeatView.slot(art))
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -104,10 +106,10 @@ static func character(progress: GameProgress, on_manage: Callable) -> Control:
 			text.add_child(DefeatView.text("Proficiência máxima",13,DefeatView.MUTED))
 	var manage := Button.new()
 	manage.text = "Gerenciar equipamentos"
-	manage.custom_minimum_size = Vector2(0,44)
+	manage.custom_minimum_size = Vector2(0,40 if UiScale.compact else 44)
 	DefeatView.style_button(manage,"ghost","shield",16,1)
 	manage.pressed.connect(on_manage)
-	column.add_child(manage)
+	(text if UiScale.compact else column).add_child(manage)
 	return plate
 
 static func attribute_row(name: String, help: String, value: int, enabled: bool, on_plus: Callable) -> Array:
@@ -146,6 +148,7 @@ static func attribute_row(name: String, help: String, value: int, enabled: bool,
 
 static func info_card(title: String, caption: String, body: String, active: bool = true) -> Control:
 	var plate := DefeatView.card("item_on" if active else "item",8)
+	plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation",0)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE

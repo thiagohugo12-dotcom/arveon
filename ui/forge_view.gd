@@ -12,7 +12,7 @@ const RAISED := Color("#24502f")
 static func icon(item: String, size: int = 32) -> Control:
 	var node := PixelItemIcon.new(item)
 	node.framed = false
-	node.custom_minimum_size = Vector2(size,size)
+	node.custom_minimum_size = Vector2(UiScale.px(size),UiScale.px(size))
 	node.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	node.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	return node
@@ -29,7 +29,7 @@ static func tab_bar(host: HBoxContainer, selected: int, on_pick: Callable) -> vo
 	for index in range(3):
 		var tab := Button.new()
 		tab.text = names[index]
-		tab.custom_minimum_size = Vector2(0,46)
+		tab.custom_minimum_size = Vector2(0,maxi(40,UiScale.px(46)))
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		DefeatView.style_button(tab,"tab_on" if index == selected else "tab",icons[index],17,2,"tab_on")
 		tab.add_theme_constant_override("h_separation",6)
@@ -58,7 +58,7 @@ static func picker(items: Array, selected: String, on_pick: Callable, buttons: D
 	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for item: Dictionary in items:
 		var button := Button.new()
-		button.custom_minimum_size = Vector2(0,54)
+		button.custom_minimum_size = Vector2(0,maxi(42,UiScale.px(54)))
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var plate := "item_on" if str(item.id) == selected else "item"
 		for state in ["normal","hover","focus"]: button.add_theme_stylebox_override(state,DefeatArt.plate(plate,4))
@@ -102,7 +102,7 @@ static func chips(options: Array, selected: String, on_pick: Callable) -> Contro
 	for option: Dictionary in options:
 		var chip := Button.new()
 		chip.text = str(option.title)
-		chip.custom_minimum_size = Vector2(0,40)
+		chip.custom_minimum_size = Vector2(0,maxi(36,UiScale.px(40)))
 		chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var on := str(option.id) == selected
 		for state in ["normal","hover","pressed","focus"]: chip.add_theme_stylebox_override(state,DefeatArt.plate("chip_on" if on else "chip",3))
@@ -116,12 +116,12 @@ static func chips(options: Array, selected: String, on_pick: Callable) -> Contro
 
 static func badge_slot(item: String, badge: String, color: Color) -> Control:
 	var plate := DefeatView.card("slot",0)
-	plate.custom_minimum_size = Vector2(62,62)
+	plate.custom_minimum_size = Vector2(UiScale.px(62),UiScale.px(62))
 	var stack := Control.new()
 	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(stack)
 	var art := icon(item,42)
-	art.position = Vector2(8,4)
+	art.position = Vector2(UiScale.px(8),UiScale.px(4))
 	stack.add_child(art)
 	var label := DefeatView.text(badge,15,color)
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF
@@ -142,7 +142,7 @@ static func compare_card(item: String, title: String, subtitle: String, from_bad
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(column)
 	column.add_child(DefeatView.text(title,20,DefeatView.INK))
-	column.add_child(DefeatView.text(subtitle,14,DefeatView.MUTED))
+	if not UiScale.compact: column.add_child(DefeatView.text(subtitle,14,DefeatView.MUTED))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation",12)
@@ -158,12 +158,23 @@ static func compare_card(item: String, title: String, subtitle: String, from_bad
 
 static func stat_table(rows: Array) -> Control:
 	var plate := DefeatView.card("item",6)
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation",2)
+	var box: Container
+	if UiScale.compact:
+		# Horizontal: os quatro atributos em duas colunas, para ocupar metade da altura.
+		var grid := GridContainer.new()
+		grid.columns = 2
+		grid.add_theme_constant_override("h_separation",14)
+		grid.add_theme_constant_override("v_separation",1)
+		box = grid
+	else:
+		var column := VBoxContainer.new()
+		column.add_theme_constant_override("separation",2)
+		box = column
 	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(box)
 	for row: Dictionary in rows:
 		var line := HBoxContainer.new()
+		line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		line.add_theme_constant_override("separation",6)
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var art := DefeatView.picture(str(row.icon),int(row.get("scale",1)))
@@ -236,7 +247,7 @@ static func materials(requirements: Array) -> Control:
 	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for need: Dictionary in requirements:
 		var plate := DefeatView.card("slot",4)
-		plate.custom_minimum_size.x = 88
+		plate.custom_minimum_size.x = UiScale.px(88)
 		if requirements.size() >= 3: plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var column := VBoxContainer.new()
 		column.add_theme_constant_override("separation",0)
@@ -302,7 +313,7 @@ static func protection(count: int, active: bool, effect: String, on_toggle: Call
 static func action_button(caption: String, icon_id: String, enabled: bool) -> Button:
 	var button := Button.new()
 	button.text = caption
-	button.custom_minimum_size = Vector2(0,56)
+	button.custom_minimum_size = Vector2(0,maxi(44,UiScale.px(56)))
 	button.disabled = not enabled
 	DefeatView.style_button(button,"button",icon_id,24,2)
 	button.add_theme_stylebox_override("disabled",DefeatArt.plate("dim",8))

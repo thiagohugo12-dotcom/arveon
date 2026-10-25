@@ -33,7 +33,7 @@ static func text(value: String, size: int, color: Color = INK) -> Label:
 	var label := Label.new()
 	label.text = value
 	label.add_theme_font_override("font",font())
-	label.add_theme_font_size_override("font_size",size)
+	label.add_theme_font_size_override("font_size",UiScale.font(size))
 	label.add_theme_color_override("font_color",color)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -43,7 +43,7 @@ static func text(value: String, size: int, color: Color = INK) -> Label:
 
 static func picture(id: String, scale: int = 2) -> TextureRect:
 	var rect := TextureRect.new()
-	rect.texture = DefeatArt.texture(id,scale)
+	rect.texture = DefeatArt.texture(id,UiScale.icon_scale(scale))
 	rect.stretch_mode = TextureRect.STRETCH_KEEP_CENTERED
 	rect.custom_minimum_size = rect.texture.get_size()
 	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -52,7 +52,7 @@ static func picture(id: String, scale: int = 2) -> TextureRect:
 
 static func card(kind: String, margin: int = 8) -> PanelContainer:
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel",DefeatArt.plate(kind,margin))
+	panel.add_theme_stylebox_override("panel",DefeatArt.plate(kind,UiScale.px(margin)))
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return panel
 
@@ -71,6 +71,27 @@ static func divider() -> Control:
 	return line
 
 static func title() -> Control:
+	if UiScale.compact:
+		# Horizontal: uma faixa só, sem o brasão, para sobrar altura ao conteúdo.
+		var banner := card("banner",4)
+		var line := HBoxContainer.new()
+		line.alignment = BoxContainer.ALIGNMENT_CENTER
+		line.add_theme_constant_override("separation",10)
+		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		banner.add_child(line)
+		line.add_child(picture("diamond",2))
+		var lead := text("VOCÊ FOI",24,CREAM)
+		lead.autowrap_mode = TextServer.AUTOWRAP_OFF
+		lead.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		line.add_child(lead)
+		var strong := text("DERROTADO",40,Color("#ee6a52"))
+		strong.autowrap_mode = TextServer.AUTOWRAP_OFF
+		strong.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		strong.add_theme_color_override("font_outline_color",Color("#2a0a08"))
+		strong.add_theme_constant_override("outline_size",5)
+		line.add_child(strong)
+		line.add_child(picture("diamond",2))
+		return banner
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation",-2)
 	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -116,7 +137,7 @@ static func portrait(enemy: String) -> Control:
 	rect.texture = atlas
 	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	rect.stretch_mode = TextureRect.STRETCH_SCALE
-	rect.custom_minimum_size = (spec.region as Rect2).size*2.0
+	rect.custom_minimum_size = (spec.region as Rect2).size*(1.0 if UiScale.compact else 2.0)
 	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
@@ -162,7 +183,7 @@ static func section(icon: String, caption: String, scale: int = 1, trailing: Str
 
 static func slot(icon: Control) -> Control:
 	var plate := card("slot",3)
-	plate.custom_minimum_size = Vector2(40,40)
+	plate.custom_minimum_size = Vector2(UiScale.px(40),UiScale.px(40))
 	plate.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -211,7 +232,7 @@ static func losses(result: Dictionary) -> Control:
 	if count > 0 and not raw.is_empty():
 		var icon := PixelItemIcon.new(raw.split("|")[0])
 		icon.framed = false
-		icon.custom_minimum_size = Vector2(32,32)
+		icon.custom_minimum_size = Vector2(UiScale.px(32),UiScale.px(32))
 		rows.add_child(loss_row(icon,"Item perdido",item_title(raw),"x%d" % count,false))
 	else:
 		rows.add_child(loss_row(picture("bag",2),"Nenhum item perdido","","0",true))
@@ -255,9 +276,9 @@ static func style_button(button: Button, kind: String, icon: String, size: int, 
 	button.add_theme_stylebox_override("pressed",DefeatArt.plate(pressed_kind if not pressed_kind.is_empty() else kind+"_down",8))
 	button.add_theme_stylebox_override("focus",DefeatArt.plate(kind,8))
 	button.add_theme_font_override("font",font())
-	button.add_theme_font_size_override("font_size",size)
+	button.add_theme_font_size_override("font_size",UiScale.font(size))
 	for state in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
 		button.add_theme_color_override(state,CREAM)
 	button.add_theme_constant_override("h_separation",10)
 	button.set_meta("skin_done",true)
-	button.icon = DefeatArt.texture(icon,icon_scale)
+	button.icon = DefeatArt.texture(icon,UiScale.icon_scale(icon_scale))

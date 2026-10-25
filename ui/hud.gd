@@ -85,6 +85,9 @@ var damage_occluders: Array[Rect2] = []
 var restart: Button
 var death_panel: Panel
 var death_shade: ColorRect
+var death_title_holder: VBoxContainer
+var death_buttons: BoxContainer
+var death_return_button: Button
 var death_scroll: ScrollContainer
 var death_body: VBoxContainer
 var death_details: VBoxContainer
@@ -116,6 +119,9 @@ var smith_shop_buttons: Dictionary = {}
 var smith_action_buttons: Dictionary = {}
 var smith_pick_buttons: Dictionary = {}
 var station_tab_host: HBoxContainer
+var station_header: HBoxContainer
+var station_column: VBoxContainer
+var station_footer: HBoxContainer
 var station_intro := false
 var vendor_buttons: Dictionary = {}
 var vendor_tab := 0
@@ -414,10 +420,12 @@ func _ready() -> void:
 	station_panel.add_theme_stylebox_override("panel", _panel_style())
 	add_child(station_panel)
 	var column := VBoxContainer.new()
+	station_column = column
 	station_panel.add_child(column)
 	station_title = Label.new()
 	station_title.add_theme_font_size_override("font_size",17)
 	var header := HBoxContainer.new()
+	station_header = header
 	column.add_child(header)
 	station_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(station_title)
@@ -442,6 +450,9 @@ func _ready() -> void:
 	station_content.custom_minimum_size.x = 220
 	station_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	station_scroll.add_child(station_content)
+	station_footer = HBoxContainer.new()
+	station_footer.add_theme_constant_override("separation",6)
+	column.add_child(station_footer)
 	tower_action_button = Button.new()
 	tower_action_button.custom_minimum_size.y = 44
 	tower_action_button.hide()
@@ -502,7 +513,10 @@ func _ready() -> void:
 	death_column.offset_bottom = -10
 	death_column.add_theme_constant_override("separation",4)
 	death_panel.add_child(death_column)
-	death_column.add_child(DefeatView.title())
+	death_title_holder = VBoxContainer.new()
+	death_title_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	death_column.add_child(death_title_holder)
+	death_title_holder.add_child(DefeatView.title())
 	death_scroll = ScrollContainer.new()
 	death_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	death_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -511,12 +525,17 @@ func _ready() -> void:
 	death_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	death_body.add_theme_constant_override("separation",4)
 	death_scroll.add_child(death_body)
+	death_buttons = BoxContainer.new()
+	death_buttons.add_theme_constant_override("separation",6)
+	death_column.add_child(death_buttons)
 	var return_button := Button.new()
+	death_return_button = return_button
 	return_button.text = "Voltar ao acampamento"
 	return_button.custom_minimum_size.y = 54
+	return_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	DefeatView.style_button(return_button,"button","home",22)
 	return_button.pressed.connect(func(): restart_pressed.emit())
-	death_column.add_child(return_button)
+	death_buttons.add_child(return_button)
 	death_details_button = Button.new()
 	death_details_button.text = "Ver detalhes"
 	death_details_button.custom_minimum_size = Vector2(190,44)
@@ -524,7 +543,7 @@ func _ready() -> void:
 	DefeatView.style_button(death_details_button,"ghost","scroll",18)
 	death_details_button.pressed.connect(func(): death_details_open = not death_details_open; death_details.visible = death_details_open; death_details_button.text = "Ocultar detalhes" if death_details_open else "Ver detalhes")
 	death_details_button.pressed.connect(func(): call_deferred("_qa_ui_state","death"))
-	death_column.add_child(death_details_button)
+	death_buttons.add_child(death_details_button)
 	boss_name = Label.new()
 	boss_name.add_theme_font_size_override("font_size", 12)
 	boss_name.add_theme_color_override("font_color", Color("#fff0c3"))
@@ -548,6 +567,7 @@ func _ready() -> void:
 func _layout() -> void:
 	if not is_instance_valid(joystick):
 		return
+	UiScale.update(size)
 	var margin := Vector2(12, 12)
 	var bottom_inset: float = 12.0
 	var right_inset: float = 12.0
@@ -666,7 +686,7 @@ func _layout() -> void:
 	rpg_panel.size = Vector2(minf(820 if landscape else 640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(780, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
 	DiaryArt.skin(rpg_panel)
-	death_panel.size = Vector2(minf(520,size.x-16),minf(784,size.y-16))
+	death_panel.size = Vector2(minf(820 if UiScale.compact else 520,size.x-16),minf(784,size.y-16))
 	death_panel.position = (size-death_panel.size)*0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
 	restart.size = Vector2(240, 48)
@@ -840,6 +860,8 @@ func close_inventory() -> void:
 
 func show_death(result: Dictionary = {}) -> void:
 	death_result = result.duplicate(true)
+	UiScale.update(size)
+	_restyle_death()
 	save_panel.hide()
 	close_inventory()
 	close_station()
@@ -855,13 +877,28 @@ func show_death(result: Dictionary = {}) -> void:
 		death_body.remove_child(child)
 		child.queue_free()
 	death_shade.show()
-	death_body.add_child(DefeatView.enemy_card(str(result.get("enemy","Inimigo não identificado"))))
-	death_body.add_child(DefeatView.section("bag","PERDAS DESTA DERROTA"))
-	death_body.add_child(DefeatView.losses(result))
-	death_body.add_child(DefeatView.section("swords","EQUIPAMENTOS"))
-	death_body.add_child(DefeatView.equipment(result))
-	death_body.add_child(DefeatView.section("home","RETORNO"))
-	death_body.add_child(DefeatView.return_card(int(result.get("floor",1))))
+	var enemy_name := str(result.get("enemy","Inimigo não identificado"))
+	var left: Container = death_body
+	var right: Container = death_body
+	if UiScale.compact:
+		# Horizontal: duas colunas para a derrota caber sem rolagem.
+		var columns := HBoxContainer.new()
+		columns.add_theme_constant_override("separation",8)
+		columns.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		death_body.add_child(columns)
+		left = VBoxContainer.new()
+		right = VBoxContainer.new()
+		for column: VBoxContainer in [left,right]:
+			column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			column.add_theme_constant_override("separation",4)
+			columns.add_child(column)
+	left.add_child(DefeatView.enemy_card(enemy_name))
+	right.add_child(DefeatView.section("bag","PERDAS DESTA DERROTA"))
+	right.add_child(DefeatView.losses(result))
+	right.add_child(DefeatView.section("swords","EQUIPAMENTOS"))
+	right.add_child(DefeatView.equipment(result))
+	left.add_child(DefeatView.section("home","RETORNO"))
+	left.add_child(DefeatView.return_card(int(result.get("floor",1))))
 	death_details = VBoxContainer.new()
 	death_details.visible = false
 	death_body.add_child(death_details)
@@ -873,6 +910,19 @@ func show_death(result: Dictionary = {}) -> void:
 	_layout()
 	_sync_controls()
 	call_deferred("_qa_ui_state","death")
+
+# Reaplica fontes, alturas e disposição dos botões conforme o modo (vertical ou compacto).
+func _restyle_death() -> void:
+	for child in death_title_holder.get_children():
+		death_title_holder.remove_child(child)
+		child.queue_free()
+	death_title_holder.add_child(DefeatView.title())
+	death_buttons.vertical = not UiScale.compact
+	death_return_button.custom_minimum_size.y = UiScale.px(54) if not UiScale.compact else 44
+	death_details_button.custom_minimum_size = Vector2(0,44) if UiScale.compact else Vector2(190,44)
+	death_details_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL if UiScale.compact else Control.SIZE_SHRINK_CENTER
+	DefeatView.style_button(death_return_button,"button","home",22)
+	DefeatView.style_button(death_details_button,"ghost","scroll",18)
 
 func _death_section(value: String) -> Control:
 	var label := DiaryTheme.label(value,14)
@@ -895,6 +945,7 @@ func dismiss_interaction() -> void:
 	interact_button.hide()
 
 func show_station(name: String, progress: GameProgress) -> void:
+	UiScale.update(size)
 	station_name = name
 	station_scroll.scroll_vertical = 0
 	selected_floor = progress.ascension.current_floor
@@ -935,6 +986,10 @@ func refresh_station(progress: GameProgress) -> void:
 	vendor_tabs.clear()
 	smith_action_buttons.clear()
 	smith_pick_buttons.clear()
+	for child in station_footer.get_children():
+		station_footer.remove_child(child)
+		child.queue_free()
+	station_footer.visible = false
 	station_intro = station_name == "Ferreiro" and progress.introduction_active()
 	_apply_station_look()
 	first_weapon_buttons.clear()
@@ -998,26 +1053,38 @@ func refresh_station(progress: GameProgress) -> void:
 		_vendor_shop(progress)
 	if station_name == "Ferreiro": call_deferred("_qa_ui_state","blacksmith")
 
+# Horizontal: as abas sobem para a linha do título; na vertical ficam abaixo dele.
+func _place_station_tabs() -> void:
+	var target: Node = station_header if UiScale.compact else station_column
+	if station_tab_host.get_parent() != target:
+		station_tab_host.get_parent().remove_child(station_tab_host)
+		target.add_child(station_tab_host)
+	station_tab_host.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	target.move_child(station_tab_host,1)
+
 func _apply_station_look() -> void:
 	var forge := station_name == "Ferreiro" and not station_intro
 	station_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if forge else CanvasItem.TEXTURE_FILTER_PARENT_NODE
 	station_tab_host.visible = forge
 	station_close_button.visible = not forge
 	ForgeView.style_close(station_header_close,forge)
+	_place_station_tabs()
 	if forge:
-		station_panel.add_theme_stylebox_override("panel",DefeatArt.plate("frame",12))
-		station_scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",6))
-		station_title.add_theme_stylebox_override("normal",DefeatArt.plate("title",6))
+		station_panel.add_theme_stylebox_override("panel",DefeatArt.plate("frame",UiScale.px(12)))
+		station_scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",UiScale.px(6)))
+		station_title.add_theme_stylebox_override("normal",DefeatArt.plate("title",UiScale.px(6)))
 		station_title.add_theme_font_override("font",DefeatView.font())
-		station_title.add_theme_font_size_override("font_size",32)
+		station_title.add_theme_font_size_override("font_size",22 if UiScale.compact else 32)
 		station_title.add_theme_color_override("font_color",DefeatView.CREAM)
 		station_title.add_theme_color_override("font_outline_color",Color("#10261b"))
-		station_title.add_theme_constant_override("outline_size",4)
+		station_title.add_theme_constant_override("outline_size",3 if UiScale.compact else 4)
 		station_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		station_title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if UiScale.compact else Control.SIZE_EXPAND_FILL
 		station_wallet.add_theme_color_override("font_color",ForgeView.GOLD)
 		station_wallet.add_theme_font_override("font",DefeatView.font())
-		station_wallet.add_theme_font_size_override("font_size",16)
+		station_wallet.add_theme_font_size_override("font_size",13 if UiScale.compact else 16)
 	else:
+		station_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		station_scroll.remove_theme_stylebox_override("panel")
 		station_title.remove_theme_stylebox_override("normal")
 		station_title.remove_theme_color_override("font_color")
@@ -1184,6 +1251,8 @@ func _input(event: InputEvent) -> void:
 		if _activate_touch_button(station_close_button,event) or _activate_touch_button(station_header_close,event): return
 		for tab: Node in station_tab_host.get_children():
 			if tab is Button and _activate_touch_button(tab,event): return
+		for pinned: Node in station_footer.get_children():
+			if pinned is Button and _activate_touch_button(pinned,event): return
 		if _touch_contains(station_scroll,event):
 			_defer_menu_touch(station_content,station_scroll,event)
 		get_viewport().set_input_as_handled()
@@ -1500,6 +1569,26 @@ func _smith_tabs(progress: GameProgress) -> void:
 func _smith_section(icon: String, caption: String, scale: int = 1) -> void:
 	station_content.add_child(DefeatView.section(icon,caption,scale))
 
+# Duas colunas lado a lado dentro do conteúdo atual (usado no modo compacto).
+func _smith_pair() -> Array:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation",6)
+	station_content.add_child(row)
+	var columns: Array = []
+	for index in range(2):
+		var column := VBoxContainer.new()
+		column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		column.add_theme_constant_override("separation",4)
+		row.add_child(column)
+		columns.append(column)
+	return columns
+
+func _smith_requirements_in(target: Container, recipe: Dictionary, progress: GameProgress) -> void:
+	var saved := station_content
+	station_content = target
+	_smith_requirements(recipe,progress)
+	station_content = saved
+
 func _smith_requirements(recipe: Dictionary, progress: GameProgress) -> void:
 	var needs: Array = []
 	for material: String in recipe.materials:
@@ -1509,7 +1598,7 @@ func _smith_requirements(recipe: Dictionary, progress: GameProgress) -> void:
 	station_content.add_child(ForgeView.materials(needs))
 	station_content.add_child(ForgeView.gold_row(progress.gold,int(recipe.gold)))
 
-func _smith_action(caption: String, icon: String, action: String, payload: String, enabled: bool, progress: GameProgress) -> Button:
+func _smith_action(caption: String, icon: String, action: String, payload: String, enabled: bool, progress: GameProgress, pin: bool = false) -> Button:
 	var confirming := smith_confirm and smith_shop_selected == payload
 	var button := ForgeView.action_button(("Confirmar · " if confirming else "")+caption,icon,enabled)
 	button.pressed.connect(func():
@@ -1521,25 +1610,48 @@ func _smith_action(caption: String, icon: String, action: String, payload: Strin
 			smith_confirm = true
 			smith_shop_selected = payload
 			refresh_station(progress))
-	station_content.add_child(button)
+	# Horizontal: a ação principal fica fixa embaixo, sempre à vista, sem rolar.
+	if pin and UiScale.compact:
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		station_footer.add_child(button)
+		station_footer.visible = true
+	else:
+		station_content.add_child(button)
 	smith_action_buttons[payload] = button
 	return button
 
 func _smith_craft(progress: GameProgress) -> void:
-	_smith_section("swords","ESCOLHA A ARMA")
+	var real_content := station_content
+	var right_content: VBoxContainer = null
+	if UiScale.compact:
+		# Horizontal: armas à esquerda; raridade, materiais e ação à direita.
+		var split := HBoxContainer.new()
+		split.add_theme_constant_override("separation",8)
+		real_content.add_child(split)
+		var left_content := VBoxContainer.new()
+		left_content.custom_minimum_size.x = 150
+		left_content.add_theme_constant_override("separation",4)
+		split.add_child(left_content)
+		right_content = VBoxContainer.new()
+		right_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		right_content.add_theme_constant_override("separation",4)
+		split.add_child(right_content)
+		station_content = left_content
+	if not UiScale.compact: _smith_section("swords","ESCOLHA A ARMA")
 	var weapons: Array = []
 	for id: String in ArsenalRules.CATEGORIES:
 		weapons.append({"id":id,"title":ArsenalRules.category_name(id),"tag":progress.equipped.Arma == id})
-	station_content.add_child(ForgeView.picker(weapons,smith_craft_category,func(id: String): smith_craft_category = id; smith_confirm = false; refresh_station(progress),smith_pick_buttons))
-	_smith_section("star","RARIDADE")
+	station_content.add_child(ForgeView.picker(weapons,smith_craft_category,func(id: String): smith_craft_category = id; smith_confirm = false; refresh_station(progress),smith_pick_buttons,1 if UiScale.compact else 2))
+	if right_content != null: station_content = right_content
+	if not UiScale.compact: _smith_section("star","RARIDADE")
 	var rarities: Array = []
 	for rarity: String in EquipmentEconomy.RARITY_ORDER:
 		rarities.append({"id":rarity,"title":ArsenalRules.RARITIES[rarity].name,"color":ForgeView.rarity_color(rarity)})
 	station_content.add_child(ForgeView.chips(rarities,smith_craft_rarity,func(id: String): smith_craft_rarity = id; smith_confirm = false; refresh_station(progress)))
-	_smith_section("bag","MATERIAIS NECESSÁRIOS")
+	if not UiScale.compact: _smith_section("bag","MATERIAIS NECESSÁRIOS")
 	_smith_requirements(EquipmentEconomy.craft_recipe(smith_craft_category,smith_craft_rarity),progress)
 	_add_description("Nova %s %s +0 · Cópias são independentes." % [ArsenalRules.category_name(smith_craft_category),ArsenalRules.RARITIES[smith_craft_rarity].name])
-	_smith_action("Forjar","hammer","craft_weapon",smith_craft_category+"|"+smith_craft_rarity,progress.can_craft_weapon(smith_craft_category,smith_craft_rarity),progress)
+	_smith_action("Forjar","hammer","craft_weapon",smith_craft_category+"|"+smith_craft_rarity,progress.can_craft_weapon(smith_craft_category,smith_craft_rarity),progress,true)
 	if FloorCatalog.feature(progress.ascension.current_floor,"vale_iron"):
 		_smith_section("bag","FERRO DO VALE · RECEITA DE TESTE")
 		for iron_rarity: String in ["comum", "raro"]:
@@ -1556,11 +1668,28 @@ func _smith_craft(progress: GameProgress) -> void:
 	if smith_shop_expanded:
 		_add_description("Armas disponíveis para compra com as regras atuais.")
 		_smith_shop(progress)
+	station_content = real_content
 
 func _smith_instance_page(progress: GameProgress, page: String) -> void:
 	if not progress.weapon_instances.has(smith_instance_selected) and not progress.weapon_instances.is_empty():
 		smith_instance_selected = progress.equipped_weapon_uid if progress.weapon_instances.has(progress.equipped_weapon_uid) else str(progress.weapon_instances.keys()[0])
-	_smith_section("swords","SELECIONE UM EQUIPAMENTO")
+	var real_content := station_content
+	var right_content: VBoxContainer = null
+	if UiScale.compact and not progress.weapon_instances.is_empty():
+		# Horizontal: a lista de armas fica à esquerda e os detalhes à direita.
+		var split := HBoxContainer.new()
+		split.add_theme_constant_override("separation",8)
+		real_content.add_child(split)
+		var left_content := VBoxContainer.new()
+		left_content.custom_minimum_size.x = 150
+		left_content.add_theme_constant_override("separation",4)
+		split.add_child(left_content)
+		right_content = VBoxContainer.new()
+		right_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		right_content.add_theme_constant_override("separation",4)
+		split.add_child(right_content)
+		station_content = left_content
+	if not UiScale.compact: _smith_section("swords","SELECIONE UM EQUIPAMENTO")
 	if progress.weapon_instances.is_empty():
 		_add_description("Nenhuma arma na mochila. Use a aba Forjar para fabricar uma.")
 		return
@@ -1568,11 +1697,13 @@ func _smith_instance_page(progress: GameProgress, page: String) -> void:
 	for uid: String in progress.weapon_instances:
 		var data: Dictionary = progress.weapon(uid)
 		owned.append({"id":uid,"icon":data.category,"title":ArsenalRules.category_name(data.category),"sub":"%s +%d" % [ArsenalRules.RARITIES[data.rarity].name,int(data.level)],"color":ForgeView.rarity_color(data.rarity),"tag":uid == progress.equipped_weapon_uid})
-	station_content.add_child(ForgeView.picker(owned,smith_instance_selected,func(uid: String): smith_instance_selected = uid; smith_confirm = false; refresh_station(progress),smith_pick_buttons))
+	station_content.add_child(ForgeView.picker(owned,smith_instance_selected,func(uid: String): smith_instance_selected = uid; smith_confirm = false; refresh_station(progress),smith_pick_buttons,1 if UiScale.compact else 2))
+	if right_content != null: station_content = right_content
 	var uid := smith_instance_selected
 	var weapon: Dictionary = progress.weapon(uid)
 	if page == "rarity": _smith_rarity_page(progress,uid,weapon)
 	else: _smith_enhance_page(progress,uid,weapon)
+	station_content = real_content
 
 func _smith_stat_rows(current: Dictionary, next: Dictionary, category: String) -> Array:
 	var speed_now := 1.0/float(current.interval)
@@ -1581,10 +1712,10 @@ func _smith_stat_rows(current: Dictionary, next: Dictionary, category: String) -
 		{"icon":"swords","name":"Dano mágico" if category == "cajado" else "Dano físico","now":str(int(current.damage)),"next":str(int(next.damage)),"better":int(next.damage) > int(current.damage)},
 		{"icon":"heart","scale":2,"name":"Vida","now":str(int(current.hp)),"next":str(int(next.hp)),"better":int(next.hp) > int(current.hp)},
 		{"icon":"shield","name":"Defesa","now":str(int(current.armor)),"next":str(int(next.armor)),"better":int(next.armor) > int(current.armor)},
-		{"icon":"bolt","scale":2,"name":"Veloc. de Ataque","now":"%s/s" % String.num(speed_now,2),"next":"%s/s" % String.num(speed_next,2),"better":speed_next > speed_now + 0.0001}]
+		{"icon":"bolt","scale":2,"name":"Vel. ataque" if UiScale.compact else "Veloc. de Ataque","now":"%s/s" % String.num(speed_now,2),"next":"%s/s" % String.num(speed_next,2),"better":speed_next > speed_now + 0.0001}]
 
 func _smith_enhance_page(progress: GameProgress, uid: String, weapon: Dictionary) -> void:
-	_smith_section("hammer","APRIMORAMENTO",2)
+	if not UiScale.compact: _smith_section("hammer","APRIMORAMENTO",2)
 	var level := int(weapon.level)
 	if level >= 20:
 		_add_description("Aprimoramento máximo: +20.")
@@ -1592,23 +1723,41 @@ func _smith_enhance_page(progress: GameProgress, uid: String, weapon: Dictionary
 	var rarity_name: String = ArsenalRules.RARITIES[weapon.rarity].name
 	var current := _weapon_instance_stats(progress,uid,weapon.rarity,level,weapon.choices)
 	var next := _weapon_instance_stats(progress,uid,weapon.rarity,level+1,weapon.choices)
-	station_content.add_child(ForgeView.compare_card(weapon.category,"%s · %s" % [ArsenalRules.category_name(weapon.category),rarity_name],"Aprimoramento +%d" % level,"+%d" % level,"+%d" % (level+1),Color("#fff1c9"),Color("#9be58f")))
-	station_content.add_child(ForgeView.stat_table(_smith_stat_rows(current,next,weapon.category)))
+	var compare := ForgeView.compare_card(weapon.category,"%s · %s" % [ArsenalRules.category_name(weapon.category),rarity_name],"Aprimoramento +%d" % level,"+%d" % level,"+%d" % (level+1),Color("#fff1c9"),Color("#9be58f"))
+	var stats := ForgeView.stat_table(_smith_stat_rows(current,next,weapon.category))
 	var chance: float = EquipmentEconomy.SUCCESS[level]
-	station_content.add_child(ForgeView.chance(roundi(chance*100)))
+	var chance_card := ForgeView.chance(roundi(chance*100))
+	var danger: Control = null
 	if chance < 1.0:
 		var loss := "O item mantém o nível +%d." % level if level < int(EquipmentEconomy.FAILURE.safe_through) else "O item perde 1 nível." if level < 15 else "O item perde 1 ou 2 níveis."
-		station_content.add_child(ForgeView.danger("Em caso de falha","%s Ouro e materiais gastos não são devolvidos." % loss))
-	_smith_section("bag","MATERIAIS NECESSÁRIOS")
+		danger = ForgeView.danger("Em caso de falha","%s Ouro e materiais gastos não são devolvidos." % loss)
 	var recipe := EquipmentEconomy.enhance_recipe(level,weapon.rarity)
+	var seals := int(progress.bag.get(EquipmentEconomy.SEAL,0))
+	var protection := ForgeView.protection(seals,smith_use_seal and seals > 0,"Evita a perda de níveis ao falhar a partir de +10.",func(): smith_use_seal = not smith_use_seal; refresh_station(progress))
+	if UiScale.compact:
+		# Horizontal: comparação e chance lado a lado; atributos e materiais lado a lado.
+		var top := _smith_pair()
+		top[0].add_child(compare)
+		top[1].add_child(chance_card)
+		if danger != null: top[1].add_child(danger)
+		station_content.add_child(stats)
+		var bottom := _smith_pair()
+		_smith_requirements_in(bottom[0],recipe,progress)
+		bottom[1].add_child(protection)
+		_smith_action("Aprimorar","up","enhance_weapon",uid,progress.can_enhance_weapon(uid),progress,true)
+		return
+	station_content.add_child(compare)
+	station_content.add_child(stats)
+	station_content.add_child(chance_card)
+	if danger != null: station_content.add_child(danger)
+	_smith_section("bag","MATERIAIS NECESSÁRIOS")
 	_smith_requirements(recipe,progress)
 	_smith_section("shield","PROTEÇÃO (OPCIONAL)")
-	var seals := int(progress.bag.get(EquipmentEconomy.SEAL,0))
-	station_content.add_child(ForgeView.protection(seals,smith_use_seal and seals > 0,"Evita a perda de níveis ao falhar a partir de +10.",func(): smith_use_seal = not smith_use_seal; refresh_station(progress)))
+	station_content.add_child(protection)
 	_smith_action("Aprimorar","up","enhance_weapon",uid,progress.can_enhance_weapon(uid),progress)
 
 func _smith_rarity_page(progress: GameProgress, uid: String, weapon: Dictionary) -> void:
-	_smith_section("star","EVOLUÇÃO DE RARIDADE",2)
+	if not UiScale.compact: _smith_section("star","EVOLUÇÃO DE RARIDADE",2)
 	var recipe := EquipmentEconomy.rarity_recipe(weapon.rarity)
 	if recipe.is_empty():
 		_add_description("Raridade máxima alcançada.")
@@ -1616,12 +1765,23 @@ func _smith_rarity_page(progress: GameProgress, uid: String, weapon: Dictionary)
 	var next_rarity: String = EquipmentEconomy.RARITY_ORDER[EquipmentEconomy.RARITY_ORDER.find(weapon.rarity)+1]
 	var current := _weapon_instance_stats(progress,uid,weapon.rarity,int(weapon.level),weapon.choices)
 	var next := _weapon_instance_stats(progress,uid,next_rarity,0,{})
-	station_content.add_child(ForgeView.compare_card(weapon.category,ArsenalRules.category_name(weapon.category),"Aprimoramento atual +%d" % int(weapon.level),ArsenalRules.RARITIES[weapon.rarity].name,ArsenalRules.RARITIES[next_rarity].name,Color(ArsenalRules.RARITIES[weapon.rarity].color),Color(ArsenalRules.RARITIES[next_rarity].color)))
-	station_content.add_child(ForgeView.stat_table(_smith_stat_rows(current,next,weapon.category)))
-	_smith_section("bag","MATERIAIS NECESSÁRIOS")
-	_smith_requirements(recipe,progress)
-	_smith_action("Evoluir","star","evolve_weapon",uid,progress.can_evolve_weapon(uid),progress)
-	station_content.add_child(ForgeView.note("Importante","Ao evoluir para uma raridade superior, o aprimoramento volta a +0 e os bônus escolhidos são reiniciados."))
+	var compare := ForgeView.compare_card(weapon.category,ArsenalRules.category_name(weapon.category),"Aprimoramento atual +%d" % int(weapon.level),ArsenalRules.RARITIES[weapon.rarity].name,ArsenalRules.RARITIES[next_rarity].name,Color(ArsenalRules.RARITIES[weapon.rarity].color),Color(ArsenalRules.RARITIES[next_rarity].color))
+	var stats := ForgeView.stat_table(_smith_stat_rows(current,next,weapon.category))
+	var notice := ForgeView.note("Importante","Ao evoluir para uma raridade superior, o aprimoramento volta a +0 e os bônus escolhidos são reiniciados.")
+	if UiScale.compact:
+		station_content.add_child(compare)
+		station_content.add_child(stats)
+		var bottom := _smith_pair()
+		_smith_requirements_in(bottom[0],recipe,progress)
+		bottom[1].add_child(notice)
+		_smith_action("Evoluir","star","evolve_weapon",uid,progress.can_evolve_weapon(uid),progress,true)
+	else:
+		station_content.add_child(compare)
+		station_content.add_child(stats)
+		_smith_section("bag","MATERIAIS NECESSÁRIOS")
+		_smith_requirements(recipe,progress)
+		_smith_action("Evoluir","star","evolve_weapon",uid,progress.can_evolve_weapon(uid),progress)
+		station_content.add_child(notice)
 	var bonuses := Button.new()
 	bonuses.text = ("− " if smith_bonus_expanded else "+ ")+"Bônus dos aprimoramentos"
 	bonuses.custom_minimum_size.y = 44
