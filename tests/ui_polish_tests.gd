@@ -70,14 +70,18 @@ func _run() -> void:
 		check(hud.station_close_button.size.y >= 44.0 and screen.encloses(hud.station_close_button.get_global_rect()), "chest close button keeps a 44 px target " + label)
 		hud.close_station()
 		await frames()
-	var world: Node = main.world
-	var found := false
-	for shape: Node in world.get_node("Walls").get_children():
-		if shape is CollisionShape2D and (shape as CollisionShape2D).shape is RectangleShape2D:
-			var box := (shape as CollisionShape2D).shape as RectangleShape2D
-			if box.size.is_equal_approx(TowerEntrance.ANDAR1_UPPER.size): found = true
-	check(found, "Andar 1 tower body above the doorway is solid")
-	check(TowerEntrance.ANDAR1_UPPER.end.y <= TowerEntrance.ANDAR1_SIDES[0].position.y and TowerEntrance.ANDAR2_UPPER.end.y <= TowerEntrance.ANDAR2_SIDES[0].position.y + 1.0, "upper tower body sits directly above the door pocket")
+	# A torre ordena por profundidade como as árvores: atrás dela o jogador some, na frente ele aparece.
+	var tower: TowerView = main.tower_view
+	check(not tower.z_as_relative and tower.z_index == roundi(tower.position.y - 36.0) + 100, "tower sorts by its base like the trees")
+	var behind := roundi(tower.position.y - 90.0) + 100
+	var front := roundi(tower.position.y + 20.0) + 100
+	check(behind < tower.z_index and front > tower.z_index, "an explorer behind the tower is covered and one in front is drawn over it")
+	main.player.global_position = tower.position + Vector2(0,-90)
+	main.player.view._process(0.0)
+	check(main.player.view.z_index < tower.z_index, "the real player view sorts behind the tower when walking behind it")
+	main.player.global_position = tower.position + Vector2(0,20)
+	main.player.view._process(0.0)
+	check(main.player.view.z_index > tower.z_index, "the real player view sorts in front of the tower when walking in front of it")
 	main.queue_free()
 	await process_frame
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))

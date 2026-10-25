@@ -11,6 +11,16 @@ var nearby := false
 func _ready() -> void:
 	position = TowerEntrance.POSITION
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	set_notify_local_transform(true)
+	_sync_depth()
+
+# Como as árvores: a torre ordena pela base da porta, então quem passa atrás dela fica escondido pelo sprite.
+func _sync_depth() -> void:
+	z_as_relative = false
+	z_index = roundi(position.y - 36.0) + 100
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_LOCAL_TRANSFORM_CHANGED: _sync_depth()
 
 func set_state(available: bool, close: bool) -> void:
 	if available != unlocked or close != nearby:

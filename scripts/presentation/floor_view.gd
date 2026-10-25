@@ -92,7 +92,7 @@ const RESERVED := [Vector2(850, 400), Vector2(930, 440), Vector2(610, 750),
 	Vector2(180, 460), Vector2(630, 135), Vector2(955, 665)]
 const EXPANSION_RESERVED := [Vector2(1350,250),Vector2(1510,260),Vector2(1600,365),Vector2(1335,400),
 	Vector2(1360,560),Vector2(1510,590),Vector2(1630,650),Vector2(1530,770),Vector2(1370,760),
-	Vector2(630,1015),Vector2(690,1110),Vector2(980,1045),Vector2(1090,1190),
+	Vector2(630,1015),Vector2(800,1110),Vector2(980,1045),Vector2(1090,1190),
 	Vector2(660,1250),Vector2(1000,1260),Vector2(1640,1310)]
 
 func _ready() -> void:

@@ -31,7 +31,7 @@ func _run() -> void:
 	camera.limit_top = -5000
 	camera.limit_right = 5000
 	camera.limit_bottom = 5000
-	var spots := {"a": Vector2(450,380), "b": Vector2(1250,380), "c": Vector2(450,1000), "d": Vector2(1250,1000), "e": Vector2(850,700)}
+	var spots := {"atras": Vector2(840,1225), "lado": Vector2(900,1280), "frente": Vector2(830,1325)}
 	for key in spots:
 		main.player.position = spots[key]
 		await capture("mundo-" + key)

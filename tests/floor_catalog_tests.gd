@@ -13,7 +13,7 @@ const GOLDEN_MONSTERS := {
 const GOLDEN_FLOOR1_SPAWNS := [
 	Vector2(850, 400), Vector2(930, 440), Vector2(610, 750), Vector2(180, 460), Vector2(630, 135), Vector2(955, 665),
 	Vector2(1350,250), Vector2(1510,260), Vector2(1600,365), Vector2(1335,400), Vector2(1360,560), Vector2(1510,590),
-	Vector2(1630,650), Vector2(1530,770), Vector2(1370,760), Vector2(630,1015), Vector2(690,1110), Vector2(980,1045),
+	Vector2(1630,650), Vector2(1530,770), Vector2(1370,760), Vector2(630,1015), Vector2(800,1110), Vector2(980,1045),
 	Vector2(1090,1190), Vector2(660,1250), Vector2(1000,1260), Vector2(1640,1310)]
 const GOLDEN_FLOOR2_SPAWNS := [Vector2(750, 700), Vector2(945, 930), Vector2(1040, 690), Vector2(1260, 790), Vector2(1390, 1080), Vector2(490, 350), Vector2(1200, 410), Vector2(900, 1120)]
 const GOLDEN_FLOOR2_KINDS := [6, 6, 7, 7, 7, 5, 7, 6]
