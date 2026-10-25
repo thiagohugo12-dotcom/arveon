@@ -730,6 +730,7 @@ func _layout() -> void:
 		link.add_theme_font_size_override("font_size",20 if inventory_panel.size.x >= 600 else 15)
 	for link: Button in inventory_tabs.get_children():
 		link.add_theme_font_size_override("font_size",18 if inventory_panel.size.x >= 600 else 14)
+	_style_inventory()
 	joystick.position = Vector2(margin.x, size.y - bottom_inset - joystick.size.y)
 	for slot in range(4):
 		var i: int = [5, 0, 1, 2][slot]
@@ -832,13 +833,50 @@ func show_inventory(progress: GameProgress) -> void:
 	_sync_controls()
 	_layout()
 
+# A Mochila no mesmo kit da Evolução: moldura escura, título em placa, abas, papel e botões.
+func _style_inventory() -> void:
+	UiScale.update(size)
+	inventory_panel.set_meta("custom_frame",true)
+	inventory_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	inventory_panel.add_theme_stylebox_override("panel",DefeatArt.plate("frame",UiScale.px(12)))
+	inventory_scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",UiScale.px(6)))
+	inventory_heading.add_theme_stylebox_override("normal",DefeatArt.plate("title",UiScale.px(6)))
+	inventory_heading.add_theme_font_override("font",DefeatView.font())
+	inventory_heading.add_theme_font_size_override("font_size",22 if UiScale.compact else 26)
+	inventory_heading.add_theme_color_override("font_color",DefeatView.CREAM)
+	inventory_heading.add_theme_color_override("font_outline_color",Color("#10261b"))
+	inventory_heading.add_theme_constant_override("outline_size",3)
+	inventory_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	inventory_heading.autowrap_mode = TextServer.AUTOWRAP_OFF
+	inventory_gold.add_theme_font_override("font",DefeatView.font())
+	inventory_gold.add_theme_font_size_override("font_size",UiScale.font(19))
+	inventory_gold.add_theme_color_override("font_color",ForgeView.GOLD)
+	inventory_gold.autowrap_mode = TextServer.AUTOWRAP_OFF
+	var nav_icons := ["bag","star"]
+	for index in range(diary_navigation.get_child_count()):
+		_kit_tab(diary_navigation.get_child(index) as Button,nav_icons[index],index == 0)
+	var tab_icons := ["bag","shield","heart"]
+	for index in range(inventory_tabs.get_child_count()):
+		_kit_tab(inventory_tabs.get_child(index) as Button,tab_icons[index],index == inventory_category)
+	DefeatView.style_button(inventory_close,"ghost","x",17,1)
+	DefeatView.style_button(record_button,"button","scroll",17,1)
+	for button: Button in [inventory_close,record_button]:
+		button.custom_minimum_size.y = maxi(44,UiScale.px(48))
+
+func _kit_tab(button: Button, icon_id: String, selected: bool) -> void:
+	button.set_meta("kit",true)
+	button.custom_minimum_size.y = maxi(40,UiScale.px(46))
+	DefeatView.style_button(button,"tab_on" if selected else "tab",icon_id,15,1,"tab_on")
+	button.add_theme_constant_override("h_separation",4)
+	button.queue_redraw()
+
 func refresh_inventory(progress: GameProgress) -> void:
 	menu_progress = progress
 	inventory_gold.text = str(progress.gold)
-	for i in range(inventory_tabs.get_child_count()): DiaryTheme.select(inventory_tabs.get_child(i),i == inventory_category)
+	_style_inventory()
 	if progress.ascension.forest_seal:
 		inventory_gold.tooltip_text = "Selo da Mata · %d andares" % progress.ascension.unlocked_floors.size()
-		inventory_gold.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		inventory_gold.autowrap_mode = TextServer.AUTOWRAP_OFF
 	for child in inventory_list.get_children():
 		inventory_list.remove_child(child)
 		child.queue_free()
@@ -857,6 +895,7 @@ func refresh_inventory(progress: GameProgress) -> void:
 			inventory_compare = not inventory_compare
 			refresh_inventory(progress)
 		)
+		EvolutionView.reskin(inventory_list)
 		if not inventory_selected.is_empty():
 			_focus_equipment_detail.call_deferred()
 		return
@@ -865,6 +904,7 @@ func refresh_inventory(progress: GameProgress) -> void:
 		empty.text = "Nenhum consumível nesta etapa."
 		empty.add_theme_font_size_override("font_size", 12)
 		inventory_list.add_child(empty)
+		EvolutionView.reskin(inventory_list)
 		return
 	var material_grid := GridContainer.new()
 	material_grid.columns = 3

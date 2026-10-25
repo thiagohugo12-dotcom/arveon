@@ -29,6 +29,14 @@ func _run() -> void:
 	for actor in get_nodes_in_group("damageable_enemies"): actor.set_physics_process(false)
 	main.progress.introduction = {"status":"legacy","met_smith":false,"weapon":""}
 	main.progress.equipment["espada"] = 0
+	main.progress.gold = 923
+	main.progress.ascension.forest_seal = true
+	var first_copy: String = main.progress._create_weapon("espada","comum")
+	main.progress.weapon_instances[first_copy].level = 1
+	main.progress.equipped_weapon_uid = first_copy
+	main.progress._create_weapon("espada","raro")
+	main.progress._create_weapon("arco","incomum")
+	main.progress.equipment["arco"] = 0
 	var qa_size := _qa_size()
 	root.size = qa_size
 	root.content_scale_size = qa_size

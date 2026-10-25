@@ -68,6 +68,16 @@ func _run() -> void:
 		var text := all_text(hud.station_panel)
 		check(hud.station_panel.visible and screen.encloses(hud.station_panel.get_global_rect()) and text.contains("Mochila") and text.contains("Guardar") and text.contains("Retirar"), "chest panel fits and lists quantities with both actions " + label)
 		check(hud.station_close_button.size.y >= 44.0 and screen.encloses(hud.station_close_button.get_global_rect()), "chest close button keeps a 44 px target " + label)
+		main.progress.gold = 923
+		main.progress.ascension.forest_seal = true
+		hud.close_station()
+		await frames()
+		hud.show_inventory(main.progress)
+		await frames()
+		check(hud.inventory_gold.autowrap_mode == TextServer.AUTOWRAP_OFF and hud.inventory_gold.text == "923" and hud.inventory_gold.size.x >= float(hud.inventory_gold.get_theme_font_size("font_size")) * 1.4, "Mochila gold stays on one line " + label)
+		check(screen.encloses(hud.inventory_panel.get_global_rect()) and hud.inventory_close.size.y >= 44.0 and hud.inventory_tabs.get_child(1).has_meta("kit"), "Mochila uses the new kit and fits the screen " + label)
+		hud.close_inventory() if hud.has_method("close_inventory") else hud.inventory_panel.hide()
+		hud.inventory_open = false
 		hud.close_station()
 		await frames()
 	# A torre ordena por profundidade como as árvores: atrás dela o jogador some, na frente ele aparece.

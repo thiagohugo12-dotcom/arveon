@@ -58,15 +58,28 @@ func _weapon_copies() -> void:
 	section.add_child(_label("ARMAS · CÓPIAS",DiaryTheme.GREEN,14))
 	for uid: String in progress.weapon_instances:
 		var data: Dictionary = progress.weapon(uid)
+		var is_equipped: bool = uid == progress.equipped_weapon_uid
+		var plate := PanelContainer.new()
+		plate.add_theme_stylebox_override("panel",DefeatArt.plate("item_on" if is_equipped else "item",6))
+		plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		section.add_child(plate)
 		var row := HBoxContainer.new()
-		section.add_child(row)
+		row.add_theme_constant_override("separation",8)
+		plate.add_child(row)
 		row.add_child(WeaponInstanceIcon.new(data.category,data.rarity,int(data.level)))
-		var item := _label("%s · %s +%d%s" % [ArsenalRules.category_name(data.category),ArsenalRules.RARITIES[data.rarity].name,int(data.level),"\nEquipada" if uid == progress.equipped_weapon_uid else ""],DiaryTheme.INK,14)
-		row.add_child(item)
+		var text := VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		text.add_theme_constant_override("separation",-2)
+		row.add_child(text)
+		text.add_child(_label(ArsenalRules.category_name(data.category),DiaryTheme.INK,16))
+		var rarity_line := _label("%s +%d%s" % [ArsenalRules.RARITIES[data.rarity].name,int(data.level),"  ·  Equipada" if is_equipped else ""],Color(ArsenalRules.RARITIES[data.rarity].color).darkened(0.45),14)
+		text.add_child(rarity_line)
 		var equip_copy := Button.new()
-		equip_copy.text = "Equipar"
-		equip_copy.custom_minimum_size = Vector2(80,44)
-		equip_copy.disabled = uid == progress.equipped_weapon_uid
+		equip_copy.text = "Equipada" if is_equipped else "Equipar"
+		equip_copy.custom_minimum_size = Vector2(88,44)
+		equip_copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		equip_copy.disabled = is_equipped
 		equip_copy.pressed.connect(func(): action_requested.emit("equip_instance",uid))
 		row.add_child(equip_copy)
 
@@ -148,20 +161,35 @@ func _overview() -> void:
 		tile.add_child(label)
 
 func _equipped_slot(slot: String, slots: VBoxContainer) -> void:
-		var equipped: String = progress.equipped.get(slot,"")
-		var button := Button.new()
-		button.custom_minimum_size = Vector2(48,48)
-		button.add_theme_stylebox_override("normal",DiaryTheme.piece("slot",0))
-		button.tooltip_text = slot+": "+(RPGRules.EQUIPMENT[equipped].name if not equipped.is_empty() else "vazio")
-		button.disabled = equipped.is_empty()
-		if not equipped.is_empty(): button.pressed.connect(func(): selected.emit(equipped))
-		slots.add_child(button)
-		var icon := PixelItemIcon.new(ArsenalRules.metadata(equipped).icon if not equipped.is_empty() else slot)
-		icon.framed = false
-		icon.position = Vector2(6,6)
-		icon.size = Vector2(36,36)
-		icon.modulate.a = 1.0 if not equipped.is_empty() else 0.3
-		button.add_child(icon)
+	var equipped: String = progress.equipped.get(slot,"")
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation",0)
+	column.custom_minimum_size.x = 88
+	slots.add_child(column)
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(60,60)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	button.tooltip_text = slot+": "+(RPGRules.EQUIPMENT[equipped].name if not equipped.is_empty() else "vazio")
+	button.disabled = equipped.is_empty()
+	for state in ["normal","hover","pressed","focus","disabled"]: button.add_theme_stylebox_override(state,DefeatArt.plate("slot",4))
+	button.set_meta("skin_done",true)
+	if not equipped.is_empty(): button.pressed.connect(func(): selected.emit(equipped))
+	column.add_child(button)
+	var icon := PixelItemIcon.new(ArsenalRules.metadata(equipped).icon if not equipped.is_empty() else slot)
+	icon.framed = false
+	icon.smooth = true
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	icon.position = Vector2(8,8)
+	icon.size = Vector2(44,44)
+	icon.modulate.a = 1.0 if not equipped.is_empty() else 0.3
+	button.add_child(icon)
+	var caption := _label(slot.to_upper(),DiaryTheme.GREEN,10)
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(caption)
+	var upgrade := int(progress.equipment.get(equipped,0)) if not equipped.is_empty() else 0
+	var title := _label((str(RPGRules.EQUIPMENT[equipped].name) + (" +%d" % upgrade if upgrade > 0 else "")) if not equipped.is_empty() else "Vazio",DiaryTheme.INK,13)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	column.add_child(title)
 
 func _reflow() -> void:
 	if spread == null: return
