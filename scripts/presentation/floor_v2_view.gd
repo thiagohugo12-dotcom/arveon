@@ -65,6 +65,7 @@ func paint() -> void:
 	if layout.expanded_world:
 		_paint_expansion_ground()
 	layout.draw_texture_rect(GROUND,Rect2(0,0,1200,900),false)
+	_heal_ground_seams()
 	if layout.expanded_world:
 		_paint_expansion_ground_details()
 		_paint_biome_ground()
@@ -370,3 +371,98 @@ func _camp() -> void:
 		flowers(at)
 	for at: Vector2 in [Vector2(584,432),Vector2(574,608),Vector2(340,530)]:
 		sprite(PROPS,PEBBLES,at,1)
+
+# ── Emendas do chão ────────────────────────────────────────────────────────────────────────
+# O chão da vila (1200x900) e o da expansão são imagens separadas: em x=1200 e y=900 manchas e
+# trilhas eram cortadas em linha reta. Uma faixa de grama com bordas suaves esconde o corte e a
+# trilha é refeita ligando as duas pontas (lidas dos próprios pixels), na mesma cor e sem contorno.
+const SEAM_HOLD := 12
+const SEAM_FADE := 14
+const SEAM_ROAD := Color("#f4ce7e")
+const SEAM_GRASS := Color("#b5c953")
+
+func _heal_ground_seams() -> void:
+	if not layout.expanded_world: return
+	var village := GROUND.get_image()
+	var expansion := EXPANSION_GROUND.get_image()
+	if village == null or expansion == null: return
+	# Emenda vertical (x = 1200): linhas 0..449 das duas imagens.
+	_seam_cover(true,Rect2(0,0,0,900))
+	for pair: Array in _road_pairs(village,expansion,true):
+		_seam_bridge(true,pair)
+	# Emenda horizontal (y = 900): colunas 0..599 da vila contra 0..599 da expansão.
+	_seam_cover(false,Rect2(0,0,1250,0))
+	for pair: Array in _road_pairs(village,expansion,false):
+		_seam_bridge(false,pair)
+
+func _seam_cover(vertical: bool, span: Rect2) -> void:
+	var seam := 1200.0 if vertical else 900.0
+	var offsets := [-float(SEAM_HOLD + SEAM_FADE),-float(SEAM_HOLD),float(SEAM_HOLD),float(SEAM_HOLD + SEAM_FADE)]
+	var alphas := [0.0,1.0,1.0,0.0]
+	for i in range(3):
+		var a: float = seam + offsets[i] * 2.0
+		var b: float = seam + offsets[i + 1] * 2.0
+		var from_alpha: float = alphas[i]
+		var to_alpha: float = alphas[i + 1]
+		var colors := PackedColorArray([Color(SEAM_GRASS,from_alpha),Color(SEAM_GRASS,to_alpha),Color(SEAM_GRASS,to_alpha),Color(SEAM_GRASS,from_alpha)])
+		var points: PackedVector2Array
+		if vertical:
+			points = PackedVector2Array([Vector2(a,0),Vector2(b,0),Vector2(b,900),Vector2(a,900)])
+		else:
+			points = PackedVector2Array([Vector2(0,a),Vector2(0,b),Vector2(1250,b),Vector2(1250,a)])
+		layout.draw_polygon(points,colors)
+
+func _is_road_pixel(color: Color) -> bool:
+	return color.a > 0.5 and color.r > 0.85 and color.g > 0.7 and color.b < 0.6
+
+# Trechos de trilha (início, fim em pixels da imagem) numa coluna ou linha, nas duas imagens.
+func _road_runs(image: Image, line: int, vertical: bool, length: int) -> Array:
+	var runs := []
+	var start := -1
+	for i in range(length):
+		var color := image.get_pixel(line,i) if vertical else image.get_pixel(i,line)
+		var road := _is_road_pixel(color)
+		if road and start < 0: start = i
+		if not road and start >= 0:
+			runs.append([start,i - 1])
+			start = -1
+	if start >= 0: runs.append([start,length - 1])
+	return runs
+
+func _road_pairs(village: Image, expansion: Image, vertical: bool) -> Array:
+	var reach := SEAM_HOLD + SEAM_FADE
+	var length := 450 if vertical else 600
+	var left := _road_runs(village,600 - reach if vertical else 450 - reach,vertical,length)
+	var right := _road_runs(expansion,600 + reach if vertical else 450 + reach,vertical,length)
+	var pairs := []
+	for a: Array in left:
+		var best: Array = []
+		var best_gap := 9999.0
+		for b: Array in right:
+			var gap := absf(float(a[0] + a[1]) * 0.5 - float(b[0] + b[1]) * 0.5)
+			if gap < best_gap: best_gap = gap; best = b
+		if not best.is_empty() and best_gap <= 60.0 and a[1] - a[0] >= 6 and best[1] - best[0] >= 6: pairs.append([a,best])
+	return pairs
+
+func _seam_bridge(vertical: bool, pair: Array) -> void:
+	var reach := float(SEAM_HOLD + SEAM_FADE) * 2.0
+	var seam := 1200.0 if vertical else 900.0
+	var a: Array = pair[0]
+	var b: Array = pair[1]
+	var top := PackedVector2Array()
+	var bottom := PackedVector2Array()
+	for step in range(13):
+		var t := float(step) / 12.0
+		var eased := smoothstep(0.0,1.0,t)
+		var along := seam - reach + t * reach * 2.0
+		var first := lerpf(float(a[0]) * 2.0,float(b[0]) * 2.0,eased)
+		var last := lerpf(float(a[1] + 1) * 2.0,float(b[1] + 1) * 2.0,eased)
+		if vertical:
+			top.append(Vector2(along,first).snapped(Vector2(2,2)))
+			bottom.append(Vector2(along,last).snapped(Vector2(2,2)))
+		else:
+			top.append(Vector2(first,along).snapped(Vector2(2,2)))
+			bottom.append(Vector2(last,along).snapped(Vector2(2,2)))
+	bottom.reverse()
+	top.append_array(bottom)
+	layout.draw_colored_polygon(top,SEAM_ROAD)
