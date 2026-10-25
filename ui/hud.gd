@@ -1526,6 +1526,7 @@ func show_character(progress: GameProgress) -> void:
 	if inventory_open or station_panel.visible or restart.visible or map_panel.visible:
 		return
 	rpg_panel.tab = 3
+	rpg_panel.reset_view_memory()
 	rpg_panel.show()
 	rpg_panel.refresh(progress)
 	rpg_panel.scroll.scroll_vertical = 0

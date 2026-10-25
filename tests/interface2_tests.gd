@@ -82,7 +82,19 @@ func _run() -> void:
 	evolution.refresh(main.progress)
 	await frames()
 	check(evolution.visible and evolution.page_title.text == "Evolução" and evolution.tabs.get_child_count() == 1,"one Evolution page replaces separate character/proficiency/skill navigation")
-	check(evolution.attribute_buttons.size() == 6 and evolution.category_buttons.size() == 5 and evolution.skill_slots.size() == 4 and evolution.sword_tree != null,"existing six attributes, five weapon proficiencies, four equipped skills and weapon tree are present")
+	var six_attributes: int = evolution.attribute_buttons.size()
+	evolution.evolution_tab = 1
+	evolution.refresh(main.progress)
+	var five_weapons: int = evolution.category_buttons.size()
+	evolution.evolution_tab = 2
+	evolution.refresh(main.progress)
+	var has_tree: bool = evolution.sword_tree != null
+	evolution.evolution_tab = 3
+	evolution.refresh(main.progress)
+	var four_slots: int = evolution.skill_slots.size()
+	evolution.evolution_tab = 0
+	evolution.refresh(main.progress)
+	check(six_attributes == 6 and five_weapons == 5 and four_slots == 4 and has_tree,"existing six attributes, five weapon proficiencies, four equipped skills and weapon tree are present")
 	check(evolution.get_global_rect().position.x >= 0 and evolution.get_global_rect().end.x <= 360 and evolution.close_button.size.y >= 44,"Evolution fits 360x800 with a touch-sized close action")
 	await capture("evolution-360x800")
 	var available: int = main.progress.attribute_points()

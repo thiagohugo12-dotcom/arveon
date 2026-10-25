@@ -4,7 +4,6 @@ extends RefCounted
 # Presentation-only components for the unified Evolution screen. Every value
 # is read from GameProgress, RPGRules, TalentRules and AbilityRules by the caller.
 const ATTRIBUTE_ICONS := {"Força":"swords","Vitalidade":"heart","Resistência":"shield","Mobilidade":"boot","Destreza":"target","Espírito":"flame"}
-const EXPLORER := preload("res://assets/art/explorer_atlas.png")
 const SECTION_ICONS := {"PERSONAGEM":"person","ATRIBUTOS":"chart","HABILIDADES":"swords","TALENTOS":"star","ÁRVORE":"tree","EQUIPAMENTO":"shield","MODO":"scroll","CATÁLOGO":"scroll"}
 
 static func section_icon(caption: String) -> String:
@@ -34,13 +33,13 @@ static func bar(value: float, max_value: float, height: int = 12, color: Color =
 
 static func portrait() -> Control:
 	var atlas := AtlasTexture.new()
-	atlas.atlas = EXPLORER
-	atlas.region = Rect2(8,2,32,44)
+	atlas.atlas = VillageActorArt.PEOPLE
+	atlas.region = Rect2(0,0,32,40)
 	var rect := TextureRect.new()
 	rect.texture = atlas
 	rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	rect.stretch_mode = TextureRect.STRETCH_SCALE
-	rect.custom_minimum_size = Vector2(UiScale.px(80),UiScale.px(110))
+	rect.custom_minimum_size = Vector2(UiScale.px(88),UiScale.px(110))
 	rect.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect

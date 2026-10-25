@@ -45,6 +45,12 @@ var specialization_buttons: Dictionary = {}
 var evolution_tree_expanded := false
 var open_sections := {"PERSONAGEM": true, "ATRIBUTOS": true}
 var _page_content: VBoxContainer
+var evolution_tab := 0 # 0 Atributos · 1 Arma · 2 Talentos · 3 Skills
+var evo_tabs: HBoxContainer
+var _last_view_key := ""
+var detail_card: Control
+var header_row: HBoxContainer
+var column_box: VBoxContainer
 
 func _ready() -> void:
 	resized.connect(_reflow_stats)
@@ -53,6 +59,8 @@ func _ready() -> void:
 	var column := VBoxContainer.new()
 	add_child(column)
 	var header := HBoxContainer.new()
+	header_row = header
+	column_box = column
 	column.add_child(header)
 	page_title = DiaryTheme.label("Diário do Explorador",26)
 	page_title.add_theme_font_override("font",DiaryTheme.heading_font())
@@ -87,6 +95,9 @@ func _ready() -> void:
 	link.pressed.connect(func(): tab = 3; refresh(progress); scroll.scroll_vertical = 0)
 	navigation.add_child(link)
 	tabs = navigation
+	evo_tabs = HBoxContainer.new()
+	evo_tabs.add_theme_constant_override("separation",4)
+	column.add_child(evo_tabs)
 	scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -118,11 +129,18 @@ func _ready() -> void:
 
 func refresh(value: GameProgress) -> void:
 	progress = value
+	var keep_scroll := scroll.scroll_vertical if scroll != null else 0
+	var view_key := _view_key()
+	var same_view := view_key == _last_view_key
+	_last_view_key = view_key
 	var focused_page := false
 	page_title.text = "Evolução"
 	UiScale.update(get_parent().size if get_parent() is Control else size)
 	_apply_look()
 	tabs.visible = false
+	evo_tabs.visible = tab == 3
+	_place_evo_tabs()
+	detail_card = null
 	diary_return.visible = false
 	footer_close.visible = false
 	header_close.visible = true
@@ -201,6 +219,8 @@ func refresh(value: GameProgress) -> void:
 		_talent_page()
 	EvolutionView.reskin(content)
 	for i in range(tabs.get_child_count()): DiaryTheme.select(tabs.get_child(i),true)
+	# Clicar em algo que só recria a tela não pode jogar o jogador de volta ao topo.
+	if same_view and keep_scroll > 0: _restore_scroll.call_deferred(keep_scroll)
 
 func _apply_look() -> void:
 	set_meta("custom_frame",true)
@@ -217,12 +237,67 @@ func _apply_look() -> void:
 	page_title.autowrap_mode = TextServer.AUTOWRAP_OFF
 	ForgeView.style_close(header_close,true)
 
+# Horizontal: as abas sobem para a linha do título e a página ganha altura.
+func _place_evo_tabs() -> void:
+	var target: Container = header_row if UiScale.compact else column_box
+	if evo_tabs.get_parent() != target:
+		evo_tabs.get_parent().remove_child(evo_tabs)
+		target.add_child(evo_tabs)
+	target.move_child(evo_tabs,1 if UiScale.compact else 2)
+	evo_tabs.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	page_title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER if UiScale.compact else Control.SIZE_EXPAND_FILL
+
+func _view_key() -> String:
+	return "%d|%d|%s|%d|%d" % [tab,evolution_tab,talent_weapon,prof_section,skill_section]
+
+func _restore_scroll(keep: int) -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if is_instance_valid(scroll): scroll.scroll_vertical = keep
+
+# Ao abrir o painel, a próxima atualização começa do topo.
+func reset_view_memory() -> void:
+	_last_view_key = ""
+
+# Mostra o cartão de detalhe só se ele estiver fora da tela, sem levar a tela ao topo.
+func _reveal_detail() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if is_instance_valid(detail_card) and is_instance_valid(scroll): scroll.ensure_control_visible(detail_card)
+
 func _evolution_page() -> void:
-	_begin_section("person","PERSONAGEM","PERSONAGEM")
+	_evolution_tab_bar()
+	match evolution_tab:
+		0: _page_attributes()
+		1: _page_weapon()
+		2: _page_talents()
+		_: _skills_page()
+
+func _evolution_tab_bar() -> void:
+	for child in evo_tabs.get_children():
+		evo_tabs.remove_child(child)
+		child.queue_free()
+	var names := ["Atributos","Arma","Talentos","Skills"]
+	var icons := ["chart","swords","tree","star"]
+	for index in range(4):
+		var button := Button.new()
+		button.name = "EvolutionTab%d" % index
+		button.text = names[index]
+		button.custom_minimum_size = Vector2(0,maxi(40,UiScale.px(46)))
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		DefeatView.style_button(button,"tab_on" if index == evolution_tab else "tab",icons[index],15,1,"tab_on")
+		button.add_theme_constant_override("h_separation",4)
+		button.pressed.connect(func():
+			if evolution_tab == index: return
+			evolution_tab = index
+			refresh(progress))
+		evo_tabs.add_child(button)
+
+# Aba 1 · Atributos do personagem: ficha, equipamento e pontos de atributo.
+func _page_attributes() -> void:
 	content.add_child(EvolutionView.character(progress,func(): bag_requested.emit()))
 	_equipment_strip()
-	_end_section()
-	_begin_section("chart","ATRIBUTOS","ATRIBUTOS","Pontos disponíveis: %d" % progress.attribute_points())
+	_heading("ATRIBUTOS","Pontos disponíveis: %d" % progress.attribute_points())
 	var attribute_parent: Container = _two_columns()
 	for name: String in RPGRules.ATTRIBUTES:
 		var enabled := allow_respec and progress.attribute_points() >= 1 and int(progress.attributes[name]) < 198
@@ -231,17 +306,7 @@ func _evolution_page() -> void:
 		attribute_parent.add_child(parts[0])
 		attribute_buttons[name] = parts[1]
 	if not allow_respec: _label("Somente consulta · distribua os pontos no acampamento.")
-	_end_section()
-	_begin_section("swords","HABILIDADES","HABILIDADES EQUIPADAS")
-	_skills_page()
-	_end_section()
-	_begin_section("star","TALENTOS","TALENTOS E PASSIVAS")
-	_passive_cards()
-	_end_section()
-	_begin_section("tree","ARVORE","ÁRVORE DA ARMA")
-	_talent_page(true)
-	_end_section()
-	_begin_section("scroll","TREINO","MODO TREINO")
+	_heading("MODO TREINO")
 	if progress.training_mode:
 		_label("Sessão temporária · alterações não entram no save normal.")
 		if progress.ascension.current_floor == 2:
@@ -254,7 +319,86 @@ func _evolution_page() -> void:
 	else:
 		_label("Experimente as armas, habilidades e talentos sem alterar seu save.")
 		_training_button("Entrar no modo treino","training_start")
-	_end_section()
+
+# Aba 2 · Atributos da arma: proficiência e os quatro pontos de maestria.
+func _page_weapon() -> void:
+	_category_selector()
+	_proficiency_header(false)
+	_mastery_page(true)
+
+# Aba 3 · Árvore de talentos e passivas, no mesmo lugar.
+func _page_talents() -> void:
+	_category_selector()
+	_proficiency_header(true)
+	if talent_weapon == "espada":
+		_sword_evolution_page()
+	else:
+		_generic_tree_page()
+
+func _proficiency_header(brief: bool) -> void:
+	var level := progress.talents.level(talent_weapon)
+	_heading("%s · PROFICIÊNCIA %d / %d" % [ArsenalRules.category_name(talent_weapon).to_upper(),level,TalentRules.MAX_PROFICIENCY])
+	if not brief:
+		_label("%s%s" % [TalentRules.CLASSES[talent_weapon]," · classe ativa" if progress.active_category() == talent_weapon else " · bônus guardados até equipar"])
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size.y = 8
+	bar.show_percentage = false
+	bar.max_value = TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level) if level < TalentRules.MAX_PROFICIENCY else 1
+	bar.value = int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level) if level < TalentRules.MAX_PROFICIENCY else 1
+	var xp_text := "XP %d / %d · +%.1f%% dano da categoria" % [int(progress.talents.xp[talent_weapon])-TalentRules.xp_floor(level),TalentRules.xp_floor(level+1)-TalentRules.xp_floor(level),(level-1)*0.5] if level < TalentRules.MAX_PROFICIENCY else "Proficiência máxima · +29,5% dano da categoria"
+	bar.tooltip_text = xp_text
+	content.add_child(bar)
+	if not brief: _label(xp_text)
+
+# Armas que não são a Espada: os talentos e as passivas aparecem juntos na mesma árvore.
+func _generic_tree_page() -> void:
+	var valid: Array = AbilityRules.talent_tree(talent_weapon).keys()
+	for item: Dictionary in AbilityRules.CATEGORIES[talent_weapon].passives: valid.append(item.id)
+	if not valid.has(talent_selection): talent_selection = valid[0]
+	_heading("ÁRVORE · %d PONTOS DE TALENTO" % progress.skill_points())
+	_label("Talentos e passivas na mesma árvore. A proficiência abre os caminhos.")
+	var tree := TalentTree.new(progress,talent_weapon,talent_selection,true)
+	tree.selected.connect(func(id: String):
+		talent_selection = id
+		refresh(progress)
+		_reveal_detail.call_deferred())
+	content.add_child(tree)
+	talent_tree = tree
+	var rule: Dictionary = tree.rules[talent_selection]
+	var card := _card()
+	detail_card = card.get_parent()
+	if rule.kind == "Passiva":
+		var level := progress.talents.level(talent_weapon)
+		var build: Dictionary = progress.abilities.loadouts[talent_weapon]
+		_label("%s · PASSIVA EQUIPÁVEL" % rule.name,card,true)
+		_label(str(rule.description),card)
+		if level < int(rule.prof): _label("Bloqueada · alcance proficiência %d." % int(rule.prof),card)
+		for slot in range(2):
+			var button := Button.new()
+			button.text = ("Equipada na " if build.passives[slot] == talent_selection else "Equipar na ")+"Passiva %d" % (slot+1)
+			button.custom_minimum_size.y = 44
+			button.disabled = not allow_respec or level < int(rule.prof) or build.passives[slot] == talent_selection
+			button.pressed.connect(func(): action_requested.emit("equip_passive",talent_weapon+":"+talent_selection,slot))
+			card.add_child(button)
+			passive_buttons[talent_selection+":"+str(slot)] = button
+		_label("Equipadas: %s / %s" % [_passive_name(talent_weapon,build.passives[0]),_passive_name(talent_weapon,build.passives[1])],card)
+	else:
+		talent_detail = DiaryTheme.label("",12)
+		card.add_child(talent_detail)
+		talent_buy = Button.new()
+		talent_buy.custom_minimum_size.y = 44
+		talent_buy.pressed.connect(func(): action_requested.emit("talent",talent_weapon+":"+talent_selection,0))
+		card.add_child(talent_buy)
+		_talent_description()
+	var reset := Button.new()
+	reset.name = "ResetTree"
+	reset.text = "Redistribuir talentos e graus\nGrátis na área segura"
+	reset.custom_minimum_size.y = 52
+	reset.disabled = not allow_respec or progress.abilities.talents[talent_weapon].is_empty() and progress.abilities.grades[talent_weapon].is_empty()
+	reset.pressed.connect(func(): action_requested.emit("reset_tree",talent_weapon,0))
+	content.add_child(reset)
+	_label("Verde: aprendido ou equipada · claro: disponível · apagado: bloqueado.\nTalentos custam pontos de talento. Passivas, especialização e Maestria são gratuitas.")
+
 
 # Seções que abrem e fecham: o conteúdo continua montado, só fica oculto quando fechado.
 func _begin_section(icon: String, key: String, caption: String, trailing: String = "") -> void:
@@ -430,14 +574,15 @@ func _sword_evolution_page() -> void:
 	tree.node_selected.connect(func(kind: String, id: String):
 		sword_selection = kind+":"+id
 		refresh(progress)
-		if sword_detail != null:
-			_show_sword_detail.call_deferred()
+		if tab == 3: _reveal_detail.call_deferred()
+		elif sword_detail != null: _show_sword_detail.call_deferred()
 	)
 	content.add_child(tree)
 	sword_tree = tree
-	if size.x > size.y:
+	if size.x > size.y and tab != 3:
 		_show_sword_node.call_deferred()
 	sword_detail = _card()
+	detail_card = sword_detail.get_parent()
 	var pair := sword_selection.split(":")
 	var kind := pair[0] if pair.size() == 2 else "skill1"
 	var id := pair[1] if pair.size() == 2 else "talho_agil"
@@ -574,7 +719,7 @@ func _show_sword_node() -> void:
 	if is_instance_valid(sword_tree) and sword_tree.buttons.has(sword_selection):
 		scroll.ensure_control_visible(sword_tree.buttons[sword_selection])
 
-func _mastery_page() -> void:
+func _mastery_page(embedded: bool = false) -> void:
 	var points := _card()
 	points.get_parent().add_theme_stylebox_override("panel",DiaryTheme.box(Color("#d9e4bb"),DiaryTheme.GREEN,8,1))
 	_label("%d pontos desta arma disponíveis" % progress.talents.mastery_points(talent_weapon),points,true)
@@ -623,7 +768,14 @@ func _mastery_page() -> void:
 	var tree := Button.new()
 	tree.text = "Árvore de talentos"
 	tree.custom_minimum_size.y = 44
-	tree.pressed.connect(func(): prof_section = 1; refresh(progress); scroll.scroll_vertical = 0)
+	tree.pressed.connect(func():
+		if embedded:
+			evolution_tab = 2
+			refresh(progress)
+		else:
+			prof_section = 1
+			refresh(progress)
+			scroll.scroll_vertical = 0)
 	content.add_child(tree)
 
 func _focus_training() -> void:
@@ -941,7 +1093,8 @@ func _focus_skill_detail() -> void:
 	await get_tree().process_frame
 	if is_instance_valid(skill_detail):
 		var card: Control = skill_detail.get_parent()
-		scroll.scroll_vertical = roundi(card.position.y)
+		if tab == 3: scroll.ensure_control_visible(card)
+		else: scroll.scroll_vertical = roundi(card.position.y)
 
 func _skill_details(category: String, rule: Dictionary, prof: int, build: Dictionary) -> void:
 	skill_detail = _card()
