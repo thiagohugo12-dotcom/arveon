@@ -42,6 +42,8 @@ const ANDAR1_ENEMY_POSITIONS: Array = FloorCatalog.FLOORS[1]["enemy_spawn_groups
 
 var spawn_remaining: float = SPAWN_INTERVAL
 var spawn_count: int = 0
+var encounter_camps := EncounterCamps.new()
+var camps_mode := false
 var defeated_count: int = 0
 var earned_xp: int = 0
 var earned_gold: int = 0
@@ -150,6 +152,7 @@ func _ready() -> void:
 	_adapt_orientation()
 	tower_view.set_state(progress.ascension.entrance_unlocked(), TowerEntrance.is_near(player.global_position,progress.ascension.current_floor))
 	_update_floor_identity()
+	_setup_encounters()
 	_save_progress()
 	if OS.has_feature("web"):
 		progress.browser.watch_hidden(_save_progress)
@@ -217,6 +220,9 @@ func _process(delta: float) -> void:
 	if near != station_nearby and not hud.station_panel.visible:
 		station_nearby = near
 		hud.set_nearby_station(near)
+	if camps_mode:
+		encounter_camps.update(delta, player.global_position)
+		return
 	spawn_remaining -= delta
 	if spawn_remaining <= 0.0:
 		spawn_remaining = SPAWN_INTERVAL
@@ -251,6 +257,26 @@ func _apply_floor_stats(actor: EnemyActor) -> void:
 	actor.set_meta("scaled_floor", progress.ascension.current_floor)
 	if actor.is_node_ready():
 		actor.health.initialize(actor.stats.max_hp)
+
+# Modo "acampamentos" (opt-in): ver EncounterCamps. O padrão continua o spawn contínuo.
+func _setup_encounters() -> void:
+	var floor_id := progress.ascension.current_floor
+	camps_mode = GameOptions.encounter_mode() == GameOptions.MODE_CAMPS and not FloorCatalog.camps(floor_id).is_empty()
+	if camps_mode:
+		encounter_camps.setup(self, floor_id)
+	else:
+		encounter_camps.camps.clear()
+
+func _spawn_camp_member(kind: int, at: Vector2, camp_id: String) -> EnemyActor:
+	var actor := _make_enemy(kind)
+	actor.position = at
+	actor.target = player
+	actor.set_meta("camp_id", camp_id)
+	_register_enemy_defeat(actor)
+	actor.projectile_requested.connect(_on_enemy_projectile)
+	add_child(actor)
+	actor.view.damage_occluders = hud.damage_occluders
+	return actor
 
 func _spawn_enemy() -> void:
 	if trial.active() or transitioning:
@@ -1066,6 +1092,7 @@ func _return_from_trial(died: bool = false) -> void:
 	hud.minimap.update_player(player.global_position)
 	_camera_bounds(Rect2(Vector2.ZERO, FloorConfig.world_size(progress.ascension.current_floor)))
 	spawn_remaining = SPAWN_INTERVAL
+	if camps_mode: encounter_camps.reset()
 	station_nearby = ""
 	hud.set_nearby_station("")
 	_refresh_mission()
@@ -1290,6 +1317,7 @@ func _travel_floor(destination: int) -> void:
 	hud.minimap.update_player(player.position)
 	_camera_bounds(Rect2(Vector2.ZERO, MiniMap.WORLD_SIZE))
 	spawn_remaining = SPAWN_INTERVAL
+	_setup_encounters()
 	station_nearby = ""
 	hud.set_nearby_station("")
 	_update_floor_identity()

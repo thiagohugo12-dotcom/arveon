@@ -46,6 +46,17 @@ const FLOORS := {
 			Vector2(1090,1190),Vector2(660,1250),Vector2(1000,1260),Vector2(1640,1310)]],
 		"enemy_spawn_kinds": [],
 		"guardian_altar": Vector2(1060, 155),
+		# Acampamentos (modo opt-in "acampamentos"). Todos os pontos vêm dos spawns acima.
+		"camps": [
+			{"id": "clareira_leste", "name": "Clareira Leste", "ring": "A", "respawn": 60.0, "members": [{"kind": 0, "position": Vector2(850, 400)}, {"kind": 0, "position": Vector2(930, 440)}, {"kind": 1, "position": Vector2(955, 665)}]},
+			{"id": "sentinela_oeste", "name": "Sentinela Oeste", "ring": "A", "respawn": 60.0, "members": [{"kind": 2, "position": Vector2(180, 460)}]},
+			{"id": "sentinela_norte", "name": "Sentinela Norte", "ring": "A", "respawn": 60.0, "members": [{"kind": 2, "position": Vector2(630, 135)}]},
+			{"id": "vila_sul", "name": "Sul da Vila", "ring": "A", "respawn": 60.0, "members": [{"kind": 0, "position": Vector2(610, 750)}]},
+			{"id": "nordeste", "name": "Nordeste", "ring": "B", "respawn": 75.0, "members": [{"kind": 1, "position": Vector2(1350, 250)}, {"kind": 1, "position": Vector2(1335, 400)}, {"kind": 0, "position": Vector2(1510, 260)}, {"kind": 2, "position": Vector2(1600, 365)}]},
+			{"id": "leste", "name": "Leste", "ring": "B", "respawn": 75.0, "members": [{"kind": 0, "position": Vector2(1360, 560)}, {"kind": 0, "position": Vector2(1510, 590)}, {"kind": 1, "position": Vector2(1530, 770)}, {"kind": 2, "position": Vector2(1370, 760)}]},
+			{"id": "sul_oeste", "name": "Sul-oeste", "ring": "B", "respawn": 75.0, "members": [{"kind": 1, "position": Vector2(630, 1015)}, {"kind": 0, "position": Vector2(800, 1110)}, {"kind": 1, "position": Vector2(660, 1250)}]},
+			{"id": "sul_leste", "name": "Sul-leste", "ring": "C", "respawn": 90.0, "members": [{"kind": 1, "position": Vector2(1090, 1190)}, {"kind": 3, "position": Vector2(1000, 1260)}]},
+			{"id": "toca", "name": "Toca do Elite", "ring": "C", "respawn": 90.0, "members": [{"kind": 3, "position": Vector2(1640, 1310)}]}],
 		"field_guardian": {"variant": "root", "name": "Guardião da Mata", "hp": 320, "speed": 45.0, "radius": 0.0,
 			"challenge_label": "Desafiar Guardião (opcional)",
 			"notice": "Guardião: evite as áreas douradas. Desafio opcional!"},
@@ -67,6 +78,12 @@ const FLOORS := {
 		# Goblin na pedreira, tatus nos campos abertos, escorpiões perto das ruínas.
 		"enemy_spawn_kinds": [6, 6, 7, 7, 7, 5, 7, 6],
 		"guardian_altar": Vector2(1380, 1070),
+		"camps": [
+			{"id": "campos", "name": "Campos do Cerrado", "ring": "A", "respawn": 75.0, "members": [{"kind": 6, "position": Vector2(750, 700)}, {"kind": 7, "position": Vector2(1040, 690)}, {"kind": 6, "position": Vector2(945, 930)}]},
+			{"id": "cerrado_sul", "name": "Cerrado Sul", "ring": "B", "respawn": 75.0, "members": [{"kind": 6, "position": Vector2(900, 1120)}]},
+			{"id": "chapada_leste", "name": "Chapada Leste", "ring": "B", "respawn": 75.0, "members": [{"kind": 7, "position": Vector2(1260, 790)}, {"kind": 7, "position": Vector2(1390, 1080)}]},
+			{"id": "ruinas", "name": "Ruínas da Chapada", "ring": "C", "respawn": 90.0, "members": [{"kind": 7, "position": Vector2(1200, 410)}]},
+			{"id": "pedreira", "name": "Pedreira Dourada", "ring": "A", "respawn": 75.0, "members": [{"kind": 5, "position": Vector2(490, 350)}, {"kind": 5, "position": Vector2(430, 270)}, {"kind": 5, "position": Vector2(570, 370)}]}],
 		"field_guardian": {"variant": "colossus", "name": "Colosso de Arenito", "hp": 540, "speed": 38.0, "radius": 34.0,
 			"challenge_label": "Desafiar Colosso",
 			"notice": "Colosso de Arenito · evite as áreas avisadas!"},
@@ -128,6 +145,9 @@ static func camp_respawn(id: int, fallback: Vector2) -> Vector2:
 
 static func camp_stations(id: int) -> Dictionary:
 	return FLOORS[id].camp.stations if FLOORS.has(id) and FLOORS[id].has("camp") else {}
+
+static func camps(id: int) -> Array:
+	return FLOORS[id].camps if FLOORS.has(id) and FLOORS[id].has("camps") else []
 
 static func waves(id: int) -> Array:
 	return FLOORS[id].waves if FLOORS.has(id) else FLOORS[1].waves
