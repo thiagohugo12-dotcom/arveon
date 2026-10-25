@@ -78,6 +78,9 @@ func _run() -> void:
 	hud._layout()
 	main._toggle_character()
 	await frames()
+	evolution.evolution_tree_expanded = true
+	evolution.refresh(main.progress)
+	await frames()
 	check(evolution.visible and evolution.page_title.text == "Evolução" and evolution.tabs.get_child_count() == 1,"one Evolution page replaces separate character/proficiency/skill navigation")
 	check(evolution.attribute_buttons.size() == 6 and evolution.category_buttons.size() == 5 and evolution.skill_slots.size() == 4 and evolution.sword_tree != null,"existing six attributes, five weapon proficiencies, four equipped skills and weapon tree are present")
 	check(evolution.get_global_rect().position.x >= 0 and evolution.get_global_rect().end.x <= 360 and evolution.close_button.size.y >= 44,"Evolution fits 360x800 with a touch-sized close action")

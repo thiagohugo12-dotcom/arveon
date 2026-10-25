@@ -10,7 +10,8 @@ const COLORS := {
 	"r": Color("#b3392a"), "R": Color("#7a1f18"), "n": Color("#8a5a30"), "N": Color("#5a3820"),
 	"e": Color("#6fd36a"), "E": Color("#2f7a3e"), "D": Color("#1f4a37"),
 	"s": Color("#d3dbe4"), "S": Color("#8d98a8"), "o": Color("#f08a2a"), "y": Color("#ffd84a"),
-	"p": Color("#9a9a94"), "P": Color("#62625e"), "c": Color("#f1e2bd")
+	"p": Color("#9a9a94"), "P": Color("#62625e"), "c": Color("#f1e2bd"),
+	"u": Color("#5b84e8"), "U": Color("#2c4aa8")
 }
 
 const MAPS := {
@@ -44,6 +45,14 @@ const MAPS := {
 	"clover": [".ee..ee.", "eeeeeeee", "eeEeeEee", ".eeEEee.", ".eeEEee.", "eeEeeEee", "eeeeeeee", ".ee..ee."],
 	"up": ["....cc....", "...cccc...", "..cccccc..", ".cccccccc.", "cccccccccc", "...cccc...", "...cccc...", "...cccc...", "...cccc...", ".........."],
 	"star": ["....cc....", "....cc....", "...cccc...", "cccccccccc", ".cccccccc.", "..cccccc..", "..cccccc..", ".cccccccc.", ".ccc..ccc.", ".cc....cc."],
+	"person": ["..cccc..", ".cccccc.", ".cccccc.", "..cccc..", ".cccccc.", "cccccccc", "cccccccc", "cccccccc"],
+	"chart": ["......cc", "......cc", "...cc.cc", "...cc.cc", "cc.cc.cc", "cc.cc.cc", "cc.cc.cc", "cccccccc"],
+	"tree": [".cc..cc.", ".cc..cc.", "..c..c..", "..cccc..", "...cc...", "...cc...", ".cccccc.", "........"],
+	"lock": ["..SSSS..", ".S....S.", ".S....S.", "SSSSSSSS", "SSSppSSS", "SSSppSSS", "SSSSSSSS", "........"],
+	"flame": ["...uu...", "..uuu...", "..uuuu..", ".uuUuuu.", ".uuUUuu.", ".uuUUuu.", "..uuuu..", "...uu..."],
+	"target": ["..rrrr..", ".rrwwrr.", "rrwrrwrr", "rwrwwrwr", "rwrwwrwr", "rrwrrwrr", ".rrwwrr.", "..rrrr.."],
+	"boot": ["..gg....", "..gg....", "..gg....", "..ggg...", "..gggg..", ".ggggggg", ".gGGGGGG", "........"],
+	"plus": ["....ww....", "....ww....", "....ww....", "....ww....", "wwwwwwwwww", "wwwwwwwwww", "....ww....", "....ww....", "....ww....", "....ww...."],
 	"diamond": [
 		"...k...", "..kgk..", ".kghgk.", "kghhhgk", ".kgggk.", "..kgk..", "...k..."],
 	"leaf": [
@@ -83,7 +92,9 @@ const PLATES := {
 	"paper_bg": {"layers": [["#8a5a30", 1], ["#c9a24a", 1]], "fill": "#efdcab"},
 	"chip": {"layers": [["#8a5a30", 1]], "fill": "#e9d6a0"},
 	"chip_on": {"layers": [["#1b0f08", 1], ["#f0c850", 1]], "fill": "#1f5a3c"},
-	"dim": {"layers": [["#1b1b18", 1], ["#6a6a5e", 1], ["#2a2a26", 1]], "fill": "#4a4a40"}
+	"dim": {"layers": [["#1b1b18", 1], ["#6a6a5e", 1], ["#2a2a26", 1]], "fill": "#4a4a40"},
+	"skill_on": {"layers": [["#f0c850", 2], ["#1b0f08", 1]], "fill": "#4a2d18"},
+	"skill_off": {"layers": [["#1b0f08", 1], ["#4a4a40", 1]], "fill": "#2a2a26"}
 }
 
 static func texture(id: String, scale: int = 2) -> ImageTexture:

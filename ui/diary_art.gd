@@ -30,4 +30,5 @@ static func skin(panel: PanelContainer) -> void:
 	panel.set_meta("diary_single",single)
 	panel.set_meta("diary_spread",false)
 	panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if panel.has_meta("custom_frame"): return
 	panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",22))
