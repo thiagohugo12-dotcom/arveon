@@ -139,13 +139,13 @@ static func enemy_card(enemy: String) -> Control:
 	row.add_child(column)
 	return plate
 
-static func section(icon: String, caption: String) -> Control:
+static func section(icon: String, caption: String, scale: int = 1) -> Control:
 	var plate := card("section",4)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.add_child(row)
-	row.add_child(picture(icon,1))
+	row.add_child(picture(icon,scale))
 	var label := text(caption,16,CREAM)
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(label)
@@ -155,6 +155,7 @@ static func section(icon: String, caption: String) -> Control:
 static func slot(icon: Control) -> Control:
 	var plate := card("slot",3)
 	plate.custom_minimum_size = Vector2(40,40)
+	plate.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	plate.add_child(icon)
@@ -240,14 +241,14 @@ static func return_card(floor_number: int) -> Control:
 	row.add_child(column)
 	return plate
 
-static func style_button(button: Button, kind: String, icon: String, size: int) -> void:
+static func style_button(button: Button, kind: String, icon: String, size: int, icon_scale: int = 2, pressed_kind: String = "") -> void:
 	button.add_theme_stylebox_override("normal",DefeatArt.plate(kind,8))
 	button.add_theme_stylebox_override("hover",DefeatArt.plate(kind,8))
-	button.add_theme_stylebox_override("pressed",DefeatArt.plate(kind+"_down",8))
+	button.add_theme_stylebox_override("pressed",DefeatArt.plate(pressed_kind if not pressed_kind.is_empty() else kind+"_down",8))
 	button.add_theme_stylebox_override("focus",DefeatArt.plate(kind,8))
 	button.add_theme_font_override("font",font())
 	button.add_theme_font_size_override("font_size",size)
 	for state in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
 		button.add_theme_color_override(state,CREAM)
 	button.add_theme_constant_override("h_separation",10)
-	button.icon = DefeatArt.texture(icon,2)
+	button.icon = DefeatArt.texture(icon,icon_scale)

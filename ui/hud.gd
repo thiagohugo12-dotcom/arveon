@@ -113,6 +113,10 @@ var smith_craft_rarity := "comum"
 var smith_use_seal := false
 var smith_shop_selected := ""
 var smith_shop_buttons: Dictionary = {}
+var smith_action_buttons: Dictionary = {}
+var smith_pick_buttons: Dictionary = {}
+var station_tab_host: HBoxContainer
+var station_intro := false
 var vendor_buttons: Dictionary = {}
 var vendor_tab := 0
 var vendor_tabs: Array[Button] = []
@@ -426,6 +430,10 @@ func _ready() -> void:
 	station_header_close.custom_minimum_size = Vector2(44,44)
 	station_header_close.pressed.connect(close_station)
 	header.add_child(station_header_close)
+	station_tab_host = HBoxContainer.new()
+	station_tab_host.add_theme_constant_override("separation",4)
+	station_tab_host.visible = false
+	column.add_child(station_tab_host)
 	station_scroll = ScrollContainer.new()
 	station_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	station_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -654,6 +662,7 @@ func _layout() -> void:
 	station_panel.size = Vector2(minf(720 if landscape and service else 560 if service else 460 if landscape else 340, size.x - margin.x - right_inset - 12), minf(780 if service else 320, size.y - margin.y - bottom_inset - 12))
 	station_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("frame",22) if service else _panel_style())
 	station_panel.position = (size - station_panel.size) * 0.5
+	_apply_station_look()
 	rpg_panel.size = Vector2(minf(820 if landscape else 640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(780, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
 	DiaryArt.skin(rpg_panel)
@@ -924,6 +933,10 @@ func refresh_station(progress: GameProgress) -> void:
 	station_header_close.visible = station_wallet.visible
 	smith_grid = null
 	vendor_tabs.clear()
+	smith_action_buttons.clear()
+	smith_pick_buttons.clear()
+	station_intro = station_name == "Ferreiro" and progress.introduction_active()
+	_apply_station_look()
 	first_weapon_buttons.clear()
 	station_content.add_theme_constant_override("separation",4 if station_name in ["Ferreiro","Vendedor"] else 8)
 	smith_shop_buttons.clear()
@@ -962,6 +975,7 @@ func refresh_station(progress: GameProgress) -> void:
 			travel_button.show()
 	elif station_name == "Ferreiro":
 		if progress.introduction_active():
+			station_tab_host.hide()
 			_first_weapon_interface(progress)
 			call_deferred("_qa_ui_state","blacksmith")
 			return
@@ -983,6 +997,36 @@ func refresh_station(progress: GameProgress) -> void:
 	elif station_name == "Vendedor":
 		_vendor_shop(progress)
 	if station_name == "Ferreiro": call_deferred("_qa_ui_state","blacksmith")
+
+func _apply_station_look() -> void:
+	var forge := station_name == "Ferreiro" and not station_intro
+	station_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if forge else CanvasItem.TEXTURE_FILTER_PARENT_NODE
+	station_tab_host.visible = forge
+	station_close_button.visible = not forge
+	ForgeView.style_close(station_header_close,forge)
+	if forge:
+		station_panel.add_theme_stylebox_override("panel",DefeatArt.plate("frame",12))
+		station_scroll.add_theme_stylebox_override("panel",DefeatArt.plate("paper_bg",6))
+		station_title.add_theme_stylebox_override("normal",DefeatArt.plate("title",6))
+		station_title.add_theme_font_override("font",DefeatView.font())
+		station_title.add_theme_font_size_override("font_size",32)
+		station_title.add_theme_color_override("font_color",DefeatView.CREAM)
+		station_title.add_theme_color_override("font_outline_color",Color("#10261b"))
+		station_title.add_theme_constant_override("outline_size",4)
+		station_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		station_wallet.add_theme_color_override("font_color",ForgeView.GOLD)
+		station_wallet.add_theme_font_override("font",DefeatView.font())
+		station_wallet.add_theme_font_size_override("font_size",16)
+	else:
+		station_scroll.remove_theme_stylebox_override("panel")
+		station_title.remove_theme_stylebox_override("normal")
+		station_title.remove_theme_color_override("font_color")
+		station_title.remove_theme_color_override("font_outline_color")
+		station_title.remove_theme_constant_override("outline_size")
+		station_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		station_wallet.remove_theme_color_override("font_color")
+		station_wallet.remove_theme_font_override("font")
+		station_wallet.add_theme_font_size_override("font_size",13)
 
 func _page_items(items: Array) -> Array:
 	var start := station_page * ITEMS_PER_PAGE
@@ -1138,6 +1182,8 @@ func _input(event: InputEvent) -> void:
 		return
 	if station_name in ["Ferreiro","Vendedor"]:
 		if _activate_touch_button(station_close_button,event) or _activate_touch_button(station_header_close,event): return
+		for tab: Node in station_tab_host.get_children():
+			if tab is Button and _activate_touch_button(tab,event): return
 		if _touch_contains(station_scroll,event):
 			_defer_menu_touch(station_content,station_scroll,event)
 		get_viewport().set_input_as_handled()
@@ -1444,57 +1490,62 @@ func _forge_requirement(name: String, available: int, required: int) -> PanelCon
 	return chip
 
 func _smith_tabs(progress: GameProgress) -> void:
-	var tabs := GridContainer.new()
-	tabs.columns = 3
-	station_content.add_child(tabs)
-	for index in range(3):
-		var tab := Button.new()
-		tab.text = ["Forjar","Aprimorar","Evoluir"][index]
-		tab.add_theme_font_size_override("font_size",13)
-		tab.custom_minimum_size.y = 44
-		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		DiaryTheme.select(tab,smith_tab == index)
-		tab.pressed.connect(func():
-			smith_tab = index
-			smith_shop_selected = ""
+	ForgeView.tab_bar(station_tab_host,smith_tab,func(index: int):
+		smith_tab = index
+		smith_shop_selected = ""
+		smith_confirm = false
+		station_scroll.scroll_vertical = 0
+		refresh_station(progress))
+
+func _smith_section(icon: String, caption: String, scale: int = 1) -> void:
+	station_content.add_child(DefeatView.section(icon,caption,scale))
+
+func _smith_requirements(recipe: Dictionary, progress: GameProgress) -> void:
+	var needs: Array = []
+	for material: String in recipe.materials:
+		var meta := EquipmentEconomy.split_key(material)
+		var caption: String = meta.item + (" " + ArsenalRules.RARITIES[meta.rarity].name if EquipmentEconomy.MATERIALS.has(meta.item) and meta.rarity != "comum" else "")
+		needs.append({"item":meta.item,"name":caption,"have":int(progress.bag.get(material,0)),"need":int(recipe.materials[material])})
+	station_content.add_child(ForgeView.materials(needs))
+	station_content.add_child(ForgeView.gold_row(progress.gold,int(recipe.gold)))
+
+func _smith_action(caption: String, icon: String, action: String, payload: String, enabled: bool, progress: GameProgress) -> Button:
+	var confirming := smith_confirm and smith_shop_selected == payload
+	var button := ForgeView.action_button(("Confirmar · " if confirming else "")+caption,icon,enabled)
+	button.pressed.connect(func():
+		if smith_confirm and smith_shop_selected == payload:
 			smith_confirm = false
-			station_scroll.scroll_vertical = 0
+			smith_shop_selected = ""
+			station_action.emit(action,payload)
+		else:
+			smith_confirm = true
+			smith_shop_selected = payload
 			refresh_station(progress))
-		tabs.add_child(tab)
+	station_content.add_child(button)
+	smith_action_buttons[payload] = button
+	return button
 
 func _smith_craft(progress: GameProgress) -> void:
-	_add_description("FABRICAR · Escolha uma arma e a raridade do material.")
-	var weapons := GridContainer.new()
-	weapons.columns = 3
-	station_content.add_child(weapons)
+	_smith_section("swords","ESCOLHA A ARMA")
+	var weapons: Array = []
 	for id: String in ArsenalRules.CATEGORIES:
-		var button := Button.new()
-		button.text = ArsenalRules.category_name(id)
-		button.custom_minimum_size.y = 44
-		DiaryTheme.select(button,smith_craft_category == id)
-		button.pressed.connect(func(): smith_craft_category = id; smith_confirm = false; refresh_station(progress))
-		weapons.add_child(button)
-	var rarities := GridContainer.new()
-	rarities.columns = 3
-	station_content.add_child(rarities)
+		weapons.append({"id":id,"title":ArsenalRules.category_name(id),"tag":progress.equipped.Arma == id})
+	station_content.add_child(ForgeView.picker(weapons,smith_craft_category,func(id: String): smith_craft_category = id; smith_confirm = false; refresh_station(progress),smith_pick_buttons))
+	_smith_section("star","RARIDADE")
+	var rarities: Array = []
 	for rarity: String in EquipmentEconomy.RARITY_ORDER:
-		var button := Button.new()
-		button.text = ArsenalRules.RARITIES[rarity].name
-		button.custom_minimum_size.y = 44
-		DiaryTheme.select(button,smith_craft_rarity == rarity)
-		button.pressed.connect(func(): smith_craft_rarity = rarity; smith_confirm = false; refresh_station(progress))
-		rarities.add_child(button)
-	var recipe := EquipmentEconomy.craft_recipe(smith_craft_category,smith_craft_rarity)
-	_smith_cost(recipe,progress)
+		rarities.append({"id":rarity,"title":ArsenalRules.RARITIES[rarity].name,"color":ForgeView.rarity_color(rarity)})
+	station_content.add_child(ForgeView.chips(rarities,smith_craft_rarity,func(id: String): smith_craft_rarity = id; smith_confirm = false; refresh_station(progress)))
+	_smith_section("bag","MATERIAIS NECESSÁRIOS")
+	_smith_requirements(EquipmentEconomy.craft_recipe(smith_craft_category,smith_craft_rarity),progress)
 	_add_description("Nova %s %s +0 · Cópias são independentes." % [ArsenalRules.category_name(smith_craft_category),ArsenalRules.RARITIES[smith_craft_rarity].name])
-	_smith_confirm_action("Fabricar esta arma", "craft_weapon",smith_craft_category+"|"+smith_craft_rarity,progress.can_craft_weapon(smith_craft_category,smith_craft_rarity),progress)
+	_smith_action("Forjar","hammer","craft_weapon",smith_craft_category+"|"+smith_craft_rarity,progress.can_craft_weapon(smith_craft_category,smith_craft_rarity),progress)
 	if progress.ascension.current_floor == 2:
-		_add_description("FERRO DO VALE · receita de teste")
+		_smith_section("bag","FERRO DO VALE · RECEITA DE TESTE")
 		for iron_rarity: String in ["comum", "raro"]:
-			var iron_recipe := EquipmentEconomy.vale_iron_recipe(iron_rarity)
-			_smith_cost(iron_recipe, progress)
-			_smith_confirm_action("Forjar espada de ferro · " + ArsenalRules.RARITIES[iron_rarity].name, "craft_vale_iron", iron_rarity, progress.can_craft_vale_iron(iron_rarity), progress)
-	_add_description("ARMADURAS E ACESSÓRIOS")
+			_smith_requirements(EquipmentEconomy.vale_iron_recipe(iron_rarity),progress)
+			_smith_action("Forjar espada de ferro · " + ArsenalRules.RARITIES[iron_rarity].name,"hammer","craft_vale_iron",iron_rarity,progress.can_craft_vale_iron(iron_rarity),progress)
+	_smith_section("shield","ARMADURAS E ACESSÓRIOS")
 	for id: String in RPGRules.EQUIPMENT:
 		if not ArsenalRules.CATEGORIES.has(id): _add_equipment(id,progress,station_content,false)
 	var shop_toggle := Button.new()
@@ -1507,59 +1558,76 @@ func _smith_craft(progress: GameProgress) -> void:
 		_smith_shop(progress)
 
 func _smith_instance_page(progress: GameProgress, page: String) -> void:
-	_add_description("Escolha uma arma da mochila. Cada cópia mantém sua própria evolução.")
-	var picker := GridContainer.new()
-	picker.columns = 1 if station_panel.size.x < 460 else 2
-	station_content.add_child(picker)
+	if not progress.weapon_instances.has(smith_instance_selected) and not progress.weapon_instances.is_empty():
+		smith_instance_selected = progress.equipped_weapon_uid if progress.weapon_instances.has(progress.equipped_weapon_uid) else str(progress.weapon_instances.keys()[0])
+	_smith_section("swords","SELECIONE UM EQUIPAMENTO")
+	if progress.weapon_instances.is_empty():
+		_add_description("Nenhuma arma na mochila. Use a aba Forjar para fabricar uma.")
+		return
+	var owned: Array = []
 	for uid: String in progress.weapon_instances:
 		var data: Dictionary = progress.weapon(uid)
-		var button := Button.new()
-		button.text = "%s · %s +%d" % [ArsenalRules.category_name(data.category),ArsenalRules.RARITIES[data.rarity].name,int(data.level)]
-		button.tooltip_text = "Arma %s" % uid
-		button.custom_minimum_size.y = 48
-		button.add_theme_color_override("font_color",Color("#fff0ce") if smith_instance_selected == uid else Color(ArsenalRules.RARITIES[data.rarity].color).darkened(0.4))
-		DiaryTheme.select(button,smith_instance_selected == uid)
-		button.pressed.connect(func(): smith_instance_selected = uid; smith_confirm = false; refresh_station(progress))
-		picker.add_child(button)
-	if not progress.weapon_instances.has(smith_instance_selected): return
+		owned.append({"id":uid,"icon":data.category,"title":ArsenalRules.category_name(data.category),"sub":"%s +%d" % [ArsenalRules.RARITIES[data.rarity].name,int(data.level)],"color":ForgeView.rarity_color(data.rarity),"tag":uid == progress.equipped_weapon_uid})
+	station_content.add_child(ForgeView.picker(owned,smith_instance_selected,func(uid: String): smith_instance_selected = uid; smith_confirm = false; refresh_station(progress),smith_pick_buttons))
 	var uid := smith_instance_selected
 	var weapon: Dictionary = progress.weapon(uid)
-	var title := "%s · %s +%d" % [ArsenalRules.category_name(weapon.category),ArsenalRules.RARITIES[weapon.rarity].name,int(weapon.level)]
-	_add_description(title)
-	if page == "rarity":
-		var recipe := EquipmentEconomy.rarity_recipe(weapon.rarity)
-		if recipe.is_empty(): _add_description("Raridade máxima alcançada."); return
-		var next_rarity: String = EquipmentEconomy.RARITY_ORDER[EquipmentEconomy.RARITY_ORDER.find(weapon.rarity)+1]
-		_add_description("Nova raridade: %s · melhoria volta a +0; bônus escolhidos são reiniciados." % ArsenalRules.RARITIES[next_rarity].name)
-		var current_stats := _weapon_instance_stats(progress,uid,weapon.rarity,int(weapon.level),weapon.choices)
-		var next_stats := _weapon_instance_stats(progress,uid,next_rarity,0,{})
-		_add_description(_weapon_comparison(current_stats,next_stats,weapon.category))
-		_smith_cost(recipe,progress)
-		_smith_confirm_action("Evoluir raridade", "evolve_weapon",uid,progress.can_evolve_weapon(uid),progress)
-		var bonuses := Button.new()
-		bonuses.text = ("− " if smith_bonus_expanded else "+ ")+"Bônus dos aprimoramentos"
-		bonuses.custom_minimum_size.y = 44
-		bonuses.pressed.connect(func(): smith_bonus_expanded = not smith_bonus_expanded; refresh_station(progress))
-		station_content.add_child(bonuses)
-		if smith_bonus_expanded: _smith_bonus_options(progress,uid,weapon)
-	elif page == "enhance":
-		if int(weapon.level) >= 20: _add_description("Aprimoramento máximo: +20."); return
-		var recipe := EquipmentEconomy.enhance_recipe(int(weapon.level),weapon.rarity)
-		_smith_cost(recipe,progress)
-		var current_stats := _weapon_instance_stats(progress,uid,weapon.rarity,int(weapon.level),weapon.choices)
-		var next_stats := _weapon_instance_stats(progress,uid,weapon.rarity,int(weapon.level)+1,weapon.choices)
-		_add_description(_weapon_comparison(current_stats,next_stats,weapon.category))
-		var chance: float = EquipmentEconomy.SUCCESS[int(weapon.level)]
-		_add_description("+%d → +%d · %d%% de sucesso. Falha: %s." % [int(weapon.level),int(weapon.level)+1,roundi(chance*100),"pode baixar 1–2 níveis" if int(weapon.level) >= 15 else "baixa 1 nível" if int(weapon.level) >= 10 else "mantém o nível"])
-		var seal := CheckButton.new()
-		seal.text = "Usar Selo de Proteção (%d)" % progress.bag.get(EquipmentEconomy.SEAL,0)
-		seal.button_pressed = smith_use_seal
-		seal.disabled = int(progress.bag.get(EquipmentEconomy.SEAL,0)) == 0
-		seal.toggled.connect(func(value: bool): smith_use_seal = value)
-		station_content.add_child(seal)
-		_smith_confirm_action("Tentar aprimorar", "enhance_weapon",uid,progress.can_enhance_weapon(uid),progress)
-	else:
-		_smith_bonus_options(progress,uid,weapon)
+	if page == "rarity": _smith_rarity_page(progress,uid,weapon)
+	else: _smith_enhance_page(progress,uid,weapon)
+
+func _smith_stat_rows(current: Dictionary, next: Dictionary, category: String) -> Array:
+	var speed_now := 1.0/float(current.interval)
+	var speed_next := 1.0/float(next.interval)
+	return [
+		{"icon":"swords","name":"Dano mágico" if category == "cajado" else "Dano físico","now":str(int(current.damage)),"next":str(int(next.damage)),"better":int(next.damage) > int(current.damage)},
+		{"icon":"heart","scale":2,"name":"Vida","now":str(int(current.hp)),"next":str(int(next.hp)),"better":int(next.hp) > int(current.hp)},
+		{"icon":"shield","name":"Defesa","now":str(int(current.armor)),"next":str(int(next.armor)),"better":int(next.armor) > int(current.armor)},
+		{"icon":"bolt","scale":2,"name":"Veloc. de Ataque","now":"%s/s" % String.num(speed_now,2),"next":"%s/s" % String.num(speed_next,2),"better":speed_next > speed_now + 0.0001}]
+
+func _smith_enhance_page(progress: GameProgress, uid: String, weapon: Dictionary) -> void:
+	_smith_section("hammer","APRIMORAMENTO",2)
+	var level := int(weapon.level)
+	if level >= 20:
+		_add_description("Aprimoramento máximo: +20.")
+		return
+	var rarity_name: String = ArsenalRules.RARITIES[weapon.rarity].name
+	var current := _weapon_instance_stats(progress,uid,weapon.rarity,level,weapon.choices)
+	var next := _weapon_instance_stats(progress,uid,weapon.rarity,level+1,weapon.choices)
+	station_content.add_child(ForgeView.compare_card(weapon.category,"%s · %s" % [ArsenalRules.category_name(weapon.category),rarity_name],"Aprimoramento +%d" % level,"+%d" % level,"+%d" % (level+1),Color("#fff1c9"),Color("#9be58f")))
+	station_content.add_child(ForgeView.stat_table(_smith_stat_rows(current,next,weapon.category)))
+	var chance: float = EquipmentEconomy.SUCCESS[level]
+	station_content.add_child(ForgeView.chance(roundi(chance*100)))
+	if chance < 1.0:
+		var loss := "O item mantém o nível +%d." % level if level < int(EquipmentEconomy.FAILURE.safe_through) else "O item perde 1 nível." if level < 15 else "O item perde 1 ou 2 níveis."
+		station_content.add_child(ForgeView.danger("Em caso de falha","%s Ouro e materiais gastos não são devolvidos." % loss))
+	_smith_section("bag","MATERIAIS NECESSÁRIOS")
+	var recipe := EquipmentEconomy.enhance_recipe(level,weapon.rarity)
+	_smith_requirements(recipe,progress)
+	_smith_section("shield","PROTEÇÃO (OPCIONAL)")
+	var seals := int(progress.bag.get(EquipmentEconomy.SEAL,0))
+	station_content.add_child(ForgeView.protection(seals,smith_use_seal and seals > 0,"Evita a perda de níveis ao falhar a partir de +10.",func(): smith_use_seal = not smith_use_seal; refresh_station(progress)))
+	_smith_action("Aprimorar","up","enhance_weapon",uid,progress.can_enhance_weapon(uid),progress)
+
+func _smith_rarity_page(progress: GameProgress, uid: String, weapon: Dictionary) -> void:
+	_smith_section("star","EVOLUÇÃO DE RARIDADE",2)
+	var recipe := EquipmentEconomy.rarity_recipe(weapon.rarity)
+	if recipe.is_empty():
+		_add_description("Raridade máxima alcançada.")
+		return
+	var next_rarity: String = EquipmentEconomy.RARITY_ORDER[EquipmentEconomy.RARITY_ORDER.find(weapon.rarity)+1]
+	var current := _weapon_instance_stats(progress,uid,weapon.rarity,int(weapon.level),weapon.choices)
+	var next := _weapon_instance_stats(progress,uid,next_rarity,0,{})
+	station_content.add_child(ForgeView.compare_card(weapon.category,ArsenalRules.category_name(weapon.category),"Aprimoramento atual +%d" % int(weapon.level),ArsenalRules.RARITIES[weapon.rarity].name,ArsenalRules.RARITIES[next_rarity].name,Color(ArsenalRules.RARITIES[weapon.rarity].color),Color(ArsenalRules.RARITIES[next_rarity].color)))
+	station_content.add_child(ForgeView.stat_table(_smith_stat_rows(current,next,weapon.category)))
+	_smith_section("bag","MATERIAIS NECESSÁRIOS")
+	_smith_requirements(recipe,progress)
+	_smith_action("Evoluir","star","evolve_weapon",uid,progress.can_evolve_weapon(uid),progress)
+	station_content.add_child(ForgeView.note("Importante","Ao evoluir para uma raridade superior, o aprimoramento volta a +0 e os bônus escolhidos são reiniciados."))
+	var bonuses := Button.new()
+	bonuses.text = ("− " if smith_bonus_expanded else "+ ")+"Bônus dos aprimoramentos"
+	bonuses.custom_minimum_size.y = 44
+	bonuses.pressed.connect(func(): smith_bonus_expanded = not smith_bonus_expanded; refresh_station(progress))
+	station_content.add_child(bonuses)
+	if smith_bonus_expanded: _smith_bonus_options(progress,uid,weapon)
 
 func _smith_bonus_options(progress: GameProgress, uid: String, weapon: Dictionary) -> void:
 	_add_description("Bônus de atributos nos marcos de aprimoramento existentes.")

@@ -100,18 +100,19 @@ func _run() -> void:
 	await frames()
 	var price_before: int = main.progress.gold
 	main.player.position = SafeCamp.DISPLAY_STATIONS["Ferreiro"]
-	var smith := find_button(hud.station_content,"Forjar")
 	hud.show_station("Ferreiro",main.progress)
 	await frames()
-	smith = find_button(hud.station_content,"Forjar")
-	check(hud.station_panel.visible and smith != null and find_button(hud.station_content,"Aprimorar") != null and find_button(hud.station_content,"Evoluir") != null,"Blacksmith exposes exactly the three requested tabs")
+	var smith := find_button(hud.station_tab_host,"Forjar")
+	check(hud.station_panel.visible and smith != null and find_button(hud.station_tab_host,"Aprimorar") != null and find_button(hud.station_tab_host,"Evoluir") != null and hud.station_tab_host.get_child_count() == 3,"Blacksmith exposes exactly the three requested tabs")
 	await capture("blacksmith-forjar-360x800")
 	hud.smith_craft_category = "espada"
 	hud.smith_craft_rarity = "raro"
 	hud.refresh_station(main.progress)
-	var action := find_button(hud.station_content,"Selecionar · Fabricar")
+	var action: Button = hud.smith_action_buttons.get("espada|raro")
+	check(action != null and action.text == "Forjar" and not action.disabled,"forge tab offers the real craft action before any spending")
 	if action != null: action.pressed.emit()
-	var confirm := find_button(hud.station_content,"Confirmar · Fabricar")
+	var confirm: Button = hud.smith_action_buttons.get("espada|raro")
+	check(confirm != null and confirm.text.begins_with("Confirmar"),"craft requires the existing second confirmation")
 	if confirm != null: confirm.pressed.emit()
 	await frames()
 	var uid := hud.smith_instance_selected
@@ -119,9 +120,10 @@ func _run() -> void:
 	hud.smith_tab = 1
 	hud.refresh_station(main.progress)
 	await capture("blacksmith-aprimorar-360x800")
-	action = find_button(hud.station_content,"Selecionar · Tentar aprimorar")
+	action = hud.smith_action_buttons.get(uid)
+	check(action != null and action.text == "Aprimorar" and contains_text(hud.station_content,"Chance de Sucesso") and contains_text(hud.station_content,"MATERIAIS NECESSÁRIOS") and contains_text(hud.station_content,"Custo em Ouro"),"enhance page shows chance, materials and gold from the real recipe")
 	if action != null: action.pressed.emit()
-	confirm = find_button(hud.station_content,"Confirmar · Tentar aprimorar")
+	confirm = hud.smith_action_buttons.get(uid)
 	if confirm != null: confirm.pressed.emit()
 	await frames()
 	check(int(main.progress.weapon(uid).level) == 1,"enhance action advances the selected weapon instance via existing success rule")
@@ -129,9 +131,10 @@ func _run() -> void:
 	hud.smith_confirm = false
 	hud.refresh_station(main.progress)
 	await capture("blacksmith-evoluir-360x800")
-	action = find_button(hud.station_content,"Selecionar · Evoluir raridade")
+	action = hud.smith_action_buttons.get(uid)
+	check(action != null and action.text == "Evoluir" and contains_text(hud.station_content,"Importante"),"evolve page shows the reset notice and the real action")
 	if action != null: action.pressed.emit()
-	confirm = find_button(hud.station_content,"Confirmar · Evoluir raridade")
+	confirm = hud.smith_action_buttons.get(uid)
 	if confirm != null: confirm.pressed.emit()
 	await frames()
 	check(main.progress.weapon(uid).rarity == "epico" and int(main.progress.weapon(uid).level) == 0,"rarity evolution follows current rule and resets only that copy's enhancement")

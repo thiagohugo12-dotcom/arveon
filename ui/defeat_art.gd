@@ -39,6 +39,11 @@ const MAPS := {
 		"..kcccccccccck..", "..kckkkkkkkkck..", "..kcccccccccck..", "..kckkkkkkkkck..",
 		"..kcccccccccck..", "..kckkkkkkkkck..", "..kcccccccccck..", "...kkkkkkkkkk...",
 		"................", "................", "................", "................"],
+	"bolt": ["....yy..", "...yy...", "..yy....", ".yyyyyy.", "...yy...", "..yy....", ".yy.....", "y......."],
+	"heart": [".rr..rr.", "rrrrrrrr", "rrrrrrrr", "rrrrrrrr", ".rrrrrr.", "..rrrr..", "...rr...", "........"],
+	"clover": [".ee..ee.", "eeeeeeee", "eeEeeEee", ".eeEEee.", ".eeEEee.", "eeEeeEee", "eeeeeeee", ".ee..ee."],
+	"up": ["....cc....", "...cccc...", "..cccccc..", ".cccccccc.", "cccccccccc", "...cccc...", "...cccc...", "...cccc...", "...cccc...", ".........."],
+	"star": ["....cc....", "....cc....", "...cccc...", "cccccccccc", ".cccccccc.", "..cccccc..", "..cccccc..", ".cccccccc.", ".ccc..ccc.", ".cc....cc."],
 	"diamond": [
 		"...k...", "..kgk..", ".kghgk.", "kghhhgk", ".kgggk.", "..kgk..", "...k..."],
 	"leaf": [
@@ -65,7 +70,20 @@ const PLATES := {
 	"button": {"layers": [["#0d1d13", 1], ["#d6a53a", 1], ["#10261b", 1]], "fill": "#1f5a3c"},
 	"button_down": {"layers": [["#0d1d13", 1], ["#b88a2e", 1], ["#10261b", 1]], "fill": "#16432c"},
 	"ghost": {"layers": [["#1b0f08", 1], ["#a8723c", 1], ["#4a2d18", 1]], "fill": "#6b4526"},
-	"ghost_down": {"layers": [["#1b0f08", 1], ["#8a5a30", 1], ["#4a2d18", 1]], "fill": "#4e321b"}
+	"ghost_down": {"layers": [["#1b0f08", 1], ["#8a5a30", 1], ["#4a2d18", 1]], "fill": "#4e321b"},
+	"title": {"layers": [["#10261b", 1], ["#d6a53a", 2], ["#10261b", 1]], "fill": "#1f4a37"},
+	"tab": {"layers": [["#1b0f08", 1], ["#6e4727", 1], ["#2a170c", 1]], "fill": "#3a2416"},
+	"tab_on": {"layers": [["#1b0f08", 1], ["#f0c850", 2], ["#1b0f08", 1]], "fill": "#4a2d18"},
+	"close": {"layers": [["#1b0f08", 1], ["#e8b83a", 1], ["#5a0f0f", 1]], "fill": "#c0261f"},
+	"close_down": {"layers": [["#1b0f08", 1], ["#b88a2e", 1], ["#3a0808", 1]], "fill": "#8f1a15"},
+	"item": {"layers": [["#c9b27a", 1], ["#f8eccb", 1]], "fill": "#f1e2bd"},
+	"item_on": {"layers": [["#f0c850", 2], ["#b88a2e", 1]], "fill": "#fff1c9"},
+	"danger": {"layers": [["#1b0f08", 1], ["#a8574a", 1]], "fill": "#4a1414"},
+	"note": {"layers": [["#10261b", 1], ["#c9a24a", 1]], "fill": "#153a2c"},
+	"paper_bg": {"layers": [["#8a5a30", 1], ["#c9a24a", 1]], "fill": "#efdcab"},
+	"chip": {"layers": [["#8a5a30", 1]], "fill": "#e9d6a0"},
+	"chip_on": {"layers": [["#1b0f08", 1], ["#f0c850", 1]], "fill": "#1f5a3c"},
+	"dim": {"layers": [["#1b1b18", 1], ["#6a6a5e", 1], ["#2a2a26", 1]], "fill": "#4a4a40"}
 }
 
 static func texture(id: String, scale: int = 2) -> ImageTexture:
@@ -113,6 +131,8 @@ static func _build(id: String) -> Image:
 		"coins": return _coins()
 		"xp": return _xp()
 		"swords": return _swords()
+		"hammer": return _hammer()
+		"x": return _cross()
 		"crest": return _crest()
 	var rows: Array = MAPS[id]
 	var image := Image.create(String(rows[0]).length(),rows.size(),false,Image.FORMAT_RGBA8)
@@ -183,6 +203,19 @@ static func _sword(image: Image, tip: Vector2i, hilt: Vector2i, mirror_width: in
 	_line(image,b-side,b+side,COLORS["g"],1)
 	var pommel := b+Vector2i(direction*3.0)
 	_line(image,b,pommel,COLORS["N"],2)
+
+static func _hammer() -> Image:
+	var image := Image.create(10,10,false,Image.FORMAT_RGBA8)
+	image.fill_rect(Rect2i(0,0,7,4),COLORS["s"])
+	image.fill_rect(Rect2i(0,3,7,1),COLORS["S"])
+	_line(image,Vector2i(4,4),Vector2i(8,8),COLORS["n"],2)
+	return image
+
+static func _cross() -> Image:
+	var image := Image.create(10,10,false,Image.FORMAT_RGBA8)
+	_line(image,Vector2i(1,1),Vector2i(8,8),COLORS["w"],2)
+	_line(image,Vector2i(8,1),Vector2i(1,8),COLORS["w"],2)
+	return image
 
 static func _swords() -> Image:
 	var image := Image.create(16,16,false,Image.FORMAT_RGBA8)
