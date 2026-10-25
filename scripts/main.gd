@@ -409,11 +409,15 @@ func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 	var drop_text := "+%d XP · +%d ouro" % [gained_xp, gained_gold]
 	for drop: Dictionary in _roll_loot(kind,source):
 		progress.add_item(drop.key)
+		if progress.overflowed: drop_text += " (Baú)"
 		drop_text += " · +1 %s" % drop.item if drop.get("named",false) else " · +1 %s %s" % [drop.item,ArsenalRules.RARITIES[drop.rarity].name]
 		mission.record_material()
 	if kind == 3:
 		_record_adventure("elite")
 	elif kind == 4:
+		if not bool(progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated):
+			progress.grant_gems(10)
+			drop_text += " · +10 gemas"
 		progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated = true
 		_record_adventure("guardiao")
 	mission.record_defeat()
@@ -1301,6 +1305,7 @@ func _on_tower_guardian_defeated(_kind: int, source: EnemyActor, token: int) -> 
 		trophy_text += (" · " if not trophy_text.is_empty() else "") + "+1 %s" % drop.item
 	if not trophy_text.is_empty(): hud.show_notice(trophy_text)
 	if victory_first:
+		progress.grant_gems(5)
 		earned_xp += FloorConfig.reward(AscensionProgress.GUARDIAN_XP, trial.floor_id)
 		earned_gold += FloorConfig.reward(AscensionProgress.GUARDIAN_GOLD, trial.floor_id)
 	# Snapshot includes reward and claim together; load/import never grants rewards.

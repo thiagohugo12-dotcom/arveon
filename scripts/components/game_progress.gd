@@ -82,6 +82,12 @@ var next_weapon_uid := 1
 # Marco 5: contadores de azar (raro/épico) e receitas de conjunto liberadas por Fragmento.
 var pity: Dictionary = LootRules.new_pity()
 var gems := 0 # Moeda premium futura: ainda sem fonte no jogo, salva como campo opcional.
+var bag_expansions := 0
+var overflowed := false # O último add_item mandou o excedente para o Baú.
+const BAG_CAPACITY := 40
+const BAG_STEP := 10
+const EXPANSION_GOLD := [500,1000,2000,4000]
+const EXPANSION_GEMS := [5,10,20,40]
 var recipes: Array[String] = []
 # Existing snapshots are exempt; only the no-save runtime starts the introduction.
 var introduction: Dictionary = {"status":"legacy","met_smith":false,"weapon":""}
@@ -94,6 +100,7 @@ func begin_new_character() -> void:
 	next_weapon_uid = 1
 	pity = LootRules.new_pity()
 	gems = 0
+	bag_expansions = 0
 	recipes = []
 	introduction = {"status":"active","met_smith":false,"weapon":""}
 
@@ -200,7 +207,7 @@ func _pay(recipe: Dictionary) -> void:
 		if bag[item] == 0: bag.erase(item)
 
 func can_craft_weapon(category: String, rarity: String) -> bool:
-	return not introduction_active() and not save_blocked and _can_pay(EquipmentEconomy.craft_recipe(category,rarity))
+	return not introduction_active() and not save_blocked and has_room() and _can_pay(EquipmentEconomy.craft_recipe(category,rarity))
 
 func craft_weapon(category: String, rarity: String) -> String:
 	if not can_craft_weapon(category,rarity): return ""
@@ -210,7 +217,7 @@ func craft_weapon(category: String, rarity: String) -> String:
 	return uid
 
 func can_craft_vale_iron(rarity: String) -> bool:
-	return not introduction_active() and not save_blocked and _can_pay(EquipmentEconomy.vale_iron_recipe(rarity))
+	return not introduction_active() and not save_blocked and has_room() and _can_pay(EquipmentEconomy.vale_iron_recipe(rarity))
 
 func craft_vale_iron(rarity: String) -> String:
 	if not can_craft_vale_iron(rarity): return ""
@@ -239,7 +246,7 @@ func use_fragment(floor_id: int, category: String) -> bool:
 
 func can_craft_set(floor_id: int, category: String) -> bool:
 	if LootRules.is_piece(category) and equipment.has(category): return false
-	return not introduction_active() and not save_blocked and recipe_unlocked(floor_id,category) and _can_pay(LootRules.set_recipe(floor_id,category))
+	return not introduction_active() and not save_blocked and has_room() and recipe_unlocked(floor_id,category) and _can_pay(LootRules.set_recipe(floor_id,category))
 
 func craft_set(floor_id: int, category: String) -> String:
 	if not can_craft_set(floor_id,category): return ""
@@ -488,8 +495,45 @@ func discover_nearby(point: Vector2, floor_id: int = 1) -> bool:
 func add_item(item: String, amount: int = 1) -> bool:
 	if not ITEMS.has(item) and not EquipmentEconomy.valid_item(item) or amount < 1:
 		return false
+	overflowed = false
+	# Mochila cheia: o item novo vai direto para o Baú, nada se perde.
+	if not bag.has(item) and not has_room():
+		chest[item] = int(chest.get(item, 0)) + amount
+		overflowed = true
+		return true
 	bag[item] = int(bag.get(item, 0)) + amount
 	return true
+
+# ── Capacidade da mochila (Marco 6) ──────────────────────────────────────────────────────
+func bag_capacity() -> int:
+	return BAG_CAPACITY + BAG_STEP * bag_expansions
+
+func used_slots() -> int:
+	var count := bag.size() + weapon_instances.size()
+	for id: String in equipment:
+		if not ArsenalRules.CATEGORIES.has(id): count += 1
+	return count
+
+func has_room() -> bool:
+	return used_slots() < bag_capacity()
+
+func expansion_cost(with_gems: bool) -> int:
+	if bag_expansions >= EXPANSION_GOLD.size(): return -1
+	return int((EXPANSION_GEMS if with_gems else EXPANSION_GOLD)[bag_expansions])
+
+func can_expand_bag(with_gems: bool) -> bool:
+	var cost := expansion_cost(with_gems)
+	return cost > 0 and not save_blocked and (gems if with_gems else gold) >= cost
+
+func expand_bag(with_gems: bool) -> bool:
+	if not can_expand_bag(with_gems): return false
+	if with_gems: gems -= expansion_cost(true)
+	else: gold -= expansion_cost(false)
+	bag_expansions += 1
+	return true
+
+func grant_gems(amount: int) -> void:
+	gems = clampi(gems + amount,0,100000000)
 
 func transfer(item: String, to_chest: bool) -> bool:
 	if not ITEMS.has(item) and not EquipmentEconomy.valid_item(item):
@@ -497,6 +541,8 @@ func transfer(item: String, to_chest: bool) -> bool:
 	var source: Dictionary = bag if to_chest else chest
 	var destination: Dictionary = chest if to_chest else bag
 	if int(source.get(item, 0)) < 1:
+		return false
+	if not to_chest and not bag.has(item) and not has_room():
 		return false
 	source[item] = int(source[item]) - 1
 	if source[item] == 0:
@@ -577,6 +623,7 @@ func to_json() -> String:
 		payload["next_weapon_uid"] = next_weapon_uid
 		payload["pity"] = pity
 		payload["gems"] = gems
+		payload["bag_expansions"] = bag_expansions
 		payload["recipes"] = recipes
 	return JSON.stringify(payload)
 
@@ -888,6 +935,10 @@ func load_text(text: String) -> bool:
 	if parsed.has("pity"):
 		if not LootRules.valid_pity(parsed.pity): return false
 		new_pity = {"raro": int(parsed.pity.raro), "epico": int(parsed.pity.epico)}
+	var new_expansions := 0
+	if parsed.has("bag_expansions"):
+		if not _bounded_integer(parsed.bag_expansions,0,EXPANSION_GOLD.size()): return false
+		new_expansions = int(parsed.bag_expansions)
 	var new_gems := 0
 	if parsed.has("gems"):
 		if not _bounded_integer(parsed.gems,0,100000000): return false
@@ -946,6 +997,7 @@ func load_text(text: String) -> bool:
 	discovered_pois = new_discovered
 	pity = new_pity
 	gems = new_gems
+	bag_expansions = new_expansions
 	recipes = new_recipes
 	attributes = new_rpg.attributes
 	skills = new_rpg.skills

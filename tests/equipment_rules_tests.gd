@@ -80,5 +80,39 @@ func _run() -> void:
 	check(not crafter.can_craft_set(1,"elmo_mata") and crafter.equip("elmo_mata"), "a piece is unique and can then be worn")
 	var saved := GameProgress.new()
 	check(saved.load_text(crafter.to_json()) and saved.recipes == ["piece:1:elmo_mata"] and saved.equipped.Capacete == "elmo_mata", "an unlocked piece recipe and the worn piece survive the save")
+	# Mochila com limite, excedente no Baú, expansão e gemas.
+	var bag_test := fresh()
+	check(bag_test.bag_capacity() == 40 and bag_test.used_slots() == 0 and bag_test.has_room(), "the bag starts with 40 slots")
+	for index in range(40): bag_test.bag["lote_%d" % index] = 1
+	check(bag_test.used_slots() == 40 and not bag_test.has_room(), "stacks fill the slots")
+	check(bag_test.add_item("Couro") and bag_test.overflowed and bag_test.chest.get("Couro",0) == 1 and not bag_test.bag.has("Couro"), "a new item that does not fit goes to the chest, not lost")
+	bag_test.bag["Seda"] = 1
+	bag_test.bag.erase("lote_0")
+	check(bag_test.add_item("Seda") and not bag_test.overflowed and bag_test.bag["Seda"] == 2, "adding to an existing stack never needs a free slot")
+	bag_test.bag["lote_x"] = 1
+	check(not bag_test.transfer("Couro",false) and bag_test.chest["Couro"] == 1, "taking a new item out of the chest needs a free slot")
+	check(not bag_test.can_craft_weapon("espada","comum"), "crafting needs a free slot")
+	bag_test.gold = 8000
+	bag_test.gems = 100
+	check(bag_test.expand_bag(false) and bag_test.bag_capacity() == 50 and bag_test.gold == 7500, "the first expansion costs 500 gold for 10 more slots")
+	check(bag_test.expand_bag(true) and bag_test.bag_capacity() == 60 and bag_test.gems == 90, "the second expansion paid with gems costs 10 gems")
+	check(bag_test.expand_bag(false) and bag_test.expand_bag(false) and bag_test.bag_capacity() == 80 and not bag_test.can_expand_bag(false) and not bag_test.can_expand_bag(true), "the bag stops at 80 slots")
+	var cheap := fresh()
+	cheap.gold = 499
+	cheap.gems = 4
+	check(not cheap.expand_bag(false) and not cheap.expand_bag(true), "an expansion needs the full price")
+	cheap.grant_gems(15)
+	check(cheap.gems == 19, "gems can be granted")
+	var saver := fresh()
+	saver.gold = 8000
+	saver.gems = 100
+	for expansion in range(4): saver.expand_bag(expansion % 2 == 1)
+	var bag_restored := GameProgress.new()
+	check(bag_restored.load_text(saver.to_json()) and bag_restored.bag_expansions == 4 and bag_restored.gems == saver.gems, "expansions and gems survive the save")
+	var bag_parsed: Dictionary = JSON.parse_string(saver.to_json())
+	bag_parsed["bag_expansions"] = 9
+	check(not GameProgress.new().load_text(JSON.stringify(bag_parsed)), "an invalid expansion count is rejected")
+	bag_parsed.erase("bag_expansions")
+	check(GameProgress.new().load_text(JSON.stringify(bag_parsed)), "a save without the expansion field still loads")
 	print("EQUIP_RESULT: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures > 0 else 0)
