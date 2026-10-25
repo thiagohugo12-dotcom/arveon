@@ -1562,8 +1562,8 @@ func _style_map_panel(arena: bool, progress: GameProgress) -> void:
 	if arena:
 		return
 	var head := AtlasTexture.new()
-	head.atlas = MiniMap.EXPLORER
-	head.region = Rect2(13,3,22,20)
+	head.atlas = MiniMap.HERO
+	head.region = MiniMap.HERO_HEAD
 	var entries := [
 		{"icon":head,"title":"Você","text":"Sua posição atual no mapa."},
 		{"icon":DefeatArt.texture("fire",2),"title":"Acampamento","text":"Ponto de retorno deste andar."},
@@ -1576,7 +1576,7 @@ func _style_map_panel(arena: bool, progress: GameProgress) -> void:
 		var picture := TextureRect.new()
 		picture.texture = entry.icon
 		picture.stretch_mode = TextureRect.STRETCH_SCALE if entry.icon is AtlasTexture else TextureRect.STRETCH_KEEP_CENTERED
-		picture.custom_minimum_size = Vector2(44,40) if entry.icon is AtlasTexture else (entry.icon as Texture2D).get_size()
+		picture.custom_minimum_size = Vector2(32,32) if entry.icon is AtlasTexture else (entry.icon as Texture2D).get_size()
 		picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		picture.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		cell.add_child(DefeatView.slot(picture))
