@@ -69,6 +69,9 @@ var expanded_map: MiniMap
 var map_close: Button
 var map_title: Label
 var map_legend: Label
+var map_legend_grid: GridContainer
+var map_header_close: Button
+var map_body: BoxContainer
 var gold_label: Label
 var info_back: Panel
 const MissionBannerScene = preload("res://ui/mission_banner.gd")
@@ -272,21 +275,52 @@ func _ready() -> void:
 	map_panel = PanelContainer.new()
 	map_panel.z_index = 10
 	map_panel.visible = false
-	map_panel.add_theme_stylebox_override("panel", _panel_style())
+	map_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	map_panel.add_theme_stylebox_override("panel", DefeatArt.plate("frame",12))
 	add_child(map_panel)
 	var map_column := VBoxContainer.new()
+	map_column.add_theme_constant_override("separation",6)
 	map_panel.add_child(map_column)
+	var map_header := HBoxContainer.new()
+	map_header.add_theme_constant_override("separation",6)
+	map_column.add_child(map_header)
 	map_title = Label.new()
 	map_title.text = "Mapa · Mata dos Primeiros Passos"
-	map_title.add_theme_font_size_override("font_size", 12)
-	map_column.add_child(map_title)
+	map_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	map_title.autowrap_mode = TextServer.AUTOWRAP_OFF
+	map_header.add_child(map_title)
+	map_header_close = Button.new()
+	map_header_close.text = "×"
+	map_header_close.custom_minimum_size = Vector2(44,44)
+	map_header_close.pressed.connect(func(): map_toggled.emit())
+	map_header.add_child(map_header_close)
+	map_body = BoxContainer.new()
+	map_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	map_body.add_theme_constant_override("separation",6)
+	map_column.add_child(map_body)
 	expanded_map = MiniMap.new()
+	expanded_map.styled = true
 	expanded_map.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	map_column.add_child(expanded_map)
+	expanded_map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map_body.add_child(expanded_map)
+	var legend_card := DefeatView.card("paper",8)
+	legend_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	legend_card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	map_body.add_child(legend_card)
+	var legend_column := VBoxContainer.new()
+	legend_column.add_theme_constant_override("separation",4)
+	legend_card.add_child(legend_column)
+	map_legend_grid = GridContainer.new()
+	map_legend_grid.columns = 2
+	map_legend_grid.add_theme_constant_override("h_separation",8)
+	map_legend_grid.add_theme_constant_override("v_separation",6)
+	legend_column.add_child(map_legend_grid)
 	map_legend = Label.new()
 	map_legend.text = "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
-	map_legend.add_theme_font_size_override("font_size", 11)
-	map_column.add_child(map_legend)
+	map_legend.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	map_legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	legend_column.add_child(map_legend)
 	map_close = Button.new()
 	map_close.text = "Fechar"
 	map_close.custom_minimum_size.y = 44
@@ -669,8 +703,7 @@ func _layout() -> void:
 	if introduction_hud:
 		loot_label.position.y = maxf(loot_label.position.y,mission_back.position.y+mission_back.size.y+6)
 	loot_label.size = Vector2(minf(320, size.x - margin.x - right_inset), 42)
-	map_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(400, size.y - margin.y - bottom_inset - 12))
-	map_panel.position = (size - map_panel.size) * 0.5
+	_fit_map_panel.call_deferred()
 	save_panel.size = Vector2(minf(340, size.x - margin.x - right_inset - 12), minf(350, size.y - margin.y - bottom_inset - 12))
 	save_panel.position = (size - save_panel.size) * 0.5
 	# The character diary keeps its physical size in landscape. The older
@@ -1294,7 +1327,8 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if map_panel.visible:
-		_activate_touch_button(map_close, event)
+		if not _activate_touch_button(map_header_close, event):
+			_activate_touch_button(map_close, event)
 		get_viewport().set_input_as_handled()
 		return
 	if rpg_panel.visible:
@@ -1490,15 +1524,92 @@ func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 func show_map(progress: GameProgress) -> void:
 	if inventory_open or station_panel.visible or rpg_panel.visible or restart.visible:
 		return
+	UiScale.update(size)
 	expanded_map.progress = progress
 	expanded_map.arena_bounds = minimap.arena_bounds
-	map_title.text = "Mapa · Arena da Torre" if minimap.arena_bounds.has_area() else FloorCatalog.map_title(progress.ascension.current_floor)
-	map_legend.text = "● Você · Dourado: portais\nSaída para o %s ao sul" % FloorConfig.tower_return_name(progress.ascension.current_floor) if minimap.arena_bounds.has_area() else "● Você · Verde: acampamento\nColetas e baús: somente os descobertos"
+	var arena := minimap.arena_bounds.has_area()
+	map_title.text = "Mapa · Arena da Torre" if arena else FloorCatalog.map_title(progress.ascension.current_floor)
+	map_legend.text = "● Você · Dourado: portais\nSaída para o %s ao sul" % FloorConfig.tower_return_name(progress.ascension.current_floor) if arena else "Coletas e baús: somente os descobertos"
 	expanded_map.player_position = minimap.player_position
+	_style_map_panel(arena,progress)
 	expanded_map.queue_redraw()
 	map_panel.show()
+	map_panel.modulate.a = 0.0
 	_sync_controls()
 	_layout()
+
+# Moldura, título, legenda com ícones e botões do mapa expandido (Interface 2.0).
+func _style_map_panel(arena: bool, progress: GameProgress) -> void:
+	map_panel.add_theme_stylebox_override("panel",DefeatArt.plate("frame",UiScale.px(12)))
+	map_title.add_theme_stylebox_override("normal",DefeatArt.plate("title",UiScale.px(6)))
+	map_title.add_theme_font_override("font",DefeatView.font())
+	map_title.add_theme_font_size_override("font_size",22 if UiScale.compact else 26)
+	map_title.add_theme_color_override("font_color",DefeatView.CREAM)
+	map_title.add_theme_color_override("font_outline_color",Color("#10261b"))
+	map_title.add_theme_constant_override("outline_size",3)
+	ForgeView.style_close(map_header_close,true)
+	DefeatView.style_button(map_close,"button","x",20,1)
+	map_close.icon = null
+	map_close.custom_minimum_size.y = 48
+	map_legend.add_theme_font_override("font",DefeatView.font())
+	map_legend.add_theme_font_size_override("font_size",UiScale.font(15))
+	map_legend.add_theme_color_override("font_color",DefeatView.INK)
+	map_body.vertical = not UiScale.compact
+	for child in map_legend_grid.get_children():
+		map_legend_grid.remove_child(child)
+		child.queue_free()
+	map_legend_grid.visible = not arena
+	if arena:
+		return
+	var head := AtlasTexture.new()
+	head.atlas = MiniMap.EXPLORER
+	head.region = Rect2(13,3,22,20)
+	var entries := [
+		{"icon":head,"title":"Você","text":"Sua posição atual no mapa."},
+		{"icon":DefeatArt.texture("fire",2),"title":"Acampamento","text":"Ponto de retorno deste andar."},
+		{"icon":DefeatArt.texture("chest",2),"title":"Baú descoberto","text":"Baús que você encontrou."},
+		{"icon":DefeatArt.texture("leaf_badge",2),"title":"Coleta descoberta","text":"Pontos de coleta que você encontrou."}]
+	for entry: Dictionary in entries:
+		var cell := HBoxContainer.new()
+		cell.add_theme_constant_override("separation",6)
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var picture := TextureRect.new()
+		picture.texture = entry.icon
+		picture.stretch_mode = TextureRect.STRETCH_SCALE if entry.icon is AtlasTexture else TextureRect.STRETCH_KEEP_CENTERED
+		picture.custom_minimum_size = Vector2(44,40) if entry.icon is AtlasTexture else (entry.icon as Texture2D).get_size()
+		picture.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		picture.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		cell.add_child(DefeatView.slot(picture))
+		var text := VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		text.add_theme_constant_override("separation",-2)
+		text.add_child(DefeatView.text(str(entry.title),15,DefeatView.INK))
+		text.add_child(DefeatView.text(str(entry.text),12,DefeatView.MUTED))
+		cell.add_child(text)
+		map_legend_grid.add_child(cell)
+	# Tamanho do mapa: escala uniforme do mundo real dentro da largura (ou da altura) livre.
+	var world := FloorConfig.world_size(progress.ascension.current_floor)
+	var aspect := world.x / world.y
+	if UiScale.compact:
+		var height := maxf(150.0,size.y - 24.0 - 52.0 - 56.0 - 30.0)
+		expanded_map.custom_minimum_size = Vector2(floorf(height * aspect),height)
+	else:
+		var width := minf(560.0,size.x - 24.0) - 40.0
+		expanded_map.custom_minimum_size = Vector2(0.0,floorf(width / aspect))
+
+# Ajusta a altura do painel ao conteúdo e o centraliza (depois que os textos têm largura).
+func _fit_map_panel() -> void:
+	if not map_panel.visible:
+		return
+	var wide := minf(780.0 if UiScale.compact else 560.0,size.x - 24.0)
+	map_panel.size = Vector2(wide,10.0)
+	await get_tree().process_frame
+	if not map_panel.visible:
+		return
+	map_panel.size.y = minf(map_panel.get_combined_minimum_size().y,size.y - 16.0)
+	map_panel.position = ((size - map_panel.size) * 0.5).floor()
+	map_panel.modulate.a = 1.0
 
 func close_map() -> void:
 	map_panel.hide()

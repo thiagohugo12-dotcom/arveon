@@ -50,6 +50,8 @@ const MAPS := {
 	"anvil": [".......y..y.", "........y...", "sssssssssss.", "ssssssssssss", ".sssssssssS.", "..sssssssS..", "....ssSS....", "....ssSS....", "...ssssSS...", "..ssssssSS..", "..SSSSSSSS.."],
 	"check": ["....yy", "...yy.", "y.yy..", "yyy...", ".y...."],
 	"trophy": ["gggggggg", "ghhgghgg", ".gggggg.", "..gggg..", "...gg...", "...gg...", "..gGGg..", ".gGGGGg."],
+	"chest": [".kkkkkkkk.", "kggggggggk", "kgGGGGGGgk", "kkkkhhkkkk", "kgggkkgggk", "kgGGkkGGgk", "kggggggggk", ".kkkkkkkk."],
+	"leaf_badge": ["kkkkkkkkk", "kDDDDDDDk", "kDDDeeDDk", "kDDeeeeDk", "kDeeeeeDk", "kDDeeeeDk", "kDDDeDDDk", "kDDDDDDDk", "kkkkkkkkk"],
 	"person": ["..cccc..", ".cccccc.", ".cccccc.", "..cccc..", ".cccccc.", "cccccccc", "cccccccc", "cccccccc"],
 	"chart": ["......cc", "......cc", "...cc.cc", "...cc.cc", "cc.cc.cc", "cc.cc.cc", "cc.cc.cc", "cccccccc"],
 	"tree": [".cc..cc.", ".cc..cc.", "..c..c..", "..cccc..", "...cc...", "...cc...", ".cccccc.", "........"],

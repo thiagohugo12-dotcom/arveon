@@ -11,6 +11,7 @@ var player_position := SafeCamp.RESPAWN
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	resized.connect(queue_redraw)
 
 func update_player(point: Vector2) -> void:
@@ -19,6 +20,8 @@ func update_player(point: Vector2) -> void:
 		queue_redraw()
 
 func _map_point(point: Vector2) -> Vector2:
+	if styled and not arena_bounds.has_area():
+		return _styled_point(point)
 	var map_size := size - Vector2(8, 8)
 	if arena_bounds.has_area():
 		var local := point - arena_bounds.position
@@ -36,6 +39,9 @@ func _map_rect(world_rect: Rect2) -> Rect2:
 	return Rect2(start,finish-start)
 
 func _draw() -> void:
+	if styled and not arena_bounds.has_area():
+		_draw_styled()
+		return
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#162b25"))
 	draw_rect(Rect2(Vector2.ZERO, size), Color("#baa778"), false, 2.0)
 	draw_rect(Rect2(Vector2(4, 4), size - Vector2(8, 8)), Color("#264634"))
@@ -108,3 +114,158 @@ func _draw_vale() -> void:
 			if progress.opened_caches.has(cache.id):
 				draw_rect(Rect2(_map_point(cache.position) - Vector2(2, 2), Vector2(5, 5)), Color("#e7b867"))
 	draw_rect(Rect2(_map_point(player_position) - Vector2(2, 2), Vector2(5, 5)), Color("#f2f0d6"))
+
+# ── Mapa expandido estilizado (Interface 2.0) ───────────────────────────────────────────
+# Mesmos dados reais do minimapa (trilhas, rochas, acampamento, coletas e baús descobertos,
+# posição do jogador), desenhados em escala uniforme com ícones. O minimapa pequeno não usa isto.
+const EXPLORER := preload("res://assets/art/explorer_atlas.png")
+var styled := false
+
+func _fit() -> Rect2:
+	var world := _world_size()
+	var avail := size - Vector2(12,12)
+	var factor := minf(avail.x / world.x,avail.y / world.y)
+	var fitted := world * factor
+	return Rect2(((size - fitted) / 2.0).floor(),fitted.floor())
+
+func _styled_point(point: Vector2) -> Vector2:
+	var world := _world_size()
+	var field := _fit()
+	return (field.position + Vector2(clampf(point.x,0,world.x) * field.size.x / world.x,clampf(point.y,0,world.y) * field.size.y / world.y)).floor()
+
+func _blob(center: Vector2, radius: int, color: Color) -> void:
+	for dy in range(-radius,radius + 1):
+		var half := roundi(sqrt(maxf(0.0,float(radius * radius - dy * dy))))
+		draw_rect(Rect2(center.x - half,center.y + dy,half * 2,1),color)
+
+func _dashed(rect: Rect2, color: Color) -> void:
+	var edges := [[rect.position,Vector2.RIGHT,rect.size.x],[rect.position + Vector2(0,rect.size.y),Vector2.RIGHT,rect.size.x],[rect.position,Vector2.DOWN,rect.size.y],[rect.position + Vector2(rect.size.x,0),Vector2.DOWN,rect.size.y]]
+	for edge: Array in edges:
+		var travelled := 0.0
+		while travelled < float(edge[2]):
+			var from: Vector2 = edge[0] + (edge[1] as Vector2) * travelled
+			draw_rect(Rect2(from,(edge[1] as Vector2) * minf(4.0,float(edge[2]) - travelled) + Vector2(1,1)),color)
+			travelled += 7.0
+
+func _draw_styled() -> void:
+	var floor_id := progress.ascension.current_floor if progress != null else 1
+	var field := _fit()
+	var vale := floor_id == 2
+	draw_rect(Rect2(Vector2.ZERO,size),Color("#0f241b"))
+	draw_rect(field,Color("#b3a35f") if vale else Color("#1e4a2c"))
+	_styled_trees(field,vale)
+	_styled_regions(floor_id)
+	_styled_rocks(floor_id)
+	_styled_trails(floor_id)
+	_styled_camp(floor_id)
+	_styled_discoveries(floor_id)
+	_styled_player(field)
+	draw_rect(field.grow(2),Color("#2f5a3d"),false,3.0)
+	draw_rect(Rect2(Vector2.ZERO,size),Color("#0b1a13"),false,2.0)
+
+func _styled_trees(field: Rect2, vale: bool) -> void:
+	var step := 18.0
+	var columns := int(field.size.x / step) + 1
+	var rows := int(field.size.y / step) + 1
+	for gy in range(rows):
+		for gx in range(columns):
+			var seed_value: int = absi((gx * 73856093) ^ (gy * 19349663))
+			if seed_value % 100 < 22:
+				continue
+			var at := field.position + Vector2(gx * step + float(seed_value % 9),gy * step + float((seed_value / 9) % 9))
+			if not field.has_point(at):
+				continue
+			var radius := 4 + seed_value % 3
+			if vale:
+				_blob(at,radius - 1,Color("#9a8a4a"))
+				_blob(at + Vector2(-1,-1),radius - 2,Color("#cdb979"))
+			else:
+				_blob(at + Vector2(1,2),radius,Color("#122d1a"))
+				_blob(at,radius,Color("#1a4426"))
+				_blob(at + Vector2(-1,-2),radius - 2,Color("#2f6b3a"))
+				if seed_value % 5 == 0:
+					draw_rect(Rect2(at + Vector2(-2,-3),Vector2(2,2)),Color("#4f9a52"))
+
+func _styled_regions(floor_id: int) -> void:
+	if floor_id == 1:
+		var sand := _map_rect(Rect2(1240,70,410,365))
+		draw_rect(sand,Color(0.80,0.78,0.52,0.28))
+		_dashed(sand,Color("#d9d29a"))
+		var danger := _map_rect(Rect2(1260,440,410,400))
+		draw_rect(danger,Color(0.45,0.31,0.17,0.55))
+		_dashed(danger,Color("#b58a55"))
+		draw_rect(_map_rect(Rect2(0,900,1300,420)),Color(0.04,0.14,0.07,0.28))
+		var water := _map_rect(Rect2(1300,930,370,390))
+		draw_rect(water,Color("#2a65a8"))
+		draw_rect(water.grow(-3),Color("#2f73bd"))
+		_dashed(water,Color("#8fc3ee"))
+		draw_rect(Rect2(water.position + Vector2(8,water.size.y * 0.55),Vector2(24,6)),Color("#8a5a30"))
+	else:
+		for area: Rect2 in [Rect2(205,95,600,430),Rect2(1010,145,350,300),Rect2(1080,625,405,350),Rect2(1160,920,390,345)]:
+			var zone := _map_rect(area)
+			draw_rect(zone,Color(0.55,0.43,0.2,0.4))
+			_dashed(zone,Color("#e3cf8c"))
+
+func _styled_rocks(floor_id: int) -> void:
+	var rocks: Array = [Rect2(200,120,500,90),Rect2(1040,280,330,40),Rect2(1130,990,380,45)] if floor_id == 2 else FloorView.ROCKS + (FloorView.EXPANSION_ROCKS if floor_id == 1 else [])
+	for rock: Rect2 in rocks:
+		var area := _map_rect(rock)
+		var center := area.position + area.size / 2.0
+		var span := maxi(2,int(minf(area.size.x,area.size.y) / 2.0) + 1)
+		var tone := Color("#8f7d5c") if floor_id == 2 else Color("#59615d")
+		_blob(center + Vector2(1,1),span,Color("#2b302d") if floor_id != 2 else Color("#6e5f43"))
+		_blob(center,span,tone)
+		_blob(center + Vector2(-1,-1),maxi(1,span - 2),tone.lightened(0.25))
+
+func _styled_trails(floor_id: int) -> void:
+	var trails: Array = []
+	if floor_id == 2:
+		trails.append_array(Floor2Layout.PATHS)
+	else:
+		trails.append_array(FloorView.TRAILS)
+		if floor_id == 1:
+			for item: Dictionary in FloorView.EXPANSION_TRAILS: trails.append(item.points)
+			if progress != null and progress.discovered_pois.has("secretwood_wood_southeast"): trails.append(FloorView.SECRET_TRAIL)
+	for trail: Array in trails:
+		var points := PackedVector2Array()
+		for point: Vector2 in trail: points.append(_styled_point(point))
+		var shadow := PackedVector2Array()
+		for point: Vector2 in points: shadow.append(point + Vector2(1,1))
+		draw_polyline(shadow,Color(0,0,0,0.45),4.0,false)
+		draw_polyline(points,Color("#dcc58c") if floor_id != 2 else Color("#f0dba0"),3.0,false)
+		for end_point: Vector2 in [points[0],points[points.size() - 1]]:
+			draw_rect(Rect2(end_point - Vector2(2,2),Vector2(5,5)),Color("#f1e2b0"))
+
+func _styled_camp(floor_id: int) -> void:
+	var area := SafeCamp.area_for_floor(floor_id)
+	var zone := _map_rect(area)
+	draw_rect(zone,Color(0.62,0.78,0.5,0.4))
+	var fire := DefeatArt.texture("fire",2)
+	draw_texture(fire,(zone.position + zone.size / 2.0 - fire.get_size() / 2.0).floor())
+	if floor_id == 2:
+		draw_rect(Rect2(_styled_point(Floor2Layout.TOWER_POSITION) - Vector2(3,3),Vector2(6,6)),Color("#e8c982"))
+
+func _styled_discoveries(floor_id: int) -> void:
+	if progress == null:
+		return
+	var leaf := DefeatArt.texture("leaf_badge",2)
+	for spot: Dictionary in Exploration.resources_for_floor(floor_id):
+		if progress.discovered_pois.has(spot.id):
+			draw_texture(leaf,(_styled_point(spot.position) - leaf.get_size() / 2.0).floor())
+	var chest := DefeatArt.texture("chest",2)
+	for cache: Dictionary in Exploration.chests_for_floor(floor_id):
+		if progress.opened_caches.has(cache.id):
+			draw_texture(chest,(_styled_point(cache.position) - chest.get_size() / 2.0).floor())
+
+func _styled_player(field: Rect2) -> void:
+	var center := _styled_point(player_position).clamp(field.position + Vector2(26,24),field.end - Vector2(26,34))
+	draw_rect(Rect2(center - Vector2(25,25),Vector2(50,50)),Color(0.62,0.9,0.45,0.55))
+	draw_rect(Rect2(center - Vector2(25,25),Vector2(50,50)),Color("#f0c850"),false,2.0)
+	draw_texture_rect_region(EXPLORER,Rect2(center - Vector2(22,21),Vector2(44,40)),Rect2(13,3,22,20))
+	var font := DefeatView.font()
+	var label := "Você"
+	var width := font.get_string_size(label,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x
+	var plate := Rect2(center + Vector2(-width / 2.0 - 7,26),Vector2(width + 14,19))
+	draw_rect(plate.grow(1),Color("#e8d6a0"))
+	draw_rect(plate,Color("#10261b"))
+	draw_string(font,plate.position + Vector2(7,14),label,HORIZONTAL_ALIGNMENT_LEFT,-1,14,Color("#fff0c3"))
