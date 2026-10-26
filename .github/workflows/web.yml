@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   web:
+    if: github.ref != 'refs/heads/dev/expansao-andares-3-4'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -368,6 +369,84 @@ jobs:
           path: build/web/
           if-no-files-found: error
           retention-days: 1
+
+  equipment_preview:
+    name: Equipment preview on Vercel TEST
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev/expansao-andares-3-4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout validated commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Godot 4.5.1 and Web templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot/releases/download/4.5.1-stable"
+          curl --fail --location --retry 3 "$base/Godot_v4.5.1-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot-bin
+          chmod +x /tmp/godot-bin/Godot_v4.5.1-stable_linux.x86_64
+          ln -s /tmp/godot-bin/Godot_v4.5.1-stable_linux.x86_64 /tmp/godot-bin/godot
+          echo /tmp/godot-bin >> "$GITHUB_PATH"
+          curl --fail --location --retry 3 "$base/Godot_v4.5.1-stable_export_templates.tpz" -o /tmp/templates.tpz
+          mkdir -p build/templates
+          touch build/.gdignore
+          unzip -p /tmp/templates.tpz templates/web_nothreads_release.zip > build/templates/web_nothreads_release.zip
+      - name: Import and validate equipment scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --import 2>&1 | tee /tmp/equipment-import.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/equipment-import.log; then exit 1; fi
+      - name: Test integrated equipment screen at 360x800
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          QA_RENDER_DIR="$PWD/build/equipment-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 70s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --resolution 360x800 --script res://tests/equipment_screen_integration.gd 2>&1 | tee /tmp/equipment-test.log
+          if grep -E 'SCRIPT ERROR|ERROR:|EQUIPMENT_SCREEN_FAIL:|EQUIPMENT_SCREEN_TIMEOUT' /tmp/equipment-test.log; then exit 1; fi
+          grep '^EQUIPMENT_SCREEN_RESULT: failures=0' /tmp/equipment-test.log
+          test -s build/equipment-qa/equipment-integrated-360x800.png
+      - name: Save equipment capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: equipment-integrated-360x800
+          path: build/equipment-qa/equipment-integrated-360x800.png
+          if-no-files-found: error
+          retention-days: 3
+      - name: Export updated Web package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee /tmp/equipment-export.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/equipment-export.log; then exit 1; fi
+          test -s build/web/index.html && test -s build/web/index.wasm && test -s build/web/index.pck
+      - name: Publish TEST preview
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_6XRzZ5HN4AOw2hWyIpf8McMU
+          VERCEL_PROJECT_ID: prj_gYKlx91MiswTmwj2PLiN5liQD0B7
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERCEL_TOKEN" ]]; then echo '::error::VERCEL_TOKEN unavailable'; exit 1; fi
+          mkdir -p build/web/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > build/web/.vercel/project.json
+          cp tools/preview-vercel.json build/web/vercel.json
+          cd build/web
+          npx --yes vercel@62.7.0 deploy --yes --non-interactive --meta "githubCommitSha=$GITHUB_SHA" --meta "githubCommitRef=$GITHUB_REF_NAME" > /tmp/equipment-deploy.json
+          node --input-type=module -e '
+            import { readFileSync, appendFileSync } from "node:fs";
+            const result = JSON.parse(readFileSync("/tmp/equipment-deploy.json", "utf8"));
+            if (result.status !== "ok" || result.deployment.readyState !== "READY" || result.deployment.target === "production") process.exit(1);
+            const url = result.deployment.url;
+            console.log("Equipment TEST preview: " + url);
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, "Equipment TEST preview: https://" + url + "\n");
+          '
 
   deploy:
     name: Publish tested Web build to Vercel
