@@ -33,7 +33,7 @@ func _run() -> void:
 		for category: String in ArsenalRules.CATEGORIES:
 			var recipe := LootRules.set_recipe(floor_id,category)
 			recipes_ok = recipes_ok and not recipe.is_empty() and recipe.materials.size() == 3 and LootRules.valid_recipe_id(LootRules.recipe_id(floor_id,category))
-	check(recipes_ok and LootRules.set_recipe(1,"espada").rarity == "raro" and LootRules.set_recipe(2,"espada").rarity == "epico" and LootRules.set_recipe(3,"espada").is_empty(), "every floor-set recipe is complete; floor 1 gives Raro and floor 2 gives Épico")
+	check(recipes_ok and LootRules.set_recipe(1,"espada").rarity == "comum" and LootRules.set_recipe(2,"espada").rarity == "comum" and LootRules.set_recipe(3,"espada").is_empty(), "every floor-set recipe is complete; both floor crafts start Common")
 	var spada := LootRules.set_recipe(1,"espada")
 	check(spada.gold == 120 and spada.materials["Presa de Javali"] == 6 and spada.materials["Couro|incomum"] == 3 and spada.materials["Coração da Mata"] == 1, "Espada da Mata costs 6 Presa de Javali, 3 Couro Incomum, 1 Coração da Mata and 120 gold")
 	# Taxas de drop nomeado.
@@ -107,7 +107,7 @@ func _run() -> void:
 	check(p.can_craft_set(1,"espada"), "an unlocked recipe with every material can be crafted")
 	var gold_before := p.gold
 	var uid := p.craft_set(1,"espada")
-	check(uid != "" and p.weapon(uid).rarity == "raro" and p.weapon(uid).category == "espada" and p.gold == gold_before - 120 and not p.bag.has("Presa de Javali") and not p.bag.has("Coração da Mata"), "crafting pays the materials and gold and creates a Raro sword")
+	check(uid != "" and p.weapon(uid).rarity == "comum" and p.weapon(uid).category == "espada" and p.gold == gold_before - 120 and not p.bag.has("Presa de Javali") and not p.bag.has("Coração da Mata"), "crafting pays the materials and gold and creates a Common sword")
 	check(not p.can_use_fragment(2,"espada") and not p.use_fragment(2,"espada"), "a Fragmento is required to unlock a locked recipe")
 	p.add_item("Fragmento de Receita")
 	check(p.can_use_fragment(2,"espada") and p.use_fragment(2,"espada") and p.recipe_unlocked(2,"espada") and not p.recipe_unlocked(2,"arco") and p.fragments() == 0, "one Fragmento unlocks exactly one recipe and is consumed")

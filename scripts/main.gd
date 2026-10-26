@@ -133,6 +133,7 @@ func _ready() -> void:
 	hud.map_toggled.connect(_toggle_map)
 	hud.skill_pressed.connect(_use_skill)
 	hud.rpg_action.connect(_rpg_action)
+	hud.equipment_loadout_action.connect(_equipment_loadout_action)
 	hud.station_action.connect(_station_action)
 	hud.panel_closed.connect(func():
 		(world.get_node("FloorView") as FloorView).set_chest_open(false)
@@ -721,6 +722,8 @@ func _station_action(action: String, item: String) -> void:
 				if fragment_parts.size() == 2 and fragment_parts[0].is_valid_int(): success = progress.use_fragment(int(fragment_parts[0]),fragment_parts[1])
 		["Ferreiro", "evolve_weapon"]:
 			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro": success = progress.evolve_weapon(item)
+		["Ferreiro", "evolve_equipment"]:
+			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro": success = progress.evolve_equipment(item)
 		["Ferreiro", "enhance_weapon"]:
 			if progress.training_mode or not trial.active() and SafeCamp.nearest_station(player.global_position,FloorCatalog.feature(progress.ascension.current_floor,"village_camp")) == "Ferreiro":
 				var outcome := progress.enhance_weapon(item,hud.smith_use_seal)
@@ -818,6 +821,26 @@ func _toggle_character() -> void:
 		input_driver.blocked = true
 		hud.rpg_panel.allow_respec = progress.training_mode or not trial.active() and SafeCamp.in_clearance(player.global_position)
 		hud.show_character(progress)
+
+func _equipment_loadout_action(action: String, index: int) -> void:
+	if not hud.equipment_screen.visible or not player.health.is_alive():
+		return
+	if action == "select":
+		hud.equipment_selected_set = index
+		hud.refresh_equipment_screen(progress)
+		return
+	var success := false
+	if action == "save":
+		success = progress.save_loadout(index)
+	elif action == "apply":
+		success = progress.apply_loadout(index)
+	if not success:
+		hud.show_notice("Conjunto indisponível")
+		return
+	hud.equipment_selected_set = index
+	_save_progress()
+	hud.refresh_equipment_screen(progress)
+	hud.show_notice("Conjunto salvo" if action == "save" else "Conjunto equipado")
 
 func _toggle_map() -> void:
 	if transitioning or hud.save_panel.visible:

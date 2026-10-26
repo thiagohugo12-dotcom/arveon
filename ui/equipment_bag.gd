@@ -215,12 +215,12 @@ func _rarity_for_category(id: String) -> Dictionary:
 	if ArsenalRules.CATEGORIES.has(id):
 		for uid: String in progress.weapon_instances:
 			if progress.weapon(uid).category == id: return ArsenalRules.RARITIES[progress.weapon(uid).rarity]
-	return ArsenalRules.rarity(id)
+	return ArsenalRules.RARITIES[progress.equipment_rarity(id)]
 
 func _card(id: String) -> void:
 	var meta := ArsenalRules.metadata(id)
 	var rarity := _rarity_for_category(id)
-	var color := Color(rarity.color).darkened(0.22)
+	var color := Color(rarity.color)
 	var button := Button.new()
 	button.custom_minimum_size = Vector2(60,62)
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -239,7 +239,7 @@ func _card(id: String) -> void:
 	row.offset_bottom = -5
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(row)
-	var icon := PixelItemIcon.new(meta.icon,color)
+	var icon := PixelItemIcon.new(meta.icon)
 	icon.framed = false
 	icon.custom_minimum_size = Vector2(44,44)
 	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -253,6 +253,17 @@ func _card(id: String) -> void:
 	marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(marker)
 	button.tooltip_text = "%s · %s\n%s" % [RPGRules.EQUIPMENT[id].name,rarity.name,_attributes(id)]
+	var rarity_frame := Panel.new()
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color.TRANSPARENT
+	frame_style.draw_center = false
+	frame_style.border_color = color
+	frame_style.set_border_width_all(2)
+	frame_style.set_corner_radius_all(4)
+	rarity_frame.add_theme_stylebox_override("panel",frame_style)
+	rarity_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rarity_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(rarity_frame)
 
 func _details(id: String, comparing: bool) -> void:
 	var item: Dictionary = RPGRules.EQUIPMENT[id]

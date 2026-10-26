@@ -48,7 +48,7 @@ func _run() -> void:
 		await frames()
 		TOUCH._tap(hud,hud.inventory_tabs.get_child(1))
 		await frames()
-		check(hud.equipment_bag.cards.size() == 9 and hud.inventory_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED,"all equipment in vertically scrolling compact list")
+		check(hud.equipment_bag.cards.size() == main.progress.equipment.size() and hud.inventory_scroll.horizontal_scroll_mode == ScrollContainer.SCROLL_MODE_DISABLED,"all equipment in vertically scrolling compact list")
 		check(hud.inventory_close.get_global_rect().end.y <= resolution.y and hud.inventory_tabs.get_child(1).size.y >= 44,"fixed close and tabs fit viewport")
 		await capture(prefix + "mochila")
 		hud.inventory_selected = "cajado"

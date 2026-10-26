@@ -8,7 +8,7 @@ const RARITIES := {
 	"raro": {"name": "Raro", "color": "#7eb5ed"},
 	"epico": {"name": "Épico", "color": "#be8fea"},
 	"lendario": {"name": "Lendário", "color": "#e7c36d"},
-	"mitico": {"name": "Mítico · reservado", "color": "#e891bd"}}
+	"mitico": {"name": "Místico", "color": "#e53935"}}
 const CATEGORIES := {
 	"espada": {"name": "Espada", "reach": 75.0, "interval": 0.72, "projectile": "", "speed": 0.0},
 	"machado": {"name": "Machado", "reach": 80.0, "interval": 0.9, "projectile": "", "speed": 0.0},

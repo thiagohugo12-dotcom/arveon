@@ -8,7 +8,7 @@ const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
 const SELL_PRICE := 2
-const SAVE_VERSION := 12
+const SAVE_VERSION := 13
 # Legacy-format mode remains only for migration fixtures. Runtime uses v10.
 var etapa2_enabled := true
 var abilities := AbilityState.new()
@@ -75,6 +75,7 @@ var attributes: Dictionary = RPGRules.empty_attributes()
 var skills: Dictionary = {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral": 1}
 # Recipe IDs are unique inventory identities; equipping never removes ownership.
 var equipment: Dictionary = {"espada": 0}
+var equipment_rarities: Dictionary = {}
 var equipped: Dictionary = {"Arma": "espada", "Capacete": "", "Armadura": "", "Luvas": "", "Botas": "", "Anel": "", "Acessório": "", "Amuleto": ""}
 var weapon_instances: Dictionary = {}
 var equipped_weapon_uid := ""
@@ -96,6 +97,7 @@ var introduction: Dictionary = {"status":"legacy","met_smith":false,"weapon":""}
 
 func begin_new_character() -> void:
 	equipment = {}
+	equipment_rarities = {}
 	equipped = {"Arma":"","Capacete":"","Armadura":"","Luvas":"","Botas":"","Anel":"","Acessório":"","Amuleto":""}
 	weapon_instances = {}
 	equipped_weapon_uid = ""
@@ -257,6 +259,7 @@ func craft_set(floor_id: int, category: String) -> String:
 	_pay(recipe)
 	if LootRules.is_piece(category):
 		equipment[category] = 0
+		equipment_rarities[category] = "comum"
 		return category
 	var uid := _create_weapon(category,recipe.rarity)
 	if not equipment.has(category): equipment[category] = 0
@@ -288,7 +291,9 @@ func reset_mining_for_training(floor_id: int) -> void:
 	if training_mode: floor_states[str(floor_id)].mining.clear()
 
 func can_evolve_weapon(uid: String) -> bool:
-	return weapon_instances.has(uid) and not save_blocked and _can_pay(EquipmentEconomy.rarity_recipe(weapon(uid).rarity))
+	if not weapon_instances.has(uid) or save_blocked: return false
+	var recipe := EquipmentEconomy.rarity_recipe(weapon(uid).rarity)
+	return not recipe.is_empty() and _can_pay(recipe)
 
 func evolve_weapon(uid: String) -> bool:
 	if not can_evolve_weapon(uid): return false
@@ -298,6 +303,23 @@ func evolve_weapon(uid: String) -> bool:
 	data.level = 0
 	data.choices = {}
 	if uid == equipped_weapon_uid: equipment[data.category] = 0
+	return true
+
+func equipment_rarity(id: String) -> String:
+	return str(equipment_rarities.get(id, ArsenalRules.metadata(id).get("rarity", "comum")))
+
+func can_evolve_equipment(id: String) -> bool:
+	if not equipment.has(id) or not RPGRules.EQUIPMENT.has(id) or not RPGRules.EQUIPMENT[id].has("set_floor") or save_blocked:
+		return false
+	var recipe := EquipmentEconomy.rarity_recipe(equipment_rarity(id))
+	return not recipe.is_empty() and _can_pay(recipe)
+
+func evolve_equipment(id: String) -> bool:
+	if not can_evolve_equipment(id): return false
+	var current := equipment_rarity(id)
+	var recipe := EquipmentEconomy.rarity_recipe(current)
+	_pay(recipe)
+	equipment_rarities[id] = EquipmentEconomy.RARITY_ORDER[EquipmentEconomy.RARITY_ORDER.find(current) + 1]
 	return true
 
 func can_enhance_weapon(uid: String) -> bool:
@@ -489,7 +511,7 @@ func combat_stats() -> Dictionary:
 
 func discover_nearby(point: Vector2, floor_id: int = 1) -> bool:
 	var changed := false
-	for spot: Dictionary in Exploration.resources_for_floor(floor_id):
+	for spot: Dictionary in Exploration.discoveries_for_floor(floor_id):
 		if not discovered_pois.has(spot.id) and point.distance_squared_to(spot.position) <= 95.0 * 95.0:
 			discovered_pois[spot.id] = true
 			changed = true
@@ -887,7 +909,7 @@ func load_text(text: String) -> bool:
 		new_discovered = discovered_value
 	var new_rpg: Dictionary = {"attributes": RPGRules.empty_attributes(),
 		"skills": {"Corte Circular": 1, "Investida": 1, "Fúria Ancestral": 1},
-		"equipment": {"espada": 0}, "equipped": {"Arma": "espada", "Capacete": "", "Armadura": "", "Luvas": "", "Botas": "", "Anel": "", "Acessório": "", "Amuleto": ""}}
+		"equipment": {"espada": 0}, "equipment_rarities": {}, "equipped": {"Arma": "espada", "Capacete": "", "Armadura": "", "Luvas": "", "Botas": "", "Anel": "", "Acessório": "", "Amuleto": ""}}
 	if loaded_version == 4:
 		var legacy_attributes: Variant = parsed.get("attributes")
 		if not legacy_attributes is Dictionary or legacy_attributes.size() != 4:
@@ -1054,6 +1076,7 @@ func load_text(text: String) -> bool:
 	attributes = new_rpg.attributes
 	skills = new_rpg.skills
 	equipment = new_rpg.equipment
+	equipment_rarities = new_rpg.equipment_rarities
 	equipped = new_rpg.equipped
 	weapon_instances = new_instances
 	equipped_weapon_uid = new_equipped_uid
@@ -1065,7 +1088,9 @@ func load_text(text: String) -> bool:
 func equipment_metadata() -> Dictionary:
 	var result := {}
 	for id: String in equipment:
-		result[id] = ArsenalRules.metadata(id)
+		var meta := ArsenalRules.metadata(id)
+		meta.rarity = equipment_rarity(id)
+		result[id] = meta
 	return result
 
 func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
@@ -1079,7 +1104,7 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 		return null
 	var attribute_spent := 0
 	var skill_spent := 0
-	var result := {"attributes": RPGRules.empty_attributes(), "skills": {}, "equipment": {}, "equipped": value.equipped.duplicate()}
+	var result := {"attributes": RPGRules.empty_attributes(), "skills": {}, "equipment": {}, "equipment_rarities": {}, "equipped": value.equipped.duplicate()}
 	for name: String in attribute_names:
 		var amount: Variant = value.attributes.get(name)
 		if not _bounded_integer(amount, 0, 198):
@@ -1099,6 +1124,8 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 		if not RPGRules.EQUIPMENT.has(id) or not _bounded_integer(value.equipment[id], 0, 20 if version >= 12 and ArsenalRules.CATEGORIES.has(id) else 3):
 			return null
 		result.equipment[id] = int(value.equipment[id])
+
+
 	if value.has("equipment_meta"):
 		if not value.equipment_meta is Dictionary or value.equipment_meta.size() != value.equipment.size():
 			return null
@@ -1108,8 +1135,16 @@ func _valid_rpg(value: Variant, total_xp: int, version: int) -> Variant:
 			if not meta is Dictionary or meta.size() != canonical.size():
 				return null
 			for field: String in canonical:
-				if meta.get(field) != canonical[field]:
+				if field == "rarity":
+					var rarity := str(meta.get(field, ""))
+					if not EquipmentEconomy.RARITY_ORDER.has(rarity): return null
+					if not RPGRules.EQUIPMENT[id].has("set_floor") and rarity != canonical.rarity: return null
+					result.equipment_rarities[id] = rarity
+				elif meta.get(field) != canonical[field]:
 					return null
+	if not value.has("equipment_meta"):
+		for id: String in value.equipment:
+			result.equipment_rarities[id] = ArsenalRules.metadata(id).rarity
 	for slot: String in RPGRules.SLOTS:
 		var id: Variant = value.equipped.get(slot,"" if value.equipped.size() == 3 and not RPGRules.LEGACY_SLOTS.has(slot) else null)
 		if not id is String:
@@ -1128,7 +1163,7 @@ func _valid_discoveries(value: Variant) -> Variant:
 	var result := {}
 	for id: String in value:
 		var valid := false
-		for spot: Dictionary in Exploration.known_resources():
+		for spot: Dictionary in Exploration.known_discoveries():
 			if spot.id == id:
 				valid = true
 				break

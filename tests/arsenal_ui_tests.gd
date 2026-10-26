@@ -24,7 +24,7 @@ static func run_world(suite) -> void:
 		await suite.frames()
 		TOUCH._tap(hud,hud.inventory_tabs.get_child(1))
 		await suite.frames()
-		suite.check(hud.equipment_bag.cards.size() == 9 and main.input_driver.blocked, "compact equipment listing preserves all owned gear and modal input " + str(size))
+		suite.check(hud.equipment_bag.cards.size() == p.equipment.size() and main.input_driver.blocked, "compact equipment listing preserves all owned gear and modal input " + str(size))
 		suite.check(hud.inventory_panel.get_global_rect().end.y <= size.y and hud.inventory_close.size.y >= 40 and hud.inventory_tabs.get_child(1).size.y >= 44, "fixed header tabs closing fit touch viewport " + str(size))
 		var card: Button = hud.equipment_bag.cards.espada
 		hud.inventory_scroll.scroll_vertical += maxi(0,roundi(card.global_position.y-hud.inventory_scroll.global_position.y-4))
@@ -67,7 +67,7 @@ static func run_world(suite) -> void:
 			if p.equipped.Arma != id:
 				TOUCH._tap(hud,hud.equipment_bag.equip_button)
 				await suite.frames()
-			suite.check(p.equipped.Arma == id and main.player.attack.weapon.category == id and p.equipment.size() == 9, "touch equips functional category without item duplication " + id + str(size))
+			suite.check(p.equipped.Arma == id and main.player.attack.weapon.category == id and p.equipment.size() == RPGRules.EQUIPMENT.size(), "touch equips functional category without item duplication " + id + str(size))
 			var restored := GameProgress.new()
 			restored.save_path = path
 			suite.check(restored.load_save() and restored.equipped.Arma == id, "equipment touch action autosaves selected weapon " + id + str(size))

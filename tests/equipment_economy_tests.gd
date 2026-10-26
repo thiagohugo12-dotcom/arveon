@@ -48,6 +48,10 @@ static func run(suite: SceneTree) -> void:
 	var before_rarity: String = progress.weapon(first).rarity
 	suite.check(progress.evolve_weapon(first) and before_rarity == "raro" and progress.weapon(first).rarity == "epico" and progress.weapon(first).level == 0 and progress.weapon(first).choices.is_empty(),"rarity evolution resets level and bonuses only for one copy")
 	suite.check(progress.weapon(second).rarity == "raro" and progress.weapon(second).level == 0,"rarity evolution preserves other copies")
+	for target_rarity: String in ["lendario", "mitico"]:
+		suite.check(progress.can_evolve_weapon(first) and progress.evolve_weapon(first) and progress.weapon(first).rarity == target_rarity,"weapon rarity progression reaches " + target_rarity)
+	suite.check(not progress.can_evolve_weapon(first) and not progress.evolve_weapon(first),"Mythic weapons cannot evolve beyond the final rarity")
+	suite.check(EquipmentEconomy.rarity_recipe("lendario").is_empty() == false and EquipmentEconomy.rarity_recipe("mitico").is_empty(),"Legendary can advance to Mythic and Mythic has no next recipe")
 	progress.equip_weapon_instance(second)
 	for i in range(15): progress.enhance_weapon(second,false,0.0)
 	suite.check(progress.weapon(second).level == 15 and progress.choose_weapon_bonus(second,5,"corte") and progress.choose_weapon_bonus(second,10,"ritmo") and progress.choose_weapon_bonus(second,15,"critico"),"three milestones offer permanent choices by category")

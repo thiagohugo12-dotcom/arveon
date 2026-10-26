@@ -2,7 +2,7 @@ class_name EquipmentEconomy
 extends RefCounted
 
 # Balanceamento provisório: dados de economia separados da apresentação.
-const RARITY_ORDER := ["comum", "incomum", "raro", "epico", "lendario"]
+const RARITY_ORDER := ["comum", "incomum", "raro", "epico", "lendario", "mitico"]
 const MATERIALS := ["Couro", "Seda", "Essência", "Minério de Ferro"]
 const SEAL := "Selo de Proteção"
 const DROP_TABLE := {
@@ -72,7 +72,7 @@ static func vale_iron_recipe(rarity: String) -> Dictionary:
 
 static func rarity_recipe(current: String) -> Dictionary:
 	var tier := RARITY_ORDER.find(current)
-	if tier < 0 or tier >= 4: return {}
+	if tier < 0 or tier >= RARITY_ORDER.size() - 1: return {}
 	var next: String = RARITY_ORDER[tier+1]
 	return {"gold":50+50*tier,"materials":{key("Essência",next):2+tier,key("Couro",next):1+tier}}
 

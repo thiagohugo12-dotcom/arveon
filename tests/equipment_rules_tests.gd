@@ -65,9 +65,9 @@ func _run() -> void:
 	check(not GameProgress.new().load_text(JSON.stringify(parsed)), "an unknown item id is rejected")
 	# Receitas das peças de conjunto.
 	var recipe := LootRules.set_recipe(1,"elmo_mata")
-	check(recipe.gold == 90 and recipe.materials["Presa de Javali"] == 4 and recipe.materials["Couro|incomum"] == 2 and recipe.rarity == "raro", "Elmo da Mata costs 4 Presa de Javali, 2 Couro Incomum and 90 gold")
+	check(recipe.gold == 90 and recipe.materials["Presa de Javali"] == 4 and recipe.materials["Couro|incomum"] == 2 and recipe.rarity == "comum", "Elmo da Mata costs 4 Presa de Javali, 2 Couro Incomum and 90 gold")
 	var vale := LootRules.set_recipe(2,"anel_vale")
-	check(vale.gold == 180 and vale.materials["Pepita Dourada"] == 4 and vale.materials["Seda|raro"] == 2 and vale.rarity == "epico", "Anel do Vale costs 4 Pepita Dourada, 2 Seda Rara and 180 gold")
+	check(vale.gold == 180 and vale.materials["Pepita Dourada"] == 4 and vale.materials["Seda|raro"] == 2 and vale.rarity == "comum", "Anel do Vale costs 4 Pepita Dourada, 2 Seda Rara and 180 gold")
 	check(LootRules.set_recipe(1,"anel_vale").is_empty() and LootRules.valid_recipe_id("piece:2:anel_vale") and not LootRules.valid_recipe_id("piece:1:anel_vale"), "a piece only has a recipe on its own floor")
 	var crafter := fresh()
 	crafter.gold = 500
@@ -77,9 +77,20 @@ func _run() -> void:
 	crafter.add_item("Fragmento de Receita")
 	check(crafter.use_fragment(1,"elmo_mata") and crafter.recipe_unlocked(1,"elmo_mata") and not crafter.recipe_unlocked(1,"luvas_mata"), "a Fragmento unlocks one piece recipe")
 	check(crafter.craft_set(1,"elmo_mata") == "elmo_mata" and crafter.equipment.has("elmo_mata") and crafter.gold == 410 and crafter.bag.is_empty(), "crafting a piece pays and adds it to the equipment")
+	check(crafter.equipment_rarity("elmo_mata") == "comum", "new set pieces start Common")
+	var rarity_steps := ["incomum", "raro", "epico", "lendario", "mitico"]
+	for target_rarity: String in rarity_steps:
+		var evolution := EquipmentEconomy.rarity_recipe(crafter.equipment_rarity("elmo_mata"))
+		crafter.gold += int(evolution.gold)
+		for material: String in evolution.materials:
+			crafter.add_item(material,int(evolution.materials[material]))
+		check(crafter.can_evolve_equipment("elmo_mata"), "piece can pay the next rarity recipe for " + target_rarity)
+		check(crafter.evolve_equipment("elmo_mata") and crafter.equipment_rarity("elmo_mata") == target_rarity, "piece evolves to " + target_rarity)
+	check(not crafter.can_evolve_equipment("elmo_mata") and not crafter.evolve_equipment("elmo_mata"), "Mythic is the final piece rarity")
+	check(ArsenalRules.RARITIES.mitico.color == "#e53935", "Mythic rarity uses the approved red border")
 	check(not crafter.can_craft_set(1,"elmo_mata") and crafter.equip("elmo_mata"), "a piece is unique and can then be worn")
 	var saved := GameProgress.new()
-	check(saved.load_text(crafter.to_json()) and saved.recipes == ["piece:1:elmo_mata"] and saved.equipped.Capacete == "elmo_mata", "an unlocked piece recipe and the worn piece survive the save")
+	check(saved.load_text(crafter.to_json()) and saved.recipes == ["piece:1:elmo_mata"] and saved.equipped.Capacete == "elmo_mata" and saved.equipment_rarity("elmo_mata") == "mitico", "an unlocked piece recipe and the worn piece survive the save")
 	# Mochila com limite, excedente no Baú, expansão e gemas.
 	var bag_test := fresh()
 	check(bag_test.bag_capacity() == 40 and bag_test.used_slots() == 0 and bag_test.has_room(), "the bag starts with 40 slots")

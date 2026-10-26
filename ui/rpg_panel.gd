@@ -4,6 +4,7 @@ extends PanelContainer
 signal action_requested(action: String, id: String, expected: int)
 signal closed
 signal bag_requested
+signal equipment_requested
 var content: VBoxContainer
 var scroll: ScrollContainer
 var close_button: Button
@@ -50,6 +51,7 @@ var evo_tabs: HBoxContainer
 var _last_view_key := ""
 var detail_card: Control
 var header_row: HBoxContainer
+var equipment_open_button: Button
 var column_box: VBoxContainer
 
 func _ready() -> void:
@@ -78,6 +80,13 @@ func _ready() -> void:
 		scroll.scroll_vertical = 0
 	)
 	header.add_child(training_back)
+	equipment_open_button = Button.new()
+	equipment_open_button.text = "Equipamento"
+	equipment_open_button.tooltip_text = "Abrir tela de Equipamento"
+	equipment_open_button.custom_minimum_size = Vector2(98, 44)
+	equipment_open_button.add_theme_font_size_override("font_size", 14)
+	equipment_open_button.pressed.connect(func(): equipment_requested.emit())
+	header.add_child(equipment_open_button)
 	var exit := Button.new()
 	header_close = exit
 	exit.text = "×"

@@ -39,7 +39,7 @@ const EQUIPMENT := {
 	"trama": {"name": "Trama de seda", "slot": "Armadura", "damage": 0, "hp": 6, "speed": 4, "spirit": 2, "armor": 0, "gold": 30, "materials": {"Seda": 4, "Ervas": 2}},
 	"pedra": {"name": "Amuleto de pedra", "slot": "Acessório", "damage": 1, "hp": 6, "speed": 0, "spirit": 0, "armor": 0, "gold": 20, "materials": {"Pedras": 3, "Essência": 1}},
 	"semente": {"name": "Talismã da mata", "slot": "Acessório", "damage": 0, "hp": 0, "speed": 4, "spirit": 3, "armor": 0, "gold": 25, "materials": {"Madeira": 2, "Ervas": 3, "Essência": 2}},
-# Conjuntos de andar (Marco 6): Mata = Raro, Vale = Épico. Só podem ser forjados com a receita do andar.
+# Conjuntos de andar (Marco 6): rarity fields remain as legacy-save defaults; new pieces start Comuns and store rarity per owned item.
 	"elmo_mata": {"name": "Elmo da Mata", "slot": "Capacete", "rarity": "raro", "set_floor": 1, "damage": 0, "hp": 16, "speed": 0, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
 	"colete_mata": {"name": "Armadura da Mata", "slot": "Armadura", "rarity": "raro", "set_floor": 1, "damage": 0, "hp": 19, "speed": 0, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
 	"luvas_mata": {"name": "Luvas da Mata", "slot": "Luvas", "rarity": "raro", "set_floor": 1, "damage": 3, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.008, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},

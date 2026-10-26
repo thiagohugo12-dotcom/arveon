@@ -15,6 +15,7 @@ signal map_toggled
 signal character_toggled
 signal skill_pressed(index: int)
 signal rpg_action(action: String, id: String, expected: int)
+signal equipment_loadout_action(action: String, index: int)
 var save_panel: SavePanel
 var record_button: Button
 var boss_name: Label
@@ -28,6 +29,9 @@ var floor_buttons: Array[Button] = []
 var transition_cover: ColorRect
 var transition_active := false
 var rpg_panel: RPGPanel
+var equipment_shade: ColorRect
+var equipment_screen: EquipmentScreen
+var equipment_selected_set := 0
 var inventory_category := 0
 var diary_navigation: HBoxContainer
 var xp_bar: ProgressBar
@@ -537,6 +541,15 @@ func _ready() -> void:
 	rpg_panel = RPGPanel.new()
 	rpg_panel.z_index = 10
 	add_child(rpg_panel)
+	equipment_shade = ColorRect.new()
+	equipment_shade.color = Color(0.05, 0.08, 0.06, 0.88)
+	equipment_shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	equipment_shade.z_index = 11
+	equipment_shade.hide()
+	add_child(equipment_shade)
+	equipment_screen = EquipmentScreen.new()
+	equipment_screen.z_index = 12
+	add_child(equipment_screen)
 	transition_cover = ColorRect.new()
 	transition_cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	transition_cover.color = Color(0.04, 0.08, 0.07, 0.0)
@@ -546,7 +559,11 @@ func _ready() -> void:
 	add_child(transition_cover)
 	rpg_panel.closed.connect(func(): character_toggled.emit())
 	rpg_panel.bag_requested.connect(func(): _open_diary(0))
+	rpg_panel.equipment_requested.connect(_show_equipment_screen)
 	rpg_panel.action_requested.connect(func(action: String, id: String, expected: int): rpg_action.emit(action, id, expected))
+	equipment_screen.slot_requested.connect(_equipment_slot_requested)
+	equipment_screen.navigation_requested.connect(_equipment_navigation)
+	equipment_screen.loadout_requested.connect(func(action: String, index: int): equipment_loadout_action.emit(action, index))
 	restart = Button.new()
 	restart.z_index = 20
 	restart.text = "Você caiu · Reiniciar"
@@ -750,6 +767,12 @@ func _layout() -> void:
 	rpg_panel.size = Vector2(minf(820 if landscape else 640, (size.x - margin.x - right_inset - 12)/diary_scale), minf(780, (size.y - margin.y - bottom_inset - 12)/diary_scale))
 	rpg_panel.position = (size - rpg_panel.size*diary_scale) * 0.5
 	DiaryArt.skin(rpg_panel)
+	equipment_shade.position = Vector2.ZERO
+	equipment_shade.size = size
+	var equipment_scale := minf(size.x / 360.0, size.y / 800.0)
+	equipment_screen.scale = Vector2.ONE * equipment_scale
+	equipment_screen.size = Vector2(360, 800)
+	equipment_screen.position = (size - Vector2(360, 800) * equipment_scale) * 0.5
 	death_panel.size = Vector2(minf(820 if UiScale.compact else 520,size.x-16),minf(784,size.y-16))
 	death_panel.position = (size-death_panel.size)*0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
@@ -1434,6 +1457,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if rpg_panel.visible:
+		if equipment_screen.visible:
+			_touch_buttons(equipment_screen, event)
+			get_viewport().set_input_as_handled()
+			return
 		if _activate_touch_button(rpg_panel.close_button, event):
 			return
 		if _touch_contains(rpg_panel.scroll,event):
@@ -1577,9 +1604,58 @@ func show_character(progress: GameProgress) -> void:
 	call_deferred("_qa_ui_state","evolution")
 
 func close_character() -> void:
+	equipment_screen.hide()
+	equipment_shade.hide()
+	rpg_panel.modulate.a = 1.0
 	rpg_panel.hide()
 	_sync_controls()
 	call_deferred("_qa_ui_state","hud")
+
+func _show_equipment_screen() -> void:
+	if not rpg_panel.visible or rpg_panel.progress == null:
+		return
+	equipment_screen.present(rpg_panel.progress, int(hp_bar.value), int(hp_bar.max_value), equipment_selected_set)
+	equipment_shade.show()
+	rpg_panel.modulate.a = 0.0
+	_layout()
+
+func refresh_equipment_screen(value: GameProgress) -> void:
+	if equipment_screen.visible:
+		equipment_screen.present(value, int(hp_bar.value), int(hp_bar.max_value), equipment_selected_set)
+
+func _equipment_navigation(page: String) -> void:
+	if page == "equipamento":
+		return
+	equipment_screen.hide()
+	equipment_shade.hide()
+	rpg_panel.modulate.a = 1.0
+	match page:
+		"personagem":
+			rpg_panel.tab = 0
+			rpg_panel.refresh(rpg_panel.progress)
+		"habilidades":
+			rpg_panel.tab = 3
+			rpg_panel.refresh(rpg_panel.progress)
+		"mochila":
+			character_toggled.emit()
+			inventory_toggled.emit()
+		"mapa":
+			character_toggled.emit()
+			map_toggled.emit()
+		"missoes":
+			character_toggled.emit()
+			mission_expanded = true
+			_render_mission()
+		"close":
+			character_toggled.emit()
+
+func _equipment_slot_requested(item_id: String) -> void:
+	var value := rpg_panel.progress
+	_equipment_navigation("mochila")
+	if inventory_open and not item_id.is_empty():
+		inventory_category = 1
+		inventory_selected = item_id
+		refresh_inventory(value)
 
 func set_rpg_status(progress: GameProgress, player: PlayerActor) -> void:
 	if introduction_hud != progress.introduction_active():
@@ -2017,7 +2093,16 @@ func _smith_sets(progress: GameProgress) -> void:
 	var title := LootRules.weapon_title(smith_set_floor,smith_set_category)
 	var piece := LootRules.is_piece(smith_set_category)
 	if piece and progress.equipment.has(smith_set_category):
-		station_content.add_child(ForgeView.note("Peça já forjada","%s está no seu equipamento. Para fortalecê-la, use o aprimoramento normal." % title))
+		var current_rarity := progress.equipment_rarity(smith_set_category)
+		var evolution := EquipmentEconomy.rarity_recipe(current_rarity)
+		if evolution.is_empty():
+			station_content.add_child(ForgeView.note("Raridade máxima","%s já alcançou a raridade Mística." % title))
+			return
+		var next_tier := EquipmentEconomy.RARITY_ORDER.find(current_rarity) + 1
+		var next_rarity: String = EquipmentEconomy.RARITY_ORDER[next_tier]
+		_add_description("%s · %s → %s" % [title,ArsenalRules.RARITIES[current_rarity].name,ArsenalRules.RARITIES[next_rarity].name])
+		_smith_requirements(evolution,progress)
+		_smith_action("Evoluir %s" % title,"star","evolve_equipment",smith_set_category,progress.can_evolve_equipment(smith_set_category),progress)
 		return
 	if not unlocked:
 		station_content.add_child(ForgeView.note("Receita bloqueada","Derrote o Guardião do Andar %d ou use um Fragmento de Receita (você tem %d)." % [smith_set_floor,progress.fragments()]))

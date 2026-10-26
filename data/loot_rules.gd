@@ -52,7 +52,7 @@ static func set_recipe(floor_id: int, category: String) -> Dictionary:
 	materials[data.named[category]] = 6
 	materials[EquipmentEconomy.key(base, data.base_rarity)] = 3
 	materials[FloorCatalog.LOOT.trophy[floor_id]] = 1
-	return {"gold": int(data.gold), "materials": materials, "rarity": data.rarity}
+	return {"gold": int(data.gold), "materials": materials, "rarity": "comum"}
 
 # Raridade final de um drop de material, aplicando a proteção contra azar.
 # "pool_alto" vale para elites e chefes, os únicos que podem render o Épico garantido.
@@ -115,4 +115,4 @@ static func piece_recipe(floor_id: int, item_id: String) -> Dictionary:
 	var materials := {}
 	materials[data.pieces[item.slot]] = 4
 	materials[EquipmentEconomy.key(base, data.base_rarity)] = 2
-	return {"gold": int(data.piece_gold), "materials": materials, "rarity": item.rarity, "piece": item_id}
+	return {"gold": int(data.piece_gold), "materials": materials, "rarity": "comum", "piece": item_id}

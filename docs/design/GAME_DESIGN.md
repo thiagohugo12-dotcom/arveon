@@ -378,3 +378,15 @@ Somente o ponto de surgimento foi centralizado para evitar corte da copa; os
 ataques, HP, colisão, recompensas, progressão e save continuam iguais. O
 Guardião das Raízes opcional permanece distinto. Detalhes:
 `docs/decisions/GUARDIAO_MATA_FOLHA_20261020.md`.
+
+## Progressão de raridade de equipamentos — aprovada em 26/10/2026
+
+Armas comuns e peças de conjunto percorrem Comum, Incomum, Raro, Épico, Lendário
+e Místico. Peças de conjunto e armas comuns recém-fabricadas começam Comuns; a
+raridade evolui no Ferreiro com as receitas e os custos existentes, em qualquer
+região onde a receita daquele item possa ser fabricada. A borda indica a raridade,
+com Místico em vermelho; o sprite não é recolorido. A raridade não altera os
+atributos das peças nesta etapa. Saves antigos preservam a raridade já registrada.
+Armas de topo serão definidas futuramente e serão apenas Lendárias ou Místicas; seus
+modelos e skills não são criados agora. Decisão detalhada:
+`docs/decisions/PROGRESSAO_RARIDADES_EQUIPAMENTOS_20261026.md`.
