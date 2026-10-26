@@ -410,7 +410,7 @@ jobs:
     needs: web
     if: >-
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'feat/andar1-v020-primeiro-passe' || github.head_ref == 'feat/progressao-etapa2' || github.head_ref == 'feat/espada-ritmo-aprovado-20261016' || github.head_ref == 'fix/mobile-title-touch-20261022' || github.head_ref == 'feat/interface-2-0')) ||
-      (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe' || github.ref == 'refs/heads/feat/progressao-etapa2' || github.ref == 'refs/heads/feat/espada-ritmo-aprovado-20261016' || github.ref == 'refs/heads/feat/interface-2-0'))
+      (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe' || github.ref == 'refs/heads/feat/progressao-etapa2' || github.ref == 'refs/heads/feat/espada-ritmo-aprovado-20261016' || github.ref == 'refs/heads/feat/interface-2-0' || github.ref == 'refs/heads/dev/expansao-andares-3-4'))
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency:
