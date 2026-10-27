@@ -103,5 +103,21 @@ func _run() -> void:
 	slot_button.pressed.emit()
 	await _frames()
 	_check(hud.inventory_open and not hud.equipment_screen.visible and hud.inventory_selected == "anel_mata", "slot opens the existing Backpack item details")
+	var diary_equipment := hud.diary_navigation.get_child(1) as Button
+	var open_touch := InputEventScreenTouch.new()
+	open_touch.index = 23
+	open_touch.position = diary_equipment.get_global_rect().get_center()
+	open_touch.pressed = true
+	hud._input(open_touch)
+	await _frames()
+	_check(hud.equipment_screen.visible and hud.inventory_open, "Diário opens the approved Equipment screen by mobile touch")
+	hud.equipment_screen.navigation_requested.emit("mochila")
+	await _frames()
+	_check(hud.inventory_open and not hud.equipment_screen.visible, "Equipment returns to the existing Backpack")
+	diary_equipment.pressed.emit()
+	await _frames()
+	hud.equipment_screen.navigation_requested.emit("habilidades")
+	await _frames()
+	_check(not hud.inventory_open and hud.rpg_panel.visible and hud.rpg_panel.tab == 3, "Equipment opens the existing abilities page")
 	print("EQUIPMENT_SCREEN_RESULT: failures=", failures, " capture=", output.path_join("equipment-integrated-360x800.png"))
 	quit(0 if failures == 0 else 1)

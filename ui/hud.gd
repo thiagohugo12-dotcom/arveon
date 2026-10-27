@@ -361,15 +361,15 @@ func _ready() -> void:
 	book_header.add_child(inventory_gold)
 	diary_navigation = HBoxContainer.new()
 	inventory_column.add_child(diary_navigation)
-	for i in range(2):
+	for i in range(3):
 		var link := DiaryTab.new()
-		link.glyph = ["bag","fury"][i]
-		link.text = ["Mochila","Evolução"][i]
+		link.glyph = ["bag","shield","fury"][i]
+		link.text = ["Mochila","Equipamento","Evolução"][i]
 		link.add_theme_font_size_override("font_size",11)
 		link.custom_minimum_size.y = 44
 		link.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		DiaryTheme.select(link,i == 0)
-		link.pressed.connect(func(): _open_diary(i))
+		link.pressed.connect(_open_diary.bind(i))
 		diary_navigation.add_child(link)
 	inventory_tabs = HBoxContainer.new()
 	inventory_column.add_child(inventory_tabs)
@@ -875,7 +875,7 @@ func _style_inventory() -> void:
 	inventory_gold.add_theme_font_size_override("font_size",UiScale.font(19))
 	inventory_gold.add_theme_color_override("font_color",ForgeView.GOLD)
 	inventory_gold.autowrap_mode = TextServer.AUTOWRAP_OFF
-	var nav_icons := ["bag","star"]
+	var nav_icons := ["bag","shield","star"]
 	for index in range(diary_navigation.get_child_count()):
 		_kit_tab(diary_navigation.get_child(index) as Button,nav_icons[index],index == 0)
 	var tab_icons := ["bag","shield","heart"]
@@ -1456,11 +1456,11 @@ func _input(event: InputEvent) -> void:
 			_activate_touch_button(map_close, event)
 		get_viewport().set_input_as_handled()
 		return
+	if equipment_screen.visible:
+		_touch_buttons(equipment_screen, event)
+		get_viewport().set_input_as_handled()
+		return
 	if rpg_panel.visible:
-		if equipment_screen.visible:
-			_touch_buttons(equipment_screen, event)
-			get_viewport().set_input_as_handled()
-			return
 		if _activate_touch_button(rpg_panel.close_button, event):
 			return
 		if _touch_contains(rpg_panel.scroll,event):
@@ -1576,7 +1576,7 @@ func _sync_controls() -> void:
 	inventory_touch_dragged = false
 	scroll_touch = -1
 	touch_scroll = null
-	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or map_panel.visible or restart.visible or death_panel.visible
+	var blocked := transition_active or save_panel.visible or inventory_open or station_panel.visible or rpg_panel.visible or equipment_screen.visible or map_panel.visible or restart.visible or death_panel.visible
 	menu_shade.visible = blocked and not transition_active and not restart.visible and not death_panel.visible
 	for button in [inventory_button, character_button, map_button]:
 		button.disabled = blocked
@@ -1607,16 +1607,19 @@ func close_character() -> void:
 	equipment_screen.hide()
 	equipment_shade.hide()
 	rpg_panel.modulate.a = 1.0
+	inventory_panel.modulate.a = 1.0
 	rpg_panel.hide()
 	_sync_controls()
 	call_deferred("_qa_ui_state","hud")
 
 func _show_equipment_screen() -> void:
-	if not rpg_panel.visible or rpg_panel.progress == null:
+	var value: GameProgress = rpg_panel.progress if rpg_panel.visible else menu_progress if inventory_open else null
+	if value == null or equipment_screen.visible:
 		return
-	equipment_screen.present(rpg_panel.progress, int(hp_bar.value), int(hp_bar.max_value), equipment_selected_set)
+	equipment_screen.present(value, int(hp_bar.value), int(hp_bar.max_value), equipment_selected_set)
 	equipment_shade.show()
 	rpg_panel.modulate.a = 0.0
+	inventory_panel.modulate.a = 0.0
 	_layout()
 
 func refresh_equipment_screen(value: GameProgress) -> void:
@@ -1629,28 +1632,37 @@ func _equipment_navigation(page: String) -> void:
 	equipment_screen.hide()
 	equipment_shade.hide()
 	rpg_panel.modulate.a = 1.0
+	inventory_panel.modulate.a = 1.0
 	match page:
 		"personagem":
+			if inventory_open: inventory_toggled.emit()
+			if not rpg_panel.visible: character_toggled.emit()
 			rpg_panel.tab = 0
 			rpg_panel.refresh(rpg_panel.progress)
 		"habilidades":
+			if inventory_open: inventory_toggled.emit()
+			if not rpg_panel.visible: character_toggled.emit()
 			rpg_panel.tab = 3
 			rpg_panel.refresh(rpg_panel.progress)
 		"mochila":
-			character_toggled.emit()
-			inventory_toggled.emit()
+			if rpg_panel.visible: character_toggled.emit()
+			if not inventory_open: inventory_toggled.emit()
 		"mapa":
-			character_toggled.emit()
+			if inventory_open: inventory_toggled.emit()
+			if rpg_panel.visible: character_toggled.emit()
 			map_toggled.emit()
 		"missoes":
-			character_toggled.emit()
+			if inventory_open: inventory_toggled.emit()
+			if rpg_panel.visible: character_toggled.emit()
 			mission_expanded = true
 			_render_mission()
 		"close":
-			character_toggled.emit()
+			if inventory_open: inventory_toggled.emit()
+			if rpg_panel.visible: character_toggled.emit()
+	_sync_controls()
 
 func _equipment_slot_requested(item_id: String) -> void:
-	var value := rpg_panel.progress
+	var value: GameProgress = rpg_panel.progress if rpg_panel.visible else menu_progress
 	_equipment_navigation("mochila")
 	if inventory_open and not item_id.is_empty():
 		inventory_category = 1
@@ -1806,6 +1818,9 @@ func _pixel_theme() -> Theme:
 	return DiaryTheme.create()
 
 func _open_diary(page: int) -> void:
+	if page == 1:
+		_show_equipment_screen()
+		return
 	if page == 0 and inventory_open: return
 	if inventory_open: inventory_toggled.emit()
 	if rpg_panel.visible: character_toggled.emit()

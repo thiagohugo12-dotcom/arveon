@@ -410,11 +410,20 @@ jobs:
           if grep -E 'SCRIPT ERROR|ERROR:|EQUIPMENT_SCREEN_FAIL:|EQUIPMENT_SCREEN_TIMEOUT' /tmp/equipment-test.log; then exit 1; fi
           grep '^EQUIPMENT_SCREEN_RESULT: failures=0' /tmp/equipment-test.log
           test -s build/equipment-qa/equipment-integrated-360x800.png
+      - name: Check mobile panel widths and navigation
+        shell: bash
+        run: |
+          set -euo pipefail
+          QA_RENDER_DIR="$PWD/build/equipment-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 70s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --resolution 360x640 --script res://tests/mobile_equipment_layout.gd 2>&1 | tee /tmp/mobile-layout.log
+          if grep -E 'SCRIPT ERROR|ERROR:|MOBILE_LAYOUT_FAIL:|MOBILE_LAYOUT_TIMEOUT' /tmp/mobile-layout.log; then exit 1; fi
+          grep '^MOBILE_LAYOUT_RESULT: failures=0' /tmp/mobile-layout.log
+          test -s build/equipment-qa/equipamento-mobile-360x640.png
+          test -s build/equipment-qa/ferreiro-mobile-360x640.png
       - name: Save equipment capture
         uses: actions/upload-artifact@v4
         with:
-          name: equipment-integrated-360x800
-          path: build/equipment-qa/equipment-integrated-360x800.png
+          name: equipment-mobile-captures
+          path: build/equipment-qa/*.png
           if-no-files-found: error
           retention-days: 3
       - name: Export updated Web package

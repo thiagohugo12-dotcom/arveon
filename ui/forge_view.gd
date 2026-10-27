@@ -33,8 +33,8 @@ static func tab_bar(host: HBoxContainer, selected: int, on_pick: Callable) -> vo
 		tab.text = names[index]
 		tab.custom_minimum_size = Vector2(0,maxi(40,UiScale.px(46)))
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		DefeatView.style_button(tab,"tab_on" if index == selected else "tab",icons[index],17,2,"tab_on")
-		tab.add_theme_constant_override("h_separation",6)
+		DefeatView.style_button(tab,"tab_on" if index == selected else "tab",icons[index],14 if UiScale.narrow_portrait else 17,1 if UiScale.narrow_portrait else 2,"tab_on")
+		tab.add_theme_constant_override("h_separation",2 if UiScale.narrow_portrait else 6)
 		tab.pressed.connect(on_pick.bind(index))
 		host.add_child(tab)
 
@@ -56,7 +56,7 @@ static func picker(items: Array, selected: String, on_pick: Callable, buttons: D
 	if strip:
 		return _picker_strip(items, selected, on_pick, buttons)
 	var grid := GridContainer.new()
-	grid.columns = columns
+	grid.columns = 1 if UiScale.narrow_portrait else columns
 	grid.add_theme_constant_override("h_separation",6)
 	grid.add_theme_constant_override("v_separation",6)
 	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -103,7 +103,7 @@ static func picker(items: Array, selected: String, on_pick: Callable, buttons: D
 # quebra de linha só se houver muitas, em vez de uma lista que ocupa a tela toda.
 static func _picker_strip(items: Array, selected: String, on_pick: Callable, buttons: Dictionary) -> Control:
 	var flow := GridContainer.new()
-	flow.columns = clampi(items.size(),1,5)
+	flow.columns = mini(3, items.size()) if UiScale.narrow_portrait else clampi(items.size(),1,5)
 	flow.add_theme_constant_override("h_separation",4)
 	flow.add_theme_constant_override("v_separation",4)
 	flow.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -156,7 +156,9 @@ static func _picker_strip(items: Array, selected: String, on_pick: Callable, but
 	return flow
 
 static func chips(options: Array, selected: String, on_pick: Callable) -> Control:
-	var row := HBoxContainer.new()
+	var row: Container = GridContainer.new() if UiScale.narrow_portrait else HBoxContainer.new()
+	if row is GridContainer:
+		(row as GridContainer).columns = mini(3, options.size())
 	row.add_theme_constant_override("separation",4)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for option: Dictionary in options:
@@ -390,9 +392,12 @@ static func protection(count: int, active: bool, effect: String, on_toggle: Call
 static func action_button(caption: String, icon_id: String, enabled: bool) -> Button:
 	var button := Button.new()
 	button.text = caption
+	button.tooltip_text = caption
+	button.clip_text = UiScale.narrow_portrait
+	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS if UiScale.narrow_portrait else TextServer.OVERRUN_NO_TRIMMING
 	button.custom_minimum_size = Vector2(0,maxi(44,UiScale.px(56)))
 	button.disabled = not enabled
-	DefeatView.style_button(button,"button",icon_id,24,2)
+	DefeatView.style_button(button,"button",icon_id,16 if UiScale.narrow_portrait else 24,1 if UiScale.narrow_portrait else 2)
 	button.add_theme_stylebox_override("disabled",DefeatArt.plate("dim",8))
 	button.add_theme_color_override("font_disabled_color",Color("#b8b8a8"))
 	return button

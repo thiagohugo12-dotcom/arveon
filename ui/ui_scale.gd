@@ -11,10 +11,12 @@ const DENSE_RATIO := 0.9
 const COMPACT_RATIO := 0.78
 static var compact := false
 static var dense := true
+static var narrow_portrait := false
 
 static func update(size: Vector2, use_dense: bool = true) -> void:
 	compact = size.y < COMPACT_MAX_HEIGHT and size.x > size.y
 	dense = use_dense
+	narrow_portrait = size.y > size.x and size.x <= 400.0
 
 static func ratio() -> float:
 	return COMPACT_RATIO if compact else DENSE_RATIO if dense else 1.0
