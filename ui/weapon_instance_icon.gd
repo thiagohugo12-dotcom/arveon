@@ -10,6 +10,7 @@ func _init(value: String = "espada", quality: String = "comum", upgrade: int = 0
 	rarity = quality
 	level = upgrade
 	custom_minimum_size = Vector2(38,38)
+	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	var art := PixelItemIcon.new(category)

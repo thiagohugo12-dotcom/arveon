@@ -376,7 +376,7 @@ func _ready() -> void:
 	for i in range(3):
 		var tab := DiaryTab.new()
 		tab.glyph = ["charge","character","potion"][i]
-		tab.text = ["Materiais", "Equipamentos", "Consumo"][i]
+		tab.text = ["Materiais", "Peças", "Consumo"][i]
 		tab.custom_minimum_size.y = 44
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tab.add_theme_font_size_override("font_size", 12)
@@ -907,6 +907,7 @@ func refresh_inventory(progress: GameProgress) -> void:
 	if inventory_category == 1:
 		equipment_bag = EquipmentBag.new(progress,inventory_selected,inventory_compare)
 		inventory_list.add_child(equipment_bag)
+		equipment_bag.equipment_requested.connect(_show_equipment_screen)
 		equipment_bag.selected.connect(func(id: String):
 			inventory_selected = id
 			inventory_compare = false

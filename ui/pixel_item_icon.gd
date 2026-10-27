@@ -26,7 +26,8 @@ func _art_name() -> String:
 	return slot
 
 func _draw() -> void:
-	draw_set_transform(Vector2.ZERO,0,size/30.0)
+	var side := minf(size.x,size.y)
+	draw_set_transform(Vector2((size.x - side) * 0.5,(size.y - side) * 0.5),0,Vector2.ONE * side / 30.0)
 	if framed:
 		draw_style_box(DiaryTheme.piece("slot",0),Rect2(0,0,30,30))
 	var hd := hd_name(slot)

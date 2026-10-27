@@ -4,6 +4,7 @@ extends VBoxContainer
 signal selected(id: String)
 signal action_requested(action: String, id: String)
 signal compare_requested
+signal equipment_requested
 var cards: Dictionary = {}
 var equip_button: Button
 var compare_button: Button
@@ -12,11 +13,8 @@ var comparison: VBoxContainer
 var progress: GameProgress
 var grid: GridContainer
 var spread: BoxContainer
-var profile: BoxContainer
 var items_page: VBoxContainer
-var profile_heading: Label
 var detail_panel: PanelContainer
-var portrait: DiaryPortrait
 
 func _init(value: GameProgress = null, selection: String = "", comparing: bool = false) -> void:
 	progress = value
@@ -117,91 +115,19 @@ func _overview() -> void:
 	grid.add_theme_constant_override("h_separation",6)
 	grid.add_theme_constant_override("v_separation",6)
 	items_page.add_child(grid)
-	profile = DiaryProfile.new()
-	profile.vertical = true
-	profile.custom_minimum_size.x = 230
-	profile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	spread.add_child(profile)
-	profile_heading = _label("EXPLORADOR",DiaryTheme.GREEN,12)
-	profile_heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	profile.add_child(profile_heading)
-	var portrait_row := HBoxContainer.new()
-	portrait_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	profile.add_child(portrait_row)
-	var slots := VBoxContainer.new()
-	portrait_row.add_child(slots)
-	for slot: String in ["Arma","Acessório"]:
-		_equipped_slot(slot,slots)
-	portrait = DiaryPortrait.new()
-	portrait_row.add_child(portrait)
-	var right_slots := VBoxContainer.new()
-	portrait_row.add_child(right_slots)
-	_equipped_slot("Armadura",right_slots)
-	var summary := VBoxContainer.new()
-	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	profile.add_child(summary)
-	var stats := progress.combat_stats()
-	# Nível, dano e defesa numa só linha: sobra altura para as armas e os equipamentos.
-	var attributes := HBoxContainer.new()
-	attributes.add_theme_constant_override("separation",6)
-	summary.add_child(attributes)
-	var level := _label("Nv. %d" % progress.level(),DiaryTheme.INK,16)
-	level.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	level.autowrap_mode = TextServer.AUTOWRAP_OFF
-	level.add_theme_font_override("font",DiaryTheme.heading_font())
-	attributes.add_child(level)
-	for stat: String in ["Dano","Defesa"]:
-		var tile := PanelContainer.new()
-		tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		tile.add_theme_stylebox_override("panel",DiaryTheme.piece("paper",7))
-		attributes.add_child(tile)
-		var label := _label("%s %d" % [stat,stats.damage if stat == "Dano" else stats.armor],DiaryTheme.INK,15)
-		label.add_theme_font_override("font",DiaryTheme.heading_font())
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		tile.add_child(label)
-
-func _equipped_slot(slot: String, slots: VBoxContainer) -> void:
-	var equipped: String = progress.equipped.get(slot,"")
-	var column := VBoxContainer.new()
-	column.add_theme_constant_override("separation",0)
-	column.custom_minimum_size.x = 88
-	slots.add_child(column)
-	var button := Button.new()
-	button.custom_minimum_size = Vector2(60,60)
-	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	button.tooltip_text = slot+": "+(RPGRules.EQUIPMENT[equipped].name if not equipped.is_empty() else "vazio")
-	button.disabled = equipped.is_empty()
-	for state in ["normal","hover","pressed","focus","disabled"]: button.add_theme_stylebox_override(state,DefeatArt.plate("slot",4))
-	button.set_meta("skin_done",true)
-	if not equipped.is_empty(): button.pressed.connect(func(): selected.emit(equipped))
-	column.add_child(button)
-	var icon := PixelItemIcon.new(ArsenalRules.metadata(equipped).icon if not equipped.is_empty() else slot)
-	icon.framed = false
-	icon.smooth = true
-	icon.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	icon.position = Vector2(8,8)
-	icon.size = Vector2(44,44)
-	icon.modulate.a = 1.0 if not equipped.is_empty() else 0.3
-	button.add_child(icon)
-	var caption := _label(slot.to_upper(),DiaryTheme.GREEN,10)
-	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(caption)
-	var upgrade := int(progress.equipment.get(equipped,0)) if not equipped.is_empty() else 0
-	var title := _label((str(RPGRules.EQUIPMENT[equipped].name) + (" +%d" % upgrade if upgrade > 0 else "")) if not equipped.is_empty() else "Vazio",DiaryTheme.INK,13)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	column.add_child(title)
+	var open := Button.new()
+	open.text = "Ver Equipamento (8 espaços)"
+	open.custom_minimum_size.y = 44
+	open.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	open.pressed.connect(func(): equipment_requested.emit())
+	spread.add_child(open)
+	spread.move_child(open,0)
 
 func _reflow() -> void:
 	if spread == null: return
-	spread.vertical = size.x < 500
-	profile.vertical = true
-	profile_heading.visible = not spread.vertical
-	(profile as DiaryProfile).split = not spread.vertical
-	profile.queue_redraw()
-	portrait.custom_minimum_size.y = 114 if spread.vertical else 118
-	spread.move_child(profile,0 if spread.vertical else 1)
-	grid.columns = 3 if spread.vertical else 4
-	var visible_cells := maxi(progress.equipment.size(),3 if spread.vertical else 8)
+	spread.vertical = true
+	grid.columns = 3 if size.x < 500 else 4
+	var visible_cells := maxi(progress.equipment.size(),3 if size.x < 500 else 8)
 	for i in range(grid.get_child_count()): grid.get_child(i).visible = i < visible_cells
 
 func _attributes(id: String) -> String:
