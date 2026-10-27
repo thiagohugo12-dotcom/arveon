@@ -769,10 +769,10 @@ func _layout() -> void:
 	DiaryArt.skin(rpg_panel)
 	equipment_shade.position = Vector2.ZERO
 	equipment_shade.size = size
-	var equipment_scale := minf(size.x / 360.0, size.y / 800.0)
+	var equipment_scale := minf(size.x / 360.0, size.y / 713.0)
 	equipment_screen.scale = Vector2.ONE * equipment_scale
-	equipment_screen.size = Vector2(360, 800)
-	equipment_screen.position = (size - Vector2(360, 800) * equipment_scale) * 0.5
+	equipment_screen.size = Vector2(360, 713)
+	equipment_screen.position = (size - Vector2(360, 713) * equipment_scale) * 0.5
 	death_panel.size = Vector2(minf(820 if UiScale.compact else 520,size.x-16),minf(784,size.y-16))
 	death_panel.position = (size-death_panel.size)*0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)

@@ -25,8 +25,8 @@ var hp := 1
 var hp_max := 1
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(360, 800)
-	size = Vector2(360, 800)
+	custom_minimum_size = Vector2(360, 713)
+	size = Vector2(360, 713)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	clip_contents = true
@@ -53,7 +53,6 @@ func _build() -> void:
 	_piece(Rect2(0, 160, 941, 100), Rect2(0, 77, 360, 49))
 	_piece(Rect2(0, 1028, 941, 246), Rect2(0, 469, 360, 142))
 	_piece(Rect2(0, 1274, 941, 218), Rect2(0, 611, 360, 102))
-	_piece(Rect2(0, 1492, 941, 180), Rect2(0, 713, 360, 87))
 	var figure := AtlasTexture.new()
 	figure.atlas = CHARACTER
 	figure.region = Rect2(329, 115, 587, 1049)
@@ -68,7 +67,6 @@ func _build() -> void:
 		_slot(str(entry[0]), int(entry[1]), int(entry[2]))
 	_attributes()
 	_loadouts()
-	_navigation()
 	_button(Rect2(7, 5, 47, 64), "Voltar ao jogo", func(): navigation_requested.emit("close"))
 
 func _piece(region: Rect2, place: Rect2) -> void:
