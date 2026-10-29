@@ -1,0 +1,12 @@
+{
+  "status": "approved-in-game",
+  "entry": "amostra-skills1/index.html",
+  "fixedTestAlias": true,
+  "preservedGameCommit": "aff0c45c4bcc0f1b3e51df6998e1cd1f74add974",
+  "fixedTestSha256": {
+    "index.html": "99dee3efd1ac8d32bee93653b1a8d4599844465d1e92d5e74db5610d5a391217",
+    "index.pck": "84e57feb5e5d78b2d92ae66c9bb3894d602b7617ece5b8d275163a7abf15ff9d"
+  },
+  "approvedVisualCommit": "55617e35b954ae137fc8e5680048e40fd6a132a4",
+  "startupApproval": "Preparacao completa antes do impacto; 2026-10-14"
+}

@@ -1,0 +1,13 @@
+{
+  "status": "approved-in-game",
+  "entry": "amostra-machado/index.html",
+  "additionalEntries": [
+    "amostra-lanca/index.html"
+  ],
+  "fixedTestAlias": true,
+  "preservedGameCommit": "3327b2d39b77f57f22ab7e41444542f3a0887349",
+  "fixedTestSha256": {
+    "index.html": "6dce8476d7f5608c76f7d072aca79cb81badf2ad1a8b028240e73bcc8fd33249",
+    "index.pck": "e3906c6e8fd519c03ec167f18585ebe72b0986d5ac6af209d1a9f2281ac66c12"
+  }
+}

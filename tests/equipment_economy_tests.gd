@@ -1,0 +1,74 @@
+extends RefCounted
+
+static func run(suite: SceneTree) -> void:
+	suite.check(EquipmentEconomy.valid_drop_table(),"material drop rarity weights sum to 100 percent")
+	var boar: Dictionary = EquipmentEconomy.DROP_TABLE[0][0]
+	suite.check(EquipmentEconomy.roll_entry(boar,0.99,0.0).is_empty(),"first roll can produce no material")
+	suite.check(EquipmentEconomy.roll_entry(boar,0.0,0.0).rarity == "comum","second roll can produce common material")
+	suite.check(EquipmentEconomy.roll_entry(boar,0.0,0.995).rarity == "raro","second roll can produce rare material without an automatic green tier")
+	var empty_rng := RandomNumberGenerator.new()
+	empty_rng.seed = 34
+	for kind in range(5):
+		for entry: Dictionary in EquipmentEconomy.roll_drops(kind,empty_rng):
+			suite.check(EquipmentEconomy.MATERIALS.has(entry.item) and EquipmentEconomy.RARITY_ORDER.has(entry.rarity),"drop roll keeps type and rarity independent")
+	var progress := GameProgress.new()
+	progress.equipment.clear()
+	progress.equipped.Arma = ""
+	progress.gold = 99999
+	progress.add_item("Madeira",99)
+	for material: String in EquipmentEconomy.MATERIALS:
+		for rarity: String in EquipmentEconomy.RARITY_ORDER:
+			progress.add_item(EquipmentEconomy.key(material,rarity),99)
+	progress.add_item(EquipmentEconomy.SEAL,4)
+	suite.check(progress.transfer("Couro|raro",true) and int(progress.chest.get("Couro|raro",0)) == 1 and int(progress.bag.get("Couro",0)) == 99,"chest transfers the chosen material rarity")
+	suite.check(progress.transfer("Couro|raro",false) and not progress.chest.has("Couro|raro"),"chest returns the same rarity")
+	suite.check(progress.buy("Seda|epico") and progress.sell("Seda|epico"),"merchant trades selected rarity")
+	var first := progress.craft_weapon("espada","raro")
+	var second := progress.craft_weapon("espada","raro")
+	suite.check(first != "" and second != "" and first != second and progress.weapon_instances.size() == 2,"two identical recipes create separate weapon identities")
+	suite.check(progress.weapon(first).rarity == "raro" and progress.weapon(first).level == 0,"direct rare craft starts at +0")
+	suite.check(progress.equip_weapon_instance(first) and progress.equipped.Arma == "espada","equipping copy retains category for abilities")
+	var base_damage := int(progress.combat_stats().damage)
+	suite.check(progress.enhance_weapon(first,false,0.0).success and progress.weapon(first).level == 1 and progress.weapon(second).level == 0,"enhancement changes only selected copy")
+	suite.check(int(progress.combat_stats().damage) > base_damage,"equipped enhancement affects combat damage")
+	for i in range(4): progress.enhance_weapon(first,false,0.0)
+	suite.check(progress.weapon(first).level == 5 and progress.choose_weapon_bonus(first,5,"corte"),"+5 unlocks one permanent bonus choice")
+	suite.check(not progress.choose_weapon_bonus(first,5,"critico"),"chosen milestone cannot be rerolled")
+	var bonus_damage := int(progress.combat_stats().damage)
+	for i in range(5): progress.enhance_weapon(first,false,0.0)
+	var failed := progress.enhance_weapon(first,false,0.99)
+	suite.check(not failed.success and failed.level == 9 and failed.lost == 1,"+11 failure drops one level")
+	suite.check(int(progress.combat_stats().damage) <= bonus_damage + 4,"downgrade recomputes active bonuses")
+	progress.enhance_weapon(first,false,0.0)
+	var seal_count := int(progress.bag[EquipmentEconomy.SEAL])
+	failed = progress.enhance_weapon(first,true,0.99)
+	suite.check(not failed.success and failed.level == 10 and int(progress.bag[EquipmentEconomy.SEAL]) == seal_count-1,"seal prevents downgrade and is spent only on risky failure")
+	progress.enhance_weapon(first,true,0.0)
+	suite.check(int(progress.bag[EquipmentEconomy.SEAL]) == seal_count-1,"successful enhancement does not consume seal")
+	var before_rarity: String = progress.weapon(first).rarity
+	suite.check(progress.evolve_weapon(first) and before_rarity == "raro" and progress.weapon(first).rarity == "epico" and progress.weapon(first).level == 0 and progress.weapon(first).choices.is_empty(),"rarity evolution resets level and bonuses only for one copy")
+	suite.check(progress.weapon(second).rarity == "raro" and progress.weapon(second).level == 0,"rarity evolution preserves other copies")
+	for target_rarity: String in ["lendario", "mitico"]:
+		suite.check(progress.can_evolve_weapon(first) and progress.evolve_weapon(first) and progress.weapon(first).rarity == target_rarity,"weapon rarity progression reaches " + target_rarity)
+	suite.check(not progress.can_evolve_weapon(first) and not progress.evolve_weapon(first),"Mythic weapons cannot evolve beyond the final rarity")
+	suite.check(EquipmentEconomy.rarity_recipe("lendario").is_empty() == false and EquipmentEconomy.rarity_recipe("mitico").is_empty(),"Legendary can advance to Mythic and Mythic has no next recipe")
+	progress.equip_weapon_instance(second)
+	for i in range(15): progress.enhance_weapon(second,false,0.0)
+	suite.check(progress.weapon(second).level == 15 and progress.choose_weapon_bonus(second,5,"corte") and progress.choose_weapon_bonus(second,10,"ritmo") and progress.choose_weapon_bonus(second,15,"critico"),"three milestones offer permanent choices by category")
+	var milestone_damage := int(progress.combat_stats().damage)
+	progress.enhance_weapon(second,false,0.99,0.99)
+	suite.check(progress.weapon(second).level == 14 and progress.weapon(second).choices.has("15") and int(progress.combat_stats().damage) < milestone_damage,"fall below +15 deactivates but retains its choice")
+	progress.enhance_weapon(second,false,0.0)
+	suite.check(progress.weapon(second).level == 15 and int(progress.combat_stats().damage) == milestone_damage,"recovering +15 reactivates the same bonus")
+	for i in range(5): progress.enhance_weapon(second,false,0.0)
+	suite.check(progress.weapon(second).level == 20 and progress.choose_weapon_bonus(second,20,"corte") and progress.weapon(second).choices.size() == 4,"+20 is capped and fourth bonus is selectable")
+	suite.check(not progress.can_enhance_weapon(second) and progress.enhance_weapon(second,false,0.0).is_empty(),"+20 cannot be exceeded")
+	var serialized := progress.to_json()
+	var reloaded := GameProgress.new()
+	var loaded := reloaded.load_text(serialized)
+	suite.check(loaded and reloaded.weapon_instances == progress.weapon_instances and reloaded.bag == progress.bag and reloaded.chest == progress.chest,"save restores material rarities and independent weapon instances")
+	var malformed: Dictionary = JSON.parse_string(serialized)
+	malformed.weapon_instances[first].level = 21
+	suite.check(not reloaded.load_text(JSON.stringify(malformed)) and reloaded.weapon(first).level == 0,"invalid instance level is rejected atomically")
+	var practice := TrainingMode.create()
+	suite.check(practice.training_mode and practice.weapon_instances.size() >= 25 and practice.bag.has(EquipmentEconomy.SEAL),"training contains rarity copies and protection seals")

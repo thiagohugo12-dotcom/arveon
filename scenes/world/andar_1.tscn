@@ -1,5 +1,8 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=9 format=3]
+[ext_resource type="Script" path="res://scripts/world/andar_1_obstacles.gd" id="obstacles"]
 [ext_resource type="Script" path="res://scripts/presentation/floor_view.gd" id="view"]
+[ext_resource type="Script" path="res://scripts/presentation/exploration_view.gd" id="explore"]
+[ext_resource type="Script" path="res://scripts/presentation/tower_view.gd" id="tower"]
 [sub_resource type="RectangleShape2D" id="horizontal"]
 size = Vector2(1200, 32)
 [sub_resource type="RectangleShape2D" id="vertical"]
@@ -9,8 +12,14 @@ size = Vector2(130, 50)
 [sub_resource type="RectangleShape2D" id="rock2"]
 size = Vector2(90, 110)
 [node name="MataDosPrimeirosPassos" type="Node2D"]
+script = ExtResource("obstacles")
 [node name="FloorView" type="Node2D" parent="."]
 script = ExtResource("view")
+visual_v2 = true
+[node name="ExploreView" type="Node2D" parent="."]
+script = ExtResource("explore")
+[node name="TowerView" type="Node2D" parent="."]
+script = ExtResource("tower")
 [node name="Walls" type="StaticBody2D" parent="."]
 collision_layer = 1
 collision_mask = 0

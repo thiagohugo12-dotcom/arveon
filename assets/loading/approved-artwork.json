@@ -1,0 +1,22 @@
+{
+  "desktop": {
+    "source": "77010.png",
+    "source_format": "JPEG",
+    "source_sha256": "fae20fa4fdc395cf3c94ca00bcc4a99c6eb7f309a7ae1110c1775936571f6a1f",
+    "png_sha256": "583e09b8b1c3dea2095d8c97cf08c1b238bd26558ee484630d3cdd5077938fcb",
+    "decoded_rgb_sha256": "3f68e0638d85e13319cb83910b483b2578fbf7e08a43334ba0b6bd975f42e270",
+    "width": 1536,
+    "height": 864,
+    "png_bytes": 1860395
+  },
+  "mobile": {
+    "source": "77011.png",
+    "source_format": "JPEG",
+    "source_sha256": "0d364fb9ca8642da14563bd07182c2e74210c320a6045b67a3d250e53a790527",
+    "png_sha256": "bdf0f9caf99ff4dc7e1f8abafe094f36c3c006648a958faaabdacfafa00a7ddf",
+    "decoded_rgb_sha256": "5d319dce75eaebed96bb0b637d4f37e41e79af563d2d4f6ec7ea621de9c83ed6",
+    "width": 864,
+    "height": 1536,
+    "png_bytes": 1900467
+  }
+}

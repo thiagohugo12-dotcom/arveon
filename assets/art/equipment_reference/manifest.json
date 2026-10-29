@@ -1,0 +1,1151 @@
+{
+  "source_file_name": "codex-clipboard-2c491c33-8ea3-4a10-8322-11e44bcaca84.png",
+  "source_size_px": [
+    1536,
+    1024
+  ],
+  "source_sha256": "92db9d57cad9a89992a21de516e5da81634268f4f61004053e9578d00a013008",
+  "method": "pixel crops from original equipment cells; source RGB and geometry preserved; cell background masked by alpha only; no redraw, resizing, resampling or palette reduction; rarity frame is separate",
+  "mapping_note": "Image cells have category/position but no ARVEON item IDs; do not assign a variant to a live item until mapping is confirmed.",
+  "groups": [
+    {
+      "id": "weapons",
+      "dir": "equipment/weapons",
+      "items": [
+        "sword_01",
+        "sword_02",
+        "mace_01",
+        "axe_01",
+        "spear_01",
+        "bow_01",
+        "sword_03",
+        "bow_02",
+        "crossbow_01",
+        "staff_blue",
+        "staff_red",
+        "fire_blade"
+      ]
+    },
+    {
+      "id": "chest_armor",
+      "dir": "equipment/chest_armor",
+      "items": [
+        "chest_01",
+        "chest_02",
+        "chest_03",
+        "chest_04",
+        "chest_05",
+        "chest_06",
+        "chest_07"
+      ]
+    },
+    {
+      "id": "helmets",
+      "dir": "equipment/helmets",
+      "items": [
+        "helmet_01",
+        "helmet_02",
+        "helmet_03",
+        "helmet_04",
+        "helmet_05",
+        "helmet_06",
+        "helmet_07"
+      ]
+    },
+    {
+      "id": "gloves",
+      "dir": "equipment/gloves",
+      "items": [
+        "gloves_01",
+        "gloves_02",
+        "gloves_03",
+        "gloves_04",
+        "gloves_05",
+        "gloves_06"
+      ]
+    },
+    {
+      "id": "boots",
+      "dir": "equipment/boots",
+      "items": [
+        "boots_01",
+        "boots_02",
+        "boots_03",
+        "boots_04",
+        "boots_05"
+      ]
+    },
+    {
+      "id": "rings",
+      "dir": "equipment/rings",
+      "items": [
+        "ring_01",
+        "ring_02",
+        "ring_03",
+        "ring_04",
+        "ring_05",
+        "ring_06"
+      ]
+    },
+    {
+      "id": "necklaces",
+      "dir": "equipment/necklaces",
+      "items": [
+        "necklace_01",
+        "necklace_02",
+        "necklace_03",
+        "necklace_04",
+        "necklace_05",
+        "necklace_06"
+      ]
+    }
+  ],
+  "sprites": [
+    {
+      "id": "sword_01",
+      "file": "assets/art/equipment_reference/equipment/weapons/sword_01.png",
+      "source_box": [
+        23,
+        63,
+        87,
+        141
+      ],
+      "size_px": [
+        61,
+        72
+      ],
+      "background_key_rgb": [
+        28,
+        26,
+        22
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "sword_02",
+      "file": "assets/art/equipment_reference/equipment/weapons/sword_02.png",
+      "source_box": [
+        105,
+        63,
+        170,
+        141
+      ],
+      "size_px": [
+        62,
+        78
+      ],
+      "background_key_rgb": [
+        27,
+        24,
+        20
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "mace_01",
+      "file": "assets/art/equipment_reference/equipment/weapons/mace_01.png",
+      "source_box": [
+        185,
+        63,
+        253,
+        141
+      ],
+      "size_px": [
+        58,
+        70
+      ],
+      "background_key_rgb": [
+        25,
+        23,
+        20
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "axe_01",
+      "file": "assets/art/equipment_reference/equipment/weapons/axe_01.png",
+      "source_box": [
+        269,
+        63,
+        337,
+        141
+      ],
+      "size_px": [
+        64,
+        74
+      ],
+      "background_key_rgb": [
+        25,
+        24,
+        20
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "spear_01",
+      "file": "assets/art/equipment_reference/equipment/weapons/spear_01.png",
+      "source_box": [
+        353,
+        63,
+        421,
+        141
+      ],
+      "size_px": [
+        62,
+        76
+      ],
+      "background_key_rgb": [
+        26,
+        23,
+        19
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "bow_01",
+      "file": "assets/art/equipment_reference/equipment/weapons/bow_01.png",
+      "source_box": [
+        437,
+        63,
+        507,
+        141
+      ],
+      "size_px": [
+        65,
+        76
+      ],
+      "background_key_rgb": [
+        26,
+        22,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "sword_03",
+      "file": "assets/art/equipment_reference/equipment/weapons/sword_03.png",
+      "source_box": [
+        523,
+        63,
+        593,
+        141
+      ],
+      "size_px": [
+        67,
+        75
+      ],
+      "background_key_rgb": [
+        26,
+        23,
+        19
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "bow_02",
+      "file": "assets/art/equipment_reference/equipment/weapons/bow_02.png",
+      "source_box": [
+        609,
+        63,
+        679,
+        141
+      ],
+      "size_px": [
+        67,
+        75
+      ],
+      "background_key_rgb": [
+        27,
+        23,
+        19
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "crossbow_01",
+      "file": "assets/art/equipment_reference/equipment/weapons/crossbow_01.png",
+      "source_box": [
+        694,
+        63,
+        767,
+        141
+      ],
+      "size_px": [
+        68,
+        71
+      ],
+      "background_key_rgb": [
+        25,
+        22,
+        19
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "staff_blue",
+      "file": "assets/art/equipment_reference/equipment/weapons/staff_blue.png",
+      "source_box": [
+        783,
+        63,
+        853,
+        141
+      ],
+      "size_px": [
+        70,
+        75
+      ],
+      "background_key_rgb": [
+        26,
+        23,
+        20
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "staff_red",
+      "file": "assets/art/equipment_reference/equipment/weapons/staff_red.png",
+      "source_box": [
+        868,
+        63,
+        939,
+        141
+      ],
+      "size_px": [
+        71,
+        76
+      ],
+      "background_key_rgb": [
+        25,
+        21,
+        17
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "fire_blade",
+      "file": "assets/art/equipment_reference/equipment/weapons/fire_blade.png",
+      "source_box": [
+        954,
+        63,
+        1028,
+        141
+      ],
+      "size_px": [
+        72,
+        75
+      ],
+      "background_key_rgb": [
+        24,
+        19,
+        14
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "chest_01",
+      "file": "assets/art/equipment_reference/equipment/chest_armor/chest_01.png",
+      "source_box": [
+        21,
+        216,
+        80,
+        288
+      ],
+      "size_px": [
+        55,
+        66
+      ],
+      "background_key_rgb": [
+        26,
+        23,
+        19
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "chest_02",
+      "file": "assets/art/equipment_reference/equipment/chest_armor/chest_02.png",
+      "source_box": [
+        95,
+        216,
+        152,
+        288
+      ],
+      "size_px": [
+        57,
+        72
+      ],
+      "background_key_rgb": [
+        23,
+        21,
+        19
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "chest_03",
+      "file": "assets/art/equipment_reference/equipment/chest_armor/chest_03.png",
+      "source_box": [
+        166,
+        216,
+        225,
+        288
+      ],
+      "size_px": [
+        57,
+        67
+      ],
+      "background_key_rgb": [
+        22,
+        21,
+        21
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "chest_04",
+      "file": "assets/art/equipment_reference/equipment/chest_armor/chest_04.png",
+      "source_box": [
+        240,
+        216,
+        300,
+        288
+      ],
+      "size_px": [
+        57,
+        72
+      ],
+      "background_key_rgb": [
+        22,
+        21,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "chest_05",
+      "file": "assets/art/equipment_reference/equipment/chest_armor/chest_05.png",
+      "source_box": [
+        314,
+        216,
+        376,
+        288
+      ],
+      "size_px": [
+        57,
+        72
+      ],
+      "background_key_rgb": [
+        21,
+        20,
+        16
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "chest_06",
+      "file": "assets/art/equipment_reference/equipment/chest_armor/chest_06.png",
+      "source_box": [
+        390,
+        216,
+        449,
+        288
+      ],
+      "size_px": [
+        59,
+        67
+      ],
+      "background_key_rgb": [
+        23,
+        20,
+        17
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "chest_07",
+      "file": "assets/art/equipment_reference/equipment/chest_armor/chest_07.png",
+      "source_box": [
+        464,
+        216,
+        529,
+        288
+      ],
+      "size_px": [
+        60,
+        72
+      ],
+      "background_key_rgb": [
+        22,
+        17,
+        13
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "helmet_01",
+      "file": "assets/art/equipment_reference/equipment/helmets/helmet_01.png",
+      "source_box": [
+        552,
+        216,
+        609,
+        288
+      ],
+      "size_px": [
+        49,
+        62
+      ],
+      "background_key_rgb": [
+        24,
+        22,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "helmet_02",
+      "file": "assets/art/equipment_reference/equipment/helmets/helmet_02.png",
+      "source_box": [
+        623,
+        216,
+        678,
+        288
+      ],
+      "size_px": [
+        51,
+        71
+      ],
+      "background_key_rgb": [
+        24,
+        22,
+        19
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "helmet_03",
+      "file": "assets/art/equipment_reference/equipment/helmets/helmet_03.png",
+      "source_box": [
+        692,
+        216,
+        748,
+        288
+      ],
+      "size_px": [
+        48,
+        63
+      ],
+      "background_key_rgb": [
+        24,
+        21,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "helmet_04",
+      "file": "assets/art/equipment_reference/equipment/helmets/helmet_04.png",
+      "source_box": [
+        762,
+        216,
+        821,
+        288
+      ],
+      "size_px": [
+        55,
+        65
+      ],
+      "background_key_rgb": [
+        23,
+        21,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "helmet_05",
+      "file": "assets/art/equipment_reference/equipment/helmets/helmet_05.png",
+      "source_box": [
+        836,
+        216,
+        894,
+        288
+      ],
+      "size_px": [
+        47,
+        64
+      ],
+      "background_key_rgb": [
+        23,
+        21,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "helmet_06",
+      "file": "assets/art/equipment_reference/equipment/helmets/helmet_06.png",
+      "source_box": [
+        908,
+        216,
+        965,
+        288
+      ],
+      "size_px": [
+        48,
+        67
+      ],
+      "background_key_rgb": [
+        24,
+        19,
+        17
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "helmet_07",
+      "file": "assets/art/equipment_reference/equipment/helmets/helmet_07.png",
+      "source_box": [
+        978,
+        216,
+        1032,
+        288
+      ],
+      "size_px": [
+        44,
+        66
+      ],
+      "background_key_rgb": [
+        23,
+        19,
+        14
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "gloves_01",
+      "file": "assets/art/equipment_reference/equipment/gloves/gloves_01.png",
+      "source_box": [
+        321,
+        363,
+        353,
+        431
+      ],
+      "size_px": [
+        32,
+        54
+      ],
+      "background_key_rgb": [
+        27,
+        23,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "gloves_02",
+      "file": "assets/art/equipment_reference/equipment/gloves/gloves_02.png",
+      "source_box": [
+        361,
+        363,
+        395,
+        431
+      ],
+      "size_px": [
+        34,
+        54
+      ],
+      "background_key_rgb": [
+        25,
+        21,
+        17
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "gloves_03",
+      "file": "assets/art/equipment_reference/equipment/gloves/gloves_03.png",
+      "source_box": [
+        404,
+        363,
+        437,
+        431
+      ],
+      "size_px": [
+        33,
+        53
+      ],
+      "background_key_rgb": [
+        24,
+        20,
+        16
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "gloves_04",
+      "file": "assets/art/equipment_reference/equipment/gloves/gloves_04.png",
+      "source_box": [
+        445,
+        363,
+        480,
+        431
+      ],
+      "size_px": [
+        35,
+        53
+      ],
+      "background_key_rgb": [
+        25,
+        20,
+        14
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "gloves_05",
+      "file": "assets/art/equipment_reference/equipment/gloves/gloves_05.png",
+      "source_box": [
+        489,
+        363,
+        523,
+        431
+      ],
+      "size_px": [
+        34,
+        53
+      ],
+      "background_key_rgb": [
+        24,
+        21,
+        16
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "gloves_06",
+      "file": "assets/art/equipment_reference/equipment/gloves/gloves_06.png",
+      "source_box": [
+        532,
+        363,
+        565,
+        431
+      ],
+      "size_px": [
+        33,
+        54
+      ],
+      "background_key_rgb": [
+        24,
+        20,
+        16
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "boots_01",
+      "file": "assets/art/equipment_reference/equipment/boots/boots_01.png",
+      "source_box": [
+        824,
+        363,
+        855,
+        431
+      ],
+      "size_px": [
+        31,
+        57
+      ],
+      "background_key_rgb": [
+        25,
+        20,
+        16
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "boots_02",
+      "file": "assets/art/equipment_reference/equipment/boots/boots_02.png",
+      "source_box": [
+        867,
+        363,
+        898,
+        431
+      ],
+      "size_px": [
+        29,
+        62
+      ],
+      "background_key_rgb": [
+        24,
+        21,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "boots_03",
+      "file": "assets/art/equipment_reference/equipment/boots/boots_03.png",
+      "source_box": [
+        909,
+        363,
+        940,
+        431
+      ],
+      "size_px": [
+        30,
+        56
+      ],
+      "background_key_rgb": [
+        23,
+        20,
+        16
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "boots_04",
+      "file": "assets/art/equipment_reference/equipment/boots/boots_04.png",
+      "source_box": [
+        952,
+        363,
+        986,
+        431
+      ],
+      "size_px": [
+        32,
+        57
+      ],
+      "background_key_rgb": [
+        22,
+        19,
+        15
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "boots_05",
+      "file": "assets/art/equipment_reference/equipment/boots/boots_05.png",
+      "source_box": [
+        998,
+        363,
+        1032,
+        431
+      ],
+      "size_px": [
+        32,
+        56
+      ],
+      "background_key_rgb": [
+        21,
+        18,
+        15
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "ring_01",
+      "file": "assets/art/equipment_reference/equipment/rings/ring_01.png",
+      "source_box": [
+        23,
+        505,
+        97,
+        581
+      ],
+      "size_px": [
+        61,
+        64
+      ],
+      "background_key_rgb": [
+        23,
+        23,
+        21
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "ring_02",
+      "file": "assets/art/equipment_reference/equipment/rings/ring_02.png",
+      "source_box": [
+        114,
+        505,
+        185,
+        581
+      ],
+      "size_px": [
+        49,
+        58
+      ],
+      "background_key_rgb": [
+        24,
+        21,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "ring_03",
+      "file": "assets/art/equipment_reference/equipment/rings/ring_03.png",
+      "source_box": [
+        202,
+        505,
+        269,
+        581
+      ],
+      "size_px": [
+        50,
+        56
+      ],
+      "background_key_rgb": [
+        23,
+        22,
+        20
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "ring_04",
+      "file": "assets/art/equipment_reference/equipment/rings/ring_04.png",
+      "source_box": [
+        286,
+        505,
+        350,
+        581
+      ],
+      "size_px": [
+        56,
+        67
+      ],
+      "background_key_rgb": [
+        20,
+        22,
+        23
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "ring_05",
+      "file": "assets/art/equipment_reference/equipment/rings/ring_05.png",
+      "source_box": [
+        368,
+        505,
+        429,
+        581
+      ],
+      "size_px": [
+        52,
+        67
+      ],
+      "background_key_rgb": [
+        23,
+        20,
+        21
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "ring_06",
+      "file": "assets/art/equipment_reference/equipment/rings/ring_06.png",
+      "source_box": [
+        447,
+        505,
+        513,
+        581
+      ],
+      "size_px": [
+        57,
+        67
+      ],
+      "background_key_rgb": [
+        23,
+        19,
+        14
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "necklace_01",
+      "file": "assets/art/equipment_reference/equipment/necklaces/necklace_01.png",
+      "source_box": [
+        545,
+        505,
+        608,
+        581
+      ],
+      "size_px": [
+        56,
+        76
+      ],
+      "background_key_rgb": [
+        25,
+        21,
+        17
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "necklace_02",
+      "file": "assets/art/equipment_reference/equipment/necklaces/necklace_02.png",
+      "source_box": [
+        626,
+        505,
+        690,
+        581
+      ],
+      "size_px": [
+        55,
+        75
+      ],
+      "background_key_rgb": [
+        25,
+        22,
+        18
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "necklace_03",
+      "file": "assets/art/equipment_reference/equipment/necklaces/necklace_03.png",
+      "source_box": [
+        708,
+        505,
+        775,
+        581
+      ],
+      "size_px": [
+        57,
+        76
+      ],
+      "background_key_rgb": [
+        23,
+        22,
+        20
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "necklace_04",
+      "file": "assets/art/equipment_reference/equipment/necklaces/necklace_04.png",
+      "source_box": [
+        793,
+        505,
+        859,
+        581
+      ],
+      "size_px": [
+        47,
+        68
+      ],
+      "background_key_rgb": [
+        24,
+        21,
+        20
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "necklace_05",
+      "file": "assets/art/equipment_reference/equipment/necklaces/necklace_05.png",
+      "source_box": [
+        877,
+        505,
+        945,
+        581
+      ],
+      "size_px": [
+        60,
+        69
+      ],
+      "background_key_rgb": [
+        23,
+        19,
+        14
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "necklace_06",
+      "file": "assets/art/equipment_reference/equipment/necklaces/necklace_06.png",
+      "source_box": [
+        962,
+        505,
+        1032,
+        581
+      ],
+      "size_px": [
+        59,
+        68
+      ],
+      "background_key_rgb": [
+        21,
+        18,
+        13
+      ],
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    },
+    {
+      "id": "equipment_slot_frame",
+      "file": "assets/art/equipment_reference/ui/equipment_slot_frame.png",
+      "source_box": [
+        15,
+        56,
+        95,
+        148
+      ],
+      "size_px": [
+        80,
+        92
+      ],
+      "purpose": "rarity frame overlay; tint this frame only",
+      "rgb_unchanged": true,
+      "rarity_recolored": false
+    }
+  ]
+}

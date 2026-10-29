@@ -11,6 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   web:
+    if: github.ref != 'refs/heads/dev/expansao-andares-3-4'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -34,18 +35,241 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
           unzip -q /tmp/templates.tpz 'templates/web*' -d /tmp/godot-templates
           mv /tmp/godot-templates/templates/web* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          mkdir -p build/templates
+          cp "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/web_nothreads_debug.zip" build/templates/
+          cp "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/web_nothreads_release.zip" build/templates/
       - name: Import and validate scripts
         shell: bash
         run: |
           set -euo pipefail
+          mkdir -p build
+          touch build/.gdignore
           godot --headless --path . --editor --import 2>&1 | tee /tmp/import.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/import.log; then exit 1; fi
       - name: Gameplay contract tests
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
         shell: bash
         run: |
           set -euo pipefail
-          godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee /tmp/tests.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tests.log; then exit 1; fi
+          grep -E '^RESULT: [0-9]+ checks, 0 failures$' /tmp/tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/first_weapon_tests.gd 2>&1 | tee /tmp/first-weapon-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|FIRST_WEAPON_FAIL:' /tmp/first-weapon-tests.log; then exit 1; fi
+          grep -E '^FIRST_WEAPON_RESULT: [0-9]+ checks, 0 failures$' /tmp/first-weapon-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/sword_demo_tests.gd 2>&1 | tee /tmp/sword-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SWORD_DEMO_FAIL:' /tmp/sword-tests.log; then exit 1; fi
+          grep -E '^SWORD_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/sword_game_tests.gd 2>&1 | tee /tmp/sword-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SWORD_GAME_FAIL:' /tmp/sword-game-tests.log; then exit 1; fi
+          grep -E '^SWORD_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/bow_demo_tests.gd 2>&1 | tee /tmp/bow-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|BOW_DEMO_FAIL:' /tmp/bow-tests.log; then exit 1; fi
+          grep -E '^BOW_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/bow-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/bow_game_tests.gd 2>&1 | tee /tmp/bow-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|BOW_GAME_FAIL:' /tmp/bow-game-tests.log; then exit 1; fi
+          grep -E '^BOW_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/bow-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/staff_demo_tests.gd 2>&1 | tee /tmp/staff-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|STAFF_DEMO_FAIL:' /tmp/staff-tests.log; then exit 1; fi
+          grep -E '^STAFF_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/staff-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/staff_game_tests.gd 2>&1 | tee /tmp/staff-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|STAFF_GAME_FAIL:' /tmp/staff-game-tests.log; then exit 1; fi
+          grep -E '^STAFF_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/staff-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/melee_demo_tests.gd 2>&1 | tee /tmp/melee-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|MELEE_DEMO_FAIL:' /tmp/melee-tests.log; then exit 1; fi
+          grep -E '^MELEE_DEMO_RESULT: [0-9]+ checks, 0 failures$' /tmp/melee-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/melee_game_tests.gd 2>&1 | tee /tmp/melee-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|MELEE_GAME_FAIL:' /tmp/melee-game-tests.log; then exit 1; fi
+          grep -E '^MELEE_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/melee-game-tests.log
+          timeout --signal=TERM --kill-after=10s 90s godot --headless --path . --script res://tests/skill1_tests.gd 2>&1 | tee /tmp/skill1-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_FAIL:' /tmp/skill1-tests.log; then exit 1; fi
+          grep -E '^SKILL1_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-tests.log
+          timeout 90s godot --headless --path . --script res://tests/skill1_game_tests.gd 2>&1 | tee /tmp/skill1-game-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_GAME_FAIL:' /tmp/skill1-game-tests.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-game-tests.log
+          timeout 90s godot --headless --path . --script res://tests/skill1_inspection_tests.gd 2>&1 | tee /tmp/inspection-tests.log
+          if grep -E 'SCRIPT ERROR|ERROR:|INSPECTION_FAIL:' /tmp/inspection-tests.log; then exit 1; fi
+          grep -E '^INSPECTION_RESULT: [0-9]+ checks, 0 failures$' /tmp/inspection-tests.log
+      - name: Interface 2.0 focused tests and 360x800 captures
+        if: github.head_ref == 'feat/interface-2-0' || github.ref == 'refs/heads/feat/interface-2-0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 90s godot --headless --path . --script res://tests/interface2_tests.gd 2>&1 | tee /tmp/interface2-headless.log
+          if grep -E 'SCRIPT ERROR|ERROR:|INTERFACE2_FAIL:' /tmp/interface2-headless.log; then exit 1; fi
+          grep -E '^INTERFACE2_RESULT: [0-9]+ checks, 0 failures$' /tmp/interface2-headless.log
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          QA_INTERFACE2_DIR="$PWD/build/interface2-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/interface2_tests.gd 2>&1 | tee /tmp/interface2-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:|INTERFACE2_FAIL:' /tmp/interface2-render.log; then exit 1; fi
+          grep -E '^INTERFACE2_RESULT: [0-9]+ checks, 0 failures$' /tmp/interface2-render.log
+          test -s build/interface2-qa/evolution-360x800.png
+          test -s build/interface2-qa/evolution-lower-360x800.png
+          test -s build/interface2-qa/blacksmith-forjar-360x800.png
+          test -s build/interface2-qa/blacksmith-aprimorar-360x800.png
+          test -s build/interface2-qa/blacksmith-evoluir-360x800.png
+          test -s build/interface2-qa/death-360x800.png
+      - name: Save Interface 2.0 Godot captures
+        if: always() && (github.head_ref == 'feat/interface-2-0' || github.ref == 'refs/heads/feat/interface-2-0')
+        uses: actions/upload-artifact@v4
+        with:
+          name: interface2-godot-captures
+          path: build/interface2-qa/
+          if-no-files-found: warn
+          retention-days: 3
+      - name: Mobile title hotfix regression
+        if: github.head_ref == 'fix/mobile-title-touch-20261022'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 60s godot --headless --path . --script res://tests/alpha02_smoke.gd 2>&1 | tee /tmp/mobile-title-hotfix.log
+          grep '^ALPHA02 RESULT: 0 falhas$' /tmp/mobile-title-hotfix.log
+          if grep -E 'SCRIPT ERROR|ERROR:|FAIL:' /tmp/mobile-title-hotfix.log; then exit 1; fi
+      - name: Set up Node for save validation
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Browser journal contracts
+        run: node --test tests/browser_save_tests.cjs
+      - name: Report startup diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --script res://tests/perf_probe.gd 2>&1 | tee /tmp/perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/perf.log; then exit 1; fi
+          grep '^PERF_PROBE:' /tmp/perf.log
+      - name: Validate and capture clear service and diary menus
+        if: github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 95s godot --headless --path . --script res://tests/menu_clarity_tests.gd 2>&1 | tee /tmp/menu-clarity-headless.log
+          grep -E '^MENU_CLARITY_RESULT: [0-9]+ checks, 0 failures$' /tmp/menu-clarity-headless.log
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          QA_MENU_CLARITY_DIR="$PWD/build/menu-clarity-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 95s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/menu_clarity_tests.gd 2>&1 | tee /tmp/menu-clarity-render.log
+          grep -E '^MENU_CLARITY_RESULT: [0-9]+ checks, 0 failures$' /tmp/menu-clarity-render.log
+          test "$(find build/menu-clarity-qa -name '*.png' | wc -l)" -eq 36
+      - name: Save clear menu screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: menu-clarity-qa
+          path: build/menu-clarity-qa/
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Validate and capture Sword diary interface
+        if: github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/progressao-etapa2')
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 65s godot --headless --path . --script res://tests/sword_diary_ui_tests.gd 2>&1 | tee /tmp/sword-diary-headless.log
+          grep -E '^SWORD_DIARY_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-diary-headless.log
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          QA_SWORD_DIARY_DIR="$PWD/build/sword-diary-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 65s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/sword_diary_ui_tests.gd 2>&1 | tee /tmp/sword-diary-render.log
+          grep -E '^SWORD_DIARY_RESULT: [0-9]+ checks, 0 failures$' /tmp/sword-diary-render.log
+          test "$(find build/sword-diary-qa -name '*.png' | wc -l)" -eq 16
+      - name: Save Sword diary screenshots
+        if: always() && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sword-diary-qa
+          path: build/sword-diary-qa/
+          if-no-files-found: warn
+          retention-days: 1
+      - name: Render mobile layouts in software GL
+        if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe') && github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          mkdir -p build/mobile-qa
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mobile_capture.gd 2>&1 | tee /tmp/render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/render.log; then exit 1; fi
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/combat_capture.gd 2>&1 | tee /tmp/combat-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/combat-render.log; then exit 1; fi
+          grep '^COMBAT_QA_RESULT: 0 failures$' build/mobile-qa/combat-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/tower_capture.gd 2>&1 | tee /tmp/tower-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/tower-render.log; then exit 1; fi
+          grep '^TOWER_QA_RESULT: 0 failures$' build/mobile-qa/tower-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/arena_capture.gd 2>&1 | tee /tmp/arena-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/arena-render.log; then exit 1; fi
+          grep '^ARENA_QA_RESULT: 0 failures$' build/mobile-qa/arena-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/save_capture.gd 2>&1 | tee /tmp/save-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/save-render.log; then exit 1; fi
+          grep '^SAVE_QA_RESULT: 0 failures$' build/mobile-qa/save-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/guardian_capture.gd 2>&1 | tee /tmp/guardian-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/guardian-render.log; then exit 1; fi
+          grep '^GUARDIAN_QA_RESULT: 0 failures$' build/mobile-qa/guardian-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/campaign_capture.gd 2>&1 | tee /tmp/campaign-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/campaign-render.log; then exit 1; fi
+          grep '^CAMPAIGN_QA_RESULT: 0 failures$' build/mobile-qa/campaign-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/arsenal_capture.gd 2>&1 | tee /tmp/arsenal-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/arsenal-render.log; then exit 1; fi
+          grep '^ARSENAL_QA_RESULT: 0 failures$' build/mobile-qa/arsenal-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_capture.gd 2>&1 | tee /tmp/mata-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/mata-render.log; then exit 1; fi
+          grep '^MATA_QA_RESULT: 0 failures$' build/mobile-qa/mata-result.txt
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_sample_capture.gd 2>&1 | tee /tmp/sample-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/sample-render.log; then exit 1; fi
+          grep '^SAMPLE_RESULT: 19 checks, 0 failures$' /tmp/sample-render.log
+          QA_RENDER_DIR="$PWD/build/mobile-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/mata_v2_capture.gd 2>&1 | tee /tmp/mata-v2-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/mata-v2-render.log; then exit 1; fi
+          grep '^MATA_V2_RESULT: 34 checks, 0 failures$' /tmp/mata-v2-render.log
+          test "$(find build/mobile-qa -name '*.png' | wc -l)" -eq 233
+          QA_RENDER_DIR="$PWD/build/diary-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/diary_capture.gd 2>&1 | tee /tmp/diary-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/diary-render.log; then exit 1; fi
+          test "$(find build/diary-qa -name '*.png' | wc -l)" -eq 24
+          QA_RENDER_DIR="$PWD/build/progression-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 60s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/progression_capture.gd 2>&1 | tee /tmp/progression-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/progression-render.log; then exit 1; fi
+          grep '^PROGRESSION_QA_RESULT: 0 failures$' /tmp/progression-render.log
+          test "$(find build/progression-qa -name '*.png' | wc -l)" -eq 20
+          QA_RENDER_DIR="$PWD/build/etapa2-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/etapa2_capture.gd 2>&1 | tee /tmp/etapa2-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/etapa2-render.log; then exit 1; fi
+          grep '^ETAPA2_RENDER_RESULT: 0 failures$' /tmp/etapa2-render.log
+          test "$(find build/etapa2-qa -name '*.png' | wc -l)" -eq 40
+          QA_RENDER_DIR="$PWD/build/first-weapon-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/first_weapon_tests.gd 2>&1 | tee /tmp/first-weapon-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:|FIRST_WEAPON_FAIL:' /tmp/first-weapon-render.log; then exit 1; fi
+          grep -E '^FIRST_WEAPON_RESULT: [0-9]+ checks, 0 failures$' /tmp/first-weapon-render.log
+          test "$(find build/first-weapon-qa -name '*.png' | wc -l)" -eq 8
+      - name: Verify original explorer identity during sword techniques
+        if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe') && github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 35s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/sword_identity_capture.gd 2>&1 | tee /tmp/sword-identity.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/sword-identity.log; then exit 1; fi
+          grep '^SWORD_IDENTITY_RESULT: 72 checks, 0 failures$' /tmp/sword-identity.log
+      - name: Probe bounded Skill 1 effects in software GL
+        if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe') && github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_perf_probe.gd 2>&1 | tee /tmp/skill1-perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/skill1-perf.log; then exit 1; fi
+          grep -E '^SKILL1_PERF_RESULT: .*0 failures$' /tmp/skill1-perf.log
+          QA_RENDER_DIR="$PWD/build/skill1-game-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_game_tests.gd 2>&1 | tee /tmp/skill1-game-render.log
+          if grep -E 'SCRIPT ERROR|ERROR:|SKILL1_GAME_FAIL:' /tmp/skill1-game-render.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_RESULT: [0-9]+ checks, 0 failures$' /tmp/skill1-game-render.log
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 45s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --script res://tests/skill1_game_perf.gd 2>&1 | tee /tmp/skill1-game-perf.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/skill1-game-perf.log; then exit 1; fi
+          grep -E '^SKILL1_GAME_PERF_RESULT: .*0 failures$' /tmp/skill1-game-perf.log
+      - name: Save rendered layout evidence
+        if: (github.event_name == 'pull_request' || github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe') && github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-layout-qa
+          path: |
+            build/mobile-qa/
+            build/diary-qa/
+            build/progression-qa/
+            build/etapa2-qa/
+            build/first-weapon-qa/
+            build/skill1-game-qa/
+          if-no-files-found: error
+          retention-days: 1
       - name: Export Web
         shell: bash
         run: |
@@ -53,16 +277,185 @@ jobs:
           mkdir -p build/web
           godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee /tmp/export.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/export.log; then exit 1; fi
+          if grep -E 'Storing File: res://build/|Storing File:.*(combat|tower|arena|guardian|campaign|arsenal|mata)_[0-9]+x[0-9]+_|Storing File: res://assets/art/forest_(oak|linden|spruce)_v035.png' /tmp/export.log; then exit 1; fi
           test -s build/web/index.html
           test -s build/web/index.wasm
           test -s build/web/index.pck
+      - name: Install branded ARVÉON loading screen
+        run: node tools/inject-arveon-loading.mjs
+      - name: Validate responsive loading without fake progress
+        run: node tests/web_arveon_loading.mjs
+      - name: Real browser mobile title regression
+        if: github.head_ref == 'fix/mobile-title-touch-20261022'
+        env:
+          TITLE_BASELINE_URL: https://arveon-teste.vercel.app
+        run: timeout 180s node tests/web_title_touch.mjs
+      - name: Real mobile touch and desktop mouse for Interface 2.0
+        if: github.head_ref == 'feat/interface-2-0' || github.ref == 'refs/heads/feat/interface-2-0'
+        run: timeout 240s node tests/web_interface2_browser.mjs
+      - name: Save Interface 2.0 browser evidence
+        if: always() && (github.head_ref == 'feat/interface-2-0' || github.ref == 'refs/heads/feat/interface-2-0')
+        uses: actions/upload-artifact@v4
+        with:
+          name: interface2-browser-captures
+          path: build/interface2-browser-qa/
+          if-no-files-found: warn
+          retention-days: 3
+      - name: Save real title touch evidence
+        if: always() && github.head_ref == 'fix/mobile-title-touch-20261022'
+        uses: actions/upload-artifact@v4
+        with:
+          name: title-touch-browser-qa
+          path: build/title-touch-qa/
+          if-no-files-found: error
+          retention-days: 3
+      - name: Capture approved loading artwork in real Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: timeout 180s node tests/web_loading_browser.mjs
+      - name: Save approved loading screenshots
+        if: always() && github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: approved-loading-qa
+          path: build/loading-qa/
+          if-no-files-found: error
+          retention-days: 1
+      - name: Prepare isolated art sample entry
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: node tools/build-art-sample.mjs
+      - name: Prepare isolated sword review entry
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: node tools/build-sword-demo.mjs
+      - name: Prepare isolated bow review entry
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: node tools/build-bow-demo.mjs
+      - name: Prepare isolated staff review entry
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: node tools/build-staff-demo.mjs
+      - name: Prepare isolated axe and spear reviews
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: node tools/build-melee-demos.mjs
+      - name: Prepare isolated Skill 1 review
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: node tools/build-skill1-demo.mjs
+      - name: Verify five Skills 1 in desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: timeout 150s node tests/web_skill1_demo.mjs
+      - name: Verify axe and spear with desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: |
+          MELEE_REVIEW_WEAPON=machado timeout 150s node tests/web_melee_demos.mjs
+          MELEE_REVIEW_WEAPON=lanca timeout 150s node tests/web_melee_demos.mjs
+      - name: Verify staff review in desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: timeout 150s node tests/web_staff_demo.mjs
+      - name: Verify bow review in desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: node tests/web_bow_demo.mjs
+      - name: Verify actual Web persistence in Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 150s node tests/web_save_browser.mjs 2>&1 | tee /tmp/web-save-browser.log
+          grep '^WEB_SAVE_RESULT: [0-9]* checks, 0 failures$' /tmp/web-save-browser.log
+      - name: Verify sword review in desktop and touch Chromium
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        run: node tests/web_sword_demo.mjs
       - name: Save Web build (no deployment)
         uses: actions/upload-artifact@v4
         with:
           name: andar-1-web
           path: build/web/
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 1
+
+  equipment_preview:
+    name: Equipment preview on Vercel TEST
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dev/expansao-andares-3-4'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout validated commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install Godot 4.5.1 and Web templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot/releases/download/4.5.1-stable"
+          curl --fail --location --retry 3 "$base/Godot_v4.5.1-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/godot-bin
+          chmod +x /tmp/godot-bin/Godot_v4.5.1-stable_linux.x86_64
+          ln -s /tmp/godot-bin/Godot_v4.5.1-stable_linux.x86_64 /tmp/godot-bin/godot
+          echo /tmp/godot-bin >> "$GITHUB_PATH"
+          curl --fail --location --retry 3 "$base/Godot_v4.5.1-stable_export_templates.tpz" -o /tmp/templates.tpz
+          mkdir -p build/templates
+          touch build/.gdignore
+          unzip -p /tmp/templates.tpz templates/web_nothreads_release.zip > build/templates/web_nothreads_release.zip
+      - name: Import and validate equipment scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --path . --editor --import 2>&1 | tee /tmp/equipment-import.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/equipment-import.log; then exit 1; fi
+      - name: Test integrated equipment screen at 360x800
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri
+          QA_RENDER_DIR="$PWD/build/equipment-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 70s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --resolution 360x800 --script res://tests/equipment_screen_integration.gd 2>&1 | tee /tmp/equipment-test.log
+          if grep -E 'SCRIPT ERROR|ERROR:|EQUIPMENT_SCREEN_FAIL:|EQUIPMENT_SCREEN_TIMEOUT' /tmp/equipment-test.log; then exit 1; fi
+          grep '^EQUIPMENT_SCREEN_RESULT: failures=0' /tmp/equipment-test.log
+          test -s build/equipment-qa/equipment-integrated-360x800.png
+      - name: Check mobile panel widths and navigation
+        shell: bash
+        run: |
+          set -euo pipefail
+          QA_RENDER_DIR="$PWD/build/equipment-qa" LIBGL_ALWAYS_SOFTWARE=1 timeout 70s xvfb-run -a godot --path . --audio-driver Dummy --rendering-method gl_compatibility --resolution 360x640 --script res://tests/mobile_equipment_layout.gd 2>&1 | tee /tmp/mobile-layout.log
+          if grep -E 'SCRIPT ERROR|ERROR:|MOBILE_LAYOUT_FAIL:|MOBILE_LAYOUT_TIMEOUT' /tmp/mobile-layout.log; then exit 1; fi
+          grep '^MOBILE_LAYOUT_RESULT: failures=0' /tmp/mobile-layout.log
+          test -s build/equipment-qa/equipamento-mobile-360x640.png
+          test -s build/equipment-qa/ferreiro-mobile-360x640.png
+      - name: Save equipment capture
+        uses: actions/upload-artifact@v4
+        with:
+          name: equipment-mobile-captures
+          path: build/equipment-qa/*.png
+          if-no-files-found: error
+          retention-days: 3
+      - name: Export updated Web package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/web
+          godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee /tmp/equipment-export.log
+          if grep -E 'SCRIPT ERROR|ERROR:' /tmp/equipment-export.log; then exit 1; fi
+          test -s build/web/index.html && test -s build/web/index.wasm && test -s build/web/index.pck
+      - name: Publish TEST preview
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_6XRzZ5HN4AOw2hWyIpf8McMU
+          VERCEL_PROJECT_ID: prj_gYKlx91MiswTmwj2PLiN5liQD0B7
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERCEL_TOKEN" ]]; then echo '::error::VERCEL_TOKEN unavailable'; exit 1; fi
+          mkdir -p build/web/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > build/web/.vercel/project.json
+          cp tools/preview-vercel.json build/web/vercel.json
+          cd build/web
+          npx --yes vercel@62.7.0 deploy --yes --non-interactive --meta "githubCommitSha=$GITHUB_SHA" --meta "githubCommitRef=$GITHUB_REF_NAME" > /tmp/equipment-deploy.json
+          node --input-type=module -e '
+            import { readFileSync, appendFileSync } from "node:fs";
+            const result = JSON.parse(readFileSync("/tmp/equipment-deploy.json", "utf8"));
+            if (result.status !== "ok" || result.deployment.readyState !== "READY" || result.deployment.target === "production") process.exit(1);
+            const url = result.deployment.url;
+            console.log("Equipment TEST preview: " + url);
+            appendFileSync(process.env.GITHUB_STEP_SUMMARY, "Equipment TEST preview: https://" + url + "\n");
+          '
 
   deploy:
     name: Publish tested Web build to Vercel
@@ -98,4 +491,192 @@ jobs:
           mkdir -p web/.vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
           cd web
-          npx --yes vercel@62.7.0 deploy --prod --yes --token "$VERCEL_TOKEN"
+          npx --yes vercel@62.7.0 deploy --prod --yes
+
+  preview:
+    name: Preview proposed Godot Web changes
+    needs: web
+    if: >-
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'feat/andar1-v020-primeiro-passe' || github.head_ref == 'feat/progressao-etapa2' || github.head_ref == 'feat/espada-ritmo-aprovado-20261016' || github.head_ref == 'fix/mobile-title-touch-20261022' || github.head_ref == 'feat/interface-2-0')) ||
+      (github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/feat/andar1-v020-primeiro-passe' || github.ref == 'refs/heads/feat/progressao-etapa2' || github.ref == 'refs/heads/feat/espada-ritmo-aprovado-20261016' || github.ref == 'refs/heads/feat/interface-2-0' || github.ref == 'refs/heads/dev/expansao-andares-3-4'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    concurrency:
+      group: arveon-fixed-test-preview
+      cancel-in-progress: true
+    steps:
+      - name: Download tested Web export
+        uses: actions/download-artifact@v4
+        with:
+          name: andar-1-web
+          path: web
+      - name: Checkout reviewed Preview helper
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          path: source
+      - name: Prepare Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Publish preview
+        shell: bash
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_6XRzZ5HN4AOw2hWyIpf8McMU
+          VERCEL_PROJECT_ID: prj_gYKlx91MiswTmwj2PLiN5liQD0B7
+          TEST_ALIAS: arveon-teste.vercel.app
+          PREVIEW_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PREVIEW_BRANCH: ${{ github.head_ref || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$VERCEL_TOKEN" ]]; then
+            echo '::error title=Vercel token missing::Create the VERCEL_TOKEN repository secret.'
+            exit 1
+          fi
+          test -s web/index.html && test -s web/index.wasm && test -s web/index.pck
+          mkdir -p web/.vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > web/.vercel/project.json
+          cd web
+          cp ../source/tools/preview-vercel.json vercel.json
+          npx --yes vercel@62.7.0 deploy --yes --non-interactive --meta "githubCommitSha=$PREVIEW_COMMIT_SHA" --meta "githubCommitRef=$PREVIEW_BRANCH" > /tmp/arveon-deploy.json
+          preview_url="$(node --input-type=module -e '
+            import { readFileSync } from "node:fs";
+            const result = JSON.parse(readFileSync("/tmp/arveon-deploy.json", "utf8"));
+            if (result.status !== "ok" || result.deployment.readyState !== "READY" || result.deployment.target === "production") process.exit(1);
+            console.log(result.deployment.url);
+          ')"
+          echo "Preview URL: $preview_url"
+          echo "## Preview Android / desktop" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f ../source/tools/skill1-review.json ]]; then
+            skill1_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/skill1-review.json","utf8"));
+              if(p.entry!=="amostra-skills1/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$skill1_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-skill1-preview.mjs
+            fi
+          elif [[ -f ../source/tools/melee-review.json ]]; then
+            melee_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/melee-review.json","utf8"));
+              if(p.entry!=="amostra-machado/index.html" || JSON.stringify(p.additionalEntries)!==JSON.stringify(["amostra-lanca/index.html"])) process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$melee_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-melee-preview.mjs
+            fi
+          elif [[ -f ../source/tools/staff-review.json ]]; then
+            staff_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/staff-review.json","utf8"));
+              if(p.entry!=="amostra-cajado/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$staff_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-staff-preview.mjs
+            fi
+          elif [[ -f ../source/tools/bow-review.json ]]; then
+            bow_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p=JSON.parse(readFileSync("../source/tools/bow-review.json","utf8"));
+              if(p.entry!=="amostra-arco/index.html") process.exit(1);
+              if(p.status==="approved-in-game" && p.fixedTestAlias===true) console.log("approved");
+              else if(p.status==="awaiting-visual-approval" && p.fixedTestAlias===false) console.log("pending");
+              else process.exit(1);
+            ')"
+            if [[ "$bow_status" == "approved" ]]; then
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-bow-preview.mjs
+            fi
+          else
+            review_status="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const p = JSON.parse(readFileSync("../source/tools/sword-review.json", "utf8"));
+              if (p.entry !== "amostra-espada/index.html") process.exit(1);
+              if (p.status === "awaiting-visual-approval" && p.fixedTestAlias === false) console.log("pending");
+              else if (p.status === "approved-in-game" && p.fixedTestAlias === true) console.log("approved");
+              else process.exit(1);
+            ')"
+            if [[ "$review_status" == "pending" ]]; then
+              # Fail closed: malformed/missing exported review data aborts; no alias call.
+              PREVIEW_URL="$preview_url" node ../source/tools/verify-sword-preview.mjs
+              echo "[Espada V1 — demonstração isolada]($preview_url/amostra-espada/index.html)" >> "$GITHUB_STEP_SUMMARY"
+              echo "TESTE fixo preservado; aguardando aprovação visual." >> "$GITHUB_STEP_SUMMARY"
+            else
+              PREVIEW_URL="$preview_url" node ../source/tools/publish-test-alias.mjs
+              node ../source/tools/verify-test-build.mjs
+              echo "[TESTE — endereço fixo](https://$TEST_ALIAS)" >> "$GITHUB_STEP_SUMMARY"
+              echo "[Build desta execução]($preview_url)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
+      - name: Verify real touch on published TESTE
+        if: github.head_ref == 'fix/mobile-title-touch-20261022'
+        env:
+          TITLE_WEB_DIR: web
+          TITLE_WEB_URL: https://arveon-teste.vercel.app
+          TITLE_QA_DIR: title-touch-live-qa
+        run: timeout 180s node source/tests/web_title_touch.mjs
+
+      - name: Verify published Interface 2.0 in real mobile/desktop browsers
+        if: github.head_ref == 'feat/interface-2-0' || github.ref == 'refs/heads/feat/interface-2-0'
+        env:
+          UI2_WEB_DIR: web
+          UI2_WEB_URL: https://arveon-teste.vercel.app
+          UI2_QA_DIR: interface2-live-qa
+        run: timeout 240s node source/tests/web_interface2_browser.mjs
+      - name: Save published Interface 2.0 screenshots
+        if: always() && (github.head_ref == 'feat/interface-2-0' || github.ref == 'refs/heads/feat/interface-2-0')
+        uses: actions/upload-artifact@v4
+        with:
+          name: interface2-test-site-browser-captures
+          path: interface2-live-qa/
+          if-no-files-found: warn
+          retention-days: 3
+      - name: Save live title touch evidence
+        if: always() && github.head_ref == 'fix/mobile-title-touch-20261022'
+        uses: actions/upload-artifact@v4
+        with:
+          name: title-touch-live-qa
+          path: title-touch-live-qa/
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Verify published loading screen and capture TESTE
+        if: github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        env:
+          LOADING_WEB_DIR: web
+          LOADING_TEST_BASE_URL: https://arveon-teste.vercel.app/
+          QA_LOADING_CAPTURE_DIR: loading-live-qa
+        run: timeout 180s node source/tests/web_loading_browser.mjs
+      - name: Save published loading screenshots
+        if: always() && github.head_ref != 'fix/mobile-title-touch-20261022' && github.head_ref != 'feat/interface-2-0' && github.ref != 'refs/heads/feat/interface-2-0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: approved-loading-live-qa
+          path: loading-live-qa/
+          if-no-files-found: error
+          retention-days: 1
+
+
+

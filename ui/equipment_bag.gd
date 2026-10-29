@@ -1,0 +1,249 @@
+class_name EquipmentBag
+extends VBoxContainer
+
+signal selected(id: String)
+signal action_requested(action: String, id: String)
+signal compare_requested
+signal equipment_requested
+var cards: Dictionary = {}
+var equip_button: Button
+var compare_button: Button
+var back_button: Button
+var comparison: VBoxContainer
+var progress: GameProgress
+var grid: GridContainer
+var spread: BoxContainer
+var items_page: VBoxContainer
+var detail_panel: PanelContainer
+
+func _init(value: GameProgress = null, selection: String = "", comparing: bool = false) -> void:
+	progress = value
+	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_theme_constant_override("separation", 6)
+	if value == null:
+		return
+	_overview()
+	_weapon_copies()
+	for id: String in progress.equipment:
+		_card(id)
+	# Empty cells are presentation, never fake owned items or a capacity limit.
+	for i in range(maxi(0,12-progress.equipment.size())):
+		var empty := PanelContainer.new()
+		empty.custom_minimum_size = Vector2(60,62)
+		empty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		empty.add_theme_stylebox_override("panel",DiaryTheme.piece("empty",0))
+		grid.add_child(empty)
+	resized.connect(_reflow)
+	if not selection.is_empty() and progress.equipment.has(selection):
+		_details(selection,comparing)
+		DiaryTheme.select(cards[selection],true)
+		_set_selected_card_text(cards[selection])
+	else:
+		var hint := PanelContainer.new()
+		hint.add_theme_stylebox_override("panel",DiaryTheme.piece("paper",10))
+		add_child(hint)
+		hint.add_child(_label("Selecione um equipamento para ver os atributos e equipar.",DiaryTheme.INK,12))
+
+func _style(color: Color) -> StyleBoxFlat:
+	return DiaryTheme.box(Color("#e7d2a4"),color,7)
+
+func _weapon_copies() -> void:
+	var section := VBoxContainer.new()
+	section.add_theme_constant_override("separation",4)
+	add_child(section)
+	move_child(section,1)
+	section.add_child(_label("ARMAS · CÓPIAS",DiaryTheme.GREEN,14))
+	for uid: String in progress.weapon_instances:
+		var data: Dictionary = progress.weapon(uid)
+		var is_equipped: bool = uid == progress.equipped_weapon_uid
+		var plate := PanelContainer.new()
+		plate.add_theme_stylebox_override("panel",DefeatArt.plate("item_on" if is_equipped else "item",6))
+		plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		section.add_child(plate)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation",8)
+		plate.add_child(row)
+		row.add_child(WeaponInstanceIcon.new(data.category,data.rarity,int(data.level)))
+		var text := VBoxContainer.new()
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		text.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		text.add_theme_constant_override("separation",-2)
+		row.add_child(text)
+		text.add_child(_label(ArsenalRules.category_name(data.category),DiaryTheme.INK,16))
+		var rarity_line := _label("%s +%d%s" % [ArsenalRules.RARITIES[data.rarity].name,int(data.level),"  ·  Equipada" if is_equipped else ""],Color(ArsenalRules.RARITIES[data.rarity].color).darkened(0.45),14)
+		text.add_child(rarity_line)
+		var equip_copy := Button.new()
+		equip_copy.text = "Equipada" if is_equipped else "Equipar"
+		equip_copy.custom_minimum_size = Vector2(88,44)
+		equip_copy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		equip_copy.disabled = is_equipped
+		equip_copy.pressed.connect(func(): action_requested.emit("equip_instance",uid))
+		row.add_child(equip_copy)
+
+func _set_selected_card_text(card: Control) -> void:
+	for child: Node in card.get_children():
+		_set_selected_card_text_recursive(child)
+
+func _set_selected_card_text_recursive(node: Node) -> void:
+	if node is Label:
+		(node as Label).add_theme_color_override("font_color",Color("#fff7dc"))
+	for child: Node in node.get_children():
+		_set_selected_card_text_recursive(child)
+
+func _label(text: String, color: Color = DiaryTheme.INK, font_size: int = 12) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_color_override("font_color",color)
+	label.add_theme_font_size_override("font_size",font_size)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+func _overview() -> void:
+	spread = BoxContainer.new()
+	spread.vertical = true
+	spread.add_theme_constant_override("separation",16)
+	add_child(spread)
+	items_page = VBoxContainer.new()
+	items_page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spread.add_child(items_page)
+	grid = GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid.add_theme_constant_override("h_separation",6)
+	grid.add_theme_constant_override("v_separation",6)
+	items_page.add_child(grid)
+	var open := Button.new()
+	open.text = "Ver Equipamento (8 espaços)"
+	open.custom_minimum_size.y = 44
+	open.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	open.pressed.connect(func(): equipment_requested.emit())
+	spread.add_child(open)
+	spread.move_child(open,0)
+
+func _reflow() -> void:
+	if spread == null: return
+	spread.vertical = true
+	grid.columns = 3 if size.x < 500 else 4
+	var visible_cells := maxi(progress.equipment.size(),3 if size.x < 500 else 8)
+	for i in range(grid.get_child_count()): grid.get_child(i).visible = i < visible_cells
+
+func _attributes(id: String) -> String:
+	var values := ArsenalRules.effective(progress,id)
+	if RPGRules.EQUIPMENT[id].slot == "Arma":
+		return "Dano %d · %.2fs · %dpx" % [values.damage,values.interval,values.reach]
+	var bonus := RPGRules.bonuses(id,int(progress.equipment[id]))
+	return "HP %+d · Defesa %+d · Espírito %+d" % [bonus.hp,bonus.armor,bonus.spirit]
+
+func _rarity_for_category(id: String) -> Dictionary:
+	if ArsenalRules.CATEGORIES.has(id):
+		for uid: String in progress.weapon_instances:
+			if progress.weapon(uid).category == id: return ArsenalRules.RARITIES[progress.weapon(uid).rarity]
+	return ArsenalRules.RARITIES[progress.equipment_rarity(id)]
+
+func _card(id: String) -> void:
+	var meta := ArsenalRules.metadata(id)
+	var rarity := _rarity_for_category(id)
+	var color := Color(rarity.color)
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(60,62)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.add_theme_stylebox_override("normal",DiaryTheme.piece("slot",0))
+	button.add_theme_stylebox_override("hover",DiaryTheme.piece("paper",0))
+	button.add_theme_stylebox_override("pressed",DiaryTheme.piece("green",0))
+	button.pressed.connect(func(): selected.emit(id))
+	grid.add_child(button)
+	cards[id] = button
+	var row := VBoxContainer.new()
+	row.add_theme_constant_override("separation",0)
+	row.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 8
+	row.offset_top = 5
+	row.offset_right = -8
+	row.offset_bottom = -5
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(row)
+	var icon := PixelItemIcon.new(meta.icon)
+	icon.framed = false
+	icon.custom_minimum_size = Vector2(44,44)
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	row.add_child(icon)
+	var name_label := _label(RPGRules.EQUIPMENT[id].name,DiaryTheme.INK,11)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.hide()
+	row.add_child(name_label)
+	var equipped: bool = progress.equipped[RPGRules.EQUIPMENT[id].slot] == id
+	var marker := _label("Equipado" if equipped else "+%d" % progress.equipment[id] if progress.equipment[id] > 0 else "",DiaryTheme.GREEN,10)
+	marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	row.add_child(marker)
+	button.tooltip_text = "%s · %s\n%s" % [RPGRules.EQUIPMENT[id].name,rarity.name,_attributes(id)]
+	var rarity_frame := Panel.new()
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color.TRANSPARENT
+	frame_style.draw_center = false
+	frame_style.border_color = color
+	frame_style.set_border_width_all(2)
+	frame_style.set_corner_radius_all(4)
+	rarity_frame.add_theme_stylebox_override("panel",frame_style)
+	rarity_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rarity_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(rarity_frame)
+
+func _details(id: String, comparing: bool) -> void:
+	var item: Dictionary = RPGRules.EQUIPMENT[id]
+	var rarity := _rarity_for_category(id)
+	var color := DiaryTheme.INK
+	detail_panel = PanelContainer.new()
+	detail_panel.add_theme_stylebox_override("panel",DiaryTheme.piece("paper",10))
+	add_child(detail_panel)
+	var detail := VBoxContainer.new()
+	detail_panel.add_child(detail)
+	var row := HBoxContainer.new()
+	detail.add_child(row)
+	back_button = Button.new()
+	back_button.text = "<"
+	back_button.tooltip_text = "Voltar aos equipamentos"
+	back_button.custom_minimum_size = Vector2(44,44)
+	back_button.pressed.connect(func(): selected.emit(""))
+	var selection_header := HBoxContainer.new()
+	add_child(selection_header)
+	move_child(selection_header,0)
+	selection_header.add_child(back_button)
+	selection_header.add_child(_label("Equipamento selecionado",DiaryTheme.GREEN,12))
+	row.add_child(PixelItemIcon.new(ArsenalRules.metadata(id).icon,color))
+	row.add_child(_label("%s +%d\n%s · %s" % [item.name,progress.equipment[id],ArsenalRules.category_name(id),rarity.name],color,13))
+	detail.add_child(_label(_attributes(id) + " · Nível %d" % ArsenalRules.metadata(id).level))
+	var actions := HBoxContainer.new()
+	detail.add_child(actions)
+	equip_button = Button.new()
+	equip_button.text = "Desequipar" if progress.equipped[item.slot] == id else "Equipar"
+	equip_button.custom_minimum_size.y = 44
+	equip_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	equip_button.pressed.connect(func(): action_requested.emit("unequip" if progress.equipped[item.slot] == id else "equip",item.slot if progress.equipped[item.slot] == id else id))
+	actions.add_child(equip_button)
+	DiaryTheme.primary(equip_button)
+	compare_button = Button.new()
+	compare_button.text = "Comparar" if not comparing else "Ocultar"
+	compare_button.custom_minimum_size.y = 44
+	compare_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	compare_button.pressed.connect(func(): compare_requested.emit())
+	actions.add_child(compare_button)
+	if not comparing:
+		return
+	comparison = VBoxContainer.new()
+	comparison.add_theme_constant_override("separation",2)
+	detail.add_child(comparison)
+	var current: String = progress.equipped[item.slot]
+	comparison.add_child(_label("Atual: " + (RPGRules.EQUIPMENT[current].name if not current.is_empty() else "nenhum")))
+	var candidate := ArsenalRules.effective(progress,id)
+	var before := progress.combat_stats()
+	var config := ArsenalRules.profile(progress.equipped.Arma)
+	before.reach = config.reach
+	before.interval = config.interval * float(before.basic_interval_factor)
+	for key: String in ["damage","interval","reach","hp","armor","speed","spirit"]:
+		var difference := float(candidate[key]) - float(before[key])
+		var good := difference < 0 if key == "interval" else difference > 0
+		var label: String = {"damage":"Dano","interval":"Intervalo (menor é melhor)","reach":"Alcance","hp":"HP","armor":"Defesa","speed":"Movimento","spirit":"Espírito"}[key]
+		comparison.add_child(_label("%s: %+.2f" % [label,difference],DiaryTheme.GREEN if good else Color("#a13f30") if not is_zero_approx(difference) else DiaryTheme.INK,12))

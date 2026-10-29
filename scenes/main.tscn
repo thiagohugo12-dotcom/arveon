@@ -11,7 +11,7 @@ script = ExtResource("main")
 [node name="Player" parent="." instance=ExtResource("player")]
 position = Vector2(540, 450)
 [node name="Enemy" parent="." instance=ExtResource("enemy")]
-position = Vector2(760, 400)
+position = Vector2(850, 400)
 [node name="InputDriver" type="Node" parent="."]
 script = ExtResource("input")
 [node name="Interface" type="CanvasLayer" parent="."]

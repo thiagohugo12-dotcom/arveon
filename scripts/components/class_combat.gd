@@ -1,0 +1,328 @@
+class_name ClassCombat
+extends RefCounted
+
+signal technique_impact(id: String, time: float)
+var technique: Dictionary = {}
+var technique_elapsed := 0.0
+var technique_did_hit := false
+
+func cancel_technique() -> void:
+	technique.clear()
+	technique_elapsed = 0.0
+	technique_did_hit = false
+	if is_instance_valid(player) and player.view is Skill1GameView:
+		player.view.clear_sword_technique()
+		player.view.clear_bow_technique()
+		player.view.clear_staff_technique()
+		player.view.clear_axe_technique()
+		player.view.clear_spear_technique()
+
+func _tick_technique(delta: float) -> void:
+	if technique.is_empty(): return
+	if not player.health.is_alive() or not player.attack.armed or progress.equipped.Arma != technique.weapon or progress.active_category() != technique.category or SafeCamp.in_clearance(player.global_position) or (technique.category in ["arco","cajado","machado","lanca"] and not player.view.village_scale):
+		cancel_technique()
+		return
+	# Modal menus pause the same timeline, including damage and the visible pose.
+	if player.input_driver != null and player.input_driver.blocked: return
+	var duration := BowTechniqueEffect.duration_time(technique.id,float(technique.get("reach",0.0))) if technique.category == "arco" else float(StaffTechniqueEffect.TIMINGS[technique.id].duration) if technique.category == "cajado" else float(AxeTechniqueEffect.TIMINGS[technique.id].duration) if technique.category == "machado" else float(SpearTechniqueEffect.TIMINGS[technique.id].duration) if technique.category == "lanca" else SwordTechniqueTiming.duration(technique.id)
+	var contact := BowTechniqueEffect.contact_time(technique.id,float(technique.get("reach",0.0))) if technique.category == "arco" else float(StaffTechniqueEffect.TIMINGS[technique.id].contact) if technique.category == "cajado" else float(AxeTechniqueEffect.TIMINGS[technique.id].contact) if technique.category == "machado" else float(SpearTechniqueEffect.TIMINGS[technique.id].contact) if technique.category == "lanca" else SwordTechniqueTiming.contact(technique.id)
+	technique_elapsed = minf(duration,technique_elapsed+maxf(0,delta))
+	if player.view is Skill1GameView:
+		if technique.category == "arco": player.view.seek_bow_technique(technique_elapsed)
+		elif technique.category == "cajado": player.view.seek_staff_technique(technique_elapsed)
+		elif technique.category == "machado": player.view.seek_axe_technique(technique_elapsed)
+		elif technique.category == "lanca": player.view.seek_spear_technique(technique_elapsed)
+		else: player.view.seek_sword_technique(technique_elapsed)
+	if not technique_did_hit and technique_elapsed+0.000001 >= contact:
+		technique_did_hit = true # Mark BEFORE callbacks, including lethal damage.
+		var consumed_perfect := perfect_ready
+		perfect_ready = bool(technique.perfect)
+		var hits := _execute(technique.id,technique.effect,technique.power,technique.ultimate,technique.direction)
+		perfect_ready = consumed_perfect
+		_after_technique(hits)
+		technique_impact.emit(technique.id,contact)
+	if technique_elapsed >= duration: cancel_technique()
+
+# Transient effects never refill HP. Persistent timers/charges live in AbilityState.
+var player: PlayerActor
+var progress: GameProgress
+var category := ""
+var combo := 0
+var last_target := 0
+var same_target_hits := 0
+var perfect_ready := false
+var guard_left := 0.0
+var barrier := 0
+var counter_left := 0.0
+var fury_left := 0.0
+var technique_hits := 0
+var moving_time := 0.0
+
+func bind(actor: PlayerActor, value: GameProgress) -> void:
+	player = actor
+	progress = value
+	if not technique.is_empty() and (progress.equipped.Arma != technique.weapon or progress != technique.progress): cancel_technique()
+	if category != progress.active_category():
+		clear_effects()
+		category = progress.active_category()
+
+func clear_effects() -> void:
+	cancel_technique()
+	combo = 0
+	last_target = 0
+	same_target_hits = 0
+	perfect_ready = false
+	guard_left = 0.0
+	barrier = 0
+	counter_left = 0.0
+	fury_left = 0.0
+	technique_hits = 0
+	moving_time = 0.0
+	if is_instance_valid(player) and player.view is Skill1GameView:
+		player.view.clear_staff_guard()
+		player.view.clear_axe_fury()
+
+func has_passive(id: String) -> bool:
+	return progress != null and progress.abilities.loadouts.get(category,{}).get("passives",[]).has(id)
+
+func has_talent(id: String) -> bool:
+	return progress != null and progress.abilities.talents.get(category,[]).has(id)
+
+func specialization() -> String:
+	return progress.abilities.loadouts.get(category,{}).get("specialization","") if progress != null else ""
+
+func mastery() -> bool:
+	return progress != null and progress.talents.level(category) >= 30
+
+func tick(delta: float) -> void:
+	_tick_technique(delta)
+	guard_left = maxf(0,guard_left-delta)
+	counter_left = maxf(0,counter_left-delta)
+	fury_left = maxf(0,fury_left-delta)
+	if guard_left == 0: barrier = 0
+	moving_time = minf(3,moving_time+delta) if player.velocity.length_squared() > 4 else 0.0
+
+func record_hit(actor: EnemyActor, source: String, critical: bool) -> void:
+	if source == "basic":
+		combo += 1
+		var id := actor.get_instance_id()
+		same_target_hits = mini(5,same_target_hits+1) if last_target == id else 1
+		last_target = id
+		if mastery() and category == "espada" and combo % 3 == 0: perfect_ready = true
+		if has_passive("ritmo_combate") and combo % 3 == 0:
+			for ability: String in progress.abilities.cooldowns[category]:
+				progress.abilities.cooldowns[category][ability] = maxf(0,float(progress.abilities.cooldowns[category][ability])-0.3)
+		if has_passive("golpe_pesado"):
+			actor.apply_control(0.18)
+		if has_passive("fio_afiado") and critical:
+			actor.apply_mark(category,0.10,3.0)
+		if has_passive("mira_instintiva") and combo % 3 == 0:
+			actor.apply_mark(category,0.12,2.0)
+		if has_talent("mira_continua") and same_target_hits == 3:
+			actor.apply_mark(category,0.15,3.0)
+		if has_talent("primeiro_disparo") and same_target_hits == 1:
+			actor.apply_control(0.25)
+		if has_passive("vigilancia") and player.global_position.distance_to(actor.global_position) < 120: counter_left = 1.5
+		if has_talent("posicao_firme") and player.velocity.length_squared() < 4:
+			counter_left = 2.0
+		if has_passive("canalizacao") and combo % 3 == 0:
+			progress.abilities.skill1_cooldowns[category] = maxf(0,float(progress.abilities.skill1_cooldowns[category])-0.5)
+		if has_passive("foco_arcano") and critical:
+			counter_left = 3.0
+
+func hit_modifiers(target: EnemyActor, source: String) -> Dictionary:
+	var scale := 1.0
+	var chance := player.attack.critical_chance
+	var distance := player.global_position.distance_to(target.global_position)
+	var ratio := float(target.health.current)/maxi(1,target.health.maximum)
+	var basic := source == "basic"
+	if category == "espada":
+		if has_talent("sequencia_precisa") and basic and (combo+1)%3 == 0: scale += 0.15
+		if has_talent("ritmo_afiado") and basic and combo >= 3: scale += 0.08
+		if has_passive("instinto_veterano"): chance = minf(1.0,chance+0.06)
+		if specialization() == "duelista" and target.get_instance_id() == last_target and same_target_hits >= 3: scale += 0.12
+		if not basic and perfect_ready: chance = 1.0
+		if not basic and counter_left > 0 and has_talent("contra_ataque_fatal"): chance = 1.0
+	elif category == "machado":
+		if has_passive("executor") and ratio <= 0.30: scale += 0.20
+		if has_talent("impacto_crescente") and basic and target.get_instance_id() == last_target: scale += minf(0.15,same_target_hits*0.03)
+		if has_talent("finalizador") and not basic and ratio <= 0.20: scale += 0.25
+		if specialization() == "berserker" and player.health.current < player.health.maximum*0.5: scale += 0.15
+		if mastery() and not basic: scale += (1.0-ratio)*0.25
+	elif category == "lanca":
+		if has_passive("ponta_precisa") and distance >= 110: scale += 0.10
+		if has_talent("alcance_ideal") and distance >= 100 and distance <= 170: scale += 0.12
+		if has_talent("ponta_letal") and not basic and counter_left > 0: chance = 1.0
+		if specialization() == "cacador" and target.mark_category == category and target.mark_left > 0: scale += 0.12
+		if mastery() and distance >= 120: scale += 0.15
+	elif category == "arco":
+		if has_passive("cacador_preciso") and distance >= 180: scale += 0.15
+		if has_talent("distancia_segura") and distance >= 240: scale += 0.12
+		if specialization() == "atirador_elite" and not basic and distance >= 200: chance = maxf(chance,0.40)
+		if mastery() and not basic and target.mark_left > 0 and target.mark_category == category: chance = 1.0
+	elif category == "cajado":
+		if has_talent("energia_focada") and not basic and barrier > 0: scale += 0.15
+		if has_passive("foco_arcano") and not basic and counter_left > 0: scale += 0.12
+		if specialization() == "arcanista" and not basic and source not in ["orbe_arcano","basic"]: scale += 0.12
+		if mastery() and not basic and counter_left > 0: chance = 1.0
+	if fury_left > 0: scale += 0.45
+	return {"scale":scale,"chance":chance,"charge_scale":scale-(0.45 if fury_left > 0 else 0.0)}
+
+func receive(amount: int) -> int:
+	var scale := 1.0
+	if guard_left > 0:
+		scale -= 0.30
+		counter_left = 3.0
+		if category == "espada" and player.view is Skill1GameView:
+			(player.view as Skill1GameView).play_sword_counter(player.last_direction)
+	if has_passive("postura_firme") and player.velocity.length_squared() < 4: scale -= 0.08
+	if has_passive("vontade_ancestral") and player.health.current < player.health.maximum*0.5: scale -= 0.10
+	if has_talent("bastiao_ancestral") and guard_left > 0: scale -= 0.08
+	if has_passive("pele_ferro") and player.health.current < player.health.maximum*0.5: scale -= 0.10
+	if has_passive("vigilancia") and counter_left > 0: scale -= 0.10
+	if has_passive("passos_leves") and moving_time >= 1.0: scale -= 0.08
+	if has_passive("guarda_eter") and barrier > 0: scale -= 0.10
+	if has_talent("postura_equilibrada") and guard_left > 0: scale -= 0.05
+	if has_talent("recuo_tatico") and player.dash.active(): scale -= 0.15
+	if has_talent("evasao_agil") and player.dash.active(): scale -= 0.20
+	if has_talent("protecao_mistica") and barrier > 0: scale -= 0.10
+	if specialization() == "sentinela" and player.velocity.length_squared() < 4: scale -= 0.10
+	if specialization() == "batedor" and moving_time >= 2: scale -= 0.10
+	if fury_left > 0: scale -= 0.20
+	var reduced := ceili(amount*maxf(0.40,scale))
+	var absorbed := mini(barrier,reduced)
+	barrier -= absorbed
+	return reduced-absorbed
+
+func use(index: int) -> bool:
+	if progress == null or category.is_empty(): return false
+	if not technique.is_empty() and not technique_did_hit: return false
+	var state := progress.abilities
+	var prof := progress.talents.level(category)
+	if index < 0 or index > 3: return false
+	var rule := AbilityRules.skill1(progress.equipped.Arma) if index == 0 else AbilityRules.active_skill(category,state.loadouts[category].ultimate if index == 3 else state.loadouts[category].skills[index-1])
+	if rule.is_empty(): return false
+	if AbilityRules.effect(rule.id).shape == "projectile" and player.get_tree().get_nodes_in_group("player_projectiles").size() >= PlayerProjectile.MAX_ACTIVE: return false
+	var ultimate: bool = rule.id == AbilityRules.CATEGORIES[category].ultimate.id
+	if index == 0:
+		if not state.start_skill1(category,float(rule.cooldown)): return false
+	elif ultimate:
+		if prof < 15 or not state.use_ultimate(category,category): return false
+	elif not state.start_normal(category,rule.id,prof): return false
+	# A new accepted technique may replace recovery after contact, never before it.
+	if not technique.is_empty(): cancel_technique()
+	var grade := int(state.grades[category].get(rule.id,1))
+	var effect := AbilityRules.effect(rule.id,grade)
+	if effect.shape == "guard":
+		guard_left = float(effect.duration)+(1.0 if has_talent("guarda_aperfeicoada") else 0.0)
+		barrier = roundi((12+player.spirit*2)*(1+0.25*(grade-1))) if rule.id == "barreira_espiritual" else 0
+		if specialization() in ["guardiao_lamina","guardiao_espiritual"]: barrier += ceili(player.health.maximum*0.08)
+	elif effect.shape == "buff":
+		fury_left = float(effect.duration)
+		if specialization() == "colosso": barrier = ceili(player.health.maximum*0.12)
+	else:
+		var power := float(rule.get("power",effect.get("power",1.0)))*(1+0.15*(grade-1))
+		if ultimate and category == "espada" and prof >= 60: power *= 1.20
+		if index == 0: power *= 1+0.03*int(progress.equipment[progress.equipped.Arma])
+		if (category == "espada" and SwordTechniqueTiming.FRAMES.has(rule.id)) or (category == "arco" and player.view is Skill1GameView and player.view.village_scale and BowTechniqueEffect.TIMINGS.has(rule.id)) or (category == "cajado" and player.view is Skill1GameView and player.view.village_scale and StaffTechniqueEffect.TIMINGS.has(rule.id)) or (category == "machado" and player.view is Skill1GameView and player.view.village_scale and AxeTechniqueEffect.TIMINGS.has(rule.id)) or (category == "lanca" and player.view is Skill1GameView and player.view.village_scale and SpearTechniqueEffect.TIMINGS.has(rule.id)):
+			technique = {"id":rule.id,"effect":effect.duplicate(true),"power":power,"ultimate":ultimate,"weapon":progress.equipped.Arma,"category":category,"direction":player.last_direction.normalized(),"reach":float(effect.reach)+(20.0 if has_passive("alcance_treinado") else 0.0),"perfect":perfect_ready,"progress":progress}
+			technique_elapsed = 0
+			technique_did_hit = false
+		else:
+			_after_technique(_execute(rule.id,effect,power,ultimate))
+	if index > 0 and not ultimate: perfect_ready = false
+	if category == "espada" and player.view is Skill1GameView and Skill1GameView.TECHNIQUE_POSES.has(rule.id):
+		(player.view as Skill1GameView).play_sword_technique(rule.id,player.last_direction,guard_left)
+		if not technique.is_empty(): player.view.seek_sword_technique(0.0)
+	elif category == "arco" and player.view is Skill1GameView and player.view.village_scale and BowTechniqueEffect.TIMINGS.has(rule.id):
+		var reach := float(effect.reach)+(20.0 if has_passive("alcance_treinado") else 0.0)
+		(player.view as Skill1GameView).play_bow_technique(rule.id,player.last_direction,reach,_bow_mark_target(effect,reach) if rule.id == "tiro_marcado" else null)
+	elif category == "cajado" and player.view is Skill1GameView and player.view.village_scale and (StaffTechniqueEffect.TIMINGS.has(rule.id) or rule.id == "barreira_espiritual"):
+		(player.view as Skill1GameView).play_staff_technique(rule.id,player.last_direction,float(effect.get("reach",0.0))+(20.0 if effect.has("reach") and has_passive("alcance_treinado") else 0.0),guard_left)
+	elif category == "machado" and player.view is Skill1GameView and player.view.village_scale and (AxeTechniqueEffect.TIMINGS.has(rule.id) or rule.id == "furia_machado"):
+		(player.view as Skill1GameView).play_axe_technique(rule.id,player.last_direction,float(effect.get("reach",0.0))+(20.0 if effect.has("reach") and has_passive("alcance_treinado") else 0.0),fury_left)
+	elif category == "lanca" and player.view is Skill1GameView and player.view.village_scale and SpearTechniqueEffect.TIMINGS.has(rule.id):
+		(player.view as Skill1GameView).play_spear_technique(rule.id,player.last_direction,float(effect.reach)+(20.0 if has_passive("alcance_treinado") else 0.0))
+	else:
+		player.view.play_skill(2 if ultimate else mini(index,1))
+	player.skill_used.emit(index)
+	return true
+
+func _after_technique(hits: int) -> void:
+	technique_hits += 1
+	if specialization() == "colosso" and hits >= 2:
+		guard_left = maxf(guard_left,3.0)
+		barrier = maxi(barrier,ceili(player.health.maximum*0.08))
+	if has_talent("corpo_ferro") and hits > 0: guard_left = maxf(guard_left,2.0)
+	if specialization() == "guardiao_espiritual" and hits > 0:
+		guard_left = maxf(guard_left,2.0)
+		barrier = maxi(barrier,8+player.spirit)
+	if has_talent("veu_espiritual") and hits > 0:
+		guard_left = maxf(guard_left,2.0)
+		barrier = maxi(barrier,6+player.spirit)
+	if mastery() and category == "cajado" and technique_hits%3 == 0:
+		guard_left = maxf(guard_left,3.0)
+		barrier = maxi(barrier,10+player.spirit)
+		counter_left = 3.0
+
+func _execute(id: String, effect: Dictionary, power: float, ultimate: bool, aim := Vector2.ZERO) -> int:
+	var hits := 0
+	var event := CombatRules.next_event()
+	var origin := player.global_position
+	var direction := player.last_direction.normalized() if aim.is_zero_approx() else aim
+	var reach := float(effect.reach)+(20.0 if has_passive("alcance_treinado") else 0.0)
+	var candidates := player.get_tree().get_nodes_in_group("damageable_enemies")
+	var nearest: EnemyActor = null
+	var nearest_squared := reach*reach
+	if effect.shape == "projectile":
+		for candidate in candidates:
+			if not candidate is EnemyActor or candidate.get_world_2d() != player.get_world_2d() or not candidate.is_targetable(): continue
+			var distance := origin.distance_squared_to(candidate.global_position)
+			if distance > nearest_squared or not _visible(candidate): continue
+			nearest = candidate
+			nearest_squared = distance
+		if nearest == null: return 0
+		var modifiers := hit_modifiers(nearest,id)
+		var roll := CombatRules.roll()
+		var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
+		var eligible := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.charge_scale),float(modifiers.chance),player.attack.critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
+		if player.get_tree().get_nodes_in_group("player_projectiles").size() < PlayerProjectile.MAX_ACTIVE:
+			player.attack.projectile_requested.emit(player,nearest,{"damage":hit.damage,"kind":"orbe" if category == "cajado" else "flecha","speed":player.attack.weapon.projectile_speed,"reach":reach,"category":category,"event":event,"damage_type":player.attack.damage_type,"critical":hit.critical,"ultimate":ultimate,"source":id,"eligible_damage":eligible.damage})
+		return 1
+	for candidate in candidates:
+		if not candidate is EnemyActor or candidate.get_world_2d() != player.get_world_2d() or not candidate.is_targetable() or origin.distance_squared_to(candidate.global_position) > reach*reach or not _visible(candidate): continue
+		var offset: Vector2 = candidate.global_position-origin
+		if effect.shape == "cone" and offset.normalized().dot(direction) < float(effect.get("dot",0.0)): continue
+		if effect.shape == "line" and (offset.dot(direction) < 0 or absf(offset.cross(direction)) > float(effect.get("width",30.0))): continue
+		var modifiers := hit_modifiers(candidate,id)
+		for strike in range(int(effect.get("hits",1))):
+			if not candidate.is_targetable(): break
+			var roll := CombatRules.roll()
+			var hit := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.scale),float(modifiers.chance),player.attack.critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
+			var eligible := CombatRules.resolve(player.attack.damage_base,player.special_bonus,power*float(modifiers.charge_scale),float(modifiers.chance),player.attack.critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > player.attack.critical_chance else -1.0)
+			candidate.receive_damage(hit.damage,category,event if strike == 0 else CombatRules.next_event(),player.attack.damage_type,hit.critical,ultimate,id,eligible.damage)
+		if candidate.health.is_alive():
+			if effect.get("control",0.0) > 0.0: candidate.apply_control(float(effect.control))
+			if effect.get("mark",0.0) > 0.0: candidate.apply_mark(category,float(effect.mark),4.0)
+			if has_talent("presenca_imponente"): candidate.apply_control(0.25)
+			if has_talent("eco_arcano") and category == "cajado": candidate.apply_mark(category,0.10,3.0)
+			if specialization() == "guardiao_lamina" and counter_left > 0: candidate.apply_control(0.3)
+		hits += 1
+	return hits
+
+func _visible(target: EnemyActor) -> bool:
+	var query := PhysicsRayQueryParameters2D.create(player.global_position,target.global_position,1)
+	return player.get_world_2d().direct_space_state.intersect_ray(query).is_empty()
+
+func _bow_mark_target(effect: Dictionary, reach: float) -> EnemyActor:
+	var aim := player.last_direction.normalized()
+	var chosen: EnemyActor
+	var nearest := reach*reach
+	for candidate in player.get_tree().get_nodes_in_group("damageable_enemies"):
+		if not candidate is EnemyActor or candidate.get_world_2d() != player.get_world_2d() or not candidate.is_targetable(): continue
+		var offset: Vector2 = candidate.global_position-player.global_position
+		var distance := offset.length_squared()
+		if distance > nearest or offset.dot(aim) < 0 or absf(offset.cross(aim)) > float(effect.width) or not _visible(candidate): continue
+		chosen = candidate
+		nearest = distance
+	return chosen
