@@ -19,6 +19,18 @@ func _frames(count := 4) -> void:
 		await process_frame
 	await RenderingServer.frame_post_draw
 
+func _tap(hud: GameHUD, button: Button, index := 27) -> void:
+	var press := InputEventScreenTouch.new()
+	press.index = index
+	press.position = button.get_global_rect().get_center()
+	press.pressed = true
+	hud._input(press)
+	var release := InputEventScreenTouch.new()
+	release.index = index
+	release.position = press.position
+	release.pressed = false
+	hud._input(release)
+
 func _run() -> void:
 	DisplayServer.window_set_size(Vector2i(360, 800))
 	root.size = Vector2i(360, 800)
@@ -41,6 +53,11 @@ func _run() -> void:
 	var weapon_uid := progress._create_weapon("espada", "comum")
 	progress.equipment["espada"] = 0
 	progress.equip_weapon_instance(weapon_uid)
+	progress.equipment["anel_vale"] = 0
+	progress.equipment_rarities["anel_vale"] = "raro"
+	progress.bag["Ervas"] = 14
+	progress.bag["Madeira"] = 12
+	progress.bag["Pedras"] = 9
 	main.player.apply_progression(progress)
 	var hud: GameHUD = main.hud
 	main._toggle_character()
@@ -49,13 +66,21 @@ func _run() -> void:
 	hud.rpg_panel.equipment_open_button.pressed.emit()
 	await _frames(8)
 	_check(hud.equipment_screen.visible and main.input_driver.blocked, "approved screen opens as a modal from the real HUD")
+	_check(hud.equipment_screen.find_child("CloseDetails", true, false) == null and hud.equipment_screen.bag_scroll.size.y > 300, "details stay hidden until an item is selected")
+	var defense_value := hud.equipment_screen.find_child("StatValue_Defesa", true, false) as Label
+	var more_button := hud.equipment_screen.find_child("MoreAttributes", true, false) as Button
+	_check(defense_value != null and more_button != null and defense_value.get_global_rect().end.x + 4 <= more_button.get_global_rect().position.x, "compact stats do not collide with More")
+	_check(root.get_texture().get_image().save_png(output.path_join("equipment-populated-360x800.png")) == OK, "populated screen capture saved")
 	for slot: String in RPGRules.SLOTS:
 		_check(hud.equipment_screen.find_child("EquipmentSlot_" + slot, true, false) is Button, "slot " + slot + " is interactive")
 	var icon := hud.equipment_screen.find_child("OfficialItemSprite_Arma", true, false) as TextureRect
 	_check(icon != null and icon.texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST and icon.stretch_mode == TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "official item art retains nearest sampling and original proportions")
+	(hud.equipment_screen.find_child("BagItem_anel_vale", true, false) as Button).pressed.emit()
+	await _frames()
 	var picture := root.get_texture().get_image()
 	_check(picture.get_size() == Vector2i(360, 800), "capture is exactly 360x800")
 	_check(picture.save_png(output.path_join("equipment-integrated-360x800.png")) == OK, "real project capture saved")
+	_check(picture.save_png(output.path_join("equipment-item-selected-360x800.png")) == OK, "selected item detail capture saved")
 	progress.equipment_rarities["anel_mata"] = "mitico"
 	hud.refresh_equipment_screen(progress)
 	await _frames()
@@ -66,6 +91,8 @@ func _run() -> void:
 	save.pressed.emit()
 	await _frames()
 	_check(progress.has_loadout(0), "SaveLoadout uses existing GameProgress storage")
+	_check((hud.equipment_screen.find_child("SaveLoadout", true, false) as Button).text == "Salvar", "loadout save control has a readable label")
+	_check((hud.equipment_screen.find_child("Loadout_2", true, false) as Button).tooltip_text.contains("vazio"), "empty loadout has an explicit state")
 	var saved_equipment := progress.equipment.duplicate(true)
 	progress.unequip("Anel")
 	hud.refresh_equipment_screen(progress)
@@ -83,6 +110,7 @@ func _run() -> void:
 	(hud.equipment_screen.find_child("SaveLoadout", true, false) as Button).pressed.emit()
 	await _frames()
 	_check(progress.has_loadout(1), "second loadout can be saved")
+	_check((hud.equipment_screen.find_child("Loadout_2", true, false) as Button).tooltip_text.contains("salvo"), "saved loadout has an explicit state")
 	var third := hud.equipment_screen.find_child("Loadout_3", true, false) as Button
 	var touch := InputEventScreenTouch.new()
 	touch.index = 22
@@ -94,30 +122,92 @@ func _run() -> void:
 	(hud.equipment_screen.find_child("SaveLoadout", true, false) as Button).pressed.emit()
 	await _frames()
 	_check(progress.has_loadout(2), "third loadout can be saved")
-	hud.equipment_screen.navigation_requested.emit("personagem")
+	hud.equipment_screen.close_requested.emit()
 	await _frames()
-	_check(not hud.equipment_screen.visible and hud.rpg_panel.visible and hud.rpg_panel.tab == 0, "Personagem returns to the existing character sheet")
-	hud.rpg_panel.equipment_open_button.pressed.emit()
+	_check(not hud.equipment_screen.visible and not hud.rpg_panel.visible, "X closes the combined screen and its underlying panel")
+	main._toggle_inventory()
 	await _frames()
-	var slot_button := hud.equipment_screen.find_child("EquipmentSlot_Anel", true, false) as Button
-	slot_button.pressed.emit()
+	_check(hud.equipment_screen.visible and main.input_driver.blocked, "HUD Backpack button opens the combined screen")
+	var caption := hud.equipment_screen.find_child("SlotCaption_Anel", true, false) as Label
+	var icon_frame := hud.equipment_screen.find_child("RarityFrame_Anel", true, false) as Panel
+	var nameplate := hud.equipment_screen.find_child("SlotNameplate_Anel", true, false) as TextureRect
+	_check(caption != null and icon_frame != null and nameplate != null and nameplate.position.y >= icon_frame.position.y + icon_frame.size.y, "slot nameplate sits below the frame")
+	progress.bag["Ervas"] = 14
+	hud.refresh_equipment_screen(progress)
+	var badge := hud.equipment_screen.find_child("QuantityBadge_Ervas", true, false) as Panel
+	_check(badge != null and badge.position.y + badge.size.y <= 57, "quantity stays within its item square")
+	progress.equipment["anel_vale"] = 0
+	progress.equipment_rarities["anel_vale"] = "raro"
+	hud.refresh_equipment_screen(progress)
+	(hud.equipment_screen.find_child("BagItem_anel_vale", true, false) as Button).pressed.emit()
+	var equip_button := hud.equipment_screen.find_child("PrimaryAction", true, false) as Button
+	_check(equip_button != null and equip_button.text == "Equipar", "Bag detail exposes the real equip action")
+	if equip_button != null: equip_button.pressed.emit()
 	await _frames()
-	_check(hud.inventory_open and not hud.equipment_screen.visible and hud.inventory_selected == "anel_mata", "slot opens the existing Backpack item details")
-	var diary_equipment := hud.diary_navigation.get_child(1) as Button
-	var open_touch := InputEventScreenTouch.new()
-	open_touch.index = 23
-	open_touch.position = diary_equipment.get_global_rect().get_center()
-	open_touch.pressed = true
-	hud._input(open_touch)
+	_check(progress.equipped.Anel == "anel_vale", "equipping from the combined screen updates GameProgress")
+	progress.gold = 10000
+	(hud.equipment_screen.find_child("ExpandBag", true, false) as Button).pressed.emit()
+	(hud.equipment_screen.find_child("ExpandGold", true, false) as Button).pressed.emit()
 	await _frames()
-	_check(hud.equipment_screen.visible and hud.inventory_open, "Diário opens the approved Equipment screen by mobile touch")
-	hud.equipment_screen.navigation_requested.emit("mochila")
+	_check(progress.bag_capacity() == 50 and progress.gold == 9500, "bag expansion uses the existing gold cost")
+	hud.equipment_screen.close_requested.emit()
 	await _frames()
-	_check(hud.inventory_open and not hud.equipment_screen.visible, "Equipment returns to the existing Backpack")
-	diary_equipment.pressed.emit()
+	_check(not hud.equipment_screen.visible and not main.input_driver.blocked, "X returns control to the game")
+	var fresh := GameProgress.new()
+	fresh.begin_new_character()
+	hud.equipment_screen.active_filter = "Todos"
+	hud.equipment_screen.target_slot = ""
+	hud.equipment_screen.selected_id = ""
+	hud.equipment_screen.selected_kind = ""
+	hud.equipment_screen.details_open = true
+	hud.equipment_screen.expansion_open = false
+	hud.equipment_screen.attributes_open = false
+	hud.equipment_screen.present(fresh, 100, 100)
+	hud.equipment_screen.show()
 	await _frames()
-	hud.equipment_screen.navigation_requested.emit("habilidades")
+	var empty_hint := hud.equipment_screen.find_child("EmptyBagHint", true, false) as Label
+	_check(empty_hint != null and empty_hint.text.contains("Ferreiro"), "new characters see the reason for an empty bag")
+	_check(hud.equipment_screen.find_child("CloseDetails", true, false) == null and hud.equipment_screen.bag_scroll.size.y > 300, "new character has no large empty detail panel")
+	_check((hud.equipment_screen.find_child("SaveLoadout", true, false) as Button).disabled, "loadout saving is visibly unavailable during introduction")
+	_check(root.get_texture().get_image().save_png(output.path_join("equipment-new-character-360x800.png")) == OK, "new character mobile capture saved")
+	(hud.equipment_screen.find_child("MoreAttributes", true, false) as Button).pressed.emit()
 	await _frames()
-	_check(not hud.inventory_open and hud.rpg_panel.visible and hud.rpg_panel.tab == 3, "Equipment opens the existing abilities page")
+	_check(root.get_texture().get_image().save_png(output.path_join("equipment-attributes-360x800.png")) == OK, "attributes mobile capture saved")
+	var selected_before := hud.equipment_screen.selected_set
+	_tap(hud, hud.equipment_screen.find_child("Loadout_2", true, false) as Button)
+	await _frames()
+	_check(hud.equipment_screen.attributes_open and hud.equipment_screen.selected_set == selected_before, "mobile touch cannot pass through attributes modal")
+	_tap(hud, hud.equipment_screen.find_child("CloseAttributes", true, false) as Button)
+	await _frames()
+	_check(not hud.equipment_screen.attributes_open, "attributes modal closes by mobile touch")
+	for material in GameProgress.ITEMS: progress.bag[material] = 2
+	hud.equipment_screen.present(progress, 100, 100)
+	await _frames()
+	var scroll := hud.equipment_screen.bag_scroll
+	var scroll_press := InputEventScreenTouch.new()
+	scroll_press.index = 28
+	scroll_press.position = scroll.get_global_rect().get_center()
+	scroll_press.pressed = true
+	hud._input(scroll_press)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 28
+	drag.position = scroll_press.position + Vector2(0, -95)
+	drag.relative = Vector2(0, -95)
+	hud._input(drag)
+	var scroll_release := InputEventScreenTouch.new()
+	scroll_release.index = 28
+	scroll_release.position = drag.position
+	scroll_release.pressed = false
+	hud._input(scroll_release)
+	await _frames()
+	_check(scroll.scroll_vertical > 0, "mobile drag scrolls populated bag without selecting a tile")
+	_tap(hud, hud.equipment_screen.find_child("Filter_Materiais", true, false) as Button)
+	await _frames()
+	_check(hud.equipment_screen.active_filter == "Materiais" and hud.equipment_screen.find_child("BagItem_anel_vale", true, false) == null, "mobile material filter excludes equipment")
+	_tap(hud, hud.equipment_screen.find_child("Filter_Todos", true, false) as Button)
+	await _frames()
+	_tap(hud, hud.equipment_screen.find_child("BagItem_anel_vale", true, false) as Button)
+	await _frames()
+	_check(hud.equipment_screen.selected_id == "anel_vale" and hud.equipment_screen.find_child("PrimaryAction", true, false) != null, "mobile tile selection opens real item details")
 	print("EQUIPMENT_SCREEN_RESULT: failures=", failures, " capture=", output.path_join("equipment-integrated-360x800.png"))
 	quit(0 if failures == 0 else 1)

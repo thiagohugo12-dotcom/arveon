@@ -16,6 +16,7 @@ signal character_toggled
 signal skill_pressed(index: int)
 signal rpg_action(action: String, id: String, expected: int)
 signal equipment_loadout_action(action: String, index: int)
+signal equipment_expansion_requested(with_gems: bool)
 var save_panel: SavePanel
 var record_button: Button
 var boss_name: Label
@@ -30,7 +31,7 @@ var transition_cover: ColorRect
 var transition_active := false
 var rpg_panel: RPGPanel
 var equipment_shade: ColorRect
-var equipment_screen: EquipmentScreen
+var equipment_screen: EquipmentBag3Preview
 var equipment_selected_set := 0
 var inventory_category := 0
 var diary_navigation: HBoxContainer
@@ -547,9 +548,10 @@ func _ready() -> void:
 	equipment_shade.z_index = 11
 	equipment_shade.hide()
 	add_child(equipment_shade)
-	equipment_screen = EquipmentScreen.new()
+	equipment_screen = EquipmentBag3Preview.new()
 	equipment_screen.z_index = 12
 	add_child(equipment_screen)
+	equipment_screen.hide()
 	transition_cover = ColorRect.new()
 	transition_cover.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	transition_cover.color = Color(0.04, 0.08, 0.07, 0.0)
@@ -561,9 +563,10 @@ func _ready() -> void:
 	rpg_panel.bag_requested.connect(func(): _open_diary(0))
 	rpg_panel.equipment_requested.connect(_show_equipment_screen)
 	rpg_panel.action_requested.connect(func(action: String, id: String, expected: int): rpg_action.emit(action, id, expected))
-	equipment_screen.slot_requested.connect(_equipment_slot_requested)
-	equipment_screen.navigation_requested.connect(_equipment_navigation)
+	equipment_screen.close_requested.connect(func(): _equipment_navigation("close"))
+	equipment_screen.action_requested.connect(func(action: String, id: String): rpg_action.emit(action, id, 0))
 	equipment_screen.loadout_requested.connect(func(action: String, index: int): equipment_loadout_action.emit(action, index))
+	equipment_screen.expansion_requested.connect(func(with_gems: bool): equipment_expansion_requested.emit(with_gems))
 	restart = Button.new()
 	restart.z_index = 20
 	restart.text = "Você caiu · Reiniciar"
@@ -769,10 +772,10 @@ func _layout() -> void:
 	DiaryArt.skin(rpg_panel)
 	equipment_shade.position = Vector2.ZERO
 	equipment_shade.size = size
-	var equipment_scale := minf(size.x / 360.0, size.y / 713.0)
+	var equipment_scale := minf(size.x / 360.0, size.y / 800.0)
 	equipment_screen.scale = Vector2.ONE * equipment_scale
-	equipment_screen.size = Vector2(360, 713)
-	equipment_screen.position = (size - Vector2(360, 713) * equipment_scale) * 0.5
+	equipment_screen.size = Vector2(360, 800)
+	equipment_screen.position = (size - Vector2(360, 800) * equipment_scale) * 0.5
 	death_panel.size = Vector2(minf(820 if UiScale.compact else 520,size.x-16),minf(784,size.y-16))
 	death_panel.position = (size-death_panel.size)*0.5
 	restart.position = Vector2(size.x * 0.5 - 120, size.y * 0.5 - 24)
@@ -1458,6 +1461,15 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if equipment_screen.visible:
+		if equipment_screen.attributes_open or equipment_screen.expansion_open:
+			var close_name := "CloseAttributes" if equipment_screen.attributes_open else "CloseExpansion"
+			var modal_close := equipment_screen.find_child(close_name, true, false) as Button
+			if modal_close != null: _activate_touch_button(modal_close, event)
+			get_viewport().set_input_as_handled()
+			return
+		if is_instance_valid(equipment_screen.bag_scroll) and _touch_contains(equipment_screen.bag_scroll,event):
+			_defer_menu_touch(equipment_screen.bag_scroll.get_child(0),equipment_screen.bag_scroll,event)
+			return
 		_touch_buttons(equipment_screen, event)
 		get_viewport().set_input_as_handled()
 		return
@@ -1613,15 +1625,23 @@ func close_character() -> void:
 	_sync_controls()
 	call_deferred("_qa_ui_state","hud")
 
-func _show_equipment_screen() -> void:
-	var value: GameProgress = rpg_panel.progress if rpg_panel.visible else menu_progress if inventory_open else null
+func _show_equipment_screen(value: GameProgress = null) -> void:
+	if value == null: value = rpg_panel.progress if rpg_panel.visible else menu_progress if inventory_open else null
 	if value == null or equipment_screen.visible:
 		return
 	equipment_screen.present(value, int(hp_bar.value), int(hp_bar.max_value), equipment_selected_set)
+	equipment_screen.show()
 	equipment_shade.show()
 	rpg_panel.modulate.a = 0.0
 	inventory_panel.modulate.a = 0.0
+	_sync_controls()
 	_layout()
+
+func show_equipment_screen(value: GameProgress) -> void:
+	_show_equipment_screen(value)
+
+func close_equipment_screen() -> void:
+	_equipment_navigation("close")
 
 func refresh_equipment_screen(value: GameProgress) -> void:
 	if equipment_screen.visible:
@@ -1661,6 +1681,7 @@ func _equipment_navigation(page: String) -> void:
 			if inventory_open: inventory_toggled.emit()
 			if rpg_panel.visible: character_toggled.emit()
 	_sync_controls()
+	if page == "close" and not inventory_open and not rpg_panel.visible: panel_closed.emit()
 
 func _equipment_slot_requested(item_id: String) -> void:
 	var value: GameProgress = rpg_panel.progress if rpg_panel.visible else menu_progress
