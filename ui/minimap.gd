@@ -55,6 +55,9 @@ func _draw() -> void:
 	if floor_id == 2:
 		_draw_vale()
 		return
+	if floor_id == 3:
+		_draw_pantano()
+		return
 	if floor_id == 1:
 		draw_rect(_map_rect(Rect2(1240,70,410,365)),Color(0.78,0.69,0.48,0.42))
 		draw_rect(_map_rect(Rect2(1260,440,410,400)),Color(0.62,0.34,0.27,0.34))
@@ -115,6 +118,18 @@ func _draw_vale() -> void:
 				draw_rect(Rect2(_map_point(cache.position) - Vector2(2, 2), Vector2(5, 5)), Color("#e7b867"))
 	draw_rect(Rect2(_map_point(player_position) - Vector2(2, 2), Vector2(5, 5)), Color("#f2f0d6"))
 
+func _draw_pantano() -> void:
+	draw_rect(Rect2(Vector2(4, 4), size - Vector2(8, 8)), Color("#344b3e"))
+	# Mesma máscara do cenário: água, terra, trilhas e pontes do mapa aprovado.
+	draw_texture_rect(Floor3Layout.minimap_texture(), _map_rect(Rect2(Vector2.ZERO, Floor3Layout.WORLD_SIZE)), false)
+	draw_rect(_map_rect(Floor3Layout.CAMP_AREA),Color("#a0b77b88"))
+	draw_rect(Rect2(_map_point(Floor3Layout.TOWER_POSITION)-Vector2(3,3),Vector2(6,6)),Color("#e8c982"))
+	if progress != null:
+		for marker: Dictionary in Exploration.discoveries_for_floor(3):
+			if progress.discovered_pois.has(marker.id):
+				draw_circle(_map_point(marker.position),3.0,Color("#d1dc9a"))
+	draw_rect(Rect2(_map_point(player_position)-Vector2(2,2),Vector2(5,5)),Color("#f2f0d6"))
+
 # ── Mapa expandido estilizado (Interface 2.0) ───────────────────────────────────────────
 # Mesmos dados reais do minimapa (trilhas, rochas, acampamento, coletas e baús descobertos,
 # posição do jogador), desenhados em escala uniforme com ícones. O minimapa pequeno não usa isto.
@@ -165,8 +180,10 @@ func _draw_styled() -> void:
 	var field := _fit()
 	var vale := floor_id == 2
 	draw_rect(Rect2(Vector2.ZERO,size),Color("#0f241b"))
-	draw_rect(field,Color("#b3a35f") if vale else Color("#1e4a2c"))
-	_styled_trees(field,vale)
+	var marsh := floor_id == 3
+	draw_rect(field,Color("#b3a35f") if vale else Color("#2b493b") if marsh else Color("#1e4a2c"))
+	if marsh: draw_texture_rect(Floor3Layout.minimap_texture(), field, false)
+	else: _styled_trees(field,vale,marsh)
 	_styled_regions(floor_id)
 	_styled_rocks(floor_id)
 	_styled_trails(floor_id)
@@ -176,7 +193,7 @@ func _draw_styled() -> void:
 	draw_rect(field.grow(2),Color("#2f5a3d"),false,3.0)
 	draw_rect(Rect2(Vector2.ZERO,size),Color("#0b1a13"),false,2.0)
 
-func _styled_trees(field: Rect2, vale: bool) -> void:
+func _styled_trees(field: Rect2, vale: bool, marsh: bool = false) -> void:
 	var step := 18.0
 	var columns := int(field.size.x / step) + 1
 	var rows := int(field.size.y / step) + 1
@@ -192,6 +209,11 @@ func _styled_trees(field: Rect2, vale: bool) -> void:
 			if vale:
 				_blob(at,radius - 1,Color("#9a8a4a"))
 				_blob(at + Vector2(-1,-1),radius - 2,Color("#cdb979"))
+			elif marsh:
+				_blob(at + Vector2(1,2),radius,Color("#1b302c"))
+				_blob(at,radius,Color("#275047"))
+				_blob(at + Vector2(-1,-2),radius - 2,Color("#3b6c57"))
+				if seed_value % 7 == 0: draw_rect(Rect2(at + Vector2(-2,-3),Vector2(2,2)),Color("#96a56c"))
 			else:
 				_blob(at + Vector2(1,2),radius,Color("#122d1a"))
 				_blob(at,radius,Color("#1a4426"))
@@ -213,6 +235,11 @@ func _styled_regions(floor_id: int) -> void:
 		draw_rect(water.grow(-3),Color("#2f73bd"))
 		_dashed(water,Color("#8fc3ee"))
 		draw_rect(Rect2(water.position + Vector2(8,water.size.y * 0.55),Vector2(24,6)),Color("#8a5a30"))
+	elif floor_id == 3:
+		for i in range(Floor3Layout.REGIONS.size()):
+			var region: Dictionary = Floor3Layout.REGIONS[i]
+			var center := _styled_point(region.center)
+			draw_string(DefeatView.font(),center + Vector2(-27,2),str(i+1),HORIZONTAL_ALIGNMENT_LEFT,-1,11,Color("#f0e7c5"))
 	else:
 		for area: Rect2 in [Rect2(205,95,600,430),Rect2(1010,145,350,300),Rect2(1080,625,405,350),Rect2(1160,920,390,345)]:
 			var zone := _map_rect(area)
@@ -220,7 +247,7 @@ func _styled_regions(floor_id: int) -> void:
 			_dashed(zone,Color("#e3cf8c"))
 
 func _styled_rocks(floor_id: int) -> void:
-	var rocks: Array = [Rect2(200,120,500,90),Rect2(1040,280,330,40),Rect2(1130,990,380,45)] if floor_id == 2 else FloorView.ROCKS + (FloorView.EXPANSION_ROCKS if floor_id == 1 else [])
+	var rocks: Array = [Rect2(200,120,500,90),Rect2(1040,280,330,40),Rect2(1130,990,380,45)] if floor_id == 2 else [] if floor_id == 3 else FloorView.ROCKS + (FloorView.EXPANSION_ROCKS if floor_id == 1 else [])
 	for rock: Rect2 in rocks:
 		var area := _map_rect(rock)
 		var center := area.position + area.size / 2.0
@@ -232,7 +259,9 @@ func _styled_rocks(floor_id: int) -> void:
 
 func _styled_trails(floor_id: int) -> void:
 	var trails: Array = []
-	if floor_id == 2:
+	if floor_id == 3:
+		return # As trilhas do Pântano já estão na textura da máscara.
+	elif floor_id == 2:
 		trails.append_array(Floor2Layout.PATHS)
 	else:
 		trails.append_array(FloorView.TRAILS)
@@ -255,14 +284,14 @@ func _styled_camp(floor_id: int) -> void:
 	draw_rect(zone,Color(0.62,0.78,0.5,0.4))
 	var fire := DefeatArt.texture("fire",2)
 	draw_texture(fire,(zone.position + zone.size / 2.0 - fire.get_size() / 2.0).floor())
-	if floor_id == 2:
-		draw_rect(Rect2(_styled_point(Floor2Layout.TOWER_POSITION) - Vector2(3,3),Vector2(6,6)),Color("#e8c982"))
+	if floor_id == 2 or floor_id == 3:
+		draw_rect(Rect2(_styled_point(TowerEntrance.position_for_floor(floor_id)) - Vector2(3,3),Vector2(6,6)),Color("#e8c982"))
 
 func _styled_discoveries(floor_id: int) -> void:
 	if progress == null:
 		return
 	var leaf := DefeatArt.texture("leaf_badge",2)
-	for spot: Dictionary in Exploration.resources_for_floor(floor_id):
+	for spot: Dictionary in Exploration.discoveries_for_floor(floor_id):
 		if progress.discovered_pois.has(spot.id):
 			draw_texture(leaf,(_styled_point(spot.position) - leaf.get_size() / 2.0).floor())
 	var chest := DefeatArt.texture("chest",2)

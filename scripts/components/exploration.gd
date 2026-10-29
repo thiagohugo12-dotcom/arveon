@@ -66,16 +66,22 @@ const HIDDEN_CHESTS := [
 ]
 
 static func resources_for_floor(floor_id: int) -> Array:
-	return RESOURCE_SPOTS if floor_id == 1 else ANDAR2_RESOURCE_SPOTS if floor_id == 2 else BASE_RESOURCE_SPOTS
+	return RESOURCE_SPOTS if floor_id == 1 else ANDAR2_RESOURCE_SPOTS if floor_id == 2 else [] if floor_id == 3 else BASE_RESOURCE_SPOTS
 
 static func chests_for_floor(floor_id: int) -> Array:
-	return HIDDEN_CHESTS if floor_id == 1 else ANDAR2_HIDDEN_CHESTS if floor_id == 2 else BASE_HIDDEN_CHESTS
+	return HIDDEN_CHESTS if floor_id == 1 else ANDAR2_HIDDEN_CHESTS if floor_id == 2 else [] if floor_id == 3 else BASE_HIDDEN_CHESTS
 
 static func known_resources() -> Array:
 	return RESOURCE_SPOTS + ANDAR2_RESOURCE_SPOTS
 
 static func known_chests() -> Array:
 	return HIDDEN_CHESTS + ANDAR2_HIDDEN_CHESTS
+
+static func discoveries_for_floor(floor_id: int) -> Array:
+	return Floor3Layout.REGION_MARKERS if floor_id == 3 else resources_for_floor(floor_id)
+
+static func known_discoveries() -> Array:
+	return known_resources() + Floor3Layout.REGION_MARKERS
 
 static func resource_at(point: Vector2, unavailable_until: Dictionary, now: int, floor_id: int = 1) -> Dictionary:
 	var nearest: Dictionary = {}

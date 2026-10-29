@@ -21,5 +21,5 @@ static func run(suite, main) -> void:
 		var size := (shape.shape as RectangleShape2D).size
 		var expected_size := Vector2(1700,32) if name in ["Top","Bottom"] else Vector2(32,1350)
 		suite.check(size == expected_size, "Andar 1 boundary expanded without changing its edge thickness " + name)
-	suite.check(FloorConfig.world_size(2) == Floor2Layout.WORLD_SIZE and FloorConfig.world_size(3) == FloorConfig.DEFAULT_WORLD_SIZE, "the Vale uses its own bounds and later floors retain theirs")
+	suite.check(FloorConfig.world_size(2) == Floor2Layout.WORLD_SIZE and FloorConfig.world_size(3) == Floor3Layout.WORLD_SIZE and FloorConfig.world_size(4) == FloorConfig.DEFAULT_WORLD_SIZE, "the Vale uses its own bounds and later floors retain theirs")
 	player.position = before

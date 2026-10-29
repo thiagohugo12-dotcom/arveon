@@ -1,0 +1,22 @@
+[gd_scene load_steps=6 format=3]
+[ext_resource type="Script" path="res://scripts/actors/swamp_enemy.gd" id="actor"]
+[ext_resource type="Resource" path="res://data/actors/enemy.tres" id="stats"]
+[ext_resource type="Script" path="res://scripts/components/health.gd" id="health"]
+[ext_resource type="Script" path="res://scripts/presentation/floor3_monster_view.gd" id="view"]
+[sub_resource type="CircleShape2D" id="shape"]
+radius = 16.0
+
+[node name="Floor3Enemy" type="CharacterBody2D"]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("actor")
+stats = ExtResource("stats")
+
+[node name="Collision" type="CollisionShape2D" parent="."]
+shape = SubResource("shape")
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("health")
+
+[node name="View" type="Node2D" parent="."]
+script = ExtResource("view")
