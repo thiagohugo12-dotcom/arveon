@@ -6,7 +6,7 @@ static func run(suite, main) -> void:
 		main.progress.ascension.current_floor = id
 		for kind in range(4):
 			var actor: EnemyActor = main._make_enemy(kind)
-			var multiplier := FloorConfig.difficulty(id)
+			var multiplier := FloorCatalog.enemy_multiplier(id)
 			var base_hp: int = [48, 36, 64, 120][kind]
 			var base_damage: int = [8, 7, 10, 12][kind]
 			suite.check(actor.stats.max_hp == roundi(base_hp * multiplier) and actor.stats.contact_damage == roundi(base_damage * multiplier), "floor %d kind %d has configured HP and damage" % [id, kind])

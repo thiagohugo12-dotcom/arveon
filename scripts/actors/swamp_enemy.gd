@@ -7,8 +7,8 @@ extends EnemyActor
 #                     da animação aprovada e mancha de lodo temporária no chão.
 #  9 Sapo Venenoso  · alcance: mantém distância, cospe veneno e salta para se reposicionar.
 # 10 Vulto do Brejo · rápido: aproxima, golpeia, recua e circula antes do próximo golpe.
-const SLIME_REACH := 50.0
-const SLIME_TRIGGER := 74.0
+const SLIME_REACH := 36.0
+const SLIME_TRIGGER := 56.0
 const TOAD_KEEP := Vector2(130.0, 210.0)
 const WRAITH_TRIGGER := 54.0
 
@@ -59,7 +59,7 @@ func _slime(offset: Vector2, distance: float) -> void:
 		(view as Floor3MonsterView).play_slime_attack()
 		return
 	view.set_warning(false)
-	if distance > 44.0:
+	if distance > 32.0:
 		velocity = offset.normalized() * stats.move_speed
 
 # Chamado pela vista no quadro de impacto: um único golpe por ataque.
@@ -67,8 +67,8 @@ func _on_slime_impact() -> void:
 	view.set_warning(false)
 	if slime_hit_done or not slime_attacking or not is_targetable(): return
 	slime_hit_done = true
-	var reach_point := global_position + attack_aim * 40.0
-	_spawn_slime_puddle(global_position + attack_aim * 52.0)
+	var reach_point := global_position + attack_aim * 26.0
+	_spawn_slime_puddle(global_position + attack_aim * 30.0)
 	if not is_instance_valid(target) or not target.health.is_alive() or SafeCamp.in_clearance(target.global_position): return
 	if target.global_position.distance_to(reach_point) <= SLIME_REACH and _clear_line():
 		target.receive_damage(stats.contact_damage, "physical", display_name())
@@ -79,7 +79,7 @@ func _on_slime_finished() -> void:
 
 func _spawn_slime_puddle(at: Vector2) -> void:
 	if get_parent() == null or not is_instance_valid(target): return
-	SwampHazard.spawn(get_parent(), at, target, {"radius": 30.0, "warn_left": 0.0, "active_left": 2.6,
+	SwampHazard.spawn(get_parent(), at, target, {"radius": 22.0, "warn_left": 0.0, "active_left": 2.6,
 		"damage": maxi(1, roundi(stats.contact_damage * 0.25)), "interval": 0.8, "style": "lodo", "source_name": display_name()})
 
 # ── Sapo Venenoso ─────────────────────────────────────────────────────────────

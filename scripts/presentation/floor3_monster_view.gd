@@ -15,10 +15,10 @@ const ART := {
 	10: preload("res://assets/art/andar3/monsters/vulto_do_brejo.png"),
 	11: preload("res://assets/art/andar3/monsters/jacare_anciao.png")}
 # Células e âncoras (base do corpo) geradas por tools/build_andar3_assets.gd.
-const IDLE_CELL := Vector2i(108, 81)
-const IDLE_ANCHOR := Vector2i(55, 76)
-const ATTACK_CELL := Vector2i(139, 104)
-const ATTACK_ANCHOR := Vector2i(58, 91)
+const IDLE_CELL := Vector2i(55, 41)
+const IDLE_ANCHOR := Vector2i(28, 37)
+const ATTACK_CELL := Vector2i(70, 53)
+const ATTACK_ANCHOR := Vector2i(29, 46)
 # Quarto quadro da folha de ataque: o lodo atinge o alcance máximo.
 const IMPACT_FRAME := 3
 
@@ -120,13 +120,13 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _height() -> float:
-	if kind == 8: return 78.0
+	if kind == 8: return 39.0
 	var texture: Texture2D = ART.get(kind)
 	return float(texture.get_height()) if texture != null else 60.0
 
 func _draw() -> void:
 	var height := _height()
-	var width := 104.0 if kind == 8 else float((ART[kind] as Texture2D).get_width())
+	var width := 52.0 if kind == 8 else float((ART[kind] as Texture2D).get_width())
 	_draw_telegraph()
 	# Sombra no chão sob o corpo.
 	draw_set_transform(Vector2(0, -2), 0.0, Vector2(1.0, 0.32))

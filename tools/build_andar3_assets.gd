@@ -132,7 +132,7 @@ const PROPS := {
 const MONSTERS := {
 	"sapo_venenoso": ["04_LIMO_SAPO_VULTO.png", Rect2i(720, 180, 672, 484), 84],
 	"vulto_do_brejo": ["04_LIMO_SAPO_VULTO.png", Rect2i(1444, 8, 592, 660), 72],
-	"limo_do_brejo": ["04_LIMO_SAPO_VULTO.png", Rect2i(28, 136, 632, 492), 104],
+	"limo_do_brejo": ["04_LIMO_SAPO_VULTO.png", Rect2i(28, 136, 632, 492), 52],
 	"jacare_anciao": ["05_JACARE_ANCIAO.png", Rect2i(0, 0, 1536, 1024), 236],
 	"mae_dos_sussurros_fase1": ["06_MAE_DOS_SUSSURROS_FASE_1.png", Rect2i(0, 0, 1536, 1024), 300],
 	"mae_dos_sussurros_fase2": ["07_MAE_DOS_SUSSURROS_FASE_2.png", Rect2i(0, 0, 1448, 1086), 300]}
@@ -146,7 +146,7 @@ const TERRAIN := {
 	"lama": [Rect2i(538, 150, 88, 88), 1],
 	"barranco": [Rect2i(150, 774, 64, 24), 0]}
 
-const LIMO_BODY_WIDTH := 104.0
+const LIMO_BODY_WIDTH := 52.0
 
 var meta := {}
 

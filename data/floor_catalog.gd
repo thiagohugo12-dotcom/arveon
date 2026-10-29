@@ -140,6 +140,9 @@ const FLOORS := {
 		# Coletas, drops e receitas próprios do Pântano ficam para a etapa seguinte.
 		"features": {"modern_art": true, "village_camp": false, "expanded_world": false, "mining": false, "vale_iron": false, "encounters_enabled": true, "field_guardian_enabled": true, "tower_enabled": true},
 		"training_spawn": Vector2(375, 1200),
+		# Teste de 29/10/2026: no nível 1 o Pântano quase não oferecia risco. Vida e dano
+		# de todos os inimigos do andar (Torre e Guardiã inclusive) ×1,8 sobre a escala.
+		"monster_power": 1.8,
 		"tower_position": Vector2(228, 1030),
 		"seal_note": "",
 		"camp": {"area": Rect2(60, 1060, 520, 380), "respawn": Vector2(375, 1200),
@@ -180,6 +183,10 @@ static func valid_scale(id: int) -> bool:
 
 static func difficulty(id: int) -> float:
 	return float(SCALE[str(id)].difficulty) if SCALE.has(str(id)) else 1.0
+
+# Multiplicador de vida e dano dos inimigos: escala do andar × reforço próprio do andar.
+static func enemy_multiplier(id: int) -> float:
+	return difficulty(id) * float(FLOORS[id].get("monster_power", 1.0) if FLOORS.has(id) else 1.0)
 
 static func reward(amount: int, id: int) -> int:
 	return roundi(amount * float(SCALE[str(id)].rewards)) if SCALE.has(str(id)) else 0
@@ -259,7 +266,7 @@ static func xp_for_kind(kind: int) -> int:
 # Mesma fórmula de Main._apply_floor_stats, aplicada aos valores base do monstro.
 static func scaled(id: String, floor_id: int) -> Dictionary:
 	var base: Dictionary = MONSTERS[id]
-	var multiplier := difficulty(floor_id)
+	var multiplier := enemy_multiplier(floor_id)
 	return {
 		"hp": roundi(int(base.hp) * multiplier),
 		"contact": roundi(int(base.contact) * multiplier),

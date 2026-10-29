@@ -30,23 +30,29 @@
   água sem margem oposta e foram descartadas automaticamente.
 - Colisão: água funda (retângulos da máscara, pontes abertas), troncos de árvore, ruínas e peças do acampamento.
 
-## Inimigos (valores base; o andar aplica dificuldade 2,1 e recompensa 2,6)
+## Inimigos (valores base; o andar aplica dificuldade 2,1 × reforço 1,8 = 3,78 e recompensa 2,6)
+
+Ajuste após o teste de 29/10/2026: com nível 1 o Pântano quase não oferecia risco. `monster_power: 1.8` no
+FloorCatalog multiplica vida e dano de todos os inimigos do andar (Torre e Guardiã inclusive), sem mexer na tabela
+de escala dos andares. Com 100 de vida (nível 1), dois golpes de Limo ou Vulto derrubam o jogador.
+Pendência: como a proficiência cresce com o dano causado, cada abate no Pântano agora rende ~1,8× mais proficiência;
+o ritmo de proficiência por andar ainda precisa ser revisto (ver `tests/progression_integration_tests.gd`).
 
 | Tipo | Kind | Vida base → efetiva | Velocidade | Dano base → efetivo | XP base |
 |---|---|---|---|---|---|
-| Limo do Brejo (tanque) | 8 | 125 → 263 | 42 | 13 → 27 (+ mancha 7/0,8 s) | 22 |
-| Sapo Venenoso (alcance) | 9 | 66 → 139 | 74 | projétil 9 → 19 | 20 |
-| Vulto do Brejo (rápido) | 10 | 78 → 164 | 128 | 14 → 29 | 24 |
-| Jacaré Ancião (mini-chefe) | 11 | 380 → 798 | 58 | 18 → 38 (mordida ×1,0, investida ×1,25, cauda ×0,9) | 120 |
-| Mãe dos Sussurros (Guardiã) | 4 | 400 → 840 | 34 | rajada 31, manchas 13/0,8 s, onda 42, raízes 38 | — |
-| Mãe dos Sussurros (Torre) | 4 | 381 → 800 | 50 | golpes da Torre existente | — |
+| Limo do Brejo (tanque) | 8 | 125 → 473 | 42 | 13 → 49 (+ mancha 12/0,8 s) | 22 |
+| Sapo Venenoso (alcance) | 9 | 66 → 249 | 74 | projétil 9 → 34 | 20 |
+| Vulto do Brejo (rápido) | 10 | 78 → 295 | 128 | 14 → 53 | 24 |
+| Jacaré Ancião (mini-chefe) | 11 | 380 → 1436 | 58 | 18 → 68 (mordida ×1,0, investida ×1,25, cauda ×0,9) | 120 |
+| Mãe dos Sussurros (Guardiã) | 4 | 400 → 1512 | 34 | rajada 57, manchas 23/0,8 s, onda 76, raízes 68 | — |
+| Mãe dos Sussurros (Torre) | 4 | 381 → 1440 | 50 | golpes da Torre existente | — |
 
 Referência do Andar 2 (efetivo): Goblin 78/12, Tatu 162/17, Escorpião 108/20, Colosso 810.
 
 ## Comportamentos
 
-- Limo: anda devagar, ataca a até 74 px; o golpe é decidido pelo ator, a animação de 6 quadros toca e o dano sai uma
-  única vez no 4º quadro (impacto), num alcance de 50 px à frente; deixa uma mancha de lodo de 2,6 s que fere só depois
+- Limo: com metade do tamanho original (corpo de 52 px), anda devagar, ataca a até 56 px; o golpe é decidido pelo
+  ator, a animação de 6 quadros toca e o dano sai uma única vez no 4º quadro (impacto), num alcance de 36 px à frente; deixa uma mancha de lodo de 2,6 s que fere só depois
   do primeiro intervalo. Não reinicia o golpe durante a animação; volta para a respiração ao fim.
 - Sapo: mantém 130–210 px, cospe veneno (aviso de 0,45 s), salta para trás quando o jogador encosta e se reposiciona.
 - Vulto: aproxima rápido, aviso de 0,3 s, golpe, recuo e volta circulando.

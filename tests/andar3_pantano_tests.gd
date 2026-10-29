@@ -394,7 +394,7 @@ func _mother() -> void:
 	var mother := main.guardian as MotherOfWhispers
 	_check(is_instance_valid(mother), "Mãe dos Sussurros surge no santuário lunar")
 	if not is_instance_valid(mother): return
-	_check(mother.health.maximum == 840, "vida efetiva da Guardiã: 840 (400 x 2,1)")
+	_check(mother.health.maximum == roundi(400 * FloorCatalog.enemy_multiplier(3)), "vida efetiva da Guardiã: 400 x 2,1 x 1,8 = %d" % roundi(400 * FloorCatalog.enemy_multiplier(3)))
 	_place_player(mother.global_position + Vector2(0, 150))
 	var telegraphs := {}
 	var phase_one_shot := false

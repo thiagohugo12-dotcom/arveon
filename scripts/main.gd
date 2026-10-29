@@ -296,7 +296,7 @@ func _apply_floor_stats(actor: EnemyActor) -> void:
 	if actor.has_meta("scaled_floor"):
 		return
 	actor.stats = actor.stats.duplicate() as ActorData
-	var multiplier := FloorConfig.difficulty(progress.ascension.current_floor)
+	var multiplier := FloorCatalog.enemy_multiplier(progress.ascension.current_floor)
 	var base_contact := actor.stats.contact_damage
 	actor.stats.max_hp = roundi(actor.stats.max_hp * multiplier)
 	actor.stats.contact_damage = roundi(base_contact * multiplier)
