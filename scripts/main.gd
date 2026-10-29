@@ -55,6 +55,7 @@ var camps_mode := false
 var defeated_count: int = 0
 var earned_xp: int = 0
 var earned_gold: int = 0
+var test_build_notice := false
 var collected_materials: Dictionary = {}
 var loot_rng := RandomNumberGenerator.new()
 var mission := CommonMission.new()
@@ -180,6 +181,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if TestBuild.active() and not progress.training_mode: _apply_test_build()
 	autosave_left -= delta
 	if autosave_left <= 0.0:
 		autosave_left = 30.0
@@ -493,6 +495,16 @@ func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
 	mission_reward_message = "Missão concluída! +%d XP, +%d ouro" % [xp_reward, gold_reward]
 	hud.show_notice(mission_reward_message)
 	_save_progress()
+
+# Versão de TESTE: ouro sempre cheio; a viagem livre fica em AscensionProgress.can_travel.
+func _apply_test_build() -> void:
+	if progress.gold < TestBuild.GOLD or earned_gold < TestBuild.GOLD:
+		progress.gold = TestBuild.GOLD
+		earned_gold = TestBuild.GOLD
+		hud.set_progress(earned_xp, earned_gold, defeated_count, "")
+	if not test_build_notice and not progress.introduction_active():
+		test_build_notice = true
+		hud.show_notice("Versão de teste · ouro infinito e viagem livre pela Torre")
 
 func _save_progress() -> void:
 	progress.xp = earned_xp
