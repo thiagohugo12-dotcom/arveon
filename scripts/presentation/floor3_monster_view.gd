@@ -3,15 +3,22 @@ extends ActorView
 
 # Criaturas do Pântano com a arte oficial do pacote do Andar 3. O Limo do Brejo usa as
 # duas folhas aprovadas (respiração 4 quadros e ataque 6 quadros) num AnimatedSprite2D;
-# Sapo, Vulto e Jacaré usam a arte estática aprovada. A jogabilidade fica no ator:
-# esta vista só avisa o quadro de impacto do ataque do Limo e o fim da animação.
+# o Sapo Venenoso usa a Cuspida Tóxica aprovada (6 quadros), com o quadro escolhido pelo
+# relógio do ataque no ator (SwampEnemy.spit_time); Vulto e Jacaré usam a arte estática
+# aprovada. A jogabilidade fica no ator: esta vista só avisa o quadro de impacto do
+# ataque do Limo e o fim da animação.
 signal impact
 signal attack_finished
 
 const IDLE_SHEET := preload("res://assets/art/andar3/monsters/limo_idle.png")
 const ATTACK_SHEET := preload("res://assets/art/andar3/monsters/limo_ataque.png")
+# Cuspida Tóxica: célula e âncora (base dos pés) geradas por tools/build_andar3_sapo_cuspe.gd.
+# O quadro 1 (pose neutra) é também o Sapo parado.
+const TOAD_SHEET := preload("res://assets/art/andar3/monsters/sapo_cuspe.png")
+const TOAD_CELL := Vector2i(90, 75)
+const TOAD_ANCHOR := Vector2i(43, 67)
+const TOAD_WIDTH := 84.0
 const ART := {
-	9: preload("res://assets/art/andar3/monsters/sapo_venenoso.png"),
 	10: preload("res://assets/art/andar3/monsters/vulto_do_brejo.png"),
 	11: preload("res://assets/art/andar3/monsters/jacare_anciao.png")}
 # Células e âncoras (base do corpo) geradas por tools/build_andar3_assets.gd.
@@ -121,20 +128,39 @@ func _process(delta: float) -> void:
 
 func _height() -> float:
 	if kind == 8: return 39.0
+	if kind == 9: return float(TOAD_ANCHOR.y - 1)
 	var texture: Texture2D = ART.get(kind)
 	return float(texture.get_height()) if texture != null else 60.0
 
+# Quadro atual da Cuspida Tóxica (0 = parado) e lado: a arte cospe para a esquerda.
+func toad_frame() -> int:
+	var actor := get_parent()
+	return SwampEnemy.spit_frame(float(actor.get("spit_time"))) if actor is SwampEnemy else 0
+
+func _toad_flipped() -> bool:
+	var actor := get_parent()
+	if actor is SwampEnemy and (actor as SwampEnemy).spit_time >= 0.0: return (actor as SwampEnemy).spit_flipped
+	return facing.x > 0.2
+
+func _draw_toad(tint: Color) -> void:
+	var frame := toad_frame()
+	if _toad_flipped(): draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
+	draw_texture_rect_region(TOAD_SHEET, Rect2(-Vector2(TOAD_ANCHOR), Vector2(TOAD_CELL)), Rect2(frame * TOAD_CELL.x, 0, TOAD_CELL.x, TOAD_CELL.y), tint)
+	draw_set_transform(Vector2.ZERO)
+
 func _draw() -> void:
 	var height := _height()
-	var width := 52.0 if kind == 8 else float((ART[kind] as Texture2D).get_width())
+	var width := 52.0 if kind == 8 else (TOAD_WIDTH if kind == 9 else float((ART[kind] as Texture2D).get_width()))
 	_draw_telegraph()
 	# Sombra no chão sob o corpo.
 	draw_set_transform(Vector2(0, -2), 0.0, Vector2(1.0, 0.32))
 	draw_circle(Vector2.ZERO, width * 0.42, Color(0.04, 0.08, 0.05, 0.38))
 	draw_set_transform(Vector2.ZERO)
-	if kind != 8:
+	var tint := Color(1.8, 1.8, 1.4) if flash_left > 0.0 else (Color(1.25, 0.9, 0.82) if fury else Color.WHITE)
+	if kind == 9:
+		_draw_toad(tint)
+	elif kind != 8:
 		var texture: Texture2D = ART[kind]
-		var tint := Color(1.8, 1.8, 1.4) if flash_left > 0.0 else (Color(1.25, 0.9, 0.82) if fury else Color.WHITE)
 		var flip := facing.x < -0.2
 		if flip: draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
 		draw_texture(texture, Vector2(-floorf(texture.get_width() * 0.5), -texture.get_height() + 4), tint)

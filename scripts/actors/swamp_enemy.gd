@@ -6,11 +6,22 @@ extends EnemyActor
 #  8 Limo do Brejo  · tanque lento: golpe de lodo sincronizado com o quadro de impacto
 #                     da animação aprovada e mancha de lodo temporária no chão.
 #  9 Sapo Venenoso  · alcance: mantém distância, cospe veneno e salta para se reposicionar.
+#                     A Cuspida Tóxica aprovada (6 quadros) segue o relógio do ataque: o
+#                     projétil real sai quando o relógio entra no quadro 4 (disparo).
 # 10 Vulto do Brejo · rápido: aproxima, golpeia, recua e circula antes do próximo golpe.
 const SLIME_REACH := 36.0
 const SLIME_TRIGGER := 56.0
 const TOAD_KEEP := Vector2(130.0, 210.0)
 const WRAITH_TRIGGER := 54.0
+# Cuspida Tóxica: início de cada quadro (s). O disparo (quadro 4, índice 3) começa em
+# 0,45 s, o mesmo preparo de antes; o quadro do disparo é curto para a esfera desenhada
+# dar lugar ao projétil real logo em seguida.
+const SPIT_FRAME_STARTS := [0.0, 0.15, 0.3, 0.45, 0.525, 0.675]
+const SPIT_SHOT_FRAME := 3
+const SPIT_LENGTH := 0.825
+# Centro da esfera do quadro de disparo em relação aos pés (sapo sem espelhar),
+# medido por tools/build_andar3_sapo_cuspe.gd.
+const SPIT_MOUTH := Vector2(-30, -32)
 
 var attack_cooldown := 0.6
 var slime_attacking := false
@@ -18,7 +29,11 @@ var slime_hit_done := false
 var attack_aim := Vector2.RIGHT
 var hop_left := 0.0
 var hop_direction := Vector2.ZERO
-var shot_windup := 0.0
+# Relógio da Cuspida Tóxica (-1 = sem ataque). Só anda quando a IA do sapo anda, então
+# atordoamento, menus e mudança de quadros por segundo não separam animação e disparo.
+var spit_time := -1.0
+var spit_done := false
+var spit_flipped := false
 var strike_windup := 0.0
 var retreat_left := 0.0
 var circle_left := 0.0
@@ -37,8 +52,16 @@ func _custom_behavior(delta: float, offset: Vector2, distance: float) -> void:
 		9: _toad(delta, offset, distance)
 		10: _wraith(delta, offset, distance)
 
+static func spit_frame(time: float) -> int:
+	if time < 0.0: return 0
+	var frame := 0
+	for index in range(SPIT_FRAME_STARTS.size()):
+		if time >= float(SPIT_FRAME_STARTS[index]): frame = index
+	return frame
+
 func _return_home() -> void:
-	shot_windup = 0.0
+	spit_time = -1.0
+	spit_done = false
 	strike_windup = 0.0
 	hop_left = 0.0
 	(view as Floor3MonsterView).set_telegraph("", Vector2.ZERO, 0.0)
@@ -84,14 +107,24 @@ func _spawn_slime_puddle(at: Vector2) -> void:
 
 # ── Sapo Venenoso ─────────────────────────────────────────────────────────────
 func _toad(delta: float, offset: Vector2, distance: float) -> void:
+	if spit_time >= 0.0:
+		spit_time += delta
+		if not spit_done and spit_time >= float(SPIT_FRAME_STARTS[SPIT_SHOT_FRAME]):
+			# Um único disparo por ataque, no quadro 4; recuo e recuperação só animam.
+			# Num engasgo de quadros o relógio volta ao início do disparo, para a esfera
+			# desenhada aparecer junto com o projétil real.
+			spit_time = float(SPIT_FRAME_STARTS[SPIT_SHOT_FRAME])
+			spit_done = true
+			view.set_warning(false)
+			_spit()
+		if spit_time >= SPIT_LENGTH: spit_time = -1.0
 	if hop_left > 0.0:
 		hop_left = maxf(0.0, hop_left - delta)
 		velocity = hop_direction * stats.move_speed * 2.6
 		return
-	if shot_windup > 0.0:
-		shot_windup = maxf(0.0, shot_windup - delta)
+	if spit_time >= 0.0 and not spit_done:
+		# Preparação e acúmulo: parado, com o aviso sobre a cabeça.
 		view.set_warning(true)
-		if shot_windup == 0.0: _spit()
 		return
 	view.set_warning(false)
 	var direction := offset.normalized()
@@ -102,7 +135,10 @@ func _toad(delta: float, offset: Vector2, distance: float) -> void:
 		strafe_sign *= -1.0
 		return
 	if distance <= 250.0 and attack_cooldown == 0.0:
-		shot_windup = 0.45
+		spit_time = 0.0
+		spit_done = false
+		# A esfera sai do lado do jogador: a arte cospe para a esquerda; à direita, espelha.
+		spit_flipped = direction.x > 0.2
 		return
 	if distance > TOAD_KEEP.y:
 		velocity = direction * stats.move_speed * 0.8
@@ -117,7 +153,8 @@ func _toad(delta: float, offset: Vector2, distance: float) -> void:
 func _spit() -> void:
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive(): return
 	if SafeCamp.in_clearance(target.global_position): return
-	var origin := global_position + Vector2(0, -24)
+	# Nasce sobre a esfera desenhada no quadro de disparo (boca do sapo).
+	var origin := global_position + Vector2(-SPIT_MOUTH.x if spit_flipped else SPIT_MOUTH.x, SPIT_MOUTH.y)
 	projectile_requested.emit(origin, origin.direction_to(target.global_position), projectile_damage_override, display_name())
 	view.play_attack()
 	attack_cooldown = 1.9
