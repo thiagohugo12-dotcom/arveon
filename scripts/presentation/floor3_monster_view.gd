@@ -4,7 +4,8 @@ extends ActorView
 # Criaturas do Pântano com a arte oficial do pacote do Andar 3. O Limo do Brejo usa as
 # duas folhas aprovadas (respiração 4 quadros e ataque 6 quadros) num AnimatedSprite2D;
 # o Sapo Venenoso usa a Cuspida Tóxica aprovada (6 quadros), com o quadro escolhido pelo
-# relógio do ataque no ator (SwampEnemy.spit_time); Vulto e Jacaré usam a arte estática
+# relógio do ataque no ator (SwampEnemy.spit_time), e a reação ao dano aprovada (3
+# quadros) sempre que é ferido e continua vivo; Vulto e Jacaré usam a arte estática
 # aprovada. A jogabilidade fica no ator: esta vista só avisa o quadro de impacto do
 # ataque do Limo e o fim da animação.
 signal impact
@@ -18,6 +19,13 @@ const TOAD_SHEET := preload("res://assets/art/andar3/monsters/sapo_cuspe.png")
 const TOAD_CELL := Vector2i(90, 75)
 const TOAD_ANCHOR := Vector2i(43, 67)
 const TOAD_WIDTH := 84.0
+# Dano do Sapo (pose neutra, impacto, recuperação), da mesma ferramenta e na mesma escala;
+# alinhado pelas patas. Início de cada quadro (s) e duração total.
+const TOAD_HURT_SHEET := preload("res://assets/art/andar3/monsters/sapo_dano.png")
+const TOAD_HURT_CELL := Vector2i(95, 70)
+const TOAD_HURT_ANCHOR := Vector2i(50, 63)
+const TOAD_HURT_STARTS := [0.0, 0.04, 0.18]
+const TOAD_HURT_LENGTH := 0.32
 const ART := {
 	10: preload("res://assets/art/andar3/monsters/vulto_do_brejo.png"),
 	11: preload("res://assets/art/andar3/monsters/jacare_anciao.png")}
@@ -37,6 +45,8 @@ var telegraph_radius := 0.0
 var telegraph_left := 0.0
 var dying_left := 0.0
 var _impact_sent := false
+# Tempo da reação ao dano do Sapo (-1 = sem reação).
+var toad_hurt_time := -1.0
 
 func _ready() -> void:
 	super._ready()
@@ -113,6 +123,22 @@ func play_defeat() -> void:
 	super.play_defeat()
 	dying_left = 0.7
 	if slime != null: slime.pause()
+	toad_hurt_time = -1.0
+
+# O Sapo reage a cada dano enquanto vivo; um novo golpe durante a reação volta ao impacto.
+# O golpe fatal chega aqui depois de play_defeat e não inicia a reação.
+func show_damage(amount: int, critical: bool = false) -> void:
+	super.show_damage(amount, critical)
+	var actor := get_parent() as EnemyActor
+	if kind != 9 or amount <= 0 or dying_left > 0.0 or actor == null or not actor.health.is_alive(): return
+	toad_hurt_time = 0.0 if toad_hurt_time < 0.0 else float(TOAD_HURT_STARTS[1])
+
+func toad_hurt_frame() -> int:
+	if toad_hurt_time < 0.0: return -1
+	var frame := 0
+	for index in range(TOAD_HURT_STARTS.size()):
+		if toad_hurt_time >= float(TOAD_HURT_STARTS[index]): frame = index
+	return frame
 
 func _process(delta: float) -> void:
 	super._process(delta)
@@ -124,6 +150,9 @@ func _process(delta: float) -> void:
 		modulate.a = dying_left / 0.7
 	if slime != null:
 		slime.modulate = Color(1.8, 1.8, 1.4) if flash_left > 0.0 else Color.WHITE
+	if toad_hurt_time >= 0.0:
+		toad_hurt_time += delta
+		if toad_hurt_time >= TOAD_HURT_LENGTH: toad_hurt_time = -1.0
 	queue_redraw()
 
 func _height() -> float:
@@ -144,8 +173,14 @@ func _toad_flipped() -> bool:
 
 func _draw_toad(tint: Color) -> void:
 	var frame := toad_frame()
+	var hurt := toad_hurt_frame()
 	if _toad_flipped(): draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
-	draw_texture_rect_region(TOAD_SHEET, Rect2(-Vector2(TOAD_ANCHOR), Vector2(TOAD_CELL)), Rect2(frame * TOAD_CELL.x, 0, TOAD_CELL.x, TOAD_CELL.y), tint)
+	# A reação ao dano aparece por cima do parado e da Cuspida, menos no quadro do disparo,
+	# que mostra a esfera no instante em que o projétil real sai.
+	if hurt >= 0 and frame != SwampEnemy.SPIT_SHOT_FRAME:
+		draw_texture_rect_region(TOAD_HURT_SHEET, Rect2(-Vector2(TOAD_HURT_ANCHOR), Vector2(TOAD_HURT_CELL)), Rect2(hurt * TOAD_HURT_CELL.x, 0, TOAD_HURT_CELL.x, TOAD_HURT_CELL.y), tint)
+	else:
+		draw_texture_rect_region(TOAD_SHEET, Rect2(-Vector2(TOAD_ANCHOR), Vector2(TOAD_CELL)), Rect2(frame * TOAD_CELL.x, 0, TOAD_CELL.x, TOAD_CELL.y), tint)
 	draw_set_transform(Vector2.ZERO)
 
 func _draw() -> void:
