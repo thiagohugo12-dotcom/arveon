@@ -26,6 +26,14 @@ const TOAD_HURT_CELL := Vector2i(95, 70)
 const TOAD_HURT_ANCHOR := Vector2i(50, 63)
 const TOAD_HURT_STARTS := [0.0, 0.04, 0.18]
 const TOAD_HURT_LENGTH := 0.32
+# Movimento do Sapo (saltos curtos), mesma ferramenta e escala; cada pose mantém a altura
+# desenhada na folha. Andando: loop de 0,12 s por quadro. Salto rápido de reposição:
+# um ciclo inteiro acompanhando o salto.
+const TOAD_MOVE_SHEET := preload("res://assets/art/andar3/monsters/sapo_movimento.png")
+const TOAD_MOVE_CELL := Vector2i(95, 79)
+const TOAD_MOVE_ANCHOR := Vector2i(49, 73)
+const TOAD_MOVE_FRAMES := 4
+const TOAD_MOVE_STEP := 0.12
 const ART := {
 	10: preload("res://assets/art/andar3/monsters/vulto_do_brejo.png"),
 	11: preload("res://assets/art/andar3/monsters/jacare_anciao.png")}
@@ -47,6 +55,9 @@ var dying_left := 0.0
 var _impact_sent := false
 # Tempo da reação ao dano do Sapo (-1 = sem reação).
 var toad_hurt_time := -1.0
+# Tempo do loop de movimento do Sapo (volta a zero quando ele para) e duração do salto atual.
+var toad_move_time := 0.0
+var toad_hop_total := 0.0
 
 func _ready() -> void:
 	super._ready()
@@ -153,6 +164,8 @@ func _process(delta: float) -> void:
 	if toad_hurt_time >= 0.0:
 		toad_hurt_time += delta
 		if toad_hurt_time >= TOAD_HURT_LENGTH: toad_hurt_time = -1.0
+	if kind == 9:
+		toad_move_time = toad_move_time + delta if walking else 0.0
 	queue_redraw()
 
 func _height() -> float:
@@ -171,14 +184,29 @@ func _toad_flipped() -> bool:
 	if actor is SwampEnemy and (actor as SwampEnemy).spit_time >= 0.0: return (actor as SwampEnemy).spit_flipped
 	return facing.x > 0.2
 
+# Quadro de movimento (-1 = sem movimento): o salto rápido segue o próprio progresso; a
+# caminhada repete o ciclo. A Cuspida em andamento tem prioridade sobre o movimento.
+func toad_move_frame() -> int:
+	var actor := get_parent() as SwampEnemy
+	if actor == null or actor.spit_time >= 0.0: return -1
+	if actor.hop_left > 0.0:
+		toad_hop_total = maxf(toad_hop_total, actor.hop_left)
+		return mini(TOAD_MOVE_FRAMES - 1, int((1.0 - actor.hop_left / toad_hop_total) * TOAD_MOVE_FRAMES))
+	toad_hop_total = 0.0
+	if not walking: return -1
+	return int(toad_move_time / TOAD_MOVE_STEP) % TOAD_MOVE_FRAMES
+
 func _draw_toad(tint: Color) -> void:
 	var frame := toad_frame()
 	var hurt := toad_hurt_frame()
+	var move := toad_move_frame()
 	if _toad_flipped(): draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
-	# A reação ao dano aparece por cima do parado e da Cuspida, menos no quadro do disparo,
-	# que mostra a esfera no instante em que o projétil real sai.
+	# Prioridade: dano (menos no quadro do disparo, que mostra a esfera no instante em que
+	# o projétil real sai) > Cuspida > movimento > parado.
 	if hurt >= 0 and frame != SwampEnemy.SPIT_SHOT_FRAME:
 		draw_texture_rect_region(TOAD_HURT_SHEET, Rect2(-Vector2(TOAD_HURT_ANCHOR), Vector2(TOAD_HURT_CELL)), Rect2(hurt * TOAD_HURT_CELL.x, 0, TOAD_HURT_CELL.x, TOAD_HURT_CELL.y), tint)
+	elif move >= 0:
+		draw_texture_rect_region(TOAD_MOVE_SHEET, Rect2(-Vector2(TOAD_MOVE_ANCHOR), Vector2(TOAD_MOVE_CELL)), Rect2(move * TOAD_MOVE_CELL.x, 0, TOAD_MOVE_CELL.x, TOAD_MOVE_CELL.y), tint)
 	else:
 		draw_texture_rect_region(TOAD_SHEET, Rect2(-Vector2(TOAD_ANCHOR), Vector2(TOAD_CELL)), Rect2(frame * TOAD_CELL.x, 0, TOAD_CELL.x, TOAD_CELL.y), tint)
 	draw_set_transform(Vector2.ZERO)
