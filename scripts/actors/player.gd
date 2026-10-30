@@ -109,6 +109,7 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 	view.set_moving(velocity.length_squared() > 1.0)
+	view.set_running(movement.length() >= 0.95 or dash.active())
 	_tick_skill1(delta)
 	_prepare_sword_visual()
 	_prepare_bow_visual()

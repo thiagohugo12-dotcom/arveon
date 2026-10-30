@@ -9,6 +9,11 @@ const TECHNIQUE_POSES := {
 	"ruptura_ancestral": [0,0,1,1,1,5]
 }
 var ground_effect: Node2D
+const ARTICULATED_SWORD := {
+	"estocada_precisa": preload("res://assets/art/local_combat_review/estocada_precisa.png"),
+	"guarda_reativa": preload("res://assets/art/local_combat_review/guarda_reativa.png"),
+	"danca_laminas": preload("res://assets/art/local_combat_review/danca_laminas.png")
+}
 var sword_technique: SwordTechniqueEffect
 var sword_pose := ""
 var sword_pose_time := 0.0
@@ -229,6 +234,7 @@ func _process(delta: float) -> void:
 		clear_spear_technique()
 	elif sword_pose_time > 0.0 and not sword_technique.externally_clocked:
 		sword_pose_time = maxf(0.0, sword_pose_time - delta)
+		queue_redraw()
 		if sword_pose_time <= 0.0: sword_pose = ""
 	if is_instance_valid(staff_guard) and staff_guard.active:
 		var actor := get_parent() as PlayerActor
@@ -271,8 +277,22 @@ func _draw_explorer(tint: Color) -> void:
 		return
 	if skill_category == "espada" and village_scale and is_instance_valid(sword_technique) and sword_technique.remaining > 0.0:
 		var frame := sword_technique._frame()
-		if sword_technique.kind == "guarda_reativa" and frame == 2:
-			super._draw_explorer(tint)
+		if ARTICULATED_SWORD.has(sword_technique.kind):
+			var texture: Texture2D = ARTICULATED_SWORD[sword_technique.kind]
+			if walking:
+				if running:
+					ExplorerRunPose.legs(self,_explorer_direction(),run_distance/ExplorerRunPose.STRIDE,tint)
+				else:
+					draw_texture_rect_region(VillageActorArt.PEOPLE,Rect2(-32,0,64,16),Rect2(anim_frame*32,_explorer_direction()*40+32,32,8),tint)
+				draw_texture_rect_region(texture,Rect2(-80,-104,160,104),Rect2(frame*80,sword_pose_row*80,80,52),tint)
+			elif sword_technique.kind == "guarda_reativa" and frame == 2:
+				# Subtle breathing in the held guard; feet remain planted. Only the
+				# existing block callback can choose the counter frames (3 and 4).
+				var breath := -1.0 if fmod(sword_technique.elapsed,0.9)<0.45 else 0.0
+				draw_texture_rect_region(texture,Rect2(-80,0,160,56),Rect2(frame*80,sword_pose_row*80+52,80,28),tint)
+				draw_texture_rect_region(texture,Rect2(-80,-104+breath,160,104),Rect2(frame*80,sword_pose_row*80,80,52),tint)
+			else:
+				draw_texture_rect_region(texture,Rect2(-80,-104,160,160),Rect2(frame*80,sword_pose_row*80,80,80),tint)
 			return
 		# The approved basic atlas is built from the exact PEOPLE pixels. Reuse
 		# its articulated upper body and normal walking legs for every technique.
