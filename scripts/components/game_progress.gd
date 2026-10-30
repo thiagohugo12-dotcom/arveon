@@ -511,7 +511,7 @@ func combat_stats() -> Dictionary:
 
 func discover_nearby(point: Vector2, floor_id: int = 1) -> bool:
 	var changed := false
-	for spot: Dictionary in Exploration.resources_for_floor(floor_id):
+	for spot: Dictionary in Exploration.discoveries_for_floor(floor_id):
 		if not discovered_pois.has(spot.id) and point.distance_squared_to(spot.position) <= 95.0 * 95.0:
 			discovered_pois[spot.id] = true
 			changed = true
@@ -1163,7 +1163,7 @@ func _valid_discoveries(value: Variant) -> Variant:
 	var result := {}
 	for id: String in value:
 		var valid := false
-		for spot: Dictionary in Exploration.known_resources():
+		for spot: Dictionary in Exploration.known_discoveries():
 			if spot.id == id:
 				valid = true
 				break

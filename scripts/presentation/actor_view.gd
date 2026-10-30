@@ -28,10 +28,12 @@ var defeat_left: float = 0.0
 var warning: bool = false
 var targeted: bool = false
 var walking: bool = false
+var running: bool = true
 var anim_time: float = 0.0
 var anim_frame: int = 0
 var idle_frame: int = 0
 var walk_distance := 0.0
+var run_distance := 0.0
 var settle_left := 0.0
 var last_visual_position := Vector2.ZERO
 var skill_left := 0.0
@@ -72,8 +74,14 @@ func set_moving(value: bool) -> void:
 			settle_left = 0.0 if value else 0.08
 			idle_frame = 0
 			walk_distance = 0.0
+			run_distance = 0.0
 			anim_time = 0.0
 			last_visual_position = global_position
+		queue_redraw()
+
+func set_running(value: bool) -> void:
+	if running != value:
+		running = value
 		queue_redraw()
 
 func set_health(current: int, maximum: int) -> void:
@@ -150,6 +158,8 @@ func _process(delta: float) -> void:
 	if appearance == 0:
 		if walking:
 			# A planted stride follows travel rather than the display frame rate.
+			run_distance = fmod(run_distance + minf(global_position.distance_to(last_visual_position),24.0), ExplorerRunPose.STRIDE)
+			queue_redraw()
 			walk_distance += minf(global_position.distance_to(last_visual_position), 24.0)
 			if walk_distance >= WALK_PIXELS_PER_FRAME:
 				var advanced := int(walk_distance / WALK_PIXELS_PER_FRAME)
@@ -272,7 +282,12 @@ func _draw_explorer(tint: Color) -> void:
 	# Presentation overrides replace only the body; shared feedback stays intact.
 	var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
 	if village_scale:
-		VillageActorArt.person(self,_explorer_direction(),anim_frame if walking or settle_left > 0.0 else 0,Vector2.ZERO,tint)
+		if walking and running:
+			ExplorerRunPose.draw(self,_explorer_direction(),run_distance/ExplorerRunPose.STRIDE,tint)
+		elif walking:
+			VillageActorArt.person(self,_explorer_direction(),anim_frame,Vector2.ZERO,tint)
+		else:
+			VillageActorArt.person(self,_explorer_direction(),0,Vector2.ZERO,tint)
 	else:
 		draw_texture_rect_region(EXPLORER_ATLAS,Rect2(-24,-32,48,48),Rect2(column*48,_explorer_direction()*48,48,48),tint)
 

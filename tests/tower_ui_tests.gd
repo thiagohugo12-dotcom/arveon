@@ -69,8 +69,8 @@ func _run() -> void:
 		for node: Button in hud.floor_buttons: states[(node as TowerArtView.Medallion).floor_id] = (node as TowerArtView.Medallion).state
 		check(states[1] == "completed" and states[2] == "current", "completed and current floors come from AscensionProgress " + label)
 		var no_content := true
-		for id in range(3, 11): no_content = no_content and states[id] == "unavailable"
-		check(no_content and main.progress.ascension.can_travel(3), "floors without content stay unavailable even when the rules unlock them " + label)
+		for id in range(4, 11): no_content = no_content and states[id] == "unavailable"
+		check(no_content and states[3] != "unavailable" and main.progress.ascension.can_travel(3), "Andar 3 (Pântano) is open; floors 4-10 without content stay unavailable " + label)
 		check(station_panel_contains(hud, hud.tower_action_button) and station_panel_contains(hud, hud.station_close_button) and hud.station_close_button.size.y >= 44, "tower buttons and the 44 px close stay inside the panel " + label)
 		# Seleção por toque.
 		hud.station_scroll.ensure_control_visible(hud.floor_buttons[0])
@@ -82,7 +82,12 @@ func _run() -> void:
 		await frames(2)
 		tap(hud, hud.floor_buttons[2])
 		await frames()
-		check(hud.selected_floor == 3 and hud.travel_button.disabled, "an unavailable floor can be read but never traveled to " + label)
+		check(hud.selected_floor == 3 and not hud.travel_button.disabled, "touch selects Andar 3 and offers real travel " + label)
+		hud.station_scroll.ensure_control_visible(hud.floor_buttons[3])
+		await frames(2)
+		tap(hud, hud.floor_buttons[3])
+		await frames()
+		check(hud.selected_floor == 4 and hud.travel_button.disabled, "an unavailable floor can be read but never traveled to " + label)
 		var card_text := all_text(hud.station_panel)
 		check(card_text.contains("Ainda não existe no jogo") and not card_text.contains("Criaturas derrotadas: 0/"), "unavailable floor shows no invented numbers " + label)
 		hud.station_scroll.ensure_control_visible(hud.floor_buttons[1])
@@ -97,7 +102,7 @@ func _run() -> void:
 	main.player.position = TowerEntrance.position_for_floor(2) + Vector2(0,35)
 	hud.show_station(TowerEntrance.NAME, main.progress)
 	await frames()
-	main._station_action("Viajar", "3")
+	main._station_action("Viajar", "4")
 	await frames(8)
 	check(main.progress.ascension.current_floor == 2 and not main.transitioning, "travel action ignores a floor that does not exist yet")
 	hud.close_station()

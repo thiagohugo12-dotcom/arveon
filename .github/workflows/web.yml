@@ -431,6 +431,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build/web
+          # Só a versão de TESTE: viagem livre pela Torre e ouro infinito (data/test_build.gd).
+          sed -i 's/^const ENABLED := false$/const ENABLED := true/' data/test_build.gd
+          grep -qx 'const ENABLED := true' data/test_build.gd
           godot --headless --path . --export-release Web build/web/index.html 2>&1 | tee /tmp/equipment-export.log
           if grep -E 'SCRIPT ERROR|ERROR:' /tmp/equipment-export.log; then exit 1; fi
           test -s build/web/index.html && test -s build/web/index.wasm && test -s build/web/index.pck

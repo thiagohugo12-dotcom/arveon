@@ -26,7 +26,7 @@ func complete_forest_trial() -> bool:
 		unlocked_floors.append(next)
 	return true
 func can_travel(id: int) -> bool:
-	return FloorConfig.valid(id) and unlocked_floors.has(id)
+	return FloorConfig.valid(id) and (unlocked_floors.has(id) or TestBuild.free_travel(id))
 func required_defeats(floor_id: int = 0) -> int:
 	return FloorConfig.REQUIRED_DEFEATS if FloorConfig.valid(current_floor if floor_id == 0 else floor_id) else 0
 func record_defeat(floor_id: int) -> bool:
@@ -64,16 +64,18 @@ static func from_save(value: Variant) -> AscensionProgress:
 		result.completed_trials[key] = value.completed_trials[key]
 	var expected: Array[int] = [1]
 	var previous := true
+	# Na versão de TESTE a viagem livre deixa abates e Provas fora da ordem da campanha.
+	var strict := not TestBuild.active()
 	for id in range(1,6):
 		var done: bool = result.completed_trials[str(id)]
-		if (done and (not previous or result.defeats[str(id)] != 50)) or (not expected.has(id) and result.defeats[str(id)] != 0):
+		if strict and ((done and (not previous or result.defeats[str(id)] != 50)) or (not expected.has(id) and result.defeats[str(id)] != 0)):
 			return null
 		if done and id < 5:
 			expected.append(id + 1)
 		previous = done
-	if value.unlocked_floors.size() != expected.size() or not expected.has(int(value.current_floor)):
+	if strict and (value.unlocked_floors.size() != expected.size() or not expected.has(int(value.current_floor))):
 		return null
-	for i in range(expected.size()):
+	for i in range(expected.size() if strict else 0):
 		if not value.unlocked_floors[i] is float or value.unlocked_floors[i] != float(expected[i]):
 			return null
 	var seal: Variant = value.get("forest_seal", false)

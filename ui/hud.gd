@@ -1744,7 +1744,7 @@ func show_map(progress: GameProgress) -> void:
 	expanded_map.arena_bounds = minimap.arena_bounds
 	var arena := minimap.arena_bounds.has_area()
 	map_title.text = "Mapa · Arena da Torre" if arena else FloorCatalog.map_title(progress.ascension.current_floor)
-	map_legend.text = "● Você · Dourado: portais\nSaída para o %s ao sul" % FloorConfig.tower_return_name(progress.ascension.current_floor) if arena else "Coletas e baús: somente os descobertos"
+	map_legend.text = "● Você · Dourado: portais\nSaída para o %s ao sul" % FloorConfig.tower_return_name(progress.ascension.current_floor) if arena else "Regiões: 1 Entrada · 2 Lodaçal · 3 Bosque · 4 Coração" if progress.ascension.current_floor == 3 else "Coletas e baús: somente os descobertos"
 	expanded_map.player_position = minimap.player_position
 	_style_map_panel(arena,progress)
 	expanded_map.queue_redraw()

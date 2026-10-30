@@ -8,7 +8,7 @@ signal phase_changed(phase: int)
 signal summon_requested(kinds: Array, limit: int)
 
 @export var stats: ActorData
-@export_range(0, 7, 1) var kind: int = 0  # 0-4 Mata/Torre; 5 Goblin, 6 Tatu, 7 Escorpião
+@export_range(0, 11, 1) var kind: int = 0  # 0-4 Mata/Torre; 5 Goblin, 6 Tatu, 7 Escorpião; 8 Limo, 9 Sapo, 10 Vulto, 11 Jacaré
 @onready var health: Health = $Health
 @onready var view: ActorView = $View
 var arena_bounds := Rect2()
@@ -43,6 +43,8 @@ var mark_category := ""
 var mark_bonus := 0.0
 
 func display_name() -> String:
+	if kind >= 8:
+		return ["Limo do Brejo","Sapo Venenoso","Vulto do Brejo","Jacaré Ancião"][mini(kind - 8, 3)]
 	if kind >= 5:
 		return ["Goblin Garimpeiro","Tatu Rochoso","Escorpião da Chapada"][kind-5]
 	return ["Javali","Aranha","Mandacaru","Javali Elite","Criatura da Mata"][mini(kind,4)]
@@ -115,6 +117,7 @@ func _physics_process(delta: float) -> void:
 		0, 3, 6: _boar_behavior(delta, offset, distance)
 		1, 5, 7: _spider_behavior(delta, offset, distance)
 		2: _cactus_behavior(offset, distance, delta)
+		_: if kind >= 8: _custom_behavior(delta, offset, distance)
 	var before := global_position
 	move_and_slide()
 	if SafeCamp.in_clearance(global_position) or (not arena_bounds.has_area() and global_position.distance_to(home_position) > MAX_CHASE_FROM_HOME):
@@ -122,8 +125,12 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		chasing = false
 	view.set_moving(velocity.length_squared() > 1.0)
-	if kind != 2 and kind not in [1,5,7]:
+	if kind != 2 and kind not in [1,5,7] and kind < 8:
 		_try_contact(distance)
+
+# Criaturas do Andar 3 em diante definem o próprio comportamento (ver SwampEnemy).
+func _custom_behavior(_delta: float, _offset: Vector2, _distance: float) -> void:
+	pass
 
 func _return_home() -> void:
 	spine_windup = 0.0

@@ -63,6 +63,10 @@ func phase() -> int:
 	return 0 if preparing else -1
 
 func frame_index() -> int:
+	# AutoAttack emits the visual and damage in the same physics tick: begin at
+	# contact, then recover. Preparation already runs during the prior cooldown.
+	if pose_override < 0 and sword_time > 0.0:
+		return clampi(2 + int((1.0-sword_time/sword_duration)*4.0),2,5)
 	var key := phase()
 	if key < 3: return maxi(0,key)
 	if pose_override >= 0: return 5
@@ -73,5 +77,8 @@ func _draw_explorer(tint: Color) -> void:
 		super._draw_explorer(tint)
 		return
 	var walk_frame := anim_frame if walking or settle_left > 0 else 0
-	draw_texture_rect_region(VillageActorArt.PEOPLE,Rect2(-32,0,64,16),Rect2(walk_frame*32,sword_row*40+32,32,8),tint)
+	if walking and running:
+		ExplorerRunPose.legs(self,_explorer_direction(),run_distance/ExplorerRunPose.STRIDE,tint)
+	else:
+		draw_texture_rect_region(VillageActorArt.PEOPLE,Rect2(-32,0,64,16),Rect2(walk_frame*32,sword_row*40+32,32,8),tint)
 	draw_texture_rect_region(SWORD,Rect2(-80,-104,160,160),Rect2(frame_index()*80,sword_row*80,80,80),tint)

@@ -1,0 +1,119 @@
+{
+  "name": "ARVEON - Andar 3 - Artes Aprovadas + Limo Idle e Ataque",
+  "created_at_utc": "2026-10-29T02:37:32.026010+00:00",
+  "version": "1.0",
+  "scope": "Implementacao local do mapa e monstros; animacoes existentes apenas do Limo",
+  "assets": [
+    {
+      "path": "01_REFERENCIA_OFICIAL/00_MAPA_APROVADO_PANTANO_DAS_VOZES.png",
+      "role": "approved_map",
+      "description": "Mapa paisagem aprovado, grandes areas transitaveis, regioes e santuarios.",
+      "width": 1448,
+      "height": 1086,
+      "image_mode": "RGB",
+      "sha256": "e78dc7301246e211805f1f6e24e4238bf780185242f3220ec4561ec0ff83b1e7"
+    },
+    {
+      "path": "02_CENARIO_APROVADO/01_TERRENO_AGUA_REFINADO.png",
+      "role": "approved_tileset",
+      "description": "Tileset refinado aprovado: caminhos, agua, margens, lama e flora baixa.",
+      "width": 1536,
+      "height": 1024,
+      "image_mode": "RGBA",
+      "sha256": "9a7e55cd6a2ff28cbd56de2e1a9ba339502efae3d507261e9feebd3c9685459d"
+    },
+    {
+      "path": "02_CENARIO_APROVADO/02_ARVORES_ARBUSTOS_RAIZES.png",
+      "role": "approved_atlas",
+      "description": "Folha de arvores, copas, vegetacao, arbustos e raizes.",
+      "width": 1536,
+      "height": 1024,
+      "image_mode": "RGBA",
+      "sha256": "f7946b909cd8aa93faacd4e41a6804a266f18fd7b8ef2059832bad79848c35b3"
+    },
+    {
+      "path": "02_CENARIO_APROVADO/03_PONTES_RUINAS_ACAMPAMENTO_SANTUARIO.png",
+      "role": "approved_atlas",
+      "description": "Folha com pontes, ruinas, fogueira, campamento e santuario lunar.",
+      "width": 1536,
+      "height": 1024,
+      "image_mode": "RGBA",
+      "sha256": "e255fab02ca6ad55ce2b341fb8ff6ef4549780f19a18e373877a3cb88bf561ea"
+    },
+    {
+      "path": "03_INIMIGOS_APROVADOS/04_LIMO_SAPO_VULTO.png",
+      "role": "approved_concept",
+      "description": "Tres inimigos comuns em poses estaticas: limo esquerda, sapo centro, vulto direita.",
+      "width": 2048,
+      "height": 682,
+      "image_mode": "RGBA",
+      "sha256": "aa3e7d1153e38c0826757de7968ed825496aaa3debfcde755c056b30a40a7914"
+    },
+    {
+      "path": "03_INIMIGOS_APROVADOS/05_JACARE_ANCIAO.png",
+      "role": "approved_concept",
+      "description": "Minichefe Jacare Anciao, sprite mestre estatico.",
+      "width": 1536,
+      "height": 1024,
+      "image_mode": "RGBA",
+      "sha256": "8799421c6e0cf015b7827974040e2c13df3b6b8d9a53b50ea441837eae072018"
+    },
+    {
+      "path": "03_INIMIGOS_APROVADOS/06_MAE_DOS_SUSSURROS_FASE_1.png",
+      "role": "approved_concept",
+      "description": "Guardiao, fase 1, sprite mestre estatico.",
+      "width": 1536,
+      "height": 1024,
+      "image_mode": "RGBA",
+      "sha256": "a5c8e1ee9125b13b218dda2e9f434c90c3952455862e47ab8679e9f8a5789453"
+    },
+    {
+      "path": "03_INIMIGOS_APROVADOS/07_MAE_DOS_SUSSURROS_FASE_2.png",
+      "role": "approved_concept",
+      "description": "Guardiao, fase 2, sprite mestre estatico.",
+      "width": 1448,
+      "height": 1086,
+      "image_mode": "RGBA",
+      "sha256": "ce975d1a14819abc565d412e66ab4c9fc996a8951e3f98246a62d3a6049196a3"
+    },
+    {
+      "path": "04_LIMO_ANIMACOES_ORIGINAIS/08_LIMO_IDLE_4_QUADROS.png",
+      "role": "animation_original",
+      "description": "Folha original com 4 quadros de idle, da esquerda para a direita.",
+      "width": 2048,
+      "height": 682,
+      "image_mode": "RGBA",
+      "sha256": "454ce2928307322fee26b9568e9457a877778528f7bf697e42f55378e9f63373"
+    },
+    {
+      "path": "04_LIMO_ANIMACOES_ORIGINAIS/09_LIMO_ATAQUE_6_QUADROS.png",
+      "role": "animation_original",
+      "description": "Folha original com 6 quadros de ataque; impacto no quadro 4, a verificar in-game.",
+      "width": 2048,
+      "height": 682,
+      "image_mode": "RGBA",
+      "sha256": "5eef6b21ed9ed8f937b7a1282ec753fa526fc362a28773a4d053d3884353d649"
+    },
+    {
+      "path": "05_HISTORICO_NAO_IMPLEMENTAR/10_MAPA_INICIAL_DESCARTADO.png",
+      "role": "reference_obsolete",
+      "description": "Conceito vertical inicial rejeitado por ter pouco espaco para andar. NAO USAR PARA CONSTRUIR.",
+      "width": 941,
+      "height": 1672,
+      "image_mode": "RGB",
+      "sha256": "df287d47b8cf83ac0d7ec5b248fa5ec28c6aa2fca88473a4c552d3059761d4be"
+    },
+    {
+      "path": "05_HISTORICO_NAO_IMPLEMENTAR/11_TILESET_TERRENO_V1_SUPERADO.png",
+      "role": "reference_obsolete",
+      "description": "Primeira tentativa de tileset; versao refinada aprovada substituiu este arquivo.",
+      "width": 1448,
+      "height": 1086,
+      "image_mode": "RGBA",
+      "sha256": "284cad8e508126b0c1c610d83d8feea826c19383e45547282a4b1c5e395d006b"
+    }
+  ],
+  "total_original_pngs": 12,
+  "approved_current_pngs": 10,
+  "historical_reference_pngs": 2
+}

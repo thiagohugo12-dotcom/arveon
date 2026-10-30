@@ -1,0 +1,732 @@
+{
+	"anel_pedras": {
+		"size": [
+			36,
+			26
+		]
+	},
+	"arbusto_a": {
+		"size": [
+			58,
+			53
+		]
+	},
+	"arbusto_b": {
+		"size": [
+			40,
+			40
+		]
+	},
+	"arbusto_flor": {
+		"size": [
+			46,
+			42
+		]
+	},
+	"arbusto_flor_b": {
+		"size": [
+			56,
+			47
+		]
+	},
+	"arbusto_frutos": {
+		"size": [
+			42,
+			44
+		]
+	},
+	"arco_baixo": {
+		"size": [
+			70,
+			70
+		]
+	},
+	"arco_grande": {
+		"size": [
+			120,
+			89
+		]
+	},
+	"arco_quebrado": {
+		"size": [
+			58,
+			79
+		]
+	},
+	"arvore_anciã": {
+		"size": [
+			262,
+			212
+		]
+	},
+	"arvore_grande_a": {
+		"size": [
+			200,
+			189
+		]
+	},
+	"arvore_grande_b": {
+		"size": [
+			176,
+			201
+		]
+	},
+	"arvore_media_a": {
+		"size": [
+			150,
+			187
+		]
+	},
+	"arvore_media_b": {
+		"size": [
+			140,
+			161
+		]
+	},
+	"arvore_media_c": {
+		"size": [
+			136,
+			150
+		]
+	},
+	"arvore_pequena_a": {
+		"size": [
+			116,
+			142
+		]
+	},
+	"arvore_pequena_b": {
+		"size": [
+			120,
+			140
+		]
+	},
+	"arvore_pequena_c": {
+		"size": [
+			116,
+			158
+		]
+	},
+	"arvore_seca": {
+		"size": [
+			160,
+			188
+		]
+	},
+	"barraca": {
+		"size": [
+			150,
+			105
+		]
+	},
+	"barril": {
+		"size": [
+			24,
+			30
+		]
+	},
+	"braseiro_a": {
+		"size": [
+			38,
+			58
+		]
+	},
+	"braseiro_b": {
+		"size": [
+			32,
+			69
+		]
+	},
+	"braseiro_c": {
+		"size": [
+			30,
+			67
+		]
+	},
+	"circulo_lunar": {
+		"size": [
+			104,
+			103
+		]
+	},
+	"estandarte": {
+		"size": [
+			38,
+			63
+		]
+	},
+	"fogueira": {
+		"size": [
+			60,
+			57
+		]
+	},
+	"folhagem_a": {
+		"size": [
+			54,
+			48
+		]
+	},
+	"folhagem_junco": {
+		"size": [
+			54,
+			45
+		]
+	},
+	"jacare_anciao": {
+		"size": [
+			236,
+			149
+		]
+	},
+	"junco_a": {
+		"size": [
+			56,
+			66
+		]
+	},
+	"junco_agua_a": {
+		"size": [
+			40,
+			49
+		]
+	},
+	"junco_agua_b": {
+		"size": [
+			30,
+			49
+		]
+	},
+	"junco_agua_c": {
+		"size": [
+			34,
+			53
+		]
+	},
+	"junco_b": {
+		"size": [
+			54,
+			61
+		]
+	},
+	"junco_c": {
+		"size": [
+			46,
+			67
+		]
+	},
+	"junco_d": {
+		"size": [
+			28,
+			35
+		]
+	},
+	"junco_e": {
+		"size": [
+			24,
+			31
+		]
+	},
+	"laje_a": {
+		"size": [
+			48,
+			47
+		]
+	},
+	"laje_b": {
+		"size": [
+			38,
+			47
+		]
+	},
+	"laje_c": {
+		"size": [
+			40,
+			49
+		]
+	},
+	"laje_d": {
+		"size": [
+			48,
+			40
+		]
+	},
+	"laje_e": {
+		"size": [
+			40,
+			55
+		]
+	},
+	"laje_f": {
+		"size": [
+			50,
+			57
+		]
+	},
+	"lanterna_a": {
+		"size": [
+			40,
+			68
+		]
+	},
+	"lanterna_b": {
+		"size": [
+			40,
+			58
+		]
+	},
+	"limo_ataque": {
+		"anchor": [
+			29,
+			46
+		],
+		"cell": [
+			70,
+			53
+		],
+		"frames": 6
+	},
+	"limo_do_brejo": {
+		"size": [
+			52,
+			41
+		]
+	},
+	"limo_idle": {
+		"anchor": [
+			28,
+			37
+		],
+		"cell": [
+			55,
+			41
+		],
+		"frames": 4
+	},
+	"lirio_c": {
+		"size": [
+			20,
+			20
+		]
+	},
+	"lirio_d": {
+		"size": [
+			20,
+			18
+		]
+	},
+	"lirios_a": {
+		"size": [
+			34,
+			28
+		]
+	},
+	"lirios_b": {
+		"size": [
+			28,
+			23
+		]
+	},
+	"mae_dos_sussurros_fase1": {
+		"size": [
+			300,
+			198
+		]
+	},
+	"mae_dos_sussurros_fase2": {
+		"size": [
+			300,
+			223
+		]
+	},
+	"moita_a": {
+		"size": [
+			42,
+			29
+		]
+	},
+	"moita_b": {
+		"size": [
+			38,
+			30
+		]
+	},
+	"moita_c": {
+		"size": [
+			34,
+			28
+		]
+	},
+	"moita_flor": {
+		"size": [
+			38,
+			30
+		]
+	},
+	"muro_a": {
+		"size": [
+			70,
+			67
+		]
+	},
+	"muro_b": {
+		"size": [
+			96,
+			54
+		]
+	},
+	"muro_c": {
+		"size": [
+			66,
+			51
+		]
+	},
+	"muro_d": {
+		"size": [
+			82,
+			59
+		]
+	},
+	"muro_e": {
+		"size": [
+			52,
+			53
+		]
+	},
+	"muro_pilar": {
+		"size": [
+			74,
+			67
+		]
+	},
+	"pedras_a": {
+		"size": [
+			44,
+			44
+		]
+	},
+	"pedras_agua_a": {
+		"size": [
+			34,
+			36
+		]
+	},
+	"pedras_agua_b": {
+		"size": [
+			42,
+			33
+		]
+	},
+	"pedras_b": {
+		"size": [
+			50,
+			32
+		]
+	},
+	"pedras_c": {
+		"size": [
+			34,
+			44
+		]
+	},
+	"pedras_d": {
+		"size": [
+			30,
+			33
+		]
+	},
+	"pedras_e": {
+		"size": [
+			34,
+			26
+		]
+	},
+	"pedras_musgo": {
+		"size": [
+			34,
+			29
+		]
+	},
+	"pilar_a": {
+		"size": [
+			36,
+			86
+		]
+	},
+	"pilar_b": {
+		"size": [
+			46,
+			69
+		]
+	},
+	"pilar_c": {
+		"size": [
+			36,
+			63
+		]
+	},
+	"pilar_d": {
+		"size": [
+			38,
+			79
+		]
+	},
+	"pilar_e": {
+		"size": [
+			40,
+			68
+		]
+	},
+	"pilar_f": {
+		"size": [
+			34,
+			62
+		]
+	},
+	"pilar_lua_a": {
+		"size": [
+			30,
+			83
+		]
+	},
+	"pilar_lua_b": {
+		"size": [
+			38,
+			84
+		]
+	},
+	"pilar_lua_c": {
+		"size": [
+			36,
+			86
+		]
+	},
+	"pilar_lua_santuario": {
+		"size": [
+			30,
+			77
+		]
+	},
+	"pilar_santuario_a": {
+		"size": [
+			40,
+			68
+		]
+	},
+	"pilar_santuario_b": {
+		"size": [
+			26,
+			50
+		]
+	},
+	"pilar_santuario_c": {
+		"size": [
+			26,
+			64
+		]
+	},
+	"placa_dupla": {
+		"size": [
+			38,
+			63
+		]
+	},
+	"placa_madeira": {
+		"size": [
+			36,
+			66
+		]
+	},
+	"planta_a": {
+		"size": [
+			34,
+			40
+		]
+	},
+	"planta_b": {
+		"size": [
+			32,
+			33
+		]
+	},
+	"planta_c": {
+		"size": [
+			30,
+			31
+		]
+	},
+	"planta_d": {
+		"size": [
+			26,
+			31
+		]
+	},
+	"planta_flor": {
+		"size": [
+			38,
+			35
+		]
+	},
+	"poca_agua": {
+		"size": [
+			84,
+			50
+		]
+	},
+	"poca_lama": {
+		"size": [
+			66,
+			47
+		]
+	},
+	"ponte_curta": {
+		"size": [
+			58,
+			56
+		]
+	},
+	"ponte_gasta": {
+		"size": [
+			70,
+			96
+		]
+	},
+	"ponte_larga": {
+		"size": [
+			78,
+			89
+		]
+	},
+	"ponte_longa": {
+		"size": [
+			62,
+			93
+		]
+	},
+	"ponte_media": {
+		"size": [
+			64,
+			72
+		]
+	},
+	"ponte_muito_longa": {
+		"size": [
+			66,
+			129
+		]
+	},
+	"portal_santuario": {
+		"size": [
+			54,
+			63
+		]
+	},
+	"poste_cipo": {
+		"size": [
+			34,
+			66
+		]
+	},
+	"raiz_a": {
+		"size": [
+			54,
+			54
+		]
+	},
+	"raiz_arco": {
+		"size": [
+			92,
+			56
+		]
+	},
+	"raiz_b": {
+		"size": [
+			70,
+			51
+		]
+	},
+	"raiz_c": {
+		"size": [
+			64,
+			56
+		]
+	},
+	"ruina_santuario": {
+		"size": [
+			46,
+			55
+		]
+	},
+	"ruina_santuario_b": {
+		"size": [
+			66,
+			66
+		]
+	},
+	"sapo_venenoso": {
+		"size": [
+			84,
+			60
+		]
+	},
+	"toco_a": {
+		"size": [
+			20,
+			25
+		]
+	},
+	"toco_b": {
+		"size": [
+			18,
+			23
+		]
+	},
+	"toco_c": {
+		"size": [
+			26,
+			34
+		]
+	},
+	"toco_d": {
+		"size": [
+			36,
+			62
+		]
+	},
+	"toco_e": {
+		"size": [
+			36,
+			53
+		]
+	},
+	"toco_f": {
+		"size": [
+			36,
+			53
+		]
+	},
+	"tronco_caido": {
+		"size": [
+			80,
+			51
+		]
+	},
+	"tronco_oco": {
+		"size": [
+			70,
+			57
+		]
+	},
+	"tronco_oco_b": {
+		"size": [
+			46,
+			40
+		]
+	},
+	"vulto_do_brejo": {
+		"size": [
+			72,
+			80
+		]
+	}
+}

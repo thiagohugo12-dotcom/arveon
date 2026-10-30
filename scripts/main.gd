@@ -27,6 +27,14 @@ const SANDSTONE_COLOSSUS_SCRIPT = preload("res://scripts/actors/sandstone_coloss
 const SANDSTONE_COLOSSUS_VIEW = preload("res://scripts/presentation/sandstone_colossus_view.gd")
 const GUARDIAN_ALTAR: Vector2 = FloorCatalog.FLOORS[1]["guardian_altar"]
 var guardian: EnemyActor
+# Andar 3 · Pântano das Vozes: inimigos comuns, mini-chefe e Guardiã.
+const FLOOR3_ENEMY_SCENE: PackedScene = preload("res://scenes/actors/floor3_enemy.tscn")
+const FLOOR3_CAIMAN_SCENE: PackedScene = preload("res://scenes/actors/floor3_caiman.tscn")
+const WHISPERS_SCRIPT = preload("res://scripts/actors/mother_of_whispers.gd")
+const WHISPERS_VIEW = preload("res://scripts/presentation/mother_of_whispers_view.gd")
+const WHISPERS_TOWER_VIEW = preload("res://scripts/presentation/whispers_tower_guardian_view.gd")
+var mini_boss: EnemyActor
+var mini_boss_respawn_left := 0.0
 
 const MAX_ENEMIES := 5
 const SPAWN_INTERVAL := 2.8
@@ -47,6 +55,7 @@ var camps_mode := false
 var defeated_count: int = 0
 var earned_xp: int = 0
 var earned_gold: int = 0
+var test_build_notice := false
 var collected_materials: Dictionary = {}
 var loot_rng := RandomNumberGenerator.new()
 var mission := CommonMission.new()
@@ -94,9 +103,11 @@ func _ready() -> void:
 		var old_enemy := enemy
 		remove_child(old_enemy)
 		old_enemy.free()
-		enemy = _make_enemy(FloorCatalog.first_enemy_kind(start_floor))
-		enemy.position = FloorCatalog.first_enemy_position(start_floor)
+		var encounters_enabled := _floor_encounters_enabled(start_floor)
+		enemy = _make_enemy(FloorCatalog.first_enemy_kind(start_floor)) if encounters_enabled else _make_enemy(0)
+		enemy.position = FloorCatalog.first_enemy_position(start_floor) if encounters_enabled else SafeCamp.respawn_for_floor(start_floor) + Vector2(80, 0)
 		add_child(enemy)
+		if not encounters_enabled: _disable_preview_enemy(enemy)
 	mission.enabled = not progress.introduction_active()
 	collected_materials = progress.bag
 	hud.minimap.progress = progress
@@ -115,8 +126,9 @@ func _ready() -> void:
 	enemy.view.damage_occluders = hud.damage_occluders
 	enemy.target = player
 	_apply_floor_stats(enemy)
-	_register_enemy_defeat(enemy)
-	enemy.projectile_requested.connect(_on_enemy_projectile)
+	if _floor_encounters_enabled(start_floor):
+		_register_enemy_defeat(enemy)
+		enemy.projectile_requested.connect(_on_enemy_projectile)
 	hud.movement_changed.connect(func(value: Vector2):
 		input_driver.set_touch_direction(value)
 		if OS.has_feature("web") and bool(JavaScriptBridge.eval("window.__ARVEON_UI2_TEST__ === true", true)):
@@ -170,6 +182,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if TestBuild.active() and not progress.training_mode: _apply_test_build()
 	autosave_left -= delta
 	if autosave_left <= 0.0:
 		autosave_left = 30.0
@@ -222,6 +235,9 @@ func _process(delta: float) -> void:
 	if near != station_nearby and not hud.station_panel.visible:
 		station_nearby = near
 		hud.set_nearby_station(near)
+	if not _floor_encounters_enabled(progress.ascension.current_floor):
+		return
+	_update_mini_boss(delta)
 	if camps_mode:
 		encounter_camps.update(delta, player.global_position)
 		return
@@ -232,9 +248,10 @@ func _process(delta: float) -> void:
 			_spawn_enemy()
 
 func _make_enemy(kind: int) -> EnemyActor:
-	var actor := (FLOOR2_ENEMY_SCENE if kind >= 5 else ENEMY_SCENE).instantiate() as EnemyActor
+	var scene: PackedScene = FLOOR3_CAIMAN_SCENE if kind == 11 else FLOOR3_ENEMY_SCENE if kind >= 8 else FLOOR2_ENEMY_SCENE if kind >= 5 else ENEMY_SCENE
+	var actor := scene.instantiate() as EnemyActor
 	actor.kind = kind
-	if kind >= 5:
+	if kind >= 5 and kind < 8:
 		(actor.get_node("View") as Floor2MonsterView).monster_index = kind - 5
 	# Duplicating the resource ensures variants never mutate the original enemy template.
 	actor.stats = actor.stats.duplicate() as ActorData
@@ -246,11 +263,40 @@ func _make_enemy(kind: int) -> EnemyActor:
 	_apply_floor_stats(actor)
 	return actor
 
+# Mini-chefe de campo (Jacaré Ancião no Andar 3): opcional e repetível. Reaparece em casa
+# depois do intervalo do catálogo, só quando o jogador está longe da arena.
+func _update_mini_boss(delta: float) -> void:
+	var definition := FloorCatalog.mini_boss(progress.ascension.current_floor)
+	if definition.is_empty() or trial.active() or transitioning: return
+	if is_instance_valid(mini_boss) and mini_boss.get_parent() == self: return
+	mini_boss_respawn_left = maxf(0.0, mini_boss_respawn_left - delta)
+	var home: Vector2 = definition.home
+	if mini_boss_respawn_left > 0.0 or player.global_position.distance_to(home) < 420.0: return
+	mini_boss = _make_enemy(int(definition.kind))
+	mini_boss.position = home
+	mini_boss.target = player
+	if mini_boss is AncientCaiman: (mini_boss as AncientCaiman).arena = definition.arena
+	_register_enemy_defeat(mini_boss)
+	mini_boss.defeated.connect(func(_kind: int): mini_boss_respawn_left = float(definition.respawn), CONNECT_ONE_SHOT)
+	add_child(mini_boss)
+	mini_boss.view.damage_occluders = hud.damage_occluders
+
+func _floor_encounters_enabled(floor_id: int) -> bool:
+	return floor_id <= 2 or FloorCatalog.feature(floor_id,"encounters_enabled")
+
+func _disable_preview_enemy(actor: EnemyActor) -> void:
+	# Mantem a referencia legado de Main sem deixar o placeholder participar do combate.
+	actor.hide()
+	actor.remove_from_group("damageable_enemies")
+	actor.collision_layer = 0
+	actor.collision_mask = 0
+	actor.set_physics_process(false)
+
 func _apply_floor_stats(actor: EnemyActor) -> void:
 	if actor.has_meta("scaled_floor"):
 		return
 	actor.stats = actor.stats.duplicate() as ActorData
-	var multiplier := FloorConfig.difficulty(progress.ascension.current_floor)
+	var multiplier := FloorCatalog.enemy_multiplier(progress.ascension.current_floor)
 	var base_contact := actor.stats.contact_damage
 	actor.stats.max_hp = roundi(actor.stats.max_hp * multiplier)
 	actor.stats.contact_damage = roundi(base_contact * multiplier)
@@ -313,7 +359,7 @@ func _clear_boss_minions(_kind: int, boss: EnemyActor) -> void:
 			(node as EnemyActor).queue_free()
 
 func _spawn_enemy() -> void:
-	if trial.active() or transitioning:
+	if trial.active() or transitioning or not _floor_encounters_enabled(progress.ascension.current_floor):
 		return
 	var spawn_position := Vector2.ZERO
 	var kind := 3 if spawn_count % 8 == 7 else (spawn_count + 1) % 3
@@ -450,6 +496,16 @@ func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
 	mission_reward_message = "Missão concluída! +%d XP, +%d ouro" % [xp_reward, gold_reward]
 	hud.show_notice(mission_reward_message)
 	_save_progress()
+
+# Versão de TESTE: ouro sempre cheio; a viagem livre fica em AscensionProgress.can_travel.
+func _apply_test_build() -> void:
+	if progress.gold < TestBuild.GOLD or earned_gold < TestBuild.GOLD:
+		progress.gold = TestBuild.GOLD
+		earned_gold = TestBuild.GOLD
+		hud.set_progress(earned_xp, earned_gold, defeated_count, "")
+	if not test_build_notice and not progress.introduction_active():
+		test_build_notice = true
+		hud.show_notice("Versão de teste · ouro infinito e viagem livre pela Torre")
 
 func _save_progress() -> void:
 	progress.xp = earned_xp
@@ -1021,6 +1077,9 @@ func _record_adventure(id: String) -> void:
 
 func _start_guardian() -> void:
 	if progress.introduction_active(): return
+	if progress.ascension.current_floor >= 3 and not FloorCatalog.feature(progress.ascension.current_floor,"field_guardian_enabled"):
+		hud.show_notice("Guardião do andar · conteúdo entra após a aprovação do mapa")
+		return
 	if trial.active() or transitioning:
 		return
 	if is_instance_valid(guardian) or progress.floor_states[str(progress.ascension.current_floor)].guardian_defeated:
@@ -1032,8 +1091,10 @@ func _start_guardian() -> void:
 	var template := guardian.stats.duplicate() as ActorData
 	var boss: Dictionary = FloorCatalog.def_or_default(progress.ascension.current_floor).field_guardian
 	var vale: bool = boss.variant == "colossus"
-	guardian.set_script(SANDSTONE_COLOSSUS_SCRIPT if vale else GUARDIAN_SCRIPT)
-	guardian.get_node("View").set_script(SANDSTONE_COLOSSUS_VIEW if vale else GUARDIAN_VIEW)
+	var whispers: bool = boss.variant == "whispers"
+	guardian.set_script(WHISPERS_SCRIPT if whispers else SANDSTONE_COLOSSUS_SCRIPT if vale else GUARDIAN_SCRIPT)
+	guardian.get_node("View").set_script(WHISPERS_VIEW if whispers else SANDSTONE_COLOSSUS_VIEW if vale else GUARDIAN_VIEW)
+	if whispers: (guardian as MotherOfWhispers).arena = Floor3Layout.GUARDIAN_ARENA.grow(30.0)
 	guardian.kind = 4
 	guardian.stats = template
 	guardian.stats.max_hp = int(boss.hp)
@@ -1084,6 +1145,9 @@ func _camera_bounds(bounds: Rect2) -> void:
 
 func _enter_trial() -> void:
 	if progress.introduction_active(): return
+	if progress.ascension.current_floor >= 3 and not FloorCatalog.feature(progress.ascension.current_floor,"tower_enabled"):
+		hud.show_notice("Torre do andar · desafios entram após a aprovação do mapa")
+		return
 	if transitioning or trial.active() or not player.health.is_alive() or not progress.ascension.entrance_unlocked():
 		return
 	transitioning = true
@@ -1316,7 +1380,7 @@ func _spawn_tower_guardian() -> void:
 	var template := actor.stats.duplicate() as ActorData
 	actor.set_script(TOWER_GUARDIAN_SCRIPT)
 	var tower_boss: Dictionary = FloorCatalog.def_or_default(trial.floor_id).tower_guardian
-	actor.get_node("View").set_script(SANDSTONE_TOWER_GUARDIAN_VIEW if tower_boss.variant == "arenito" else TOWER_GUARDIAN_VIEW)
+	actor.get_node("View").set_script(SANDSTONE_TOWER_GUARDIAN_VIEW if tower_boss.variant == "arenito" else WHISPERS_TOWER_VIEW if tower_boss.variant == "pantano" else TOWER_GUARDIAN_VIEW)
 	tower_guardian = actor as TowerGuardian
 	var body := CircleShape2D.new()
 	body.radius = float(tower_boss.radius)
@@ -1373,7 +1437,8 @@ func _update_floor_identity() -> void:
 	player.view.village_scale = modern_art
 	player.view.queue_redraw()
 	_adapt_orientation()
-	RenderingServer.set_default_clear_color(Color("#b9cf55") if modern_art else Color("#101c16"))
+	var clear_color := Color("#172b27") if floor_id == 3 else Color("#b9cf55") if modern_art else Color("#101c16")
+	RenderingServer.set_default_clear_color(clear_color)
 	(world.get_node("FloorView") as FloorView).set_visual_v2(expanded_first)
 	(world as FloorWorld).set_expanded_world(expanded_first)
 	tower_view.visual_v2 = expanded_first
@@ -1418,12 +1483,16 @@ func _travel_floor(destination: int) -> void:
 	player.charge_left = 0
 	player.dash.time_left = 0
 	guardian = null
-	enemy = _make_enemy(FloorCatalog.first_enemy_kind(destination))
-	enemy.position = FloorCatalog.first_enemy_position(destination)
+	var encounters_enabled := _floor_encounters_enabled(destination)
+	enemy = _make_enemy(FloorCatalog.first_enemy_kind(destination)) if encounters_enabled else _make_enemy(0)
+	enemy.position = FloorCatalog.first_enemy_position(destination) if encounters_enabled else SafeCamp.respawn_for_floor(destination) + Vector2(80, 0)
 	enemy.target = player
-	_register_enemy_defeat(enemy)
-	enemy.projectile_requested.connect(_on_enemy_projectile)
 	add_child(enemy)
+	if encounters_enabled:
+		_register_enemy_defeat(enemy)
+		enemy.projectile_requested.connect(_on_enemy_projectile)
+	else:
+		_disable_preview_enemy(enemy)
 	enemy.view.damage_occluders = hud.damage_occluders
 	hud.minimap.arena_bounds = Rect2()
 	hud.minimap.update_player(player.position)

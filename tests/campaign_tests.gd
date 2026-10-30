@@ -36,7 +36,7 @@ static func run_world(suite) -> void:
 		suite.check(main.world.scene_file_path == FloorConfig.world_scene(id) and main.tower_view.position == TowerEntrance.position_for_floor(id) and TowerEntrance.POSITION == Vector2(830,1290) and TowerEntrance.LEGACY_POSITION == Vector2(1130,455), "each floor places its Tower inside its own map " + str(id))
 		var expected_heading := "Vale das Pedras · Andar 2" if id == 2 else "Mata · Andar %d" % id
 		var initial_hp := 108 if id == 2 else 48
-		suite.check(main.enemy.health.maximum == roundi(initial_hp * FloorConfig.difficulty(id)) and main.hud.heading.text == expected_heading, "active floor initial enemy and HUD use actual configuration " + str(id))
+		suite.check(main.enemy.health.maximum == roundi(initial_hp * FloorCatalog.enemy_multiplier(id)) and main.hud.heading.text == expected_heading, "active floor initial enemy and HUD use actual configuration " + str(id))
 		main.player.position = TowerEntrance.position_for_floor(id) + Vector2(0,35)
 		main._interact()
 		await suite.frames()
@@ -63,7 +63,7 @@ static func run_world(suite) -> void:
 			for mob in actors:
 				elite += 1 if mob.kind == 3 else 0
 				var base_hp: int = {0:48,1:36,2:64,3:120,5:52,6:108,7:72}[mob.kind]
-				suite.check(mob.stats.max_hp == roundi(base_hp * FloorConfig.difficulty(id)) and mob.position.distance_to(main.player.position) >= 170, "scaled wave member spawns safely floor %d wave %d" % [id,wave+1])
+				suite.check(mob.stats.max_hp == roundi(base_hp * FloorCatalog.enemy_multiplier(id)) and mob.position.distance_to(main.player.position) >= 170, "scaled wave member spawns safely floor %d wave %d" % [id,wave+1])
 			var expected_elite := 0 if id == 2 else 1 if wave == 2 else 0
 			suite.check(elite == expected_elite, "elite only in third wave floor " + str(id))
 			main._process_trial(20)
@@ -81,7 +81,7 @@ static func run_world(suite) -> void:
 		freeze(main)
 		var boss: TowerGuardian = main.tower_guardian
 		var guardian_base_hp := 520 if id == 2 else 360
-		suite.check(boss.health.maximum == roundi(guardian_base_hp * FloorConfig.difficulty(id)) and boss.damage_scale == FloorConfig.difficulty(id), "same Guardian scales HP and attacks on floor " + str(id))
+		suite.check(boss.health.maximum == roundi(guardian_base_hp * FloorCatalog.enemy_multiplier(id)) and boss.damage_scale == FloorCatalog.enemy_multiplier(id), "same Guardian scales HP and attacks on floor " + str(id))
 		boss.health.damage(ceili(boss.health.maximum * 0.5))
 		boss._physics_process(0)
 		suite.check(boss.phase_two, "existing phase two activates at half health on floor " + str(id))

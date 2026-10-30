@@ -1,0 +1,27 @@
+ARVEON: ASCENSAO ANCESTRAL — ANDAR 3: PANTANO DAS VOZES
+PACOTE COMPLETO DE ARTES APROVADAS + ANIMACOES DO LIMO
+
+ESTE ZIP CONTEM IMAGENS ORIGINAIS. NAO e um projeto Godot, nem um tileset tecnico ja perfeitamente encaixado.
+
+ORDEM DE USO:
+1) 01_REFERENCIA_OFICIAL: mapa paisagem final aprovado. Grande area de passagem e combate.
+2) 02_CENARIO_APROVADO: terreno/agua refinados, vegetacao e estruturas.
+3) 03_INIMIGOS_APROVADOS: 3 monstros, Jacare Anciao, Mae dos Sussurros fase 1 e fase 2.
+4) 04_LIMO_ANIMACOES_ORIGINAIS: idle 4 quadros + ataque 6 quadros. IMPLEMENTAR AS DUAS.
+5) 05_HISTORICO_NAO_IMPLEMENTAR: apenas historico para comparacao; nao usar como artes finais.
+
+REGRAS DE EXECUCAO:
+- Construir mapa dentro da Godot com assets separados, colisao, navegação e profundidade visual.
+- O mapa NAO e uma imagem de fundo inteira.
+- Caminhos amplos: jogador usa joystick e dash; ampliar areas abertas para combate.
+- Os inimigos exceto Limo podem ficar estaticos por enquanto (sprite normal, com comportamento real).
+- Limo deve usar IDLE 4 frames e ATAQUE 6 frames com sincronismo de dano no quadro real de impacto.
+- Atencao: spritesheets gerados por IA podem ter quadro deslocado, alpha de borda e dimensoes irregulares.
+  Recortar/alinhar, usar pivot/feet anchor consistente e verificar o contato no motor. NAO assumir divisao em grade perfeita.
+- A folha da Mãe dos Sussurros fase 2 eh um sprite estatico alternativo; transicao de fase simples sem inventar animacao.
+- Manter cada PNG original intacto e gerar derivados em outro diretorio se necessario.
+- Nao misturar assets de equipamento/mochila com este pacote.
+- NAO editar Andar 1 ou 2. NAO mexer em main/producao. NAO realizar commit, push, merge ou deploy.
+
+Manifesto: 00_MANIFESTO.json lista imagens, nomes, dimensoes e hashes SHA256.
+Este pacote nao garante que cada folha sirva diretamente como TileSet/AnimatedSprite2D: ha preparo tecnico pendente.

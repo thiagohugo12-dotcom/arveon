@@ -43,7 +43,13 @@ const MONSTERS := {
 	"criatura_da_mata": {"kind": 4, "name": "Criatura da Mata", "hp": 48, "speed": 70.0, "contact": 8, "xp": 80},
 	"goblin_garimpeiro": {"kind": 5, "name": "Goblin Garimpeiro", "hp": 52, "speed": 95.0, "contact": 8, "xp": 10},
 	"tatu_rochoso": {"kind": 6, "name": "Tatu Rochoso", "hp": 108, "speed": 54.0, "contact": 11, "xp": 16},
-	"escorpiao_da_chapada": {"kind": 7, "name": "Escorpião da Chapada", "hp": 72, "speed": 105.0, "contact": 13, "xp": 20}}
+	"escorpiao_da_chapada": {"kind": 7, "name": "Escorpião da Chapada", "hp": 72, "speed": 105.0, "contact": 13, "xp": 20},
+	# Andar 3 · balanceamento PROVISÓRIO (docs/decisions/ANDAR3_PANTANO_IMPLEMENTACAO_20261029.md).
+	# Valores base; o andar aplica dificuldade 2,1 (vida/dano) e recompensa 2,6 (XP/ouro).
+	"limo_do_brejo": {"kind": 8, "name": "Limo do Brejo", "hp": 125, "speed": 42.0, "contact": 13, "xp": 22},
+	"sapo_venenoso": {"kind": 9, "name": "Sapo Venenoso", "hp": 66, "speed": 74.0, "contact": 11, "xp": 20},
+	"vulto_do_brejo": {"kind": 10, "name": "Vulto do Brejo", "hp": 78, "speed": 128.0, "contact": 14, "xp": 24},
+	"jacare_anciao": {"kind": 11, "name": "Jacaré Ancião", "hp": 380, "speed": 58.0, "contact": 18, "xp": 120}}
 const GOLD_RANGE := Vector2i(2, 5)
 
 # Marco 5 · materiais com nome, troféus, proteção contra azar e conjuntos de arma por andar.
@@ -125,7 +131,39 @@ const FLOORS := {
 			"notice": "Colosso de Arenito · evite as áreas avisadas!"},
 		"tower_guardian": {"variant": "arenito", "minions": [5, 5], "hp": 520, "speed": 52.0, "radius": 34.0},
 		"guardian_spawn_candidates": [Vector2(360, 190), Vector2(200, 260), Vector2(520, 260), Vector2(360, 350)],
-		"waves": [[5, 6, 7, 5], [5, 6, 7, 5, 6, 7], [5, 6, 7, 5, 6, 7]]}}
+		"waves": [[5, 6, 7, 5], [5, 6, 7, 5, 6, 7], [5, 6, 7, 5, 6, 7]]},
+	3: {
+		"id": 3, "name": "Pântano das Vozes", "title": "Pântano das Vozes · Andar 3", "map_title": "Mapa · Pântano · Andar 3", "biome": "pantano",
+		"world_scene": "res://scenes/world/andar_3.tscn", "world_size": Vector2(2172, 1626),
+		"tower_guardian_name": "Mãe dos Sussurros", "return_name": "Pântano",
+		# Versão local jogável: mapa aprovado, três monstros, Jacaré Ancião e Mãe dos Sussurros.
+		# Coletas, drops e receitas próprios do Pântano ficam para a etapa seguinte.
+		"features": {"modern_art": true, "village_camp": false, "expanded_world": false, "mining": false, "vale_iron": false, "encounters_enabled": true, "field_guardian_enabled": true, "tower_enabled": true},
+		"training_spawn": Vector2(375, 1200),
+		# Teste de 29/10/2026: no nível 1 o Pântano quase não oferecia risco. Vida e dano
+		# de todos os inimigos do andar (Torre e Guardiã inclusive) ×1,8 sobre a escala.
+		"monster_power": 1.8,
+		"tower_position": Vector2(228, 1030),
+		"seal_note": "",
+		"camp": {"area": Rect2(60, 1060, 520, 380), "respawn": Vector2(375, 1200),
+			"stations": {"Baú": Vector2(150, 1290), "Ferreiro": Vector2(300, 1150), "Vendedor": Vector2(470, 1210)}},
+		# Limo (8) no lodo do centro, Sapo (9) nas margens, Vulto (10) nas ruínas e na mata.
+		"enemy_spawn_groups": [[Vector2(780, 960), Vector2(960, 810), Vector2(1050, 1170), Vector2(1350, 1050),
+			Vector2(1500, 1230), Vector2(1794, 1140), Vector2(1725, 870), Vector2(804, 1320),
+			Vector2(625, 641), Vector2(600, 330), Vector2(1050, 315), Vector2(470, 640),
+			Vector2(1860, 570), Vector2(1890, 750), Vector2(1500, 495), Vector2(1980, 900)]],
+		"enemy_spawn_kinds": [8, 9, 8, 10, 8, 9, 8, 9, 9, 10, 10, 8, 10, 9, 10, 8],
+		"guardian_altar": Vector2(1858, 262), "camps": [],
+		# Mini-chefe opcional e repetível do Bosque Afundado.
+		"mini_boss": {"kind": 11, "home": Vector2(420, 360), "arena": Rect2(250, 230, 360, 260), "respawn": 120.0},
+		"field_guardian": {"variant": "whispers", "minions": [], "name": "Mãe dos Sussurros", "hp": 400, "speed": 34.0, "radius": 40.0,
+			"phase_thresholds": [0.5],
+			"challenge_label": "Desafiar a Mãe dos Sussurros",
+			"notice": "Mãe dos Sussurros · evite as manchas e as raízes!"},
+		"tower_guardian": {"variant": "pantano", "minions": [8, 10], "hp": 381, "speed": 50.0, "radius": 40.0},
+		"guardian_spawn_candidates": [Vector2(360, 190), Vector2(200, 260), Vector2(520, 260), Vector2(360, 350)],
+		"waves": [[8, 9, 10, 8], [8, 9, 10, 8, 9, 10], [8, 9, 10, 8, 9, 10]]}
+}
 
 static func has_floor(id: int) -> bool:
 	return FLOORS.has(id)
@@ -145,6 +183,10 @@ static func valid_scale(id: int) -> bool:
 
 static func difficulty(id: int) -> float:
 	return float(SCALE[str(id)].difficulty) if SCALE.has(str(id)) else 1.0
+
+# Multiplicador de vida e dano dos inimigos: escala do andar × reforço próprio do andar.
+static func enemy_multiplier(id: int) -> float:
+	return difficulty(id) * float(FLOORS[id].get("monster_power", 1.0) if FLOORS.has(id) else 1.0)
 
 static func reward(amount: int, id: int) -> int:
 	return roundi(amount * float(SCALE[str(id)].rewards)) if SCALE.has(str(id)) else 0
@@ -224,7 +266,7 @@ static func xp_for_kind(kind: int) -> int:
 # Mesma fórmula de Main._apply_floor_stats, aplicada aos valores base do monstro.
 static func scaled(id: String, floor_id: int) -> Dictionary:
 	var base: Dictionary = MONSTERS[id]
-	var multiplier := difficulty(floor_id)
+	var multiplier := enemy_multiplier(floor_id)
 	return {
 		"hp": roundi(int(base.hp) * multiplier),
 		"contact": roundi(int(base.contact) * multiplier),
@@ -245,3 +287,13 @@ static func boss_minions(id: int, role: String) -> Array:
 	var def := def_or_default(id)
 	var boss: Dictionary = def.field_guardian if role == "field" else def.tower_guardian
 	return boss.get("minions", [])
+
+# Limiares de fase próprios de um chefe (vazio = padrão BOSS_PHASES).
+static func boss_phase_thresholds(id: int, role: String) -> Array:
+	var def := def_or_default(id)
+	var boss: Dictionary = def.field_guardian if role == "field" else def.tower_guardian
+	return boss.get("phase_thresholds", [])
+
+# Mini-chefe de campo do andar (vazio quando o andar não tem).
+static func mini_boss(id: int) -> Dictionary:
+	return (FLOORS[id].get("mini_boss", {}) as Dictionary).duplicate(true) if FLOORS.has(id) else {}
