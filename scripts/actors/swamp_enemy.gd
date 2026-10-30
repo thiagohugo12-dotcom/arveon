@@ -9,6 +9,8 @@ extends EnemyActor
 #                     A Cuspida Tóxica aprovada (6 quadros) segue o relógio do ataque: o
 #                     projétil real sai quando o relógio entra no quadro 4 (disparo).
 # 10 Vulto do Brejo · rápido: aproxima, golpeia, recua e circula antes do próximo golpe.
+#                     O golpe de garras aprovado (6 quadros) segue o relógio do ataque:
+#                     quadros 1–3 no preparo, o dano sai com o quadro 4 (contato).
 const SLIME_REACH := 36.0
 const SLIME_TRIGGER := 56.0
 const TOAD_KEEP := Vector2(130.0, 210.0)
@@ -22,6 +24,13 @@ const SPIT_LENGTH := 0.825
 # Centro da esfera do quadro de disparo em relação aos pés (sapo sem espelhar),
 # medido por tools/build_andar3_sapo_cuspe.gd.
 const SPIT_MOUTH := Vector2(-30, -32)
+# Golpe de garras do Vulto: início de cada quadro (s). O preparo de 0,3 s é o mesmo de
+# antes e cobre os quadros 1–3; o contato (quadro 4, índice 3) começa no instante do
+# golpe; os quadros 5 e 6 (recolher as garras) tocam durante o recuo.
+const WRAITH_WINDUP := 0.3
+const WRAITH_FRAME_STARTS := [0.0, 0.1, 0.2, 0.3, 0.42, 0.54]
+const WRAITH_CONTACT_FRAME := 3
+const WRAITH_STRIKE_LENGTH := 0.66
 
 var attack_cooldown := 0.6
 var slime_attacking := false
@@ -35,6 +44,9 @@ var spit_time := -1.0
 var spit_done := false
 var spit_flipped := false
 var strike_windup := 0.0
+# Relógio do golpe do Vulto (-1 = sem ataque); como o da Cuspida, só anda com a IA.
+var strike_time := -1.0
+var strike_flipped := false
 var retreat_left := 0.0
 var circle_left := 0.0
 var reposition_left := 2.0
@@ -53,16 +65,24 @@ func _custom_behavior(delta: float, offset: Vector2, distance: float) -> void:
 		10: _wraith(delta, offset, distance)
 
 static func spit_frame(time: float) -> int:
+	return frame_at(SPIT_FRAME_STARTS, time)
+
+static func strike_frame(time: float) -> int:
+	return frame_at(WRAITH_FRAME_STARTS, time)
+
+# Índice do quadro em andamento numa lista de inícios (s); antes do início, o quadro 1.
+static func frame_at(starts: Array, time: float) -> int:
 	if time < 0.0: return 0
 	var frame := 0
-	for index in range(SPIT_FRAME_STARTS.size()):
-		if time >= float(SPIT_FRAME_STARTS[index]): frame = index
+	for index in range(starts.size()):
+		if time >= float(starts[index]): frame = index
 	return frame
 
 func _return_home() -> void:
 	spit_time = -1.0
 	spit_done = false
 	strike_windup = 0.0
+	strike_time = -1.0
 	hop_left = 0.0
 	(view as Floor3MonsterView).set_telegraph("", Vector2.ZERO, 0.0)
 	super._return_home()
@@ -162,6 +182,10 @@ func _spit() -> void:
 # ── Vulto do Brejo ────────────────────────────────────────────────────────────
 func _wraith(delta: float, offset: Vector2, distance: float) -> void:
 	var direction := offset.normalized()
+	# Depois do contato o relógio só anima (garras recolhendo), inclusive durante o recuo.
+	if strike_time >= float(WRAITH_FRAME_STARTS[WRAITH_CONTACT_FRAME]):
+		strike_time += delta
+		if strike_time >= WRAITH_STRIKE_LENGTH: strike_time = -1.0
 	if retreat_left > 0.0:
 		retreat_left = maxf(0.0, retreat_left - delta)
 		velocity = -direction * stats.move_speed * 1.1
@@ -173,16 +197,22 @@ func _wraith(delta: float, offset: Vector2, distance: float) -> void:
 	if strike_windup > 0.0:
 		strike_windup = maxf(0.0, strike_windup - delta)
 		view.set_warning(true)
+		# Quadros 1–3 acompanham o preparo; o golpe sai junto com o quadro 4.
+		strike_time = WRAITH_WINDUP - strike_windup
 		if strike_windup == 0.0: _wraith_strike()
 		return
 	view.set_warning(false)
 	if distance <= WRAITH_TRIGGER and attack_cooldown == 0.0:
-		strike_windup = 0.3
+		strike_windup = WRAITH_WINDUP
+		strike_time = 0.0
+		# A arte golpeia para a direita; virado para a esquerda, espelha até o fim do golpe.
+		strike_flipped = view.facing.x < -0.2
 		return
 	if distance > 36.0:
 		velocity = direction * stats.move_speed
 
 func _wraith_strike() -> void:
+	strike_time = float(WRAITH_FRAME_STARTS[WRAITH_CONTACT_FRAME])
 	view.set_warning(false)
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive(): return
 	view.play_attack(target.global_position - global_position)

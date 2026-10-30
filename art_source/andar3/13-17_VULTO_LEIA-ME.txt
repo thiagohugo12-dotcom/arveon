@@ -1,0 +1,23 @@
+ARVÉON — VULTO DO BREJO — SPRITESHEETS ORIGINAIS
+
+Pacote com cinco artes aprovadas visualmente (23 poses no total).
+Os PNGs estão exatamente como o usuário enviou: sem alteração de pixels, escala, cor ou transparência.
+
+CONTEÚDO
+- vulto_idle.png — 4 quadros, loop
+- vulto_movimento.png — 4 quadros, loop
+- vulto_ataque.png — 6 quadros, golpe de garras. O contato visual está no 4º quadro (índice 3).
+- vulto_dano.png — 3 quadros, não loop
+- vulto_morte.png — 6 quadros, não loop, termina em restos de raízes
+
+NOTA CRÍTICA PARA A INTEGRAÇÃO
+- Todos os arquivos são RGBA 2048 x 682, com áreas transparentes.
+- Não recortar simplesmente a largura por 3 ou 6: a largura 2048 não é múltipla desses números.
+- Algumas silhuetas encostam/cruzam as separações teóricas das células.
+- Antes de usar SpriteFrames, inspecione e extraia cada quadro com os contornos e margens reais.
+- Quando possível, reorganize os quadros em novos atlas com células de dimensões inteiras e padding transparente, preservando TODOS os pixels da arte.
+- Onde figuras efetivamente se sobrepuserem no PNG original, não invente/restaure pixels por conta própria: apresente a limitação e solicite aprovação.
+- Alinhe as bases no solo (foot anchor), mantendo a mesma escala visual em todas as animações.
+- Use filtragem nearest na Godot 4.5.1. A publicação deve ser autorizada separadamente.
+
+A ordem dos arquivos no ZIP NÃO É a ordem em que as imagens foram enviadas: o nome identifica cada animação.

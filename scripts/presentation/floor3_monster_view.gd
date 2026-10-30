@@ -5,9 +5,10 @@ extends ActorView
 # duas folhas aprovadas (respiração 4 quadros e ataque 6 quadros) num AnimatedSprite2D;
 # o Sapo Venenoso usa a Cuspida Tóxica aprovada (6 quadros), com o quadro escolhido pelo
 # relógio do ataque no ator (SwampEnemy.spit_time), e a reação ao dano aprovada (3
-# quadros) sempre que é ferido e continua vivo; Vulto e Jacaré usam a arte estática
-# aprovada. A jogabilidade fica no ator: esta vista só avisa o quadro de impacto do
-# ataque do Limo e o fim da animação.
+# quadros) sempre que é ferido e continua vivo; o Vulto do Brejo usa as cinco folhas
+# aprovadas (repouso, movimento, golpe de garras pelo relógio SwampEnemy.strike_time,
+# dano e morte); o Jacaré usa a arte estática aprovada. A jogabilidade fica no ator: esta
+# vista só avisa o quadro de impacto do ataque do Limo e o fim da animação.
 signal impact
 signal attack_finished
 
@@ -34,8 +35,25 @@ const TOAD_MOVE_CELL := Vector2i(95, 79)
 const TOAD_MOVE_ANCHOR := Vector2i(49, 73)
 const TOAD_MOVE_FRAMES := 4
 const TOAD_MOVE_STEP := 0.12
+# Vulto do Brejo: as cinco folhas de tools/build_andar3_vulto.gd, na mesma escala visual e
+# com os pés na âncora. [folha, célula, âncora, quadros]. A arte olha para a direita.
+const WRAITH := {
+	"idle": [preload("res://assets/art/andar3/monsters/vulto_idle.png"), Vector2i(78, 86), Vector2i(37, 81), 4],
+	"movimento": [preload("res://assets/art/andar3/monsters/vulto_movimento.png"), Vector2i(74, 86), Vector2i(35, 80), 4],
+	"ataque": [preload("res://assets/art/andar3/monsters/vulto_ataque.png"), Vector2i(93, 94), Vector2i(33, 88), 6],
+	"dano": [preload("res://assets/art/andar3/monsters/vulto_dano.png"), Vector2i(89, 86), Vector2i(43, 82), 3],
+	"morte": [preload("res://assets/art/andar3/monsters/vulto_morte.png"), Vector2i(76, 88), Vector2i(36, 82), 6]}
+const WRAITH_WIDTH := 72.0
+# Repouso e movimento em loop (s por quadro); dano como o do Sapo (neutra, impacto,
+# recuperação); morte em 6 quadros de 0,1 s, e os restos de raízes somem entre 0,7 s e
+# 1 s, quando o ator sai de cena.
+const WRAITH_IDLE_STEP := 0.2
+const WRAITH_MOVE_STEP := 0.1
+const WRAITH_HURT_STARTS := [0.0, 0.04, 0.18]
+const WRAITH_HURT_LENGTH := 0.32
+const WRAITH_DEATH_STEP := 0.1
+const WRAITH_DEATH_FADE := Vector2(0.7, 1.0)
 const ART := {
-	10: preload("res://assets/art/andar3/monsters/vulto_do_brejo.png"),
 	11: preload("res://assets/art/andar3/monsters/jacare_anciao.png")}
 # Células e âncoras (base do corpo) geradas por tools/build_andar3_assets.gd.
 const IDLE_CELL := Vector2i(55, 41)
@@ -58,6 +76,11 @@ var toad_hurt_time := -1.0
 # Tempo do loop de movimento do Sapo (volta a zero quando ele para) e duração do salto atual.
 var toad_move_time := 0.0
 var toad_hop_total := 0.0
+# Vulto: relógio do loop (volta a zero ao começar ou parar de andar), dano e morte (-1 = sem).
+var wraith_loop_time := 0.0
+var wraith_was_walking := false
+var wraith_hurt_time := -1.0
+var wraith_death_time := -1.0
 
 func _ready() -> void:
 	super._ready()
@@ -135,14 +158,54 @@ func play_defeat() -> void:
 	dying_left = 0.7
 	if slime != null: slime.pause()
 	toad_hurt_time = -1.0
+	wraith_hurt_time = -1.0
+	if kind == 10: wraith_death_time = 0.0
 
-# O Sapo reage a cada dano enquanto vivo; um novo golpe durante a reação volta ao impacto.
-# O golpe fatal chega aqui depois de play_defeat e não inicia a reação.
+# Sapo e Vulto reagem a cada dano enquanto vivos; um novo golpe durante a reação volta ao
+# impacto. O golpe fatal chega aqui depois de play_defeat e não inicia a reação. O preparo
+# e o contato das garras do Vulto não são interrompidos (o clarão já marca o acerto).
 func show_damage(amount: int, critical: bool = false) -> void:
 	super.show_damage(amount, critical)
 	var actor := get_parent() as EnemyActor
-	if kind != 9 or amount <= 0 or dying_left > 0.0 or actor == null or not actor.health.is_alive(): return
-	toad_hurt_time = 0.0 if toad_hurt_time < 0.0 else float(TOAD_HURT_STARTS[1])
+	if amount <= 0 or dying_left > 0.0 or actor == null or not actor.health.is_alive(): return
+	if kind == 9:
+		toad_hurt_time = 0.0 if toad_hurt_time < 0.0 else float(TOAD_HURT_STARTS[1])
+	elif kind == 10:
+		var strike := float(actor.get("strike_time")) if actor is SwampEnemy else -1.0
+		if strike >= 0.0 and SwampEnemy.strike_frame(strike) <= SwampEnemy.WRAITH_CONTACT_FRAME: return
+		wraith_hurt_time = 0.0 if wraith_hurt_time < 0.0 else float(WRAITH_HURT_STARTS[1])
+
+func wraith_hurt_frame() -> int:
+	return SwampEnemy.frame_at(WRAITH_HURT_STARTS, wraith_hurt_time) if wraith_hurt_time >= 0.0 else -1
+
+# Animação do Vulto agora: [folha, quadro]. Prioridade: morte > golpe (preparo e contato) >
+# dano > golpe (recolher as garras) > movimento > repouso.
+func wraith_animation() -> Array:
+	if wraith_death_time >= 0.0:
+		return ["morte", mini(int(WRAITH.morte[3]) - 1, int(wraith_death_time / WRAITH_DEATH_STEP))]
+	var actor := get_parent() as SwampEnemy
+	var strike := actor.strike_time if actor != null else -1.0
+	var hurt := wraith_hurt_frame()
+	if strike >= 0.0:
+		var frame := SwampEnemy.strike_frame(strike)
+		if hurt < 0 or frame <= SwampEnemy.WRAITH_CONTACT_FRAME: return ["ataque", frame]
+	if hurt >= 0: return ["dano", hurt]
+	if walking: return ["movimento", int(wraith_loop_time / WRAITH_MOVE_STEP) % int(WRAITH.movimento[3])]
+	return ["idle", int(wraith_loop_time / WRAITH_IDLE_STEP) % int(WRAITH.idle[3])]
+
+func _wraith_flipped() -> bool:
+	var actor := get_parent() as SwampEnemy
+	if actor != null and actor.strike_time >= 0.0 and wraith_death_time < 0.0: return actor.strike_flipped
+	return facing.x < -0.2
+
+func _draw_wraith(tint: Color) -> void:
+	var current := wraith_animation()
+	var sheet: Array = WRAITH[current[0]]
+	var cell: Vector2i = sheet[1]
+	var anchor: Vector2i = sheet[2]
+	if _wraith_flipped(): draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
+	draw_texture_rect_region(sheet[0], Rect2(-Vector2(anchor), Vector2(cell)), Rect2(int(current[1]) * cell.x, 0, cell.x, cell.y), tint)
+	draw_set_transform(Vector2.ZERO)
 
 func toad_hurt_frame() -> int:
 	if toad_hurt_time < 0.0: return -1
@@ -156,7 +219,11 @@ func _process(delta: float) -> void:
 	if telegraph_left > 0.0:
 		telegraph_left -= delta
 		if telegraph_left <= 0.0: telegraph = ""
-	if dying_left > 0.0:
+	if wraith_death_time >= 0.0:
+		wraith_death_time += delta
+		dying_left = maxf(0.0, dying_left - delta)
+		modulate.a = 1.0 - clampf((wraith_death_time - WRAITH_DEATH_FADE.x) / (WRAITH_DEATH_FADE.y - WRAITH_DEATH_FADE.x), 0.0, 1.0)
+	elif dying_left > 0.0:
 		dying_left = maxf(0.0, dying_left - delta)
 		modulate.a = dying_left / 0.7
 	if slime != null:
@@ -166,11 +233,20 @@ func _process(delta: float) -> void:
 		if toad_hurt_time >= TOAD_HURT_LENGTH: toad_hurt_time = -1.0
 	if kind == 9:
 		toad_move_time = toad_move_time + delta if walking else 0.0
+	if kind == 10:
+		if wraith_hurt_time >= 0.0:
+			wraith_hurt_time += delta
+			if wraith_hurt_time >= WRAITH_HURT_LENGTH: wraith_hurt_time = -1.0
+		if walking != wraith_was_walking:
+			wraith_was_walking = walking
+			wraith_loop_time = 0.0
+		wraith_loop_time += delta
 	queue_redraw()
 
 func _height() -> float:
 	if kind == 8: return 39.0
 	if kind == 9: return float(TOAD_ANCHOR.y - 1)
+	if kind == 10: return float((WRAITH.idle[2] as Vector2i).y - 1)
 	var texture: Texture2D = ART.get(kind)
 	return float(texture.get_height()) if texture != null else 60.0
 
@@ -213,7 +289,7 @@ func _draw_toad(tint: Color) -> void:
 
 func _draw() -> void:
 	var height := _height()
-	var width := 52.0 if kind == 8 else (TOAD_WIDTH if kind == 9 else float((ART[kind] as Texture2D).get_width()))
+	var width := 52.0 if kind == 8 else (TOAD_WIDTH if kind == 9 else (WRAITH_WIDTH if kind == 10 else float((ART[kind] as Texture2D).get_width())))
 	_draw_telegraph()
 	# Sombra no chão sob o corpo.
 	draw_set_transform(Vector2(0, -2), 0.0, Vector2(1.0, 0.32))
@@ -222,6 +298,8 @@ func _draw() -> void:
 	var tint := Color(1.8, 1.8, 1.4) if flash_left > 0.0 else (Color(1.25, 0.9, 0.82) if fury else Color.WHITE)
 	if kind == 9:
 		_draw_toad(tint)
+	elif kind == 10:
+		_draw_wraith(tint)
 	elif kind != 8:
 		var texture: Texture2D = ART[kind]
 		var flip := facing.x < -0.2

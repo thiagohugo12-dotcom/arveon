@@ -1,0 +1,69 @@
+{
+  "project": "ARVÉON: Ascensão Ancestral",
+  "enemy": "Vulto do Brejo",
+  "floor": 3,
+  "source": "PNG originais enviados pelo usuário; bytes preservados sem modificações",
+  "art_review": "Aprovado visualmente; recorte técnico pendente no Godot",
+  "spritesheets": [
+    {
+      "file": "vulto_idle.png",
+      "frames": 4,
+      "layout": "horizontal",
+      "image_size": [
+        2048,
+        682
+      ],
+      "alpha": true,
+      "description": "Idle / repouso",
+      "sha256": "4b20fd1594d2367f4de9db7bb14d8c783f7ec74a8b3410d1872961d405540ddb"
+    },
+    {
+      "file": "vulto_movimento.png",
+      "frames": 4,
+      "layout": "horizontal",
+      "image_size": [
+        2048,
+        682
+      ],
+      "alpha": true,
+      "description": "Deslocamento por raízes",
+      "sha256": "7494e8364d46178e2e0a943290514e1ad9f9d966090b2fbf2841e8476c3abd35"
+    },
+    {
+      "file": "vulto_ataque.png",
+      "frames": 6,
+      "layout": "horizontal",
+      "image_size": [
+        2048,
+        682
+      ],
+      "alpha": true,
+      "description": "Golpe frontal de garras; contato visual no quadro 4 (indice 3)",
+      "sha256": "04e2a88579ce58e9181da10dcf5cf41016fca8a7d172202e1a5fb5f7f7bffd09"
+    },
+    {
+      "file": "vulto_dano.png",
+      "frames": 3,
+      "layout": "horizontal",
+      "image_size": [
+        2048,
+        682
+      ],
+      "alpha": true,
+      "description": "Reação ao dano",
+      "sha256": "8bee3f28b9d90b4795838ad6fe469403b018e53c15d7db7eb19ba1a57381d103"
+    },
+    {
+      "file": "vulto_morte.png",
+      "frames": 6,
+      "layout": "horizontal",
+      "image_size": [
+        2048,
+        682
+      ],
+      "alpha": true,
+      "description": "Colapso em madeira e raízes; não repetir",
+      "sha256": "bb2d530304eedfb61ace9ce241b3e24d822c0a4fca6565fd69d252bb0cd759b4"
+    }
+  ]
+}
