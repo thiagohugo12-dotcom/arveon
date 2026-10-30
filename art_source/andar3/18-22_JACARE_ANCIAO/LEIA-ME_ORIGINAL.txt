@@ -1,0 +1,29 @@
+ARVÉON — ANDAR 3: PÂNTANO DAS VOZES
+JACARÉ ANCIÃO — MINIBOSS — PACOTE DE ARTES APROVADAS
+
+Conteúdo (arquivos originais sem modificar os pixels):
+- jacare_idle.png       : 4 quadros, laço
+- jacare_movimento.png  : 4 quadros, laço
+- jacare_ataque.png     : 6 quadros, mordida, uma execução
+- jacare_dano.png       : 3 quadros, reação sem laço
+- jacare_morte.png      : 6 quadros, morte sem laço
+
+Imagens têm dimensão de 2048 x 682 px e transparência RGBA.
+IMPORTANTE: imagens geradas pelo GPT Imagem nem sempre apresentam células regulares;
+2048 px não é divisível exatamente por 3 ou 6. Algumas figuras encostam às
+bordas e/ou ocupam mais espaço que outras poses. NÃO usar recorte por grade
+matemática cegamente; conferir os limites de cada pose visualmente, normalizar
+os quadros em células próprias transparentes sem distorcer, redesenhar ou
+perder pixels e manter os pés/referência de solo alinhados. Se alguma pose
+estiver realmente cortada na borda do PNG, sinalizar e pedir nova arte;
+não inventar partes ausentes. Usar filtro nearest.
+
+Para o golpe da mordida: quadro 4 (índice 3) é a referência inicial para o
+momento do contato; confirmar no jogo o fechamento da mandíbula e ajustar
+a sincronização visual sem mudar dano, alcance, recarga ou IA.
+
+Incluir só no projeto local, sem push, deploy ou merge, e sem tocar na main ou
+produção. Preservar Andares 1 e 2, saves e trabalhos paralelos do Claude/Codex.
+
+O arquivo manifest.json registra quantidades, dimensões, nome original e
+SHA-256 de cada PNG para conferência de integridade.

@@ -1,0 +1,74 @@
+{
+  "projeto": "ARVÉON: Ascensão Ancestral",
+  "monstro": "Jacaré Ancião",
+  "andar": 3,
+  "tipo": "miniboss",
+  "spritesheets": [
+    {
+      "arquivo": "jacare_idle.png",
+      "nome_original": "84818.png",
+      "animacao": "Idle (respiracao e vigilancia)",
+      "quadros": 4,
+      "ordem": "esquerda_para_direita",
+      "resolucao_px": [
+        2048,
+        682
+      ],
+      "modo": "RGBA",
+      "sha256": "0e79e57478939268345b99f5ac7624f15083a3e9ea88f84f8c495200e12de422"
+    },
+    {
+      "arquivo": "jacare_movimento.png",
+      "nome_original": "84824.png",
+      "animacao": "Movimento (passos pesados)",
+      "quadros": 4,
+      "ordem": "esquerda_para_direita",
+      "resolucao_px": [
+        2048,
+        682
+      ],
+      "modo": "RGBA",
+      "sha256": "08acc1d98bdd216733116e7cdfba3885f6dae0357515d71866531307e2568cc2"
+    },
+    {
+      "arquivo": "jacare_ataque.png",
+      "nome_original": "84817.png",
+      "animacao": "Ataque (mordida poderosa)",
+      "quadros": 6,
+      "ordem": "esquerda_para_direita",
+      "resolucao_px": [
+        2048,
+        682
+      ],
+      "modo": "RGBA",
+      "sha256": "94ad5e01aee876498197abe320e38cd437dbb943a4fa5dd59c812da0dbd1b845"
+    },
+    {
+      "arquivo": "jacare_dano.png",
+      "nome_original": "84816.png",
+      "animacao": "Reacao ao dano",
+      "quadros": 3,
+      "ordem": "esquerda_para_direita",
+      "resolucao_px": [
+        2048,
+        682
+      ],
+      "modo": "RGBA",
+      "sha256": "e50bb823cc848305e90669775f363fa2e0c67ced90035996abc90073fc59268e"
+    },
+    {
+      "arquivo": "jacare_morte.png",
+      "nome_original": "84815.png",
+      "animacao": "Morte (colapso progressivo)",
+      "quadros": 6,
+      "ordem": "esquerda_para_direita",
+      "resolucao_px": [
+        2048,
+        682
+      ],
+      "modo": "RGBA",
+      "sha256": "627f8cabe59a414086501e31f43da5eb1e4acd4102b60e768978f291d4f9cefd"
+    }
+  ],
+  "nota": "PNGs preservados byte a byte, sem edicao; conferir recortes e margens por quadro no Godot."
+}

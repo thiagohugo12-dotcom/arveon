@@ -1,0 +1,18 @@
+ARVÉON — ANDAR 3: PÂNTANO DAS VOZES
+JACARÉ ANCIÃO (MINICHEFE) — CONJUNTO COMPLETO
+
+Status: CONJUNTO COMPLETO, aprovado em 30/10/2026 (idle, movimento, ataque, dano, morte).
+Não criar animações extras. Não redesenhar, reexportar nem alterar estas folhas.
+
+Arquivos (PNG 2048 x 682 RGBA, copiados byte a byte do pacote aprovado; só o nome mudou):
+- 18_JACARE_IDLE_4_QUADROS.png      (jacare_idle.png)      4 quadros, laço
+- 19_JACARE_MOVIMENTO_4_QUADROS.png (jacare_movimento.png) 4 quadros, laço
+- 20_JACARE_ATAQUE_6_QUADROS.png    (jacare_ataque.png)    6 quadros, mordida; contato de referência no quadro 4
+- 21_JACARE_DANO_3_QUADROS.png      (jacare_dano.png)      3 quadros, sem laço
+- 22_JACARE_MORTE_6_QUADROS.png     (jacare_morte.png)     6 quadros, sem laço
+
+MANIFESTO.json: nomes novos e originais, quadros e SHA-256 conferidos.
+LEIA-ME_ORIGINAL.txt e MANIFESTO_ORIGINAL.json: textos do pacote enviado, sem alteração
+(as regras de recorte e sincronização da mordida estão no LEIA-ME_ORIGINAL.txt).
+
+Integração no jogo: ainda pendente. O jogo continua usando o sprite estático do Jacaré.

@@ -1,0 +1,20 @@
+{
+  "projeto": "ARVÉON: Ascensão Ancestral",
+  "andar": 3,
+  "monstro": "Jacaré Ancião",
+  "tipo": "miniboss",
+  "status": "conjunto_completo",
+  "aprovado_em": "2026-10-30",
+  "animacoes_aprovadas": ["idle", "movimento", "ataque", "dano", "morte"],
+  "integracao_no_jogo": "pendente (o jogo ainda usa o sprite estático assets/art/andar3/monsters/jacare_anciao.png)",
+  "origem": "arveon_jacare_anciao_animacoes_1.zip; PNGs copiados byte a byte, só o nome do arquivo mudou",
+  "spritesheets": [
+    {"arquivo": "18_JACARE_IDLE_4_QUADROS.png", "arquivo_no_zip": "jacare_idle.png", "nome_original": "84818.png", "animacao": "idle", "quadros": 4, "laco": true, "resolucao_px": [2048, 682], "sha256": "0e79e57478939268345b99f5ac7624f15083a3e9ea88f84f8c495200e12de422"},
+    {"arquivo": "19_JACARE_MOVIMENTO_4_QUADROS.png", "arquivo_no_zip": "jacare_movimento.png", "nome_original": "84824.png", "animacao": "movimento", "quadros": 4, "laco": true, "resolucao_px": [2048, 682], "sha256": "08acc1d98bdd216733116e7cdfba3885f6dae0357515d71866531307e2568cc2"},
+    {"arquivo": "20_JACARE_ATAQUE_6_QUADROS.png", "arquivo_no_zip": "jacare_ataque.png", "nome_original": "84817.png", "animacao": "ataque (mordida)", "quadros": 6, "laco": false, "quadro_contato_referencia": 4, "resolucao_px": [2048, 682], "sha256": "94ad5e01aee876498197abe320e38cd437dbb943a4fa5dd59c812da0dbd1b845"},
+    {"arquivo": "21_JACARE_DANO_3_QUADROS.png", "arquivo_no_zip": "jacare_dano.png", "nome_original": "84816.png", "animacao": "dano", "quadros": 3, "laco": false, "resolucao_px": [2048, 682], "sha256": "e50bb823cc848305e90669775f363fa2e0c67ced90035996abc90073fc59268e"},
+    {"arquivo": "22_JACARE_MORTE_6_QUADROS.png", "arquivo_no_zip": "jacare_morte.png", "nome_original": "84815.png", "animacao": "morte", "quadros": 6, "laco": false, "resolucao_px": [2048, 682], "sha256": "627f8cabe59a414086501e31f43da5eb1e4acd4102b60e768978f291d4f9cefd"}
+  ],
+  "observacao_para_integracao": "Linhas com pixel opaco (alfa >= 31) na primeira ou na última coluna do PNG: idle 12 à esquerda e 43 à direita, ataque 8 e 10, dano 20 à esquerda. Movimento e morte não encostam. Na inspeção visual, são pontas de garras da pose 1 e, no idle, a cauda da pose 4. Conferir no recorte se alguma ponta ficou cortada; não inventar pixels.",
+  "arquivos_de_texto_originais": ["LEIA-ME_ORIGINAL.txt", "MANIFESTO_ORIGINAL.json"]
+}
