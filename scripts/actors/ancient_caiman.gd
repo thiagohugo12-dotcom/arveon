@@ -5,6 +5,8 @@ extends EnemyActor
 #  mordida frontal (cone), investida em linha reta (faixa) e golpe de cauda (círculo).
 # Com pouca vida (40%) fica mais agressivo: avisos 30% mais curtos e mais rápido.
 # Não sai da própria arena; quando o jogador foge, volta para casa e recupera a postura.
+# A mordida aprovada (6 quadros) segue o relógio da mordida: quadros 1–3 durante o aviso,
+# a mandíbula fecha no quadro 4 junto com a janela de acerto, 5 e 6 na recuperação.
 enum Act { BITE, CHARGE, TAIL }
 const BITE_RANGE := 98.0
 const CHARGE_RANGE := 240.0
@@ -13,6 +15,12 @@ const TAIL_RADIUS := 118.0
 const WINDUPS := [0.65, 0.85, 0.75]
 const ACTIVES := [0.12, 0.55, 0.16]
 const DAMAGE := [1.0, 1.25, 0.9]
+# Início de cada quadro da mordida (s). No aviso o relógio anda proporcional ao preparo (que
+# encurta na fúria) e chega ao quadro 4 no instante em que a janela de acerto abre; depois
+# anda em tempo real (o quadro 4 dura a janela de 0,12 s).
+const BITE_FRAME_STARTS := [0.0, 0.1, 0.2, 0.3, 0.42, 0.54]
+const BITE_CONTACT_FRAME := 3
+const BITE_LENGTH := 0.66
 
 var arena := Rect2()
 var act := Act.BITE
@@ -22,6 +30,9 @@ var recover := 1.2
 var aim := Vector2.RIGHT
 var hit_done := false
 var cycle := 0
+# Relógio da mordida (-1 = sem mordida) e duração do aviso atual; só anda com a IA.
+var bite_time := -1.0
+var windup_total := 0.0
 
 func display_name() -> String:
 	return "Jacaré Ancião"
@@ -40,6 +51,10 @@ func _physics_process(delta: float) -> void:
 		_cancel()
 		_return_home()
 		return
+	# Depois do contato o relógio só anima (mandíbula voltando), inclusive na recuperação.
+	if bite_time >= float(BITE_FRAME_STARTS[BITE_CONTACT_FRAME]):
+		bite_time += delta
+		if bite_time >= BITE_LENGTH: bite_time = -1.0
 	var offset := target.global_position - global_position
 	var fury := 0.7 if enraged() else 1.0
 	view.set_fury(enraged())
@@ -52,6 +67,7 @@ func _physics_process(delta: float) -> void:
 			view.set_warning(false)
 	elif windup > 0.0:
 		windup = maxf(0.0, windup - delta)
+		if act == Act.BITE: bite_time = float(BITE_FRAME_STARTS[BITE_CONTACT_FRAME]) * (1.0 - windup / windup_total)
 		if windup == 0.0:
 			active = ACTIVES[act]
 			hit_done = false
@@ -84,6 +100,8 @@ func _choose(offset: Vector2, fury: float) -> void:
 	aim = offset.normalized()
 	view.set_facing(aim)
 	windup = float(WINDUPS[act]) * fury
+	windup_total = windup
+	bite_time = 0.0 if act == Act.BITE else -1.0
 	view.set_warning(true)
 	var shape: String = ["mordida", "investida", "cauda"][act]
 	var reach: float = [BITE_RANGE, CHARGE_RANGE, TAIL_RADIUS][act]
@@ -106,6 +124,7 @@ func _hit() -> void:
 
 func _cancel() -> void:
 	windup = 0.0
+	bite_time = -1.0
 	active = 0.0
 	recover = 1.2
 	view.set_warning(false)

@@ -7,8 +7,10 @@ extends ActorView
 # relógio do ataque no ator (SwampEnemy.spit_time), e a reação ao dano aprovada (3
 # quadros) sempre que é ferido e continua vivo; o Vulto do Brejo usa as cinco folhas
 # aprovadas (repouso, movimento, golpe de garras pelo relógio SwampEnemy.strike_time,
-# dano e morte); o Jacaré usa a arte estática aprovada. A jogabilidade fica no ator: esta
-# vista só avisa o quadro de impacto do ataque do Limo e o fim da animação.
+# dano e morte); o Jacaré Ancião também usa as cinco folhas aprovadas (mordida pelo relógio
+# AncientCaiman.bite_time; a investida usa o movimento acelerado e a cauda não tem folha
+# própria, então o aviso aparece sobre o repouso). A jogabilidade fica no ator: esta vista
+# só avisa o quadro de impacto do ataque do Limo e o fim da animação.
 signal impact
 signal attack_finished
 
@@ -53,8 +55,25 @@ const WRAITH_HURT_STARTS := [0.0, 0.04, 0.18]
 const WRAITH_HURT_LENGTH := 0.32
 const WRAITH_DEATH_STEP := 0.1
 const WRAITH_DEATH_FADE := Vector2(0.7, 1.0)
-const ART := {
-	11: preload("res://assets/art/andar3/monsters/jacare_anciao.png")}
+# Jacaré Ancião: as cinco folhas de tools/build_andar3_jacare.gd, com a mesma área visível
+# do Jacaré estático anterior e os pés na âncora. [folha, célula, âncora, quadros]. A arte
+# olha para a esquerda.
+const CAIMAN := {
+	"idle": [preload("res://assets/art/andar3/monsters/jacare_idle.png"), Vector2i(201, 177), Vector2i(89, 160), 4],
+	"movimento": [preload("res://assets/art/andar3/monsters/jacare_movimento.png"), Vector2i(198, 180), Vector2i(86, 164), 4],
+	"ataque": [preload("res://assets/art/andar3/monsters/jacare_ataque.png"), Vector2i(177, 198), Vector2i(84, 185), 6],
+	"dano": [preload("res://assets/art/andar3/monsters/jacare_dano.png"), Vector2i(225, 156), Vector2i(99, 137), 3],
+	"morte": [preload("res://assets/art/andar3/monsters/jacare_morte.png"), Vector2i(205, 186), Vector2i(95, 171), 6]}
+const CAIMAN_WIDTH := 198.0
+# Repouso e passos pesados em loop (s por quadro); na investida os mesmos passos, mais
+# rápidos. Dano e morte com os tempos do Vulto (a morte some entre 0,7 s e 1 s).
+const CAIMAN_IDLE_STEP := 0.2
+const CAIMAN_MOVE_STEP := 0.15
+const CAIMAN_CHARGE_STEP := 0.07
+const CAIMAN_HURT_STARTS := [0.0, 0.04, 0.18]
+const CAIMAN_HURT_LENGTH := 0.32
+const CAIMAN_DEATH_STEP := 0.1
+const CAIMAN_DEATH_FADE := Vector2(0.7, 1.0)
 # Células e âncoras (base do corpo) geradas por tools/build_andar3_assets.gd.
 const IDLE_CELL := Vector2i(55, 41)
 const IDLE_ANCHOR := Vector2i(28, 37)
@@ -81,6 +100,13 @@ var wraith_loop_time := 0.0
 var wraith_was_walking := false
 var wraith_hurt_time := -1.0
 var wraith_death_time := -1.0
+# Jacaré: os mesmos relógios do Vulto e o lado (só muda com um passo claro para um dos
+# lados, e fica fixo da mandíbula fechando até o fim da mordida).
+var caiman_loop_time := 0.0
+var caiman_was_walking := false
+var caiman_hurt_time := -1.0
+var caiman_death_time := -1.0
+var caiman_flipped := false
 
 func _ready() -> void:
 	super._ready()
@@ -160,10 +186,13 @@ func play_defeat() -> void:
 	toad_hurt_time = -1.0
 	wraith_hurt_time = -1.0
 	if kind == 10: wraith_death_time = 0.0
+	caiman_hurt_time = -1.0
+	if kind == 11: caiman_death_time = 0.0
 
-# Sapo e Vulto reagem a cada dano enquanto vivos; um novo golpe durante a reação volta ao
-# impacto. O golpe fatal chega aqui depois de play_defeat e não inicia a reação. O preparo
-# e o contato das garras do Vulto não são interrompidos (o clarão já marca o acerto).
+# Sapo, Vulto e Jacaré reagem a cada dano enquanto vivos; um novo golpe durante a reação
+# volta ao impacto. O golpe fatal chega aqui depois de play_defeat e não inicia a reação. O
+# preparo e o contato das garras do Vulto e da mordida do Jacaré, e a investida, não são
+# interrompidos (o clarão já marca o acerto).
 func show_damage(amount: int, critical: bool = false) -> void:
 	super.show_damage(amount, critical)
 	var actor := get_parent() as EnemyActor
@@ -174,6 +203,10 @@ func show_damage(amount: int, critical: bool = false) -> void:
 		var strike := float(actor.get("strike_time")) if actor is SwampEnemy else -1.0
 		if strike >= 0.0 and SwampEnemy.strike_frame(strike) <= SwampEnemy.WRAITH_CONTACT_FRAME: return
 		wraith_hurt_time = 0.0 if wraith_hurt_time < 0.0 else float(WRAITH_HURT_STARTS[1])
+	elif kind == 11:
+		var bite := caiman_bite_frame()
+		if (bite >= 0 and bite <= AncientCaiman.BITE_CONTACT_FRAME) or caiman_charging(): return
+		caiman_hurt_time = 0.0 if caiman_hurt_time < 0.0 else float(CAIMAN_HURT_STARTS[1])
 
 func wraith_hurt_frame() -> int:
 	return SwampEnemy.frame_at(WRAITH_HURT_STARTS, wraith_hurt_time) if wraith_hurt_time >= 0.0 else -1
@@ -207,6 +240,40 @@ func _draw_wraith(tint: Color) -> void:
 	draw_texture_rect_region(sheet[0], Rect2(-Vector2(anchor), Vector2(cell)), Rect2(int(current[1]) * cell.x, 0, cell.x, cell.y), tint)
 	draw_set_transform(Vector2.ZERO)
 
+func caiman_hurt_frame() -> int:
+	return SwampEnemy.frame_at(CAIMAN_HURT_STARTS, caiman_hurt_time) if caiman_hurt_time >= 0.0 else -1
+
+func caiman_bite_frame() -> int:
+	var actor := get_parent() as AncientCaiman
+	if actor == null or actor.bite_time < 0.0: return -1
+	return SwampEnemy.frame_at(AncientCaiman.BITE_FRAME_STARTS, actor.bite_time)
+
+func caiman_charging() -> bool:
+	var actor := get_parent() as AncientCaiman
+	return actor != null and actor.active > 0.0 and actor.act == AncientCaiman.Act.CHARGE
+
+# Animação do Jacaré agora: [folha, quadro]. Prioridade: morte > mordida (aviso e contato) >
+# investida > dano > mordida (mandíbula voltando) > passos > repouso.
+func caiman_animation() -> Array:
+	if caiman_death_time >= 0.0:
+		return ["morte", mini(int(CAIMAN.morte[3]) - 1, int(caiman_death_time / CAIMAN_DEATH_STEP))]
+	var bite := caiman_bite_frame()
+	var hurt := caiman_hurt_frame()
+	if bite >= 0 and (hurt < 0 or bite <= AncientCaiman.BITE_CONTACT_FRAME): return ["ataque", bite]
+	if caiman_charging(): return ["movimento", int(caiman_loop_time / CAIMAN_CHARGE_STEP) % int(CAIMAN.movimento[3])]
+	if hurt >= 0: return ["dano", hurt]
+	if walking: return ["movimento", int(caiman_loop_time / CAIMAN_MOVE_STEP) % int(CAIMAN.movimento[3])]
+	return ["idle", int(caiman_loop_time / CAIMAN_IDLE_STEP) % int(CAIMAN.idle[3])]
+
+func _draw_caiman(tint: Color) -> void:
+	var current := caiman_animation()
+	var sheet: Array = CAIMAN[current[0]]
+	var cell: Vector2i = sheet[1]
+	var anchor: Vector2i = sheet[2]
+	if caiman_flipped: draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
+	draw_texture_rect_region(sheet[0], Rect2(-Vector2(anchor), Vector2(cell)), Rect2(int(current[1]) * cell.x, 0, cell.x, cell.y), tint)
+	draw_set_transform(Vector2.ZERO)
+
 func toad_hurt_frame() -> int:
 	if toad_hurt_time < 0.0: return -1
 	var frame := 0
@@ -223,6 +290,10 @@ func _process(delta: float) -> void:
 		wraith_death_time += delta
 		dying_left = maxf(0.0, dying_left - delta)
 		modulate.a = 1.0 - clampf((wraith_death_time - WRAITH_DEATH_FADE.x) / (WRAITH_DEATH_FADE.y - WRAITH_DEATH_FADE.x), 0.0, 1.0)
+	elif caiman_death_time >= 0.0:
+		caiman_death_time += delta
+		dying_left = maxf(0.0, dying_left - delta)
+		modulate.a = 1.0 - clampf((caiman_death_time - CAIMAN_DEATH_FADE.x) / (CAIMAN_DEATH_FADE.y - CAIMAN_DEATH_FADE.x), 0.0, 1.0)
 	elif dying_left > 0.0:
 		dying_left = maxf(0.0, dying_left - delta)
 		modulate.a = dying_left / 0.7
@@ -241,14 +312,24 @@ func _process(delta: float) -> void:
 			wraith_was_walking = walking
 			wraith_loop_time = 0.0
 		wraith_loop_time += delta
+	if kind == 11:
+		if caiman_hurt_time >= 0.0:
+			caiman_hurt_time += delta
+			if caiman_hurt_time >= CAIMAN_HURT_LENGTH: caiman_hurt_time = -1.0
+		if walking != caiman_was_walking:
+			caiman_was_walking = walking
+			caiman_loop_time = 0.0
+		caiman_loop_time += delta
+		if caiman_death_time < 0.0 and caiman_bite_frame() < AncientCaiman.BITE_CONTACT_FRAME and absf(facing.x) > 0.2:
+			caiman_flipped = facing.x > 0.0
 	queue_redraw()
 
 func _height() -> float:
 	if kind == 8: return 39.0
 	if kind == 9: return float(TOAD_ANCHOR.y - 1)
 	if kind == 10: return float((WRAITH.idle[2] as Vector2i).y - 1)
-	var texture: Texture2D = ART.get(kind)
-	return float(texture.get_height()) if texture != null else 60.0
+	if kind == 11: return float((CAIMAN.idle[2] as Vector2i).y - 1)
+	return 60.0
 
 # Quadro atual da Cuspida Tóxica (0 = parado) e lado: a arte cospe para a esquerda.
 func toad_frame() -> int:
@@ -289,7 +370,7 @@ func _draw_toad(tint: Color) -> void:
 
 func _draw() -> void:
 	var height := _height()
-	var width := 52.0 if kind == 8 else (TOAD_WIDTH if kind == 9 else (WRAITH_WIDTH if kind == 10 else float((ART[kind] as Texture2D).get_width())))
+	var width := 52.0 if kind == 8 else (TOAD_WIDTH if kind == 9 else (WRAITH_WIDTH if kind == 10 else CAIMAN_WIDTH))
 	_draw_telegraph()
 	# Sombra no chão sob o corpo.
 	draw_set_transform(Vector2(0, -2), 0.0, Vector2(1.0, 0.32))
@@ -300,12 +381,8 @@ func _draw() -> void:
 		_draw_toad(tint)
 	elif kind == 10:
 		_draw_wraith(tint)
-	elif kind != 8:
-		var texture: Texture2D = ART[kind]
-		var flip := facing.x < -0.2
-		if flip: draw_set_transform(Vector2.ZERO, 0.0, Vector2(-1, 1))
-		draw_texture(texture, Vector2(-floorf(texture.get_width() * 0.5), -texture.get_height() + 4), tint)
-		if flip: draw_set_transform(Vector2.ZERO)
+	elif kind == 11:
+		_draw_caiman(tint)
 	var top := -height - 6.0
 	if warning:
 		px(-11, top - 18, 22, 5, Color("#f4b942"))
