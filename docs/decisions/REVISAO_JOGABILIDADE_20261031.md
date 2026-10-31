@@ -222,7 +222,23 @@ gerados:
 - A dificuldade do Vale continua 1,5. Testes de referência atualizados:
   `floor_catalog_tests` (GOLDEN_SCALE) e `boss_phase_tests`.
 
-**Ainda aberto:** o Pântano rende só 0,164 XP por HP, abaixo da Mata e do Vale, porque o
-reforço ×1,8 de 29/10 subiu a vida sem subir a recompensa. Para ficar acima do Vale, a
-recompensa do Andar 3 precisaria de ~4,5 (hoje 2,6). Os materiais da Proposta A já compensam
-parte disso. Não alterado sem aprovação.
+**Pântano (aprovado por Thiago em 31/10/2026):** o reforço ×1,8 de 29/10 subiu a vida dos
+monstros sem subir a recompensa, e o Pântano rendia só 0,164 XP por HP. Aprovada a subida para
+"cerca de 4,5". Implementação: o Pântano ganhou `reward_power: 1.8`, o mesmo reforço já aplicado
+à vida e ao dano (`monster_power`), e a recompensa efetiva fica **2,6 × 1,8 = 4,68**. Mudar
+`SCALE["3"]` direto para 4,5 deixaria o Andar 3 acima do Andar 4 planejado (3,5) e quebraria a
+regra de escala sempre crescente (`boss_phase_tests`). Vida e dano dos monstros não mudaram.
+
+| Andar | XP por HP agora (medido no teste) |
+|---|---:|
+| 1 Mata | 0,268 |
+| 2 Vale | 0,277 |
+| 3 Pântano | 0,297 |
+
+- Ouro por abate no Pântano: 9–23 (antes 5–13). Jacaré: 562 XP (antes 312). Guardiã da Torre do
+  Pântano: 842 XP e 187 ouro (antes 468 e 104).
+- Missão comum no Pântano: 187/56 e 140/47.
+- `FloorCatalog.reward_multiplier(id)` = escala × reforço próprio; `FloorConfig.configuration`
+  passa a informar esse valor.
+- A escala planejada dos Andares 4–10 continua como estava e crescente. Quando esses andares
+  forem criados, decidir se recebem reforço próprio, como o Pântano.

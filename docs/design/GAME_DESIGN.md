@@ -3,7 +3,9 @@
 Thiago aprovou a Proposta B de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md`. O Andar 2
 passa de recompensa 1,1 para 2,0 (XP e ouro de criaturas e do Guardião da Torre); a
 dificuldade continua 1,5. A missão comum multiplica XP e ouro pela recompensa do andar atual
-(Mata igual a antes). Valores provisórios; saves sem mudança.
+(Mata igual a antes). No mesmo dia, Thiago aprovou subir a recompensa do Andar 3 de 2,6
+para 4,68 (escala 2,6 × reforço próprio 1,8, o mesmo da vida e do dano), sem mexer na
+vida e no dano do Pântano. Valores provisórios; saves sem mudança.
 
 ## Materiais do Pântano e Vendedor — aprovado em 31/10/2026
 

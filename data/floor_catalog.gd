@@ -47,7 +47,7 @@ const MONSTERS := {
 	"tatu_rochoso": {"kind": 6, "name": "Tatu Rochoso", "hp": 108, "speed": 54.0, "contact": 11, "xp": 16},
 	"escorpiao_da_chapada": {"kind": 7, "name": "Escorpião da Chapada", "hp": 72, "speed": 105.0, "contact": 13, "xp": 20},
 	# Andar 3 · balanceamento PROVISÓRIO (docs/decisions/ANDAR3_PANTANO_IMPLEMENTACAO_20261029.md).
-	# Valores base; o andar aplica dificuldade 2,1 (vida/dano) e recompensa 2,6 (XP/ouro).
+	# Valores base; o andar aplica dificuldade 2,1 (vida/dano) e recompensa 2,6 × reforço 1,8 = 4,68 (XP/ouro; só 2,6 até 31/10/2026).
 	"limo_do_brejo": {"kind": 8, "name": "Limo do Brejo", "hp": 125, "speed": 42.0, "contact": 13, "xp": 22},
 	"sapo_venenoso": {"kind": 9, "name": "Sapo Venenoso", "hp": 66, "speed": 74.0, "contact": 11, "xp": 20},
 	"vulto_do_brejo": {"kind": 10, "name": "Vulto do Brejo", "hp": 78, "speed": 128.0, "contact": 14, "xp": 24},
@@ -145,6 +145,8 @@ const FLOORS := {
 		# Teste de 29/10/2026: no nível 1 o Pântano quase não oferecia risco. Vida e dano
 		# de todos os inimigos do andar (Torre e Guardiã inclusive) ×1,8 sobre a escala.
 		"monster_power": 1.8,
+		# 31/10/2026 (aprovado): XP e ouro recebem o mesmo reforço; recompensa efetiva 2,6 × 1,8.
+		"reward_power": 1.8,
 		"tower_position": Vector2(228, 1030),
 		"seal_note": "",
 		"camp": {"area": Rect2(60, 1060, 520, 380), "respawn": Vector2(375, 1200),
@@ -191,7 +193,12 @@ static func enemy_multiplier(id: int) -> float:
 	return difficulty(id) * float(FLOORS[id].get("monster_power", 1.0) if FLOORS.has(id) else 1.0)
 
 static func reward(amount: int, id: int) -> int:
-	return roundi(amount * float(SCALE[str(id)].rewards)) if SCALE.has(str(id)) else 0
+	return roundi(amount * reward_multiplier(id)) if SCALE.has(str(id)) else 0
+
+# Multiplicador de XP e ouro: escala do andar × reforço próprio de recompensa do andar.
+static func reward_multiplier(id: int) -> float:
+	if not SCALE.has(str(id)): return 0.0
+	return float(SCALE[str(id)].rewards) * float(FLOORS[id].get("reward_power", 1.0) if FLOORS.has(id) else 1.0)
 
 static func world_scene(id: int, fallback: String) -> String:
 	return str(FLOORS[id].world_scene) if FLOORS.has(id) else fallback

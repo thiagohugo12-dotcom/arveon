@@ -30,7 +30,7 @@
   água sem margem oposta e foram descartadas automaticamente.
 - Colisão: água funda (retângulos da máscara, pontes abertas), troncos de árvore, ruínas e peças do acampamento.
 
-## Inimigos (valores base; o andar aplica dificuldade 2,1 × reforço 1,8 = 3,78 e recompensa 2,6)
+## Inimigos (valores base; o andar aplica dificuldade 2,1 × reforço 1,8 = 3,78 e recompensa 2,6; 2,6 × 1,8 = 4,68 desde 31/10/2026, ver REVISAO_JOGABILIDADE_20261031.md)
 
 Ajuste após o teste de 29/10/2026: com nível 1 o Pântano quase não oferecia risco. `monster_power: 1.8` no
 FloorCatalog multiplica vida e dano de todos os inimigos do andar (Torre e Guardiã inclusive), sem mexer na tabela

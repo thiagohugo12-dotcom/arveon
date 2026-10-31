@@ -5,6 +5,8 @@ extends RefCounted
 # comparar o catálogo com ele mesmo não provaria nada.
 
 const GOLDEN_SCALE := {1: [1.0, 1.0], 2: [1.5, 2.0], 3: [2.1, 2.6], 4: [2.8, 3.5], 5: [3.6, 4.5], 6: [4.5, 5.6], 7: [5.5, 6.9], 8: [6.6, 8.3], 9: [7.8, 9.8], 10: [9.0, 11.3]}
+# Reforço próprio de recompensa (Pântano ×1,8 desde 31/10/2026).
+const GOLDEN_REWARD_POWER := {3: 1.8}
 const GOLDEN_XP := [12, 10, 16, 35, 80, 10, 16, 20]
 # kind: [hp, speed, contact_damage, name]
 const GOLDEN_MONSTERS := {
@@ -23,7 +25,7 @@ static func run(suite) -> void:
 	for id in GOLDEN_SCALE:
 		suite.check(is_equal_approx(FloorConfig.difficulty(id), GOLDEN_SCALE[id][0]) and is_equal_approx(FloorCatalog.difficulty(id), GOLDEN_SCALE[id][0]), "difficulty is unchanged for floor %d" % id)
 		for amount in [1, 2, 5, 10, 35, 80, 180]:
-			var expected := roundi(amount * float(GOLDEN_SCALE[id][1]))
+			var expected := roundi(amount * float(GOLDEN_SCALE[id][1]) * float(GOLDEN_REWARD_POWER.get(id, 1.0)))
 			suite.check(FloorConfig.reward(amount, id) == expected and FloorCatalog.reward(amount, id) == expected, "reward is unchanged for floor %d amount %d" % [id, amount])
 	suite.check(FloorConfig.difficulty(99) == 1.0 and FloorConfig.reward(10, 99) == 0 and not FloorConfig.valid(0) and not FloorConfig.valid(6) and FloorConfig.valid(5), "unknown floors keep the legacy fallback")
 	# Nomes, cenas e tamanhos.

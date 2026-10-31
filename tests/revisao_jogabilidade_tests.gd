@@ -115,7 +115,13 @@ func _floor_reward_curve() -> void:
 	_check(is_equal_approx(float(FloorCatalog.SCALE["2"].rewards), 2.0) and is_equal_approx(FloorCatalog.difficulty(2), 1.5), "Vale: recompensa 2,0 e dificuldade preservada 1,5")
 	_check(vale > mata, "Vale rende mais XP por HP que a Mata (%.3f > %.3f)" % [vale, mata])
 	_check(FloorCatalog.reward(40, 1) == 40 and FloorCatalog.reward(12, 1) == 12, "missão da Mata paga o mesmo de antes")
-	print("REVISAO info: XP/HP Mata %.3f · Vale %.3f · Pântano %.3f" % [mata, vale, _xp_per_hp(3)])
+	var pantano := _xp_per_hp(3)
+	_check(is_equal_approx(float(FloorCatalog.SCALE["3"].rewards), 2.6) and is_equal_approx(FloorCatalog.reward_multiplier(3), 2.6 * 1.8) and is_equal_approx(FloorCatalog.enemy_multiplier(3), 2.1 * 1.8), "Pântano: recompensa 2,6 × 1,8 = 4,68 e poder dos monstros preservado (2,1 × 1,8)")
+	var growing := true
+	for id in range(2, 11): growing = growing and float(FloorCatalog.SCALE[str(id)].rewards) > float(FloorCatalog.SCALE[str(id - 1)].rewards)
+	_check(growing and is_equal_approx(FloorCatalog.reward_multiplier(4), 3.5), "escala planejada dos andares continua crescente")
+	_check(pantano > vale, "Pântano rende mais XP por HP que o Vale (%.3f > %.3f)" % [pantano, vale])
+	print("REVISAO info: XP/HP Mata %.3f · Vale %.3f · Pântano %.3f" % [mata, vale, pantano])
 
 func _high_rarity_enhancement() -> void:
 	var totals := {}
@@ -213,7 +219,7 @@ func _floor3_mission() -> void:
 	var xp_before: int = main.earned_xp
 	var gold_before: int = main.earned_gold
 	main._on_mission_completed(30, 10)
-	_check(main.earned_xp - xp_before == 78 and main.earned_gold - gold_before == 26 and main.mission_reward_message.contains("+78 XP, +26 ouro"), "missão no Pântano paga ×2,6 (30/10 → 78/26)")
+	_check(main.earned_xp - xp_before == 140 and main.earned_gold - gold_before == 47 and main.mission_reward_message.contains("+140 XP, +47 ouro"), "missão no Pântano paga ×4,68 (30/10 → 140/47)")
 	main.mission_reward_message = ""
 
 func _vendor_ui() -> void:

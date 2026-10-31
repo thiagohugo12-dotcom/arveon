@@ -31,5 +31,5 @@ static func configuration(id: int) -> Dictionary:
 	if not valid(id):
 		return {}
 	return {"id": "mata_%d" % id, "number": id, "required_defeats": REQUIRED_DEFEATS,
-		"difficulty": difficulty(id), "reward_multiplier": FLOORS[str(id)].rewards,
+		"difficulty": difficulty(id), "reward_multiplier": FloorCatalog.reward_multiplier(id),
 		"world_scene": world_scene(id), "arena_scene": ARENA_SCENE, "tower_script": TOWER_SCRIPT}
