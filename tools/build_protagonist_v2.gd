@@ -20,6 +20,7 @@ const LAYOUT := "res://scripts/presentation/protagonist_v2_layout.gd"
 const SEED_ALPHA := 0.25
 const RESIDUE_ALPHA := 0.12
 const RESIDUE_REACH := 4
+const SPLIT_MIN_PIXELS := 20000 # Only whole poses are split, never a loose shard.
 const TEXELS := 3 # Texels por pixel do mundo: 1:1 num celular 3x, mip 1 exato numa tela 1,5x.
 const BODY_HEIGHT := 64.0 # Mesma altura do explorador antigo (32 px do atlas em 2x).
 
@@ -39,7 +40,7 @@ func _load(path: String) -> Image:
 # Separa `frames` poses dentro de `region`. Retorna as imagens (tamanho da folha) e caixas.
 # `forced`: [[Rect2i, Vector2i], ...] — a loose piece centred inside the rectangle belongs
 # to the pose whose seed box is nearest the point (tips that touch the next pose only by glow).
-func segment(sheet: Image, region: Rect2i, frames: int, forced: Array = [], cuts: Array = []) -> Dictionary:
+func segment(sheet: Image, region: Rect2i, frames: int, forced: Array = [], cuts: Array = [], splits: Array = []) -> Dictionary:
 	var w := sheet.get_width()
 	var h := sheet.get_height()
 	var data := sheet.get_data()
@@ -72,6 +73,25 @@ func segment(sheet: Image, region: Rect2i, frames: int, forced: Array = [], cuts
 						label[k] = next
 						stack.append(k)
 			components.append([count, next, box])
+			next += 1
+	# A pose glued to its neighbour by a full-alpha effect is split at a vertical line
+	# (Kamusari frames 4 and 5 touch through the red cut); loose shards are never cut.
+	for split_x: int in splits:
+		for component: Array in components.duplicate():
+			var box: Rect2i = component[2]
+			if component[0] < SPLIT_MIN_PIXELS or split_x <= box.position.x or split_x >= box.end.x: continue
+			var sides := [[0, Rect2i()], [0, Rect2i()]]
+			for y in range(box.position.y, box.end.y):
+				for x in range(box.position.x, box.end.x):
+					var i := y * w + x
+					if label[i] != component[1]: continue
+					var side: Array = sides[1 if x >= split_x else 0]
+					if x >= split_x: label[i] = next
+					side[1] = Rect2i(x, y, 1, 1) if side[0] == 0 else (side[1] as Rect2i).merge(Rect2i(x, y, 1, 1))
+					side[0] += 1
+			component[0] = sides[0][0]
+			component[2] = sides[0][1]
+			components.append([sides[1][0], next, sides[1][1]])
 			next += 1
 	components.sort_custom(func(a, b): return a[0] > b[0])
 	if components.size() < frames:
@@ -166,21 +186,27 @@ func grid_order(result: Dictionary, rows: int, columns: int) -> Array:
 # Âncora "tronco": centro do tronco/cabeça sem o lenço, na linha de chão da linha da folha
 # (Idle e Corrida). "pe_tras": o pé de trás fica plantado e o tronco do quadro 1 fica sobre a
 # origem (golpes voltados para a Direita), preservando o avanço do corpo no golpe.
-# Cada entrada pode trazer, por último, cortes por pixel [[Rect2i, ponto da pose dona]].
+# Cada entrada pode trazer ainda cortes por pixel [[Rect2i, ponto da pose dona]] e colunas
+# de divisão de uma pose fundida à vizinha.
 const JOBS := [
 	["idle", "04_ANIMACOES_NORMAIS/idle_4_direcoes_4_quadros.png", Rect2i(), 4, 4, 1.0, "tronco", []],
 	["corrida", "04_ANIMACOES_NORMAIS/corrida_4_direcoes_6_quadros.png", Rect2i(), 4, 6, 1.0, "tronco", []],
 	# A ponta externa do arco do quadro 4 encosta no lenço do quadro 5 só pelo brilho.
 	["espada_basico", "02_ESPADA_ANIMACOES_ORIGINAIS/ataque_basico_6_quadros.png", Rect2i(), 1, 6, 0.79, "pe_tras", [[Rect2i(1300, 330, 250, 190), Vector2i(1280, 390)]], [[Rect2i(1490, 340, 50, 170), Vector2i(1280, 390)]]],
 	["espada_estocada", "02_ESPADA_ANIMACOES_ORIGINAIS/estocada_precisa_6_quadros.png", Rect2i(), 1, 6, 0.85, "pe_tras", []],
-	["espada_guarda", "01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png", Rect2i(30, 250, 710, 215), 1, 4, 1.62, "pe_tras", []]]
+	["espada_guarda", "01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png", Rect2i(30, 250, 710, 215), 1, 4, 1.62, "pe_tras", []],
+	# Kamusari, linha 4 da prancha: o corte vermelho do quadro 4 encosta no arco do quadro 5;
+	# a pose fundida é dividida na coluna 779, entre a ponta do corte e a cauda do arco.
+	# Pés medidos na prancha (régua de 10 px): a luz vermelha cobre as botas nos quadros 4 e 5.
+	["espada_kamusari", "01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png", Rect2i(0, 714, 1536, 300), 1, 8, 1.62, "pe_tras", [], [], [779],
+		{"chao": 951, "pe_tras": [34, 177, 342, 547, 779, 1028, 1242, 1399]}]]
 const IDLE_FRONT_HEIGHT := 248.0 # Altura do quadro Frente 1 do Idle na folha original.
 
 func _extract(job: Array) -> Dictionary:
 	var sheet := _load(job[1])
 	var region: Rect2i = job[2]
 	if region.size == Vector2i.ZERO: region = Rect2i(Vector2i.ZERO, sheet.get_size())
-	var result := segment(sheet, region, int(job[3]) * int(job[4]), job[7], job[8] if job.size() > 8 else [])
+	var result := segment(sheet, region, int(job[3]) * int(job[4]), job[7], job[8] if job.size() > 8 else [], job[9] if job.size() > 9 else [])
 	result.order = grid_order(result, job[3], job[4])
 	return result
 
@@ -249,13 +275,19 @@ func _build() -> void:
 			var baseline := 0
 			for column in range(columns):
 				baseline = maxi(baseline, (result.used[result.order[row * columns + column]] as Rect2i).end.y)
+			# Hand-registered feet where red light covers the boots (Kamusari).
+			var feet: Dictionary = job[10] if job.size() > 10 else {}
+			if feet.has("chao"): baseline = int(feet.chao)
 			var first: int = result.order[row * columns]
 			var first_used: Rect2i = result.used[first]
-			var first_offset := _torso_x(result.images[first], first_used) - _rear_foot_x(result.images[first], first_used)
+			var rear: Array = feet.get("pe_tras", [])
+			var first_foot: int = rear[0] if not rear.is_empty() else _rear_foot_x(result.images[first], first_used)
+			var first_offset := _torso_x(result.images[first], first_used) - first_foot
 			for column in range(columns):
 				var index: int = result.order[row * columns + column]
 				var used: Rect2i = result.used[index]
-				var x := _torso_x(result.images[index], used) if job[6] == "tronco" else _rear_foot_x(result.images[index], used) + first_offset
+				var foot: int = rear[column] if not rear.is_empty() else _rear_foot_x(result.images[index], used)
+				var x: float = _torso_x(result.images[index], used) if job[6] == "tronco" else foot + first_offset
 				anchors.append(Vector2(x, baseline))
 		# Uniform cells: the largest extent around the feet, after scaling.
 		var left := 0.0
