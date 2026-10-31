@@ -36,13 +36,20 @@ Fonte: `ARVEON_Protagonista_2_0_Espada_e_Animacoes_Normais.zip`, copiado byte a 
   crescente de preparação e a faísca amarela saem porque a arte já traz rastro e faísca.
 - Guarda Reativa, Direita/Esquerda: 4 quadros de guarda (ativação, dois arcos, guarda mantida
   parado; correndo durante os 3 s, corpo normal de corrida). O contra-ataque segue evento separado.
+- Kamusari (ultimate), Direita/Esquerda — autorizado por Thiago (“Pode colocar o kamusari
+  tbm”): 8 quadros da linha 4 da prancha. O corte vermelho do quadro 4 encosta no arco do
+  quadro 5 com alfa cheio; a pose fundida é dividida na coluna 779 (entre a ponta do corte e a
+  cauda do arco) e os fragmentos soltos vão inteiros para o quadro dono. Pés registrados à mão
+  (régua de 10 px), porque a luz vermelha cobre as botas. Mesmo relógio da técnica (0,485 s):
+  0,05/0,06/0,05/0,055 até o contato (0,215 s), em que entra o arco (quadro 5), e
+  0,08/0,07/0,06/0,06 depois. O disco do alcance real e o corte que atravessa continuam; só as
+  fitas circulares junto ao corpo saem, pois a arte já as desenha. Folha 3288 × 326 (≈ 4,3 MB).
 - Dano (lampejo), Derrota (fade) e Dash continuam com o feedback anterior sobre o novo corpo.
 
 ## Pendências (arte atual mantida)
 - Cima/Baixo de todos os golpes (sem arte): ataque e técnicas antigos, com o explorador anterior.
 - Contra-ataque da Guarda: 5 dos 6 quadros fundidos na prancha.
 - Corte Crescente e Ruptura Ancestral: a prancha tem 5 + 5 poses (não 6 + 6), com arcos fundidos.
-- Kamusari: 8 poses, mas os quadros 4–5 estão fundidos pelo corte vermelho.
 - Talho Ágil (Skill 1), demais armas (Machado, Lança, Arco, Cajado) e retratos de menu.
 
 ## Espelhamento da Esquerda — APROVADO

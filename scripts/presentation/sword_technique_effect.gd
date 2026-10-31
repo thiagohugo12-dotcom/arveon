@@ -28,7 +28,7 @@ var guard_time := 0.0
 var elapsed := 0.0
 var externally_clocked := false
 var real_reach := 150.0
-var body_trail := false # The body art already draws the thrust trail and tip spark.
+var body_trail := false # The body art already draws its own trail and near-body light.
 const EXTRA_DURATIONS := {"corte_crescente":0.30,"ruptura_ancestral":0.34}
 
 func _draw_passing_cut(alpha: float) -> void:
@@ -94,8 +94,9 @@ func _draw_kamusari() -> void:
 	if elapsed < contact:
 		var p:=clampf(elapsed/contact,0,1)
 		var angle:=aim-1.3+p*0.8
-		draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.9,4),Color("#a73339"))
-		draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.55,2),Color("#f1ae83"))
+		if not body_trail:
+			draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.9,4),Color("#a73339"))
+			draw_colored_polygon(ribbon(Vector2(0,-24),26+p*12,angle,0.55,2),Color("#f1ae83"))
 		if elapsed >= contact-0.045: _draw_passing_cut(0.65+0.35*clampf((elapsed-contact+0.045)/0.045,0,1))
 		return
 	var progress:=clampf((elapsed-contact)/(duration-contact),0,1)
@@ -108,8 +109,9 @@ func _draw_kamusari() -> void:
 	draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-3,angle,1.65,4*(1-progress)+1),Color(1.0,0.69,0.48,alpha))
 	draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-4,angle,0.9,2),Color(1.0,0.94,0.77,alpha))
 	var blade_center:=Vector2(0,-24)
-	draw_colored_polygon(ribbon(blade_center,43,angle,1.9,7),Color(0.90,0.20,0.24,alpha))
-	draw_colored_polygon(ribbon(blade_center,42,angle,1.5,3),Color(1.0,0.91,0.73,alpha))
+	if not body_trail: # Near-body swirl; the full damage disk and the passing cut stay.
+		draw_colored_polygon(ribbon(blade_center,43,angle,1.9,7),Color(0.90,0.20,0.24,alpha))
+		draw_colored_polygon(ribbon(blade_center,42,angle,1.5,3),Color(1.0,0.91,0.73,alpha))
 	_draw_passing_cut(alpha)
 
 static func frame_duration_total(frames: Array) -> float:

@@ -197,8 +197,8 @@ func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> 
 		sword_technique.real_reach=float(AbilityRules.effect(id).reach)+bonus
 	sword_pose_duration = sword_technique.duration
 	sword_pose_time = sword_pose_duration
-	# The Protagonista 2.0 thrust already draws its blue trail and tip spark.
-	sword_technique.body_trail = id == "estocada_precisa" and ProtagonistV2Art.has_attack_art(sword_pose_row)
+	# The Protagonista 2.0 thrust and Kamusari already draw their trail and near-body light.
+	sword_technique.body_trail = id in ["estocada_precisa","danca_laminas"] and ProtagonistV2Art.has_attack_art(sword_pose_row)
 	sword_technique.z_index = clampi(roundi(actor.global_position.y) + 99, -4096, 4096)
 	skill_left = 0.0
 	queue_redraw()
@@ -248,7 +248,8 @@ func _process(delta: float) -> void:
 		else: axe_fury.seek_fury(actor.class_combat.fury_left,actor.global_position)
 
 ## Protagonista 2.0 where the approved sheets exist (Direita, and Esquerda mirrored):
-## Estocada Precisa in its six frames (contact = frame 3, SwordTechniqueTiming) and the
+## Estocada Precisa in its six frames (contact = frame 3, SwordTechniqueTiming), Kamusari
+## in eight on the same clock (contact = frame 4, ProtagonistV2Art) and the
 ## four Guarda Reativa frames. The counter (frames 3–4), the other techniques and the
 ## vertical directions keep their current art until their sheets arrive.
 const V2_GUARD_RAISE := 0.10 # Second arc pose after the 0.12 s activation, then the held guard.
@@ -256,6 +257,8 @@ const V2_GUARD_RAISE := 0.10 # Second arc pose after the 0.12 s activation, then
 func v2_technique_pose(frame: int) -> Array:
 	if not ProtagonistV2Art.has_attack_art(sword_pose_row): return []
 	match sword_technique.kind:
+		"danca_laminas":
+			return ["espada_kamusari", ProtagonistV2Art.kamusari_frame(sword_technique.elapsed)]
 		"estocada_precisa":
 			return ["espada_estocada", frame]
 		"guarda_reativa":
