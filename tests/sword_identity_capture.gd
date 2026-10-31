@@ -51,6 +51,11 @@ func run() -> void:
 				effect.elapsed = sample_time + 0.001
 				effect.counter_elapsed = -1.0
 				if id == "guarda_reativa" and frame >= 3: effect.counter_elapsed = 0.001 if frame == 3 else (0.05 if frame == 4 else 0.13)
+				# Since 31/10/2026 these poses draw the approved Protagonista 2.0 instead
+				# (tests/protagonist_v2_tests.gd); the old identity applies where its art remains.
+				if not view.v2_technique_pose(effect._frame()).is_empty():
+					sample_time += float(times[frame])
+					continue
 				view.queue_redraw()
 				effect.queue_redraw()
 				for i in range(3): await process_frame

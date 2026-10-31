@@ -36,6 +36,8 @@ var walk_distance := 0.0
 var run_distance := 0.0
 var settle_left := 0.0
 var last_visual_position := Vector2.ZERO
+var v2_idle_time := 0.0 # Protagonista 2.0: repouso contínuo de 4 quadros.
+var v2_run_distance := 0.0 # Corrida de 6 quadros avançada pela distância percorrida.
 var skill_left := 0.0
 var skill_effect := 0
 var fury := false
@@ -57,7 +59,8 @@ const PALE := Color("#f1d5a2")
 const LIGHT := Color("#e7f4d7")
 
 func _ready() -> void:
-	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# Protagonista 2.0 tem mipmaps: sem filtro bilinear, sem serrilhado quando reduzido.
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS if appearance == 0 else CanvasItem.TEXTURE_FILTER_NEAREST
 	last_visual_position = global_position
 
 func set_facing(value: Vector2) -> void:
@@ -75,6 +78,8 @@ func set_moving(value: bool) -> void:
 			idle_frame = 0
 			walk_distance = 0.0
 			run_distance = 0.0
+			v2_run_distance = 0.0
+			v2_idle_time = 0.0
 			anim_time = 0.0
 			last_visual_position = global_position
 		queue_redraw()
@@ -159,6 +164,7 @@ func _process(delta: float) -> void:
 		if walking:
 			# A planted stride follows travel rather than the display frame rate.
 			run_distance = fmod(run_distance + minf(global_position.distance_to(last_visual_position),24.0), ExplorerRunPose.STRIDE)
+			v2_run_distance = fmod(v2_run_distance + minf(global_position.distance_to(last_visual_position),24.0), ProtagonistV2Art.RUN_PIXELS_PER_FRAME * 6.0)
 			queue_redraw()
 			walk_distance += minf(global_position.distance_to(last_visual_position), 24.0)
 			if walk_distance >= WALK_PIXELS_PER_FRAME:
@@ -171,6 +177,10 @@ func _process(delta: float) -> void:
 				settle_left = maxf(0.0, settle_left - delta)
 				if settle_left == 0.0:
 					queue_redraw()
+			var v2_frame := v2_idle_frame()
+			v2_idle_time = fmod(v2_idle_time + delta, ProtagonistV2Art.IDLE_FRAME_TIME * 4.0)
+			if v2_idle_frame() != v2_frame:
+				queue_redraw()
 			anim_time += delta
 			if anim_time >= 0.65:
 				anim_time = 0.0
@@ -192,6 +202,12 @@ func _process(delta: float) -> void:
 				anim_time = 0.0
 				anim_frame = (anim_frame + 1) % 4
 				queue_redraw()
+
+func v2_idle_frame() -> int:
+	return int(v2_idle_time / ProtagonistV2Art.IDLE_FRAME_TIME) % 4
+
+func v2_run_frame() -> int:
+	return int(v2_run_distance / ProtagonistV2Art.RUN_PIXELS_PER_FRAME) % 6
 
 func _explorer_direction() -> int:
 	if absf(facing.x) > absf(facing.y):
@@ -282,12 +298,12 @@ func _draw_explorer(tint: Color) -> void:
 	# Presentation overrides replace only the body; shared feedback stays intact.
 	var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
 	if village_scale:
-		if walking and running:
-			ExplorerRunPose.draw(self,_explorer_direction(),run_distance/ExplorerRunPose.STRIDE,tint)
-		elif walking:
-			VillageActorArt.person(self,_explorer_direction(),anim_frame,Vector2.ZERO,tint)
+		# Protagonista 2.0: a corrida substitui a caminhada em qualquer velocidade e no
+		# Dash (mesmo avanço por distância de antes); parado, repouso na última direção.
+		if walking:
+			ProtagonistV2Art.draw(self,"corrida",_explorer_direction(),v2_run_frame(),tint)
 		else:
-			VillageActorArt.person(self,_explorer_direction(),0,Vector2.ZERO,tint)
+			ProtagonistV2Art.draw(self,"idle",_explorer_direction(),v2_idle_frame(),tint)
 	else:
 		draw_texture_rect_region(EXPLORER_ATLAS,Rect2(-24,-32,48,48),Rect2(column*48,_explorer_direction()*48,48,48),tint)
 

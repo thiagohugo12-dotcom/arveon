@@ -197,6 +197,8 @@ func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> 
 		sword_technique.real_reach=float(AbilityRules.effect(id).reach)+bonus
 	sword_pose_duration = sword_technique.duration
 	sword_pose_time = sword_pose_duration
+	# The Protagonista 2.0 thrust already draws its blue trail and tip spark.
+	sword_technique.body_trail = id == "estocada_precisa" and ProtagonistV2Art.has_attack_art(sword_pose_row)
 	sword_technique.z_index = clampi(roundi(actor.global_position.y) + 99, -4096, 4096)
 	skill_left = 0.0
 	queue_redraw()
@@ -245,6 +247,33 @@ func _process(delta: float) -> void:
 		if actor == null or not actor.health.is_alive() or actor.progress == null or actor.progress.active_category() != "machado": clear_axe_fury()
 		else: axe_fury.seek_fury(actor.class_combat.fury_left,actor.global_position)
 
+## Protagonista 2.0 where the approved sheets exist (Direita, and Esquerda mirrored):
+## Estocada Precisa in its six frames (contact = frame 3, SwordTechniqueTiming) and the
+## four Guarda Reativa frames. The counter (frames 3–4), the other techniques and the
+## vertical directions keep their current art until their sheets arrive.
+const V2_GUARD_RAISE := 0.10 # Second arc pose after the 0.12 s activation, then the held guard.
+## [sheet, pose] for the current technique frame, or [] when the current art stays.
+func v2_technique_pose(frame: int) -> Array:
+	if not ProtagonistV2Art.has_attack_art(sword_pose_row): return []
+	match sword_technique.kind:
+		"estocada_precisa":
+			return ["espada_estocada", frame]
+		"guarda_reativa":
+			if frame == 3 or frame == 4: return []
+			# The real three-second protection keeps the normal body while moving.
+			if frame == 2 and walking: return ["corrida", v2_run_frame()]
+			if frame == 2: return ["espada_guarda", 2 if sword_technique.elapsed < 0.12 + V2_GUARD_RAISE else 3]
+			# Recovery lowers the blade back through the first pose.
+			return ["espada_guarda", 0 if frame == 5 else frame]
+	return []
+
+func _draw_v2_technique(frame: int, tint: Color) -> bool:
+	var pose := v2_technique_pose(frame)
+	if pose.is_empty(): return false
+	if pose[0] == "corrida": ProtagonistV2Art.draw(self,"corrida",_explorer_direction(),pose[1],tint)
+	else: ProtagonistV2Art.draw_attack(self,pose[0],sword_pose_row,pose[1],tint)
+	return true
+
 func _draw_explorer(tint: Color) -> void:
 	if skill_category == "lanca" and village_scale and is_instance_valid(spear_technique) and spear_technique.active:
 		var legs := anim_frame if walking or settle_left > 0 else 0
@@ -277,6 +306,7 @@ func _draw_explorer(tint: Color) -> void:
 		return
 	if skill_category == "espada" and village_scale and is_instance_valid(sword_technique) and sword_technique.remaining > 0.0:
 		var frame := sword_technique._frame()
+		if _draw_v2_technique(frame, tint): return
 		if ARTICULATED_SWORD.has(sword_technique.kind):
 			var texture: Texture2D = ARTICULATED_SWORD[sword_technique.kind]
 			if walking:

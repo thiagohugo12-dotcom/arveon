@@ -3,7 +3,9 @@ extends ActorView
 ## Approved upper-body frames; combat and the distance-based legs stay independent.
 const SWORD := preload("res://assets/art/sword_demo_v1/attack.png")
 const DIRECTIONS := [Vector2.DOWN,Vector2.UP,Vector2.LEFT,Vector2.RIGHT]
-const PREPARE_TIME := 0.07
+# Visual only (target lookup is read-only): long enough for the three Protagonista 2.0
+# lead-in frames (preparação, recuo, início do corte) before the damage tick.
+const PREPARE_TIME := 0.18
 var sword_row := 0
 var sword_time := 0.0
 var sword_duration := 0.24
@@ -72,9 +74,20 @@ func frame_index() -> int:
 	if pose_override >= 0: return 5
 	return clampi(3+int((1.0-sword_time/sword_duration-0.48)/0.52*3),3,5)
 
+## Protagonista 2.0, ataque básico em 6 quadros: 0–2 durante a preparação (fim do
+## cooldown), 3 = golpe no mesmo tick do dano, 4–5 conclusão e recuperação.
+func v2_sword_frame() -> int:
+	if sword_time > 0.0:
+		return 3 + mini(2, int((1.0 - sword_time / sword_duration) * 3.0))
+	return mini(2, int(preparation_weight * 3.0))
+
 func _draw_explorer(tint: Color) -> void:
 	if not village_scale or phase() < 0:
 		super._draw_explorer(tint)
+		return
+	if pose_override < 0 and ProtagonistV2Art.has_attack_art(sword_row):
+		# Whole-body frames: the attack wins over the run cycle while it lasts.
+		ProtagonistV2Art.draw_attack(self,"espada_basico",sword_row,v2_sword_frame(),tint)
 		return
 	var walk_frame := anim_frame if walking or settle_left > 0 else 0
 	if walking and running:

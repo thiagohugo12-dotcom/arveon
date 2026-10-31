@@ -28,6 +28,7 @@ var guard_time := 0.0
 var elapsed := 0.0
 var externally_clocked := false
 var real_reach := 150.0
+var body_trail := false # The body art already draws the thrust trail and tip spark.
 const EXTRA_DURATIONS := {"corte_crescente":0.30,"ruptura_ancestral":0.34}
 
 func _draw_passing_cut(alpha: float) -> void:
@@ -129,6 +130,7 @@ func cast(id: String, at: Vector2, aim: Vector2, guard_time: float = 0.0) -> voi
 	remaining = duration
 	elapsed = 0.0
 	externally_clocked = false
+	body_trail = false
 	guard_follow = get_parent().get_parent() as Node2D
 	counter_elapsed = -1.0
 	bursts = 0
@@ -145,6 +147,7 @@ func counter(at: Vector2, aim: Vector2) -> void:
 
 func clear() -> void:
 	kind = ""
+	body_trail = false
 	remaining = 0.0
 	guard_follow = null
 	counter_elapsed = -1.0
@@ -225,6 +228,7 @@ func _draw_estocada() -> void:
 	var origin := Vector2(0,-24)
 	var aim := direction.angle()
 	if elapsed < contact-0.035:
+		if body_trail: return # Linear thrust only: no forward crescent.
 		var p := clampf(elapsed/(contact-0.035),0,1)
 		draw_colored_polygon(forward_crescent(origin,aim,24+p*6,2),Color(0.65,0.85,1,0.4+p*0.5))
 		return
@@ -238,7 +242,7 @@ func _draw_estocada() -> void:
 		var end := origin+direction*(length-absf(side)*13)+offset
 		draw_colored_polygon(tapered_streak(start,end,4),Color(0.12,0.50,1,alpha))
 		draw_colored_polygon(tapered_streak(start,end,1.5),Color(0.85,0.96,1,alpha))
-	if elapsed >= contact:
+	if elapsed >= contact and not body_trail:
 		var center := origin+direction*92
 		var impact := clampf((elapsed-contact)/0.06,0,1)
 		for i in range(8):
