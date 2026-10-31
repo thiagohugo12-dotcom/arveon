@@ -66,6 +66,7 @@ func _run() -> void:
 	_camp_regeneration()
 	await _field_boss_bar_floor1()
 	await _melee_basic_power()
+	await _bite_warning()
 	main.progress.ascension.defeats["1"] = 50
 	main.progress.ascension.complete_forest_trial()
 	await main._travel_floor(2)
@@ -279,6 +280,43 @@ func _melee_basic_power() -> void:
 		var values := player.progress.combat_stats()
 		_check(is_equal_approx(player.attack.basic_power, ArsenalRules.basic_power(player.progress.active_category())) and is_equal_approx(player.attack.damage_base, float(values[values.damage_type])), "jogador: bônus no básico, técnicas seguem com o dano base")
 	await _frames(1)
+
+func _bite_warning() -> void:
+	var player: PlayerActor = main.player
+	var spot := Vector2(1300, 300)
+	for kind: int in [0, 3, 6]:
+		player.health.initialize(player.stats.max_hp)
+		_place_player(spot)
+		var beast: EnemyActor = main._make_enemy(kind)
+		beast.position = spot + Vector2(30, 0)
+		beast.target = player
+		main.add_child(beast)
+		beast.set_physics_process(false)
+		await _frames(1)
+		beast.chasing = true
+		var name := beast.display_name()
+		var hp := player.health.current
+		beast._try_contact(30)
+		_check(beast.melee_windup == EnemyActor.BITE_WINDUP and beast.view.warning and player.health.current == hp, "%s: colado, avisa antes de morder e não fere ainda" % name)
+		_place_player(spot + Vector2(-60, 0))
+		beast._boar_behavior(0.3, Vector2(-90, 0), 90)
+		_check(player.health.current == hp and is_equal_approx(beast.contact_left, EnemyActor.BITE_MISS_RECOVERY), "%s: sair do alcance durante o aviso evita a mordida" % name)
+		_place_player(spot)
+		beast.contact_left = 0.0
+		beast._try_contact(30)
+		beast._boar_behavior(0.3, Vector2(-30, 0), 30)
+		var bitten := player.health.current
+		_check(bitten < hp and is_equal_approx(beast.contact_left, beast.stats.contact_interval), "%s: quem fica perto leva a mordida no fim do aviso (%d)" % [name, hp - bitten])
+		beast.contact_left = 0.0
+		beast.charge_left = 0.2
+		beast._try_contact(30)
+		_check(player.health.current < bitten, "%s: impacto da investida continua imediato" % name)
+		beast.queue_free()
+		await _frames(1)
+	player.health.initialize(player.stats.max_hp)
+	var spider: EnemyActor = main._make_enemy(1)
+	_check(not EnemyActor.BITE_KINDS.has(spider.kind), "Aranha mantém o próprio golpe avisado")
+	spider.free()
 
 func _floor3_mission() -> void:
 	main._refresh_mission()

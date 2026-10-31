@@ -161,6 +161,13 @@ func _boar_behavior(delta: float, offset: Vector2, distance: float) -> void:
 			charge_left = 0.38
 			special_left = 2.8
 		return
+	if melee_windup > 0.0:
+		# Mordida de contato: parado e com aviso; o dano sai só no fim do preparo.
+		melee_windup = maxf(0.0, melee_windup - delta)
+		velocity = Vector2.ZERO
+		view.set_warning(true)
+		if melee_windup == 0.0: _resolve_bite()
+		return
 	if distance > 72.0 and distance < 230.0 and special_left == 0.0:
 		charge_direction = offset.normalized()
 		charge_windup = 0.42
@@ -243,15 +250,42 @@ func _fire_cactus_spine() -> void:
 	view.set_warning(false)
 	view.play_attack()
 
+# Javali, Javali Elite e Tatu: colados no jogador, avisam 0,25 s antes de morder (como a
+# aranha). O impacto da investida continua imediato, pois já tem os 0,42 s de preparo.
+# Aprovado em 31/10/2026 (docs/decisions/REVISAO_JOGABILIDADE_20261031.md).
+const BITE_KINDS := [0, 3, 6]
+const BITE_WINDUP := 0.25
+const BITE_MARGIN := 10.0
+const BITE_MISS_RECOVERY := 0.35
+
 func _try_contact(distance: float) -> void:
 	if kind in [0,3,6] and charge_windup > 0.0: return
 	if distance > stats.contact_range or contact_left > 0.0:
+		return
+	if kind in BITE_KINDS and charge_left == 0.0:
+		if melee_windup == 0.0:
+			melee_windup = BITE_WINDUP
+			view.set_warning(true)
 		return
 	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
 	if get_world_2d().direct_space_state.intersect_ray(query).is_empty():
 		target.receive_damage(stats.contact_damage,"physical",display_name())
 		contact_left = stats.contact_interval
 		view.play_attack()
+
+func _resolve_bite() -> void:
+	view.set_warning(false)
+	if not is_targetable() or not chasing or not is_instance_valid(target) or not target.health.is_alive():
+		return
+	view.play_attack(target.global_position - global_position)
+	# Sair do alcance durante o aviso evita o dano; a pausa curta impede repetir o aviso na hora.
+	if global_position.distance_to(target.global_position) > stats.contact_range + BITE_MARGIN or SafeCamp.in_clearance(target.global_position):
+		contact_left = BITE_MISS_RECOVERY
+		return
+	var query := PhysicsRayQueryParameters2D.create(global_position, target.global_position, 1)
+	if get_world_2d().direct_space_state.intersect_ray(query).is_empty():
+		target.receive_damage(stats.contact_damage,"physical",display_name())
+	contact_left = stats.contact_interval
 
 func is_targetable() -> bool:
 	return health.is_alive() and awake and not SafeCamp.in_clearance(global_position) and not is_queued_for_deletion()

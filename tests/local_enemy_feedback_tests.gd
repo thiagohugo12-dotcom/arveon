@@ -81,10 +81,17 @@ static func run(suite: SceneTree) -> void:
 	boar._try_contact(25)
 	suite.check(player.health.current == before,"boar windup cannot deal early contact damage")
 	boar.charge_windup=0
+	boar.chasing=true
+	# Desde 31/10/2026 o contato parado avisa 0,25 s antes de morder.
 	boar._try_contact(25)
+	suite.check(player.health.current == before and boar.melee_windup == EnemyActor.BITE_WINDUP and boar.view.warning,"boar contact warns before biting")
+	boar._boar_behavior(0.2,Vector2(-25,0),25)
+	suite.check(player.health.current == before,"boar bite waits for the end of the warning")
+	boar._boar_behavior(0.06,Vector2(-25,0),25)
 	var after:=player.health.current
 	boar._try_contact(25)
-	suite.check(after < before and player.health.current == after,"boar contact respects damage and cooldown")
+	boar._boar_behavior(0.3,Vector2(-25,0),25)
+	suite.check(after < before and player.health.current == after and not boar.view.warning,"boar contact respects damage and cooldown")
 	var probe:=ActorView.new()
 	probe.position=Vector2(180,140)
 	world.add_child(probe)

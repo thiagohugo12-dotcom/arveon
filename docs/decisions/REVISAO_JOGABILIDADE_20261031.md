@@ -291,3 +291,23 @@ Escolha de Thiago: **bônus de dano no básico corpo a corpo**. Atirar andando n
 - Ainda aberto: a distância continua mais segura, porque o jogador é mais rápido que todos os
   inimigos. Se o teste no celular mostrar que ainda é fácil demais recuar atirando, a opção
   "intervalo +30% ao atirar andando" segue disponível.
+
+## 9. Proposta E implementada (31/10/2026)
+
+Aprovada por Thiago. Javali, Javali Elite e Tatu Rochoso deixam de ferir só por estarem
+colados no jogador a cada 1 s. Agora a mordida de contato segue o padrão dos outros inimigos:
+
+1. Colado (até o alcance de contato, 36 px), o monstro para e mostra o aviso sobre a cabeça
+   por **0,25 s**.
+2. No fim do aviso, se o jogador ainda estiver a até 46 px (alcance + 10) e com linha livre,
+   leva o dano normal de contato. Depois disso, o intervalo de contato de antes (1 s).
+3. Se o jogador saiu do alcance, a mordida erra e o monstro faz uma pausa de 0,35 s antes de
+   poder avisar de novo.
+
+- O **impacto da investida continua imediato**, porque a investida já tem 0,42 s de preparo
+  visível.
+- Dano, intervalo, velocidade e HP não mudaram. Andando a 180 px/s, o jogador percorre ~45 px
+  em 0,25 s, então dá para escapar caminhando.
+- Aranha, Goblin, Escorpião, Mandacaru e os monstros do Pântano não foram alterados.
+- Teste aprovado atualizado: `local_enemy_feedback_tests` ("boar contact respects damage and
+  cooldown") agora avança o aviso antes de conferir o dano.

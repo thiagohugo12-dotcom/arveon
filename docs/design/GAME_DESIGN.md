@@ -1,3 +1,10 @@
+## Aviso na mordida do Javali e do Tatu — aprovado em 31/10/2026
+
+Thiago aprovou a Proposta E de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md`. Javali,
+Javali Elite e Tatu Rochoso, colados no jogador, param e avisam por 0,25 s antes de morder;
+quem sai do alcance durante o aviso não leva dano. O impacto da investida continua imediato
+(já tem preparo). Dano, intervalo, velocidade e HP iguais.
+
 ## Bônus do básico corpo a corpo — aprovado em 31/10/2026
 
 Thiago escolheu a primeira opção da Proposta C de
