@@ -202,3 +202,27 @@ continua a original.
 O Jacaré dá Essência Épica em 10% das vitórias, então 100 Épicas são ~1.000 vitórias só com ele.
 Elites, Guardiões e a garantia de Épico do pity também contam. O topo continua exigente, e é o
 ponto para medir no save de teste.
+
+## 6. Proposta B implementada (31/10/2026)
+
+Aprovada por Thiago. A recompensa do Andar 2 passou de 1,1 para **2,0**, e não ~1,8: com a
+mistura real de spawns do Vale (3 Tatus, 4 Escorpiões, 1 Goblin), 1,8 ainda ficaria abaixo da
+Mata. Medido em `tests/revisao_jogabilidade_tests.gd`, em XP por ponto de vida dos inimigos
+gerados:
+
+| Andar | Antes | Agora |
+|---|---:|---:|
+| 1 Mata (com 1 elite a cada 8) | 0,268 | 0,268 |
+| 2 Vale | ~0,15 | 0,277 |
+| 3 Pântano | 0,164 | 0,164 |
+
+- Valem 2,0 o ouro por abate (2–5 → 4–10) e o Guardião da Torre do Vale (360 XP e 80 ouro, antes 198 e 44).
+- A missão comum multiplica XP e ouro pela recompensa do andar: Mata 40/12 e 30/10 (igual a
+  antes), Vale 80/24 e 60/20, Pântano 104/31 e 78/26.
+- A dificuldade do Vale continua 1,5. Testes de referência atualizados:
+  `floor_catalog_tests` (GOLDEN_SCALE) e `boss_phase_tests`.
+
+**Ainda aberto:** o Pântano rende só 0,164 XP por HP, abaixo da Mata e do Vale, porque o
+reforço ×1,8 de 29/10 subiu a vida sem subir a recompensa. Para ficar acima do Vale, a
+recompensa do Andar 3 precisaria de ~4,5 (hoje 2,6). Os materiais da Proposta A já compensam
+parte disso. Não alterado sem aprovação.

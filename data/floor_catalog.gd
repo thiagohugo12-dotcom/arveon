@@ -9,7 +9,9 @@ extends RefCounted
 # Escala por andar. "difficulty" multiplica vida e dano; "rewards", XP e ouro.
 const SCALE := {
 	"1": {"difficulty": 1.0, "rewards": 1.0},
-	"2": {"difficulty": 1.5, "rewards": 1.1},
+	# Andar 2: recompensa 1,1 → 2,0 (aprovado em 31/10/2026) para o Vale render por dano pelo
+	# menos o que a Mata rende. docs/decisions/REVISAO_JOGABILIDADE_20261031.md
+	"2": {"difficulty": 1.5, "rewards": 2.0},
 	"3": {"difficulty": 2.1, "rewards": 2.6},
 	"4": {"difficulty": 2.8, "rewards": 3.5},
 	"5": {"difficulty": 3.6, "rewards": 4.5},

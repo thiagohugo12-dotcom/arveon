@@ -33,7 +33,7 @@ func _run() -> void:
 		last = FloorCatalog.difficulty(id)
 		last_reward = float(FloorCatalog.SCALE[str(id)].rewards)
 	check(table_ok and not FloorCatalog.valid_scale(11), "scale table covers floors 1-10 and always grows")
-	check(FloorCatalog.difficulty(1) == 1.0 and FloorCatalog.difficulty(2) == 1.5 and FloorCatalog.reward(10,2) == 11 and is_equal_approx(FloorCatalog.difficulty(10),9.0), "floors 1 and 2 keep their values; floor 10 is 9.0")
+	check(FloorCatalog.difficulty(1) == 1.0 and FloorCatalog.difficulty(2) == 1.5 and FloorCatalog.reward(10,2) == 20 and is_equal_approx(FloorCatalog.difficulty(10),9.0), "floors 1 and 2 keep their difficulty (Vale rewards 2.0 since 31/10/2026); floor 10 is 9.0")
 	for id in range(3, 11):
 		check(is_equal_approx(float(FloorCatalog.SCALE[str(id)].rewards), snappedf(FloorCatalog.difficulty(id) * 1.25, 0.1)) or id == 3, "reward is difficulty x1.25 on floor %d" % id)
 		check(FloorCatalog.planned_boss_hp(id,"field") > 0 and FloorCatalog.planned_boss_hp(id,"tower") > 0, "planned boss HP exists for floor %d" % id)

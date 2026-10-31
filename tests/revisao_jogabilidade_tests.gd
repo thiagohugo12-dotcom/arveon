@@ -50,6 +50,7 @@ func _run() -> void:
 	if not out.is_empty(): DirAccess.make_dir_recursive_absolute(out)
 	_mission_unit()
 	_high_rarity_enhancement()
+	_floor_reward_curve()
 	OS.set_environment("ARVEON_SAVE_PATH", "user://qa_revisao_jogabilidade_%d.json" % Time.get_ticks_usec())
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	root.size = Vector2i(360, 800)
@@ -93,6 +94,28 @@ func _mission_unit() -> void:
 	_check(rewards == [[30, 10]] and mission.mission_index == 0 and mission.progress == 0, "substituta paga a recompensa da coleta e segue o ciclo")
 	mission.record_defeat()
 	_check(mission.progress == 1, "missão de derrotas continua igual")
+
+# XP por ponto de vida dos inimigos que o andar realmente gera (Mata: ciclo javali/aranha/
+# mandacaru com 1 elite a cada 8; Vale: spawns fixos do catálogo).
+func _xp_per_hp(floor_id: int) -> float:
+	var kinds: Array = FloorCatalog.enemy_spawn_kinds(floor_id).duplicate()
+	if kinds.is_empty():
+		for count in range(8): kinds.append(3 if count % 8 == 7 else (count + 1) % 3)
+	var xp := 0
+	var hp := 0
+	for kind: int in kinds:
+		var scaled := FloorCatalog.scaled(FloorCatalog.monster_id_for_kind(kind), floor_id)
+		xp += FloorCatalog.reward(FloorCatalog.xp_for_kind(kind), floor_id)
+		hp += int(scaled.hp)
+	return float(xp) / float(hp)
+
+func _floor_reward_curve() -> void:
+	var mata := _xp_per_hp(1)
+	var vale := _xp_per_hp(2)
+	_check(is_equal_approx(float(FloorCatalog.SCALE["2"].rewards), 2.0) and is_equal_approx(FloorCatalog.difficulty(2), 1.5), "Vale: recompensa 2,0 e dificuldade preservada 1,5")
+	_check(vale > mata, "Vale rende mais XP por HP que a Mata (%.3f > %.3f)" % [vale, mata])
+	_check(FloorCatalog.reward(40, 1) == 40 and FloorCatalog.reward(12, 1) == 12, "missão da Mata paga o mesmo de antes")
+	print("REVISAO info: XP/HP Mata %.3f · Vale %.3f · Pântano %.3f" % [mata, vale, _xp_per_hp(3)])
 
 func _high_rarity_enhancement() -> void:
 	var totals := {}
@@ -187,6 +210,11 @@ func _floor3_mission() -> void:
 	_check(gained > 0, "materiais caídos no Pântano avançam a missão de coleta (%d)" % gained)
 	main._refresh_mission()
 	_check(main.hud.mission_label.text.contains("Colete materiais"), "HUD mostra a missão de coleta (%s)" % main.hud.mission_label.text.replace("\n", " | "))
+	var xp_before: int = main.earned_xp
+	var gold_before: int = main.earned_gold
+	main._on_mission_completed(30, 10)
+	_check(main.earned_xp - xp_before == 78 and main.earned_gold - gold_before == 26 and main.mission_reward_message.contains("+78 XP, +26 ouro"), "missão no Pântano paga ×2,6 (30/10 → 78/26)")
+	main.mission_reward_message = ""
 
 func _vendor_ui() -> void:
 	main.hud.show_station("Vendedor", main.progress)

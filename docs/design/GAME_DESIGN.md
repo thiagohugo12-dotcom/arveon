@@ -1,3 +1,10 @@
+## Recompensas do Vale e missões por andar — aprovado em 31/10/2026
+
+Thiago aprovou a Proposta B de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md`. O Andar 2
+passa de recompensa 1,1 para 2,0 (XP e ouro de criaturas e do Guardião da Torre); a
+dificuldade continua 1,5. A missão comum multiplica XP e ouro pela recompensa do andar atual
+(Mata igual a antes). Valores provisórios; saves sem mudança.
+
 ## Materiais do Pântano e Vendedor — aprovado em 31/10/2026
 
 Thiago aprovou a Proposta A de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md`. Limo,

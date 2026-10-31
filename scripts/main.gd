@@ -520,7 +520,10 @@ func _on_enemy_defeated(kind: int, source: EnemyActor = null) -> void:
 			hud.show_notice("Três hordas superadas! O Guardião desperta em 4s.")
 		_refresh_mission()
 
-func _on_mission_completed(xp_reward: int, gold_reward: int) -> void:
+func _on_mission_completed(base_xp: int, base_gold: int) -> void:
+	# A missão comum cresce com o andar, como XP e ouro das criaturas (aprovado em 31/10/2026).
+	var xp_reward := FloorConfig.reward(base_xp, progress.ascension.current_floor)
+	var gold_reward := FloorConfig.reward(base_gold, progress.ascension.current_floor)
 	earned_xp += xp_reward
 	earned_gold += gold_reward
 	mission_reward_message = "Missão concluída! +%d XP, +%d ouro" % [xp_reward, gold_reward]
