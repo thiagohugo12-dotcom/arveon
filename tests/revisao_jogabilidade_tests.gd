@@ -200,8 +200,15 @@ func _pantano_loot() -> void:
 		for drop: Dictionary in drops:
 			counts[drop.rarity] = int(counts.get(drop.rarity, 0)) + 1
 			if drop.rarity == "lendario": legendary += 1
-	_check(caiman_ok and not counts.has("comum") and not counts.has("mitico"), "Jacaré sempre dá Couro e Essência, de Incomum a Lendário (%s)" % str(counts))
+	_check(caiman_ok and not counts.has("comum"), "Jacaré sempre dá Couro e Essência, de Incomum a Místico (%s)" % str(counts))
 	_check(legendary > 80 and legendary < 250, "Jacaré: ~4%% de Lendário por material (%d em 4000)" % legendary)
+	var mythic := int(counts.get("mitico", 0))
+	_check(mythic >= 15 and mythic <= 75, "Jacaré: ~1%% de Místico por material (%d em 4000)" % mythic)
+	var mythic_sources := 0
+	for kind: int in EquipmentEconomy.DROP_TABLE:
+		for entry: Dictionary in EquipmentEconomy.DROP_TABLE[kind]:
+			if entry.rarities.has("mitico"): mythic_sources += 1
+	_check(mythic_sources == 2 and EquipmentEconomy.DROP_TABLE[11].all(func(entry: Dictionary) -> bool: return entry.rarities.has("mitico")), "Místico só cai do Jacaré")
 	var epic_pity := {"raro": 0, "epico": 60}
 	var forced := LootRules.roll(11, rng, epic_pity)
 	_check(EquipmentEconomy.RARITY_ORDER.find(forced[0].rarity) >= 3, "Jacaré é pool alto: a garantia de Épico vale nele")

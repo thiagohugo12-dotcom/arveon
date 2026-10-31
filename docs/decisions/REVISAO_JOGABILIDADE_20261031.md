@@ -156,7 +156,7 @@ efetivo e drop garantido de material Raro.
 | Limo do Brejo → Essência | 40% | Comum 70% · Incomum 24% · Raro 6% |
 | Sapo Venenoso → Seda | 40% | Comum 70% · Incomum 24% · Raro 6% |
 | Vulto do Brejo → Couro | 40% | Comum 70% · Incomum 24% · Raro 6% |
-| Jacaré Ancião → Couro **e** Essência | 100% cada | Incomum 53% · Raro 33% · Épico 10% · Lendário 4% |
+| Jacaré Ancião → Couro **e** Essência | 100% cada | Incomum 52% · Raro 33% · Épico 10% · Lendário 4% · Místico 1% |
 | Mãe dos Sussurros (3–5 materiais) | — | Incomum 60% · Raro 30% · Épico 5% · Lendário 5% |
 
 - O Jacaré entra no "pool alto" do pity (garantia de Épico aos 60), como elites e chefes.
@@ -175,7 +175,20 @@ efetivo e drop garantido de material Raro.
    ocupariam espaço na mochila, e cada item nomeado precisa de ícone próprio (arte não improvisada).
    Entram junto com as receitas e peças do Pântano.
 
-**Consequência a decidir:** materiais **Místicos** não têm mais fonte. Armas e peças param em
-Lendário até existir uma fonte (andares futuros ou armas de topo, como prevê a decisão de 26/10).
-Evoluir para Lendário exige 9 materiais Lendários (5 Essência + 4 Couro): cerca de 110 vitórias
-sobre o Jacaré (~0,08 por vitória). Valor provisório para medir no save de teste.
+**Místico (aprovado por Thiago em 31/10/2026: "drop raro do Jacaré"):** cada material do
+Jacaré tem 1% de chance de ser Místico (a fatia sai do Incomum, 53% → 52%). É a única fonte de
+Místico no jogo.
+
+Custo estimado, em vitórias sobre o Jacaré (valores provisórios para medir no save de teste):
+
+| Meta | Materiais | Vitórias (média) |
+|---|---|---:|
+| Épico → Lendário | 5 Essência + 4 Couro Lendários | ~125 (limitado pela Essência, 4%) |
+| Lendário → Místico | 6 Essência + 5 Couro Místicos | ~600 (1% por material) |
+| Forjar arma Místico direto | 6 Essência + 7 Couro (corpo a corpo) | ~700 |
+| Aprimorar uma arma Mística de +0 a +20 | ≥ 50 Essências Místicas, sem contar falhas | ≥ 5.000 |
+
+**Ponto a decidir:** aprimorar arma Mística usa Essência da raridade da arma
+(`EquipmentEconomy.enhance_recipe`), o que torna o +20 Místico praticamente inalcançável. Opções:
+aprimoramento de Lendário/Místico usar Essência Épica em maior quantidade, ou aceitar o Místico
+como raridade final quase sem aprimoramento.

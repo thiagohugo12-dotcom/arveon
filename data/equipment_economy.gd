@@ -13,12 +13,13 @@ const DROP_TABLE := {
 	4: [{"item":"Essência", "chance":0.75, "rarities":{"comum":0.45,"incomum":0.40,"raro":0.15}}],
 	# Pântano (aprovado em 31/10/2026, valores provisórios): Limo, Sapo e Vulto repetem os
 	# materiais base com raridade um pouco melhor; o Jacaré Ancião (mini-chefe repetível) é a
-	# única fonte recorrente de Lendário. docs/decisions/REVISAO_JOGABILIDADE_20261031.md
+	# única fonte recorrente de Lendário e a única de Místico (1%, aprovado em 31/10/2026).
+	# docs/decisions/REVISAO_JOGABILIDADE_20261031.md
 	8: [{"item":"Essência", "chance":0.40, "rarities":{"comum":0.70,"incomum":0.24,"raro":0.06}}],
 	9: [{"item":"Seda", "chance":0.40, "rarities":{"comum":0.70,"incomum":0.24,"raro":0.06}}],
 	10: [{"item":"Couro", "chance":0.40, "rarities":{"comum":0.70,"incomum":0.24,"raro":0.06}}],
-	11: [{"item":"Couro", "chance":1.0, "rarities":{"incomum":0.53,"raro":0.33,"epico":0.10,"lendario":0.04}},
-		{"item":"Essência", "chance":1.0, "rarities":{"incomum":0.53,"raro":0.33,"epico":0.10,"lendario":0.04}}]}
+	11: [{"item":"Couro", "chance":1.0, "rarities":{"incomum":0.52,"raro":0.33,"epico":0.10,"lendario":0.04,"mitico":0.01}},
+		{"item":"Essência", "chance":1.0, "rarities":{"incomum":0.52,"raro":0.33,"epico":0.10,"lendario":0.04,"mitico":0.01}}]}
 # O Vendedor vende só materiais Comuns e Incomuns; Raro em diante vem de drops, chefes e pity.
 const VENDOR_RARITIES := ["comum", "incomum"]
 const SUCCESS := [1.0,1.0,1.0,1.0,1.0,0.90,0.86,0.82,0.78,0.75,0.70,0.65,0.60,0.55,0.50,0.45,0.40,0.35,0.30,0.25]
