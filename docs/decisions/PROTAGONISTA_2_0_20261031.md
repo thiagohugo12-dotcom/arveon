@@ -44,7 +44,11 @@ Fonte: `ARVEON_Protagonista_2_0_Espada_e_Animacoes_Normais.zip`, copiado byte a 
 - Corte Crescente e Ruptura Ancestral: a prancha tem 5 + 5 poses (não 6 + 6), com arcos fundidos.
 - Kamusari: 8 poses, mas os quadros 4–5 estão fundidos pelo corte vermelho.
 - Talho Ágil (Skill 1), demais armas (Machado, Lança, Arco, Cajado) e retratos de menu.
-- Espelhamento da Esquerda: `ProtagonistV2Art.MIRROR_LEFT` desliga se Thiago preferir o ataque antigo.
+
+## Espelhamento da Esquerda — APROVADO
+Thiago aprovou em 31/10/2026 manter a Esquerda como a arte da Direita espelhada (“Manter
+espelhado”) nos golpes da Espada (Básico, Estocada, Guarda). `ProtagonistV2Art.MIRROR_LEFT`
+fica ligado; arte própria da Esquerda, se vier, entra como nova linha em `ATTACK_ROWS`.
 
 Novas direções ou técnicas: acrescentar a folha em `JOBS` do construtor e a linha em
 `ProtagonistV2Art.ATTACK_ROWS`; a apresentação já consulta essa tabela.
