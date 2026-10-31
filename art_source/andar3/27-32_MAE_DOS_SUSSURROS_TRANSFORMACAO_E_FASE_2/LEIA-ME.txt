@@ -20,4 +20,5 @@ REFERENCIA_PRANCHA_F2_COM_LEGENDAS.png: prancha da Fase 2 aprovada como conceito
 para recorte (as legendas cobrem o topo dos primeiros quadros e há poses grudadas).
 LEIA-ME_ORIGINAL.md e MANIFESTO_ORIGINAL.json: textos do pacote de revisão, sem alteração.
 
-Integração no jogo: pendente.
+Integração no jogo: feita (tools/build_andar3_mae_f2.gd gera mae_transformacao.png e mae_f2_*.png).
+A transformação ocupa a pausa de troca de fase; o contato do ataque da Fase 2 é o quadro 3.

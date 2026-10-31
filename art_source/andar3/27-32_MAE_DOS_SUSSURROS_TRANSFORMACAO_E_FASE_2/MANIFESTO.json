@@ -6,14 +6,80 @@
   "conteudo": "transformação Fase 1 -> Fase 2 e Fase 2 (Vozes do Fundo)",
   "status": "aprovado",
   "aprovado_em": "2026-10-31",
-  "integracao_no_jogo": "pendente",
+  "integracao_no_jogo": "integrado (tools/build_andar3_mae_f2.gd -> assets/art/andar3/monsters/mae_transformacao.png e mae_f2_*.png); contato do ataque da fase 2 no quadro 3 (raiz esticada)",
   "spritesheets": [
-    {"arquivo": "27_MAE_TRANSFORMACAO_6_QUADROS.png", "origem": "ARVEON_Mae_dos_Sussurros_Pacote_F1_Transformacao_F2_revisao.zip: transformacao/transformacao_fase1_para_fase2_6f_ORIGINAL.png (byte a byte)", "animacao": "transformação", "quadros": 6, "laco": false, "resolucao_px": [2048, 682], "sha256": "717d86df480da87aa6cd6bf2095a37116affdf610726250436b711ba6891b1cd"},
-    {"arquivo": "28_MAE_F2_IDLE_4_QUADROS.webp", "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)", "animacao": "idle", "quadros": 4, "laco": true, "resolucao_px": [2000, 667], "sha256": "9383a14e77c9f0ad66d5df1cfa1ed1881032320c06821754f5168646752cc65a"},
-    {"arquivo": "29_MAE_F2_MOVIMENTO_5_QUADROS.webp", "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)", "animacao": "movimento", "quadros": 5, "laco": true, "resolucao_px": [2000, 667], "sha256": "558d3734ad2b6a967fb365c73d5131cfd314d11a1d4b3ed9d7968c06335e9337"},
-    {"arquivo": "30_MAE_F2_ATAQUE_6_QUADROS.webp", "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)", "animacao": "ataque", "quadros": 6, "laco": false, "resolucao_px": [2000, 667], "sha256": "f50ecf3fa318fcca6696b9bc03afbb6806a89f58b90a7405ef034f52ce4255d7"},
-    {"arquivo": "31_MAE_F2_DANO_3_QUADROS.webp", "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)", "animacao": "dano", "quadros": 3, "laco": false, "resolucao_px": [2000, 667], "sha256": "6d6c85b634cde99aa48ae881a85daa17781d0f9eac6246a3e26dc12297e50a5a"},
-    {"arquivo": "32_MAE_F2_MORTE_6_QUADROS.webp", "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)", "animacao": "morte", "quadros": 6, "laco": false, "resolucao_px": [2000, 667], "sha256": "16ffff12acc2586ea9a31885443dea53c372297d177374b2fedeb0a3efebb520"}
+    {
+      "arquivo": "27_MAE_TRANSFORMACAO_6_QUADROS.png",
+      "origem": "ARVEON_Mae_dos_Sussurros_Pacote_F1_Transformacao_F2_revisao.zip: transformacao/transformacao_fase1_para_fase2_6f_ORIGINAL.png (byte a byte)",
+      "animacao": "transformação",
+      "quadros": 6,
+      "laco": false,
+      "resolucao_px": [
+        2048,
+        682
+      ],
+      "sha256": "717d86df480da87aa6cd6bf2095a37116affdf610726250436b711ba6891b1cd"
+    },
+    {
+      "arquivo": "28_MAE_F2_IDLE_4_QUADROS.webp",
+      "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)",
+      "animacao": "idle",
+      "quadros": 4,
+      "laco": true,
+      "resolucao_px": [
+        2000,
+        667
+      ],
+      "sha256": "9383a14e77c9f0ad66d5df1cfa1ed1881032320c06821754f5168646752cc65a"
+    },
+    {
+      "arquivo": "29_MAE_F2_MOVIMENTO_5_QUADROS.webp",
+      "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)",
+      "animacao": "movimento",
+      "quadros": 5,
+      "laco": true,
+      "resolucao_px": [
+        2000,
+        667
+      ],
+      "sha256": "558d3734ad2b6a967fb365c73d5131cfd314d11a1d4b3ed9d7968c06335e9337"
+    },
+    {
+      "arquivo": "30_MAE_F2_ATAQUE_6_QUADROS.webp",
+      "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)",
+      "animacao": "ataque",
+      "quadros": 6,
+      "laco": false,
+      "resolucao_px": [
+        2000,
+        667
+      ],
+      "sha256": "f50ecf3fa318fcca6696b9bc03afbb6806a89f58b90a7405ef034f52ce4255d7"
+    },
+    {
+      "arquivo": "31_MAE_F2_DANO_3_QUADROS.webp",
+      "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)",
+      "animacao": "dano",
+      "quadros": 3,
+      "laco": false,
+      "resolucao_px": [
+        2000,
+        667
+      ],
+      "sha256": "6d6c85b634cde99aa48ae881a85daa17781d0f9eac6246a3e26dc12297e50a5a"
+    },
+    {
+      "arquivo": "32_MAE_F2_MORTE_6_QUADROS.webp",
+      "origem": "imagem enviada no chat em 31/10/2026 (cópia do chat, byte a byte)",
+      "animacao": "morte",
+      "quadros": 6,
+      "laco": false,
+      "resolucao_px": [
+        2000,
+        667
+      ],
+      "sha256": "16ffff12acc2586ea9a31885443dea53c372297d177374b2fedeb0a3efebb520"
+    }
   ],
   "observacoes": [
     "As folhas da Fase 2 são as cópias recebidas pelo chat (WebP com perda, 2000x667, levemente reduzidas); os PNGs originais do gerador não vieram.",
@@ -21,5 +87,8 @@
     "No ataque da Fase 2, a raiz do quadro 3 só encosta no quadro 4 por um brilho quase transparente (alfa < 64); com alfa >= 64 as poses ficam separadas."
   ],
   "referencia": "REFERENCIA_PRANCHA_F2_COM_LEGENDAS.png: prancha aprovada como conceito; NÃO usar para recorte (legendas por cima do topo dos primeiros quadros e poses grudadas).",
-  "arquivos_de_texto_originais": ["LEIA-ME_ORIGINAL.md", "MANIFESTO_ORIGINAL.json"]
+  "arquivos_de_texto_originais": [
+    "LEIA-ME_ORIGINAL.md",
+    "MANIFESTO_ORIGINAL.json"
+  ]
 }

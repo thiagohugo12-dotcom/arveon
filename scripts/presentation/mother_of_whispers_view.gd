@@ -1,25 +1,35 @@
 class_name MotherOfWhispersView
 extends ActorView
 
-# Mãe dos Sussurros. Fase 1 com as quatro folhas aprovadas (repouso, movimento, ataque e
-# dano, de tools/build_andar3_mae.gd); fase 2 com a arte estática oficial. Na troca de fase
-# a arte muda com o aviso visual simples ("Vozes do Fundo"): a transformação ainda não foi
-# aprovada, então não há animação de troca, de fase 2 nem de morte (some como antes).
-const PHASE_TWO := preload("res://assets/art/andar3/monsters/mae_dos_sussurros_fase2.png")
-# [folha, célula, âncora, quadros]. Âncora = base das raízes da pose 1; o quadro 1 do repouso
-# tem a mesma área visível da Guardiã estática anterior da fase 1.
+# Mãe dos Sussurros com o conjunto aprovado: fase 1 (repouso, movimento, ataque, dano, de
+# tools/build_andar3_mae.gd), transformação durante a pausa da troca de fase e fase 2
+# (repouso, movimento, ataque, dano, morte, de tools/build_andar3_mae_f2.gd). A arte olha
+# para a frente e não vira. Derrota na fase 1 (sem folha de morte) congela o quadro e some.
+# [folha, célula, âncora, quadros]. Âncora = base das raízes da pose 1. O quadro 1 do repouso
+# da fase 1 tem a área da Guardiã estática anterior; a transformação começa nesse tamanho e
+# o repouso da fase 2 tem a área do último quadro dela.
 const PHASE_ONE := {
 	"idle": [preload("res://assets/art/andar3/monsters/mae_f1_idle.png"), Vector2i(218, 277), Vector2i(103, 264), 4],
 	"movimento": [preload("res://assets/art/andar3/monsters/mae_f1_movimento.png"), Vector2i(275, 252), Vector2i(131, 236), 4],
 	"ataque": [preload("res://assets/art/andar3/monsters/mae_f1_ataque.png"), Vector2i(272, 343), Vector2i(134, 312), 6],
 	"dano": [preload("res://assets/art/andar3/monsters/mae_f1_dano.png"), Vector2i(226, 253), Vector2i(105, 240), 3]}
+const TRANSFORMATION := [preload("res://assets/art/andar3/monsters/mae_transformacao.png"), Vector2i(249, 302), Vector2i(127, 289), 6]
+const PHASE_TWO := {
+	"idle": [preload("res://assets/art/andar3/monsters/mae_f2_idle.png"), Vector2i(244, 255), Vector2i(119, 247), 4],
+	"movimento": [preload("res://assets/art/andar3/monsters/mae_f2_movimento.png"), Vector2i(247, 262), Vector2i(122, 254), 5],
+	"ataque": [preload("res://assets/art/andar3/monsters/mae_f2_ataque.png"), Vector2i(374, 266), Vector2i(155, 258), 6],
+	"dano": [preload("res://assets/art/andar3/monsters/mae_f2_dano.png"), Vector2i(296, 244), Vector2i(149, 238), 3],
+	"morte": [preload("res://assets/art/andar3/monsters/mae_f2_morte.png"), Vector2i(263, 276), Vector2i(115, 266), 6]}
 # A base das raízes fica onde ficava a da arte estática (18 px abaixo da origem).
-const PHASE_ONE_GROUND := 18.0
-# Repouso e movimento em loop (s por quadro); dano com os tempos do Vulto e do Jacaré.
+const GROUND := 18.0
+# Repouso e movimento em loop (s por quadro); dano e morte com os tempos do Vulto e do
+# Jacaré (a morte some entre 0,7 s e 1 s, quando a Guardiã sai de cena).
 const IDLE_STEP := 0.2
 const MOVE_STEP := 0.15
 const HURT_STARTS := [0.0, 0.04, 0.18]
 const HURT_LENGTH := 0.32
+const DEATH_STEP := 0.1
+const DEATH_FADE := Vector2(0.7, 1.0)
 
 var telegraph := ""
 var telegraph_direction := Vector2.DOWN
@@ -31,6 +41,7 @@ var _dying_left := 0.0
 var loop_time := 0.0
 var was_walking := false
 var hurt_time := -1.0
+var death_time := -1.0
 
 func _phase() -> int:
 	var boss := get_parent()
@@ -39,14 +50,17 @@ func _phase() -> int:
 
 func play_defeat() -> void:
 	super.play_defeat()
-	_dying_left = 1.0
+	hurt_time = -1.0
+	if _shown_phase >= 2: death_time = 0.0
+	else: _dying_left = 1.0
 
-# Dano na fase 1: reação de 3 quadros, que não interrompe o aviso nem o contato do ataque.
+# Reação de 3 quadros, que não interrompe a transformação nem o aviso e o contato do ataque.
 func show_damage(amount: int, critical: bool = false) -> void:
 	super.show_damage(amount, critical)
-	if amount <= 0 or _shown_phase >= 2 or _dying_left > 0.0: return
+	if amount <= 0 or _dying_left > 0.0 or death_time >= 0.0 or transformation_frame() >= 0: return
+	var boss := get_parent() as MotherOfWhispers
 	var attack := attack_frame()
-	if attack >= 0 and attack <= MotherOfWhispers.ATTACK_CONTACT_FRAME: return
+	if attack >= 0 and boss != null and attack <= boss.attack_contact_frame(): return
 	hurt_time = 0.0 if hurt_time < 0.0 else float(HURT_STARTS[1])
 
 func hurt_frame() -> int:
@@ -57,28 +71,57 @@ func attack_frame() -> int:
 	if boss == null or boss.attack_time < 0.0: return -1
 	return SwampEnemy.frame_at(MotherOfWhispers.ATTACK_FRAME_STARTS, boss.attack_time)
 
+# Quadro da transformação durante a pausa da troca para a fase 2 (-1 fora dela): os 6
+# quadros ocupam a pausa inteira, e a fase 2 começa quando ela termina.
+func transformation_frame() -> int:
+	var boss := get_parent() as MotherOfWhispers
+	if boss == null or _shown_phase != 2 or not boss.phases.transitioning(): return -1
+	var total := float(FloorCatalog.BOSS_PHASES.transition)
+	var progress := 1.0 - boss.phases.transition_left / total
+	return clampi(int(progress * float(TRANSFORMATION[3])), 0, int(TRANSFORMATION[3]) - 1)
+
 # Animação da fase 1 agora: [folha, quadro]. Prioridade: ataque (aviso e contato) > dano >
 # ataque (raízes voltando) > movimento > repouso.
 func phase_one_animation() -> Array:
+	return _animation(PHASE_ONE, MotherOfWhispers.ATTACK_CONTACT_FRAME)
+
+# Fase 2: morte > as mesmas prioridades da fase 1.
+func phase_two_animation() -> Array:
+	if death_time >= 0.0:
+		return ["morte", mini(int(PHASE_TWO.morte[3]) - 1, int(death_time / DEATH_STEP))]
+	return _animation(PHASE_TWO, MotherOfWhispers.ATTACK_CONTACT_FRAME_F2)
+
+# O que está na tela: [conjunto, folha, quadro], conjunto "fase1", "transformacao" ou "fase2".
+func animation() -> Array:
+	if _shown_phase < 2: return ["fase1"] + phase_one_animation()
+	var frame := transformation_frame()
+	if frame >= 0: return ["transformacao", "transformacao", frame]
+	return ["fase2"] + phase_two_animation()
+
+func _animation(sheets: Dictionary, contact: int) -> Array:
 	var attack := attack_frame()
 	var hurt := hurt_frame()
-	if attack >= 0 and (hurt < 0 or attack <= MotherOfWhispers.ATTACK_CONTACT_FRAME): return ["ataque", attack]
+	if attack >= 0 and (hurt < 0 or attack <= contact): return ["ataque", attack]
 	if hurt >= 0: return ["dano", hurt]
-	if walking: return ["movimento", int(loop_time / MOVE_STEP) % int(PHASE_ONE.movimento[3])]
-	return ["idle", int(loop_time / IDLE_STEP) % int(PHASE_ONE.idle[3])]
+	if walking: return ["movimento", int(loop_time / MOVE_STEP) % int(sheets.movimento[3])]
+	return ["idle", int(loop_time / IDLE_STEP) % int(sheets.idle[3])]
 
 func _process(delta: float) -> void:
 	super._process(delta)
 	_time += delta
-	if _phase() != _shown_phase:
+	if _phase() != _shown_phase and death_time < 0.0 and _dying_left <= 0.0:
 		_shown_phase = _phase()
 		_banner_left = 2.2
+		hurt_time = -1.0
 	_banner_left = maxf(0.0, _banner_left - delta)
-	if _dying_left > 0.0:
+	if death_time >= 0.0:
+		death_time += delta
+		modulate.a = 1.0 - clampf((death_time - DEATH_FADE.x) / (DEATH_FADE.y - DEATH_FADE.x), 0.0, 1.0)
+	elif _dying_left > 0.0:
+		# Fase 1 sem folha de morte: o quadro atual fica parado enquanto ela some.
 		_dying_left = maxf(0.0, _dying_left - delta)
 		modulate.a = _dying_left
-	elif _shown_phase == 1:
-		# Na derrota o quadro atual fica parado enquanto ela some.
+	else:
 		if hurt_time >= 0.0:
 			hurt_time += delta
 			if hurt_time >= HURT_LENGTH: hurt_time = -1.0
@@ -94,19 +137,14 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, 120.0, Color(0.03, 0.07, 0.05, 0.42))
 	draw_set_transform(Vector2.ZERO)
 	var tint := Color(1.6, 1.6, 1.3) if flash_left > 0.0 else Color.WHITE
-	if _banner_left > 1.6: tint = Color(1.7, 1.9, 1.5)
-	var top := 0.0
-	if _shown_phase >= 2:
-		draw_texture(PHASE_TWO, Vector2(-floorf(PHASE_TWO.get_width() * 0.5), -PHASE_TWO.get_height() + 18), tint)
-		top = -float(PHASE_TWO.get_height()) + 4.0
-	else:
-		var current := phase_one_animation()
-		var sheet: Array = PHASE_ONE[current[0]]
-		var cell: Vector2i = sheet[1]
-		var anchor: Vector2i = sheet[2]
-		draw_texture_rect_region(sheet[0], Rect2(Vector2(-anchor.x, PHASE_ONE_GROUND - anchor.y), Vector2(cell)), Rect2(int(current[1]) * cell.x, 0, cell.x, cell.y), tint)
-		# Barra e título na altura do repouso, sem pular com as raízes erguidas do ataque.
-		top = PHASE_ONE_GROUND - float((PHASE_ONE.idle[2] as Vector2i).y) - 14.0
+	var current := animation()
+	var sheet: Array = TRANSFORMATION if current[0] == "transformacao" else (PHASE_TWO if current[0] == "fase2" else PHASE_ONE)[current[1]]
+	var cell: Vector2i = sheet[1]
+	var anchor: Vector2i = sheet[2]
+	draw_texture_rect_region(sheet[0], Rect2(Vector2(-anchor.x, GROUND - anchor.y), Vector2(cell)), Rect2(int(current[2]) * cell.x, 0, cell.x, cell.y), tint)
+	# Barra e título na altura do repouso da fase, sem pular com as raízes erguidas do ataque.
+	var idle: Array = PHASE_ONE.idle if _shown_phase == 1 else PHASE_TWO.idle
+	var top := GROUND - float((idle[2] as Vector2i).y) - 14.0
 	if warning:
 		px(-13, top - 20, 26, 6, Color("#f4b942"))
 		px(-2, top - 30, 5, 9, Color("#ffe39a"))

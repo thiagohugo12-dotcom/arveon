@@ -293,7 +293,11 @@ func _on_died() -> void:
 	velocity = Vector2.ZERO
 	view.play_defeat()
 	defeated.emit(kind)
-	get_tree().create_timer(1.0 if kind >= 5 else 0.22).timeout.connect(queue_free)
+	get_tree().create_timer(_defeat_linger()).timeout.connect(queue_free)
+
+# Tempo em cena depois da derrota (some antes disso); quem tem animação de morte fica mais.
+func _defeat_linger() -> float:
+	return 1.0 if kind >= 5 else 0.22
 
 
 func hit_details(event: int) -> Dictionary:

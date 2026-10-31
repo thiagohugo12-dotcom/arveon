@@ -8,8 +8,10 @@ extends RootGuardian
 #                           (poças avisadas sob o jogador) e Onda de lodo ao redor.
 # Fase 2 · Vozes do Fundo:  arte da fase 2, Raízes emergentes em fileira até o jogador,
 #                           rajada mais larga, mais manchas e onda maior, com menos pausa.
-# Fase 1 animada (4 folhas aprovadas): o golpe de raízes segue o relógio do ataque, com os
-# quadros 1–3 durante o aviso e o contato (quadro 4) no instante em que o golpe resolve.
+# Animada nas duas fases (folhas aprovadas): o golpe de raízes segue o relógio do ataque, com
+# os quadros de preparo durante o aviso e o contato no instante em que o golpe resolve
+# (quadro 4 na fase 1; quadro 3, a raiz esticada, na fase 2). A troca de fase mostra a
+# transformação durante a pausa de sempre, e a derrota na fase 2 toca a morte (1 s em cena).
 enum Move { BURST, PUDDLES, WAVE, ROOTS }
 const PHASE_ONE := [Move.BURST, Move.PUDDLES, Move.WAVE]
 const PHASE_TWO := [Move.ROOTS, Move.BURST, Move.PUDDLES, Move.ROOTS, Move.WAVE]
@@ -17,9 +19,10 @@ const MOVE_WINDUP := {Move.BURST: 0.8, Move.PUDDLES: 0.6, Move.WAVE: 1.0, Move.R
 const WAVE_RADIUS := [150.0, 175.0]
 const LEASH := 380.0
 # Início de cada quadro do ataque (s). No aviso o relógio anda proporcional ao preparo e chega
-# ao quadro 4 quando o golpe resolve; depois anda em tempo real até o fim do quadro 6.
+# ao quadro de contato quando o golpe resolve; depois anda em tempo real até o fim do quadro 6.
 const ATTACK_FRAME_STARTS := [0.0, 0.1, 0.2, 0.3, 0.42, 0.54]
 const ATTACK_CONTACT_FRAME := 3
+const ATTACK_CONTACT_FRAME_F2 := 2
 const ATTACK_LENGTH := 0.66
 
 var arena := Rect2()
@@ -37,9 +40,17 @@ func display_name() -> String:
 func second_phase() -> bool:
 	return phases.phase >= 2
 
+func attack_contact_frame() -> int:
+	return ATTACK_CONTACT_FRAME_F2 if second_phase() else ATTACK_CONTACT_FRAME
+
+func _defeat_linger() -> float:
+	return 1.0
+
 func _physics_process(delta: float) -> void:
 	tick_ability_status(delta)
 	if phases.tick(self, delta):
+		# A transformação aparece com as cores da arte, sem o tom genérico da troca de fase.
+		modulate = Color.WHITE
 		_cancel_move()
 		return
 	if not is_targetable() or not is_instance_valid(target) or not target.health.is_alive():
@@ -49,7 +60,7 @@ func _physics_process(delta: float) -> void:
 		_cancel_move()
 		_return_home()
 		return
-	if attack_time >= float(ATTACK_FRAME_STARTS[ATTACK_CONTACT_FRAME]):
+	if attack_time >= float(ATTACK_FRAME_STARTS[attack_contact_frame()]):
 		attack_time += delta
 		if attack_time >= ATTACK_LENGTH: attack_time = -1.0
 	var offset := target.global_position - global_position
@@ -57,7 +68,7 @@ func _physics_process(delta: float) -> void:
 	velocity = Vector2.ZERO
 	if move_windup > 0.0:
 		move_windup = maxf(0.0, move_windup - delta)
-		attack_time = float(ATTACK_FRAME_STARTS[ATTACK_CONTACT_FRAME]) * (1.0 - move_windup / move_windup_total)
+		attack_time = float(ATTACK_FRAME_STARTS[attack_contact_frame()]) * (1.0 - move_windup / move_windup_total)
 		if move_windup == 0.0:
 			_resolve_move(offset)
 			move_recover = (1.25 if second_phase() else 1.7)
