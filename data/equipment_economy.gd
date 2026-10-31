@@ -94,7 +94,12 @@ static func rarity_recipe(current: String) -> Dictionary:
 static func enhance_recipe(level: int, rarity: String) -> Dictionary:
 	if level < 0 or level >= 20 or not RARITY_ORDER.has(rarity): return {}
 	var tier := RARITY_ORDER.find(rarity)
-	return {"gold":10+level*8+tier*10,"materials":{key("Essência",rarity):1+level/5}}
+	var amount := 1 + level / 5
+	# Lendário e Místico usam Essência Épica em maior quantidade (×1,5 e ×2, arredondado para
+	# cima): Essência dessas raridades quase não cai. Aprovado em 31/10/2026, provisório.
+	if rarity == "lendario": return {"gold":10+level*8+tier*10,"materials":{key("Essência","epico"):ceili(amount * 1.5)}}
+	if rarity == "mitico": return {"gold":10+level*8+tier*10,"materials":{key("Essência","epico"):amount * 2}}
+	return {"gold":10+level*8+tier*10,"materials":{key("Essência",rarity):amount}}
 
 static func bonus_options(category: String, milestone: int) -> Array[Dictionary]:
 	if not ArsenalRules.CATEGORIES.has(category) or not MILESTONES.has(milestone): return []

@@ -186,9 +186,19 @@ Custo estimado, em vitórias sobre o Jacaré (valores provisórios para medir no
 | Épico → Lendário | 5 Essência + 4 Couro Lendários | ~125 (limitado pela Essência, 4%) |
 | Lendário → Místico | 6 Essência + 5 Couro Místicos | ~600 (1% por material) |
 | Forjar arma Místico direto | 6 Essência + 7 Couro (corpo a corpo) | ~700 |
-| Aprimorar uma arma Mística de +0 a +20 | ≥ 50 Essências Místicas, sem contar falhas | ≥ 5.000 |
+| Aprimorar uma arma Mística de +0 a +20 | 100 Essências Épicas, sem contar falhas | ~1.000 (ver abaixo) |
 
-**Ponto a decidir:** aprimorar arma Mística usa Essência da raridade da arma
-(`EquipmentEconomy.enhance_recipe`), o que torna o +20 Místico praticamente inalcançável. Opções:
-aprimoramento de Lendário/Místico usar Essência Épica em maior quantidade, ou aceitar o Místico
-como raridade final quase sem aprimoramento.
+**Aprimoramento de Lendário e Místico (aprovado por Thiago em 31/10/2026: "Essência Épica"):**
+armas Lendárias e Místicas são aprimoradas com Essência **Épica**, em maior quantidade: ×1,5
+(arredondado para cima) no Lendário e ×2 no Místico. O ouro não muda. Até Épico, a receita
+continua a original.
+
+| Raridade da arma | Essência gasta de +0 a +20 (sem falhas) |
+|---|---|
+| Épico | 50 Épicas |
+| Lendário | 80 Épicas (antes: 50 Lendárias) |
+| Místico | 100 Épicas (antes: 50 Místicas, ~5.000 vitórias) |
+
+O Jacaré dá Essência Épica em 10% das vitórias, então 100 Épicas são ~1.000 vitórias só com ele.
+Elites, Guardiões e a garantia de Épico do pity também contam. O topo continua exigente, e é o
+ponto para medir no save de teste.

@@ -3,7 +3,8 @@
 Thiago aprovou a Proposta A de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md`. Limo,
 Sapo e Vulto deixam Essência, Seda e Couro (40%, raridade até Raro); o Jacaré Ancião deixa
 Couro e Essência sempre, de Incomum a Místico (Lendário 4% e Místico 1% cada; única fonte de
-Místico, aprovada no mesmo dia), e conta como elite/chefe no pity.
+Místico, aprovada no mesmo dia), e conta como elite/chefe no pity. Armas Lendárias e Místicas
+são aprimoradas com Essência Épica (×1,5 e ×2 da quantidade normal; mesmo ouro).
 Do Pântano em diante, 5% dos materiais do Guardião do andar são Lendários. O Vendedor vende
 só Comum e Incomum (e o Selo); compra de volta qualquer raridade. Valores provisórios; saves
 sem mudança de formato. Material nomeado e troféu do Pântano esperam receitas e ícones próprios.

@@ -49,6 +49,7 @@ func _run() -> void:
 	out = OS.get_environment("QA_RENDER_DIR")
 	if not out.is_empty(): DirAccess.make_dir_recursive_absolute(out)
 	_mission_unit()
+	_high_rarity_enhancement()
 	OS.set_environment("ARVEON_SAVE_PATH", "user://qa_revisao_jogabilidade_%d.json" % Time.get_ticks_usec())
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	root.size = Vector2i(360, 800)
@@ -92,6 +93,32 @@ func _mission_unit() -> void:
 	_check(rewards == [[30, 10]] and mission.mission_index == 0 and mission.progress == 0, "substituta paga a recompensa da coleta e segue o ciclo")
 	mission.record_defeat()
 	_check(mission.progress == 1, "missão de derrotas continua igual")
+
+func _high_rarity_enhancement() -> void:
+	var totals := {}
+	for rarity: String in ["epico", "lendario", "mitico"]:
+		var total := 0
+		var keys := {}
+		for level in range(20):
+			var recipe := EquipmentEconomy.enhance_recipe(level, rarity)
+			for item: String in recipe.materials:
+				keys[item] = true
+				total += int(recipe.materials[item])
+		totals[rarity] = total
+		_check(keys.keys() == ["Essência|epico"], "aprimorar %s usa só Essência Épica" % rarity)
+	_check(totals == {"epico": 50, "lendario": 80, "mitico": 100}, "Essência Épica de +0 a +20: Épico 50, Lendário 80, Místico 100 (%s)" % str(totals))
+	_check(EquipmentEconomy.enhance_recipe(0, "raro").materials == {"Essência|raro": 1} and EquipmentEconomy.enhance_recipe(19, "comum").materials == {"Essência": 4}, "raridades até Épico seguem a receita original")
+	_check(EquipmentEconomy.enhance_recipe(7, "mitico").gold == EquipmentEconomy.enhance_recipe(7, "comum").gold + 50, "ouro do aprimoramento não mudou")
+	var smith := GameProgress.new()
+	smith.gold = 99999
+	smith.add_item("Madeira", 9)
+	smith.add_item("Couro|mitico", 7)
+	smith.add_item("Essência|mitico", 6)
+	var uid := smith.craft_weapon("espada", "mitico")
+	smith.add_item("Essência|epico", 2)
+	_check(uid != "" and smith.can_enhance_weapon(uid), "arma Mística pode ser aprimorada com Essência Épica")
+	var result := smith.enhance_weapon(uid, false, 0.0)
+	_check(result.get("success", false) and smith.weapon(uid).level == 1 and not smith.bag.has("Essência|epico"), "+0 → +1 Místico gasta 2 Essências Épicas")
 
 func _camp_regeneration() -> void:
 	var player: PlayerActor = main.player
