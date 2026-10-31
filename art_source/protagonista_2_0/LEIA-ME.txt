@@ -1,0 +1,19 @@
+ARVÉON: Ascensão Ancestral — Protagonista 2.0
+PACOTE: primeira prancha de Espada (inteira) + animações normais
+
+01_ESPADA_APROVADA: primeira prancha de combate, SEM recorte.
+02_ESPADA_ANIMACOES_ORIGINAIS: ataque basico e estocada precisa (6 quadros cada).
+03_PROTAGONISTA_REFERENCIA: 4 direcoes do personagem 2.0, sem armas.
+04_ANIMACOES_NORMAIS: Idle (4 por direcao) e Corrida (6 por direcao).
+05_PREVIAS_ANIMADAS: GIFs de consulta.
+
+A segunda prancha, com recortes/cortes indesejados, e as cinco PNGs
+extraidas dela foram EXCLUIDAS deste pacote.
+
+OBSERVACOES:
+- A prancha geral da espada foi incluida intacta, preservando o desenho aprovado.
+- As artes ainda requerem verificacao de padding, alpha, tamanho e grade
+  antes da implementacao na Godot.
+- Dash, Dano e Derrota e as outras direcoes de combate ainda nao foram
+  produzidos nesta etapa: nao estao no pacote.
+- Nenhum script ou arquivo do projeto Godot foi modificado.
