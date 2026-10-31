@@ -249,9 +249,10 @@ func _process(delta: float) -> void:
 
 ## Protagonista 2.0 where the approved sheets exist (Direita, and Esquerda mirrored):
 ## Estocada Precisa in its six frames (contact = frame 3, SwordTechniqueTiming), Kamusari
-## in eight on the same clock (contact = frame 4, ProtagonistV2Art) and the
-## four Guarda Reativa frames. The counter (frames 3–4), the other techniques and the
-## vertical directions keep their current art until their sheets arrive.
+## in eight on the same clock (contact = frame 4, ProtagonistV2Art), the four Guarda
+## Reativa frames and its six-frame counter, Corte Crescente (five) and Ruptura Ancestral
+## (from the impact, as its damage is immediate). The vertical directions keep their
+## current art until their sheets arrive.
 const V2_GUARD_RAISE := 0.10 # Second arc pose after the 0.12 s activation, then the held guard.
 ## [sheet, pose] for the current technique frame, or [] when the current art stays.
 func v2_technique_pose(frame: int) -> Array:
@@ -261,10 +262,16 @@ func v2_technique_pose(frame: int) -> Array:
 			return ["espada_kamusari", ProtagonistV2Art.kamusari_frame(sword_technique.elapsed)]
 		"estocada_precisa":
 			return ["espada_estocada", frame]
+		"corte_crescente":
+			return ["espada_crescente", ProtagonistV2Art.timed_frame(ProtagonistV2Art.CRESCENTE_FRAMES, sword_technique.elapsed)]
+		"ruptura_ancestral":
+			return ["espada_ruptura", ProtagonistV2Art.RUPTURA_IMPACT_FRAME + ProtagonistV2Art.timed_frame(ProtagonistV2Art.RUPTURA_FRAMES, sword_technique.elapsed)]
 		"guarda_reativa":
-			if frame == 3 or frame == 4: return []
-			# The real three-second protection keeps the normal body while moving.
-			if frame == 2 and walking: return ["corrida", v2_run_frame()]
+			# The real three-second protection keeps the normal body while moving, and so
+			# does a counter taken on the move (no sliding feet).
+			if (frame == 2 or sword_technique.counter_elapsed >= 0.0) and walking: return ["corrida", v2_run_frame()]
+			if sword_technique.counter_elapsed >= 0.0:
+				return ["espada_contra", ProtagonistV2Art.timed_frame(ProtagonistV2Art.COUNTER_FRAMES, sword_technique.counter_elapsed)]
 			if frame == 2: return ["espada_guarda", 2 if sword_technique.elapsed < 0.12 + V2_GUARD_RAISE else 3]
 			# Recovery lowers the blade back through the first pose.
 			return ["espada_guarda", 0 if frame == 5 else frame]

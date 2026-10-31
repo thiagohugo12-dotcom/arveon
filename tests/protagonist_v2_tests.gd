@@ -49,6 +49,7 @@ func run() -> void:
 	check(ProtagonistV2Layout.SHEETS.idle.frames == 4 and ProtagonistV2Layout.SHEETS.idle.rows == 4,"idle: 4 frames x 4 directions")
 	check(ProtagonistV2Layout.SHEETS.corrida.frames == 6 and ProtagonistV2Layout.SHEETS.corrida.rows == 4,"run: 6 frames x 4 directions")
 	check(ProtagonistV2Layout.SHEETS.espada_basico.frames == 6 and ProtagonistV2Layout.SHEETS.espada_estocada.frames == 6 and ProtagonistV2Layout.SHEETS.espada_guarda.frames == 4,"sword sheets: 6 basic, 6 thrust, 4 guard")
+	check(ProtagonistV2Layout.SHEETS.espada_contra.frames == 6 and ProtagonistV2Layout.SHEETS.espada_crescente.frames == 5 and ProtagonistV2Layout.SHEETS.espada_ruptura.frames == 5,"board sheets: 6 counter, 5 Crescente, 5 Ruptura")
 	var main := preload("res://scenes/main.tscn").instantiate()
 	root.add_child(main)
 	main.set_process(false)
@@ -205,7 +206,11 @@ func run() -> void:
 		if row >= 2: check(seen == [0, 1, 2, 3, 4, 5, 6, 7],"Kamusari plays 8 frames in order %d: %s" % [row, seen])
 		view.clear_sword_technique()
 		check(not effect.body_trail and effect.remaining == 0.0,"Kamusari clears without leftovers")
-	# Guarda Reativa: four guard frames; the counter stays separate on the current art.
+	# Guarda Reativa: four guard frames; the counter is its own six-frame event.
+	var counter_time: float = SwordTechniqueEffect.GUARDA_FRAMES[3] + SwordTechniqueEffect.GUARDA_FRAMES[4] + SwordTechniqueEffect.GUARDA_FRAMES[5]
+	var counter_frames_time := 0.0
+	for value: float in ProtagonistV2Art.COUNTER_FRAMES: counter_frames_time += value
+	check(is_equal_approx(counter_frames_time, counter_time),"counter frames fill the 0.22 s reaction")
 	for row in [3, 2]:
 		view.play_sword_technique("guarda_reativa", directions[row], 3.0)
 		var effect := view.sword_technique
@@ -218,9 +223,56 @@ func run() -> void:
 			check(view.v2_technique_pose(effect._frame())[0] == "espada_guarda","guard frame drawn with the new art at %.2f" % t)
 			await capture(view, "guarda_%d" % row)
 		check(poses == [0, 1, 2, 2, 2],"guard activation then held guard %s" % [poses])
+		# Counter: six frames over the 0.22 s reaction, then the held guard again.
 		view.play_sword_counter(directions[row])
-		check(effect._frame() == 3 and view.v2_technique_pose(3).is_empty(),"counter remains a separate event on the current art")
+		effect.set_process(false) # Hold counter_elapsed still while capturing.
+		var counter := []
+		var ct := 0.0
+		while ct < counter_time:
+			effect.counter_elapsed = ct
+			var pose := view.v2_technique_pose(effect._frame())
+			if pose[0] == "espada_contra" and (counter.is_empty() or counter[-1] != pose[1]):
+				counter.append(pose[1])
+				effect.queue_redraw()
+				await capture(view, "contra_%d" % row)
+			ct += 0.005
+		check(counter == [0, 1, 2, 3, 4, 5],"counter plays 6 frames in order %d: %s" % [row, counter])
+		view.set_moving(true)
+		check(view.v2_technique_pose(effect._frame())[0] == "corrida","counter on the move keeps the run body")
+		view.set_moving(false)
+		effect.set_process(true)
+		effect._process(counter_time - effect.counter_elapsed + 0.001)
+		check(effect.counter_elapsed < 0.0 and view.v2_technique_pose(effect._frame()) == ["espada_guarda", 3],"after the counter the guard is held again")
 		view.clear_sword_technique()
+	# Corte Crescente and Ruptura Ancestral damage on use (no timed contact): the body art
+	# starts on the cut / the impact and fills the existing visual duration.
+	for id: String in ["corte_crescente", "ruptura_ancestral"]:
+		check(not SwordTechniqueTiming.FRAMES.has(id),"%s damage stays immediate" % id)
+		var durations: Array = ProtagonistV2Art.CRESCENTE_FRAMES if id == "corte_crescente" else ProtagonistV2Art.RUPTURA_FRAMES
+		var total_time := 0.0
+		for value: float in durations: total_time += value
+		check(is_equal_approx(total_time, SwordTechniqueEffect.EXTRA_DURATIONS[id]),"%s keeps its %.2f s" % [id, SwordTechniqueEffect.EXTRA_DURATIONS[id]])
+		var sheet := "espada_crescente" if id == "corte_crescente" else "espada_ruptura"
+		var strip := "crescente" if id == "corte_crescente" else "ruptura"
+		for row in [3, 2, 0]:
+			view.play_sword_technique(id, directions[row])
+			var effect := view.sword_technique
+			effect.externally_clocked = true
+			var seen := []
+			var t := 0.0
+			while t < effect.duration:
+				effect.elapsed = t
+				effect.remaining = effect.duration - t
+				var pose := view.v2_technique_pose(effect._frame())
+				check(pose.is_empty() == (row < 2) and (pose.is_empty() or pose[0] == sheet),"%s body art only where it exists %d" % [id, row])
+				if not pose.is_empty() and (seen.is_empty() or seen[-1] != pose[1]):
+					seen.append(pose[1])
+					effect.queue_redraw()
+					await capture(view, "%s_%d" % [strip, row])
+				t += 0.005
+			if row >= 2: check(seen == ([0, 1, 2, 3, 4] if id == "corte_crescente" else [2, 3, 4]),"%s frames in order %d: %s" % [id, row, seen])
+			view.clear_sword_technique()
+			check(effect.remaining == 0.0,"%s clears without leftovers" % id)
 	# Damage flash and death keep the existing feedback, without stuck poses.
 	view.play_sword_attack(Vector2.RIGHT, 0.72)
 	view.show_damage(5)
@@ -238,8 +290,8 @@ func run() -> void:
 func _write_preview() -> void:
 	var html := "<!doctype html><meta charset=utf-8><title>Protagonista 2.0</title><style>body{background:#16201b;color:#e7f4d7;font:14px sans-serif;margin:16px}img{image-rendering:pixelated;background:#000;margin:2px}h2{font-size:15px;margin:18px 0 4px}</style>"
 	html += "<h1>Protagonista 2.0 no jogo (captura real, escala de celular 3x)</h1>"
-	var timing := {"idle": 180, "corrida": 110, "basico": 90, "estocada": 70, "guarda": 400, "kamusari": 60}
-	var names := {"idle_0":"Idle Frente","idle_1":"Idle Costas","idle_2":"Idle Esquerda","idle_3":"Idle Direita","corrida_0":"Corrida Frente","corrida_1":"Corrida Costas","corrida_2":"Corrida Esquerda","corrida_3":"Corrida Direita","basico_3":"Ataque Básico Direita","basico_2":"Ataque Básico Esquerda (espelhado)","estocada_3":"Estocada Direita","estocada_2":"Estocada Esquerda (espelhada)","guarda_3":"Guarda Reativa Direita","guarda_2":"Guarda Reativa Esquerda (espelhada)","kamusari_3":"Kamusari Direita","kamusari_2":"Kamusari Esquerda (espelhado)"}
+	var timing := {"idle": 180, "corrida": 110, "basico": 90, "estocada": 70, "guarda": 400, "contra": 37, "crescente": 60, "ruptura": 113, "kamusari": 60}
+	var names := {"idle_0":"Idle Frente","idle_1":"Idle Costas","idle_2":"Idle Esquerda","idle_3":"Idle Direita","corrida_0":"Corrida Frente","corrida_1":"Corrida Costas","corrida_2":"Corrida Esquerda","corrida_3":"Corrida Direita","basico_3":"Ataque Básico Direita","basico_2":"Ataque Básico Esquerda (espelhado)","estocada_3":"Estocada Direita","estocada_2":"Estocada Esquerda (espelhada)","guarda_3":"Guarda Reativa Direita","guarda_2":"Guarda Reativa Esquerda (espelhada)","contra_3":"Contra-ataque da Guarda Direita","contra_2":"Contra-ataque da Guarda Esquerda (espelhado)","crescente_3":"Corte Crescente Direita","crescente_2":"Corte Crescente Esquerda (espelhado)","ruptura_3":"Ruptura Ancestral Direita","ruptura_2":"Ruptura Ancestral Esquerda (espelhada)","kamusari_3":"Kamusari Direita","kamusari_2":"Kamusari Esquerda (espelhado)"}
 	for strip: String in names:
 		if not strips.has(strip): continue
 		var images: Array = strips[strip]

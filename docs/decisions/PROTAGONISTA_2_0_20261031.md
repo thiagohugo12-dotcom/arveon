@@ -44,17 +44,36 @@ Fonte: `ARVEON_Protagonista_2_0_Espada_e_Animacoes_Normais.zip`, copiado byte a 
   0,05/0,06/0,05/0,055 até o contato (0,215 s), em que entra o arco (quadro 5), e
   0,08/0,07/0,06/0,06 depois. O disco do alcance real e o corte que atravessa continuam; só as
   fitas circulares junto ao corpo saem, pois a arte já as desenha. Folha 3288 × 326 (≈ 4,3 MB).
+- Contra-ataque da Guarda, Direita/Esquerda — pedido de Thiago (“Faça o resto”): 6 quadros
+  da linha 2 da prancha, depois das 4 poses da guarda. Os quadros 2–4 se tocam pelos arcos;
+  cortes em degrau (o arco do 2 passa por cima da cabeça do 3) os separam sem partir arco ou
+  bota. Pés medidos à mão (no 3 a bota de trás está erguida). É a reação visual ao bloqueio
+  (sem dano próprio) e ocupa os mesmos 0,22 s de antes: 0,02/0,04/0,05/0,045/0,035/0,03;
+  depois volta a guarda mantida. Recebendo o golpe em movimento, o corpo segue na corrida
+  (sem deslizar), como na guarda mantida.
+- Corte Crescente, Direita/Esquerda: as 5 poses da linha 3. O dano é imediato no uso (sem
+  contato cronometrado nas regras) e a pose 1 já corta com o arco, então os 5 quadros cobrem
+  os mesmos 0,30 s visuais: 0,05/0,06/0,07/0,06/0,06. A fita do alcance real (115 px) segue.
+- Ruptura Ancestral, Direita/Esquerda: as 5 poses da linha 3 (carga, salto, impacto com
+  erupção, rescaldo, recuperação). Como o dano é imediato, a animação começa no impacto
+  (quadro 3 da prancha) e cobre os mesmos 0,34 s: 0,12/0,11/0,11. A carga e o salto ficam na
+  folha sem uso; mostrá-los antes do impacto exigiria atrasar o dano (mudança de mecânica,
+  só com aprovação). Os rastros do alcance real (205 px) seguem.
+- Chão medido nas botas da linha 3 (y 700): o brilho do arco e os destroços descem abaixo
+  dele. Folhas novas: contra 1530 × 226, Crescente 1180 × 295, Ruptura 1785 × 300
+  (≈ 4,9 MB RGBA, ≈ 6,5 MB com mipmaps).
 - Dano (lampejo), Derrota (fade) e Dash continuam com o feedback anterior sobre o novo corpo.
 
 ## Pendências (arte atual mantida)
-- Cima/Baixo de todos os golpes (sem arte): ataque e técnicas antigos, com o explorador anterior.
-- Contra-ataque da Guarda: 5 dos 6 quadros fundidos na prancha.
-- Corte Crescente e Ruptura Ancestral: a prancha tem 5 + 5 poses (não 6 + 6), com arcos fundidos.
-- Talho Ágil (Skill 1), demais armas (Machado, Lança, Arco, Cajado) e retratos de menu.
+- Cima/Baixo de todos os golpes e técnicas: o pacote só traz a vista lateral.
+- Talho Ágil (Skill 1) e demais armas (Machado, Lança, Arco, Cajado): sem arte no pacote.
+- Retratos de menu: a branch `dev/sistemas-andares-dados` está trocando o retrato da tela de
+  equipamento por `DiaryPortrait` (ainda com o explorador anterior). Trocar para o
+  Protagonista 2.0 quando as duas frentes se encontrarem, para não gerar conflito.
 
 ## Espelhamento da Esquerda — APROVADO
 Thiago aprovou em 31/10/2026 manter a Esquerda como a arte da Direita espelhada (“Manter
-espelhado”) nos golpes da Espada (Básico, Estocada, Guarda). `ProtagonistV2Art.MIRROR_LEFT`
+espelhado”) nos golpes da Espada (Básico, Estocada, Guarda e os seguintes). `ProtagonistV2Art.MIRROR_LEFT`
 fica ligado; arte própria da Esquerda, se vier, entra como nova linha em `ATTACK_ROWS`.
 
 Novas direções ou técnicas: acrescentar a folha em `JOBS` do construtor e a linha em

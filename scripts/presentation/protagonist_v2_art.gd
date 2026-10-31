@@ -12,7 +12,10 @@ const TEXTURES := {
 	"espada_basico": preload("res://assets/art/protagonist_v2/espada_basico.png"),
 	"espada_estocada": preload("res://assets/art/protagonist_v2/espada_estocada.png"),
 	"espada_guarda": preload("res://assets/art/protagonist_v2/espada_guarda.png"),
-	"espada_kamusari": preload("res://assets/art/protagonist_v2/espada_kamusari.png")
+	"espada_kamusari": preload("res://assets/art/protagonist_v2/espada_kamusari.png"),
+	"espada_contra": preload("res://assets/art/protagonist_v2/espada_contra.png"),
+	"espada_crescente": preload("res://assets/art/protagonist_v2/espada_crescente.png"),
+	"espada_ruptura": preload("res://assets/art/protagonist_v2/espada_ruptura.png")
 }
 const FEET := Vector2(0, 12) # Mesmos pés do explorador anterior: sombra, colisão e alvo intactos.
 const IDLE_FRAME_TIME := 0.18 # Ritmo do GIF de referência do pacote.
@@ -24,6 +27,16 @@ const ATTACK_ROWS := [-1, -1, 0, 0]
 ## exatamente no contato do dano (SwordTechniqueTiming.contact("danca_laminas") = 0,215 s).
 const KAMUSARI_FRAMES := [0.05, 0.06, 0.05, 0.055, 0.08, 0.07, 0.06, 0.06]
 const KAMUSARI_CONTACT_FRAME := 4
+## Corte Crescente e Ruptura Ancestral causam o dano no instante do uso (as regras não têm
+## preparação), dentro da duração visual de SwordTechniqueEffect.EXTRA_DURATIONS. O
+## Crescente já corta no quadro 1; a Ruptura começa no impacto, e a carga e o salto (quadros
+## 1–2 da prancha) ficam na folha, sem uso, enquanto o dano for imediato.
+const CRESCENTE_FRAMES := [0.05, 0.06, 0.07, 0.06, 0.06]
+const RUPTURA_IMPACT_FRAME := 2
+const RUPTURA_FRAMES := [0.12, 0.11, 0.11]
+## Contra-ataque da Guarda (reação visual ao bloqueio, sem dano próprio): 6 quadros nos
+## 0,22 s em que o efeito mostra o contra-ataque.
+const COUNTER_FRAMES := [0.02, 0.04, 0.05, 0.045, 0.035, 0.03]
 
 static func has_attack_art(direction_row: int) -> bool:
 	if direction_row == 2 and not MIRROR_LEFT: return false
@@ -47,8 +60,12 @@ static func draw_attack(canvas: CanvasItem, sheet: String, direction_row: int, f
 	draw(canvas, sheet, ATTACK_ROWS[direction_row], frame, tint, direction_row == 2)
 
 static func kamusari_frame(elapsed: float) -> int:
+	return timed_frame(KAMUSARI_FRAMES, elapsed)
+
+## Quadro de uma sequência de durações; o último fica até o fim.
+static func timed_frame(durations: Array, elapsed: float) -> int:
 	var boundary := 0.0
-	for i in range(KAMUSARI_FRAMES.size() - 1):
-		boundary += KAMUSARI_FRAMES[i]
+	for i in range(durations.size() - 1):
+		boundary += durations[i]
 		if elapsed < boundary - 0.000001: return i
-	return KAMUSARI_FRAMES.size() - 1
+	return durations.size() - 1
