@@ -6,7 +6,9 @@ extends SceneTree
 #  - 04_ANIMACOES_NORMAIS/corrida_4_direcoes_6_quadros.png → corrida.png (6 × as mesmas direções)
 #  - 02_ESPADA_ANIMACOES_ORIGINAIS/ataque_basico_6_quadros.png    → espada_basico.png (Direita)
 #  - 02_ESPADA_ANIMACOES_ORIGINAIS/estocada_precisa_6_quadros.png → espada_estocada.png (Direita)
-#  - 01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png, linha 2, 4 primeiras poses → espada_guarda.png
+#  - 01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png, linha 2, 4 primeiras poses → espada_guarda.png;
+#    linha 2, 6 últimas → espada_contra.png; linha 3 → espada_crescente.png e espada_ruptura.png
+#    (5 + 5); linha 4 → espada_kamusari.png (8)
 # As pranchas não são grades regulares: efeitos e cachecóis passam para a vizinha. Cada
 # quadro sai pelas regiões com alfa >= 0,25 (os N maiores componentes são as poses); o
 # brilho fraco fica com a pose a que está ligado pelo próprio brilho (busca em largura) e o
@@ -27,7 +29,7 @@ const BODY_HEIGHT := 64.0 # Mesma altura do explorador antigo (32 px do atlas em
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() >= 2 and args[0] == "--inspect":
-		_inspect(args[1])
+		_inspect(args[1], args.slice(2))
 	else:
 		_build()
 	quit()
@@ -76,17 +78,27 @@ func segment(sheet: Image, region: Rect2i, frames: int, forced: Array = [], cuts
 			next += 1
 	# A pose glued to its neighbour by a full-alpha effect is split at a vertical line
 	# (Kamusari frames 4 and 5 touch through the red cut); loose shards are never cut.
-	for split_x: int in splits:
+	# A split is a column, or a stepped cut [[from_y, x], ...] when an arc passes over the
+	# neighbour's head (Guard counter-attack).
+	for split in splits:
+		var steps: Array = [[0, split]] if split is int else split
 		for component: Array in components.duplicate():
 			var box: Rect2i = component[2]
-			if component[0] < SPLIT_MIN_PIXELS or split_x <= box.position.x or split_x >= box.end.x: continue
+			if component[0] < SPLIT_MIN_PIXELS: continue
+			var right := 0
+			for y in range(box.position.y, box.end.y):
+				var cut_x := _cut_x(steps, y)
+				for x in range(maxi(box.position.x, cut_x), box.end.x):
+					if label[y * w + x] == component[1]: right += 1
+			if right == 0 or right == component[0]: continue
 			var sides := [[0, Rect2i()], [0, Rect2i()]]
 			for y in range(box.position.y, box.end.y):
+				var cut_x := _cut_x(steps, y)
 				for x in range(box.position.x, box.end.x):
 					var i := y * w + x
 					if label[i] != component[1]: continue
-					var side: Array = sides[1 if x >= split_x else 0]
-					if x >= split_x: label[i] = next
+					var side: Array = sides[1 if x >= cut_x else 0]
+					if x >= cut_x: label[i] = next
 					side[1] = Rect2i(x, y, 1, 1) if side[0] == 0 else (side[1] as Rect2i).merge(Rect2i(x, y, 1, 1))
 					side[0] += 1
 			component[0] = sides[0][0]
@@ -199,7 +211,21 @@ const JOBS := [
 	# a pose fundida é dividida na coluna 779, entre a ponta do corte e a cauda do arco.
 	# Pés medidos na prancha (régua de 10 px): a luz vermelha cobre as botas nos quadros 4 e 5.
 	["espada_kamusari", "01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png", Rect2i(0, 714, 1536, 300), 1, 8, 1.62, "pe_tras", [], [], [779],
-		{"chao": 951, "pe_tras": [34, 177, 342, 547, 779, 1028, 1242, 1399]}]]
+		{"chao": 951, "pe_tras": [34, 177, 342, 547, 779, 1028, 1242, 1399]}],
+	# Contra-ataque da Guarda, linha 2 depois da guarda: os quadros 2–4 se tocam pelos arcos.
+	# Cortes em degrau: o arco do 2 passa por cima da cabeça do 3 (até x 1077, acima de y 303)
+	# e a bota do 2 avança até x 1011; o arco do 3 termina antes do 4, cuja bota da frente
+	# avança por baixo dele. No 3 a bota de trás está erguida: pés medidos à mão.
+	["espada_contra", "01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png", Rect2i(760, 250, 776, 215), 1, 6, 1.62, "pe_tras", [], [],
+		[[[0, 1078], [303, 1003], [400, 1012]], [[0, 1179], [372, 1168], [399, 1145]]],
+		{"pe_tras": [798, 902, 1020, 1149, 1294, 1421]}],
+	# Corte Crescente e Ruptura Ancestral, linha 3 (5 + 5 poses), separadas na coluna 779.
+	# Chão medido nas botas (y 700): o brilho do arco e os destroços da Ruptura descem abaixo
+	# dele. Na Ruptura, faíscas douradas e pedras ficam diante da bota de trás nos quadros 2–3.
+	["espada_crescente", "01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png", Rect2i(0, 465, 779, 249), 1, 5, 1.62, "pe_tras", [], [], [],
+		{"chao": 700}],
+	["espada_ruptura", "01_ESPADA_APROVADA/ESPADA_PRIMEIRA_PRANCHA_COMPLETA.png", Rect2i(779, 465, 757, 249), 1, 5, 1.62, "pe_tras", [], [], [],
+		{"chao": 700, "pe_tras": [783, 930, 1024, 1257, 1420]}]]
 const IDLE_FRONT_HEIGHT := 248.0 # Altura do quadro Frente 1 do Idle na folha original.
 
 func _extract(job: Array) -> Dictionary:
@@ -210,15 +236,16 @@ func _extract(job: Array) -> Dictionary:
 	result.order = grid_order(result, job[3], job[4])
 	return result
 
-func _inspect(out_dir: String) -> void:
+func _inspect(out_dir: String, only: Array = []) -> void:
 	DirAccess.make_dir_recursive_absolute(out_dir)
 	for job: Array in JOBS:
+		if not only.is_empty() and not only.has(job[0]): continue
 		var result := _extract(job)
 		print("== ", job[0], " loose=", result.loose, " residue=", result.residue, " residue_max_alpha=", result.residue_max)
 		for slot in range(result.order.size()):
 			var index: int = result.order[slot]
 			var used: Rect2i = result.used[index]
-			print("  r%d c%d used=%s" % [slot / job[4], slot % job[4], used])
+			print("  r%d c%d used=%s pe_tras=%d tronco=%.1f" % [slot / job[4], slot % job[4], used, _rear_foot_x(result.images[index], used), _torso_x(result.images[index], used)])
 			var frame: Image = (result.images[index] as Image).get_region(used)
 			frame.save_png(out_dir.path_join("%s_r%d_c%d.png" % [job[0], slot / job[4], slot % job[4]]))
 
@@ -353,6 +380,12 @@ func _flood(data: PackedByteArray, w: int, h: int, region: Rect2i, label: Packed
 			owner[k] = owner[current]
 			queue.append(k)
 	return owner
+
+static func _cut_x(steps: Array, y: int) -> int:
+	var result: int = steps[0][1]
+	for step: Array in steps:
+		if y >= int(step[0]): result = int(step[1])
+	return result
 
 static func _nearest_pose(poses: Array, point: Vector2i) -> int:
 	var best := 0

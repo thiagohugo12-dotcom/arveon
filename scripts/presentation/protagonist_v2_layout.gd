@@ -10,4 +10,7 @@ const SHEETS := {
 	"espada_estocada": {"texture": "res://assets/art/protagonist_v2/espada_estocada.png", "cell": Vector2i(385, 198), "anchor": Vector2i(107, 196), "rows": 1, "frames": 6},
 	"espada_guarda": {"texture": "res://assets/art/protagonist_v2/espada_guarda.png", "cell": Vector2i(235, 243), "anchor": Vector2i(115, 241), "rows": 1, "frames": 4},
 	"espada_kamusari": {"texture": "res://assets/art/protagonist_v2/espada_kamusari.png", "cell": Vector2i(411, 326), "anchor": Vector2i(176, 295), "rows": 1, "frames": 8},
+	"espada_contra": {"texture": "res://assets/art/protagonist_v2/espada_contra.png", "cell": Vector2i(255, 226), "anchor": Vector2i(81, 224), "rows": 1, "frames": 6},
+	"espada_crescente": {"texture": "res://assets/art/protagonist_v2/espada_crescente.png", "cell": Vector2i(236, 295), "anchor": Vector2i(128, 282), "rows": 1, "frames": 5},
+	"espada_ruptura": {"texture": "res://assets/art/protagonist_v2/espada_ruptura.png", "cell": Vector2i(357, 300), "anchor": Vector2i(123, 280), "rows": 1, "frames": 5},
 }
