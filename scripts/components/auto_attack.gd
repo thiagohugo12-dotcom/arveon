@@ -8,6 +8,7 @@ var cooldown_left: float = 0.0
 var damage_scale := 1.0
 var damage_base := -1.0
 var basic_bonus := 1.0
+var basic_power := 1.0 # Category multiplier for basic attacks only (ArsenalRules.basic_power).
 var critical_chance := 0.05
 var critical_multiplier := 1.5
 var damage_type := "physical"
@@ -37,8 +38,8 @@ func tick(delta: float, origin: Node2D) -> void:
 	var modifiers := {"scale":1.0,"chance":critical_chance,"charge_scale":1.0}
 	if origin is PlayerActor and origin.progress != null and target is EnemyActor: modifiers = origin.class_combat.hit_modifiers(target,"basic")
 	var roll := CombatRules.roll()
-	var hit := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale*float(modifiers.scale),float(modifiers.chance),critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > critical_chance else -1.0)
-	var eligible := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale*float(modifiers.charge_scale),float(modifiers.chance),critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > critical_chance else -1.0)
+	var hit := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale*basic_power*float(modifiers.scale),float(modifiers.chance),critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > critical_chance else -1.0)
+	var eligible := CombatRules.resolve(damage_base if damage_base >= 0 else float(weapon.damage),basic_bonus,damage_scale*basic_power*float(modifiers.charge_scale),float(modifiers.chance),critical_multiplier,roll,float(modifiers.chance) if float(modifiers.chance) > critical_chance else -1.0)
 	var hit_damage: int = hit.damage
 	var event := CombatRules.next_event()
 	if weapon.projectile_kind.is_empty():

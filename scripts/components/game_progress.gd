@@ -506,7 +506,7 @@ func combat_stats() -> Dictionary:
 	result.critical_multiplier = float(result.critical_multiplier) + crit_damage_bonus
 	result.resistance = minf(0.25,float(result.resistance) + resist_bonus)
 	result.basic_interval_factor = maxf(0.7,float(result.basic_interval_factor)-attack_speed_bonus)
-	result.damage = roundi(float(result[result.damage_type]) * (1.0+result.automatic+result.basic))
+	result.damage = roundi(float(result[result.damage_type]) * (1.0+result.automatic+result.basic) * ArsenalRules.basic_power(active_category()))
 	return result
 
 func discover_nearby(point: Vector2, floor_id: int = 1) -> bool:

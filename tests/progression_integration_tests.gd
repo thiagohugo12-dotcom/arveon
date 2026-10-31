@@ -27,7 +27,9 @@ static func run(suite: SceneTree) -> void:
 		var stats := p.combat_stats()
 		var critical := CombatRules.resolve(stats[stats.damage_type],1+stats.automatic+stats.basic,1,stats.critical_chance,stats.critical_multiplier,0)
 		var skill := CombatRules.resolve(stats.physical,1+stats.automatic+stats.special,1.4,stats.critical_chance,stats.critical_multiplier,0.99)
-		suite.check(stats.damage == {"espada":22,"machado":26,"lanca":24,"arco":22,"cajado":26}[category] and p.attribute_points() == 10 and p.talents.mastery_points(category) == 0,"calculated build example verified "+category)
+		# Valores de referência sem o bônus do básico; desde 31/10/2026 o dano básico é multiplicado por ele.
+		var unboosted := roundi(float(stats[stats.damage_type]) * (1.0 + float(stats.automatic) + float(stats.basic)))
+		suite.check(unboosted == {"espada":22,"machado":26,"lanca":24,"arco":22,"cajado":26}[category] and int(stats.damage) == roundi(float(stats[stats.damage_type]) * (1.0 + float(stats.automatic) + float(stats.basic)) * ArsenalRules.basic_power(category)) and p.attribute_points() == 10 and p.talents.mastery_points(category) == 0,"calculated build example verified "+category)
 		examples.append({"category":category,"class":p.active_class(),"basic":stats.damage,"critical":critical.damage,"skill1_physical":skill.damage,"interval":ArsenalRules.profile(category).interval*stats.basic_interval_factor,"speed":stats.speed})
 	# Faithful v7 fixture: all five conquered floors, investments and category progress.
 	var p := GameProgress.new()

@@ -268,3 +268,26 @@ Exemplo: Armadura da Mata, 19 HP em Comum, 21 em Incomum, 27 em Lendário e 29 e
   Mochila e o Ferreiro mostram os atributos já com a raridade.
 - `equipment_rules_tests` agora grava as peças de teste como Comuns, o caso de peça nova que ele
   mede. `equipment_ui_capture` recebe 2 Fragmentos para forjar a arma Lendária de exemplo.
+
+## 8. Proposta C implementada (31/10/2026)
+
+Escolha de Thiago: **bônus de dano no básico corpo a corpo**. Atirar andando não foi alterado.
+
+| Arma | Alcance | Bônus no básico |
+|---|---:|---:|
+| Espada | 75 px | ×1,15 |
+| Machado | 80 px | ×1,25 |
+| Lança | 115 px | ×1,05 |
+| Arco | 250 px | ×1 (sem mudança) |
+| Cajado | 220 px | ×1 (sem mudança) |
+
+- O bônus vale **só para o ataque básico** (`ArsenalRules.basic_power`, aplicado no
+  `AutoAttack`). Técnicas e Ultimates usam o mesmo dano base de antes.
+- O "Dano básico" mostrado na ficha, no Ferreiro e na comparação de armas já inclui o bônus. A
+  carga da Ultimate e a proficiência contam o dano real do golpe, como antes.
+- Nenhuma arma ficou mais fraca do que era. Com dano base 12, a Espada passa a tirar 14 por golpe.
+- Testes de referência atualizados: `sword_game_tests` (golpe da Espada) e `etapa2_combat_tests`
+  (conta da carga da Ultimate do Machado).
+- Ainda aberto: a distância continua mais segura, porque o jogador é mais rápido que todos os
+  inimigos. Se o teste no celular mostrar que ainda é fácil demais recuar atirando, a opção
+  "intervalo +30% ao atirar andando" segue disponível.

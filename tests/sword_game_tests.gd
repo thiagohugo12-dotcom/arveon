@@ -74,7 +74,8 @@ func run() -> void:
 		player.attack.cooldown_left = 0.0
 		player._physics_process(0.0)
 		check(view.sword_row == index and view.phase() == 1,"real attack chooses direction %d" % index)
-		check(main.enemy.health.current == 36,"real sword applies exactly one unchanged hit %d" % index)
+		# 12 de dano base × bônus do básico da Espada (×1,15 desde 31/10/2026) = 14.
+		check(main.enemy.health.current == 48 - roundi(12.0 * ArsenalRules.basic_power("espada")),"real sword applies exactly one unchanged hit %d" % index)
 		check(view.attack_left == 0.0,"no duplicate generic slash %d" % index)
 		if not output.is_empty():
 			view._process(0.08)

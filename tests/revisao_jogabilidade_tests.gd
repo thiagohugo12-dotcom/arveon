@@ -65,6 +65,7 @@ func _run() -> void:
 	await _frames(2)
 	_camp_regeneration()
 	await _field_boss_bar_floor1()
+	await _melee_basic_power()
 	main.progress.ascension.defeats["1"] = 50
 	main.progress.ascension.complete_forest_trial()
 	await main._travel_floor(2)
@@ -240,6 +241,44 @@ func _field_boss_bar_floor1() -> void:
 	await _frames(2)
 	main._update_field_boss_bar()
 	_check(not main.hud.boss_name.visible, "chefe removido não deixa barra presa")
+
+func _melee_basic_power() -> void:
+	_check(ArsenalRules.basic_power("espada") == 1.15 and ArsenalRules.basic_power("machado") == 1.25 and ArsenalRules.basic_power("lanca") == 1.05 and ArsenalRules.basic_power("arco") == 1.0 and ArsenalRules.basic_power("cajado") == 1.0 and ArsenalRules.basic_power("") == 1.0, "bônus do básico: Espada ×1,15 · Machado ×1,25 · Lança ×1,05 · Arco e Cajado ×1")
+	# Ficha: o "Dano básico" mostrado já inclui o bônus; o dano das técnicas (physical) não.
+	var sheet := GameProgress.new()
+	for category: String in ["espada", "machado", "lanca", "arco"]:
+		sheet.equipment[category] = 0
+		sheet.equipped.Arma = category
+		var stats := sheet.combat_stats()
+		var expected := roundi(float(stats.physical) * (1.0 + float(stats.automatic) + float(stats.basic)) * ArsenalRules.basic_power(category))
+		_check(int(stats.damage) == expected, "%s: dano básico %d = físico %d × bônus" % [category, int(stats.damage), int(stats.physical)])
+	# Golpe real do AutoAttack: o bônus entra só no básico.
+	CombatRules.random_roll_source = func() -> float: return 0.99
+	var attack := AutoAttack.new()
+	attack.weapon = WeaponData.new()
+	attack.weapon.reach = 120.0
+	attack.weapon.category = "machado"
+	attack.damage_base = 20.0
+	attack.basic_power = ArsenalRules.basic_power("machado")
+	main.add_child(attack)
+	_place_player(Vector2(1300, 300))
+	var dummy: EnemyActor = main._make_enemy(0)
+	dummy.position = Vector2(1340, 300)
+	main.add_child(dummy)
+	dummy.set_physics_process(false)
+	dummy.health.initialize(1000)
+	await _frames(2)
+	attack.tick(1.0, main.player)
+	_check(dummy.health.current == 1000 - 25, "golpe básico de Machado: 20 × 1,25 = 25 de dano (%d)" % (1000 - dummy.health.current))
+	attack.queue_free()
+	dummy.queue_free()
+	CombatRules.random_roll_source = Callable()
+	# No jogador real, o bônus fica no ataque básico e não no dano base usado pelas técnicas.
+	var player: PlayerActor = main.player
+	if not player.progress.active_category().is_empty():
+		var values := player.progress.combat_stats()
+		_check(is_equal_approx(player.attack.basic_power, ArsenalRules.basic_power(player.progress.active_category())) and is_equal_approx(player.attack.damage_base, float(values[values.damage_type])), "jogador: bônus no básico, técnicas seguem com o dano base")
+	await _frames(1)
 
 func _floor3_mission() -> void:
 	main._refresh_mission()

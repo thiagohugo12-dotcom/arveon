@@ -40,7 +40,8 @@ static func run(suite: SceneTree) -> void:
 	for i in range(5): progress.enhance_weapon(first,false,0.0)
 	var failed := progress.enhance_weapon(first,false,0.99)
 	suite.check(not failed.success and failed.level == 9 and failed.lost == 1,"+11 failure drops one level")
-	suite.check(int(progress.combat_stats().damage) <= bonus_damage + 4,"downgrade recomputes active bonuses")
+	# +4 níveis de aprimoramento × bônus do básico da Espada (×1,15 desde 31/10/2026).
+	suite.check(int(progress.combat_stats().damage) <= bonus_damage + ceili(4 * ArsenalRules.basic_power("espada")),"downgrade recomputes active bonuses")
 	progress.enhance_weapon(first,false,0.0)
 	var seal_count := int(progress.bag[EquipmentEconomy.SEAL])
 	failed = progress.enhance_weapon(first,true,0.99)

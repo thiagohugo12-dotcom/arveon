@@ -254,6 +254,7 @@ func apply_progression(value: GameProgress, initial: bool = false) -> void:
 	special_bonus = 1.0+float(values.automatic)+float(values.special)
 	attack.damage_base = float(values[values.damage_type])
 	attack.basic_bonus = 1.0+float(values.automatic)+float(values.basic)
+	attack.basic_power = ArsenalRules.basic_power(progress.active_category())
 	attack.critical_chance = float(values.critical_chance)
 	attack.critical_multiplier = float(values.critical_multiplier)
 	attack.damage_type = values.damage_type

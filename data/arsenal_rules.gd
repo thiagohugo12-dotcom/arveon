@@ -9,12 +9,17 @@ const RARITIES := {
 	"epico": {"name": "Épico", "color": "#be8fea"},
 	"lendario": {"name": "Lendário", "color": "#e7c36d"},
 	"mitico": {"name": "Místico", "color": "#e53935"}}
+# "basic_power" multiplica só o ataque básico: quem luta de perto recebe mais dano por golpe
+# (aprovado em 31/10/2026, provisório; docs/decisions/REVISAO_JOGABILIDADE_20261031.md).
 const CATEGORIES := {
-	"espada": {"name": "Espada", "reach": 75.0, "interval": 0.72, "projectile": "", "speed": 0.0},
-	"machado": {"name": "Machado", "reach": 80.0, "interval": 0.9, "projectile": "", "speed": 0.0},
-	"lanca": {"name": "Lança", "reach": 115.0, "interval": 0.75, "projectile": "", "speed": 0.0},
-	"arco": {"name": "Arco", "reach": 250.0, "interval": 0.8, "projectile": "flecha", "speed": 440.0},
-	"cajado": {"name": "Cajado", "reach": 220.0, "interval": 0.95, "projectile": "orbe", "speed": 260.0}}
+	"espada": {"name": "Espada", "reach": 75.0, "interval": 0.72, "projectile": "", "speed": 0.0, "basic_power": 1.15},
+	"machado": {"name": "Machado", "reach": 80.0, "interval": 0.9, "projectile": "", "speed": 0.0, "basic_power": 1.25},
+	"lanca": {"name": "Lança", "reach": 115.0, "interval": 0.75, "projectile": "", "speed": 0.0, "basic_power": 1.05},
+	"arco": {"name": "Arco", "reach": 250.0, "interval": 0.8, "projectile": "flecha", "speed": 440.0, "basic_power": 1.0},
+	"cajado": {"name": "Cajado", "reach": 220.0, "interval": 0.95, "projectile": "orbe", "speed": 260.0, "basic_power": 1.0}}
+
+static func basic_power(category: String) -> float:
+	return float(CATEGORIES.get(category, {}).get("basic_power", 1.0))
 static func metadata(id: String) -> Dictionary:
 	var item: Dictionary = RPGRules.EQUIPMENT.get(id, {})
 	if item.is_empty():

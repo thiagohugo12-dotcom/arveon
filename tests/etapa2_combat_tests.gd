@@ -96,7 +96,7 @@ static func run_world(suite: SceneTree) -> void:
 	enemy.mark_left = 0.0
 	p.abilities.charge.machado = 100
 	suite.check(player.use_skill(3),"axe Ultimate amplifier activates for credit accounting regression")
-	var unboosted_basic := CombatRules.resolve(player.attack.damage_base,player.attack.basic_bonus,1.0,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
+	var unboosted_basic := CombatRules.resolve(player.attack.damage_base,player.attack.basic_bonus,player.attack.basic_power,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
 	var unboosted_skill := CombatRules.resolve(player.attack.damage_base,player.special_bonus,1.70,player.attack.critical_chance,player.attack.critical_multiplier,0.99)
 	var amplified_before := enemy.health.current
 	player.attack.cooldown_left = 0.0

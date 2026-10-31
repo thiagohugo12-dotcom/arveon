@@ -147,9 +147,11 @@ func _run() -> void:
 	check(player.attack.select_target(player) == second, "nearest valid target selected")
 	player.attack.cooldown_left = 0.0
 	player.attack.tick(0.016, player)
-	check(second.health.current == 36 and enemy.health.current == 48, "automatic attack damages selected target only")
+	# 12 de dano × bônus do básico da arma ativa (Espada ×1,15 desde 31/10/2026).
+	var after_hit := 48 - roundi(12.0 * player.attack.basic_power)
+	check(second.health.current == after_hit and enemy.health.current == 48, "automatic attack damages selected target only")
 	player.attack.tick(0.016, player)
-	check(second.health.current == 36, "attack cooldown enforced")
+	check(second.health.current == after_hit, "attack cooldown enforced")
 	second.receive_damage(999)
 	check(player.attack.select_target(player) == enemy, "dead target excluded immediately")
 	check(second.view.defeat_left > 0.0 and second.collision_layer == 0 and not second.is_in_group("damageable_enemies"), "defeated enemy briefly fades without remaining targetable")

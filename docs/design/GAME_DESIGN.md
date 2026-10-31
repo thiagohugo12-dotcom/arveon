@@ -1,3 +1,10 @@
+## Bônus do básico corpo a corpo — aprovado em 31/10/2026
+
+Thiago escolheu a primeira opção da Proposta C de
+`docs/decisions/REVISAO_JOGABILIDADE_20261031.md`: o ataque básico da Espada causa ×1,15, o
+do Machado ×1,25 e o da Lança ×1,05; Arco e Cajado não mudam. Técnicas e Ultimates não
+recebem o bônus. Atirar andando continua igual. Valores provisórios; saves sem mudança.
+
 ## Evolução de armas e raridade das peças — aprovado em 31/10/2026
 
 Thiago escolheu a Proposta D de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md` com duas
