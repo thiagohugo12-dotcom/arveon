@@ -1,0 +1,49 @@
+{
+  "projeto": "ARVÉON: Ascensão Ancestral",
+  "personagem": "Mãe dos Sussurros",
+  "fase": "Fase 1",
+  "status": "Quatro spritesheets aprovadas visualmente. Transformação Fase 1 -> Fase 2 PENDENTE; quinta imagem rejeitada por representar morte/colapso.",
+  "originais_preservados": true,
+  "artes": [
+    {
+      "arquivo": "mae_dos_sussurros_fase1_idle_4f.png",
+      "quadros": 4,
+      "tamanho_original_px": [
+        2048,
+        682
+      ],
+      "sha256": "830d7d6f6d8dd7fa4fc89efa6db2d2a74af5df729112d10205780bb6b5b25e76",
+      "notas": "Loop de repouso"
+    },
+    {
+      "arquivo": "mae_dos_sussurros_fase1_movimento_4f.png",
+      "quadros": 4,
+      "tamanho_original_px": [
+        2048,
+        682
+      ],
+      "sha256": "1f82bfb5fd9923f2645dc356a9e8ca4520e50c2382caf9361b83064d328c1fbb",
+      "notas": "Movimentação por raízes"
+    },
+    {
+      "arquivo": "mae_dos_sussurros_fase1_ataque_6f.png",
+      "quadros": 6,
+      "tamanho_original_px": [
+        2048,
+        682
+      ],
+      "sha256": "083b46574f7fbd794c332db7a34eb4a7aa0dbf43af4f1ba5b68627d615e64f30",
+      "notas": "Ataque de raízes; quadro visual de contato 4 (índice 3), validar na Godot"
+    },
+    {
+      "arquivo": "mae_dos_sussurros_fase1_dano_3f.png",
+      "quadros": 3,
+      "tamanho_original_px": [
+        2048,
+        682
+      ],
+      "sha256": "68a84cacc6a6f2eca5bee99eb57f4b8b3ad397e3912793ce6732de3a0de7d060",
+      "notas": "Reação curta ao dano"
+    }
+  ]
+}

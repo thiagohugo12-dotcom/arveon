@@ -1,0 +1,21 @@
+{
+  "projeto": "ARVÉON: Ascensão Ancestral",
+  "andar": 3,
+  "monstro": "Mãe dos Sussurros",
+  "tipo": "guardiã (chefe do andar)",
+  "fase": 1,
+  "status": "parcial",
+  "aprovado_em": "2026-10-30",
+  "animacoes_aprovadas": ["idle", "movimento", "ataque", "dano"],
+  "pendentes": ["transformação Fase 1 -> Fase 2 (6 quadros, Vozes do Fundo)", "animações da Fase 2", "morte"],
+  "observacao_rejeitada": "A quinta imagem enviada (colapso/morte) foi rejeitada para a transformação e não está no pacote.",
+  "integracao_no_jogo": "pendente (o jogo ainda usa o sprite estático assets/art/andar3/monsters/mae_dos_sussurros_fase1.png)",
+  "origem": "ARVEON_Mae_dos_Sussurros_Fase1_4_animacoes_aprovadas (1).zip; PNGs copiados byte a byte, só o nome do arquivo mudou",
+  "spritesheets": [
+    {"arquivo": "23_MAE_F1_IDLE_4_QUADROS.png", "arquivo_no_zip": "fase1/mae_dos_sussurros_fase1_idle_4f.png", "animacao": "idle", "quadros": 4, "laco": true, "resolucao_px": [2048, 682], "sha256": "830d7d6f6d8dd7fa4fc89efa6db2d2a74af5df729112d10205780bb6b5b25e76"},
+    {"arquivo": "24_MAE_F1_MOVIMENTO_4_QUADROS.png", "arquivo_no_zip": "fase1/mae_dos_sussurros_fase1_movimento_4f.png", "animacao": "movimento", "quadros": 4, "laco": true, "resolucao_px": [2048, 682], "sha256": "1f82bfb5fd9923f2645dc356a9e8ca4520e50c2382caf9361b83064d328c1fbb"},
+    {"arquivo": "25_MAE_F1_ATAQUE_6_QUADROS.png", "arquivo_no_zip": "fase1/mae_dos_sussurros_fase1_ataque_6f.png", "animacao": "ataque (raízes)", "quadros": 6, "laco": false, "quadro_contato_referencia": 4, "resolucao_px": [2048, 682], "sha256": "083b46574f7fbd794c332db7a34eb4a7aa0dbf43af4f1ba5b68627d615e64f30"},
+    {"arquivo": "26_MAE_F1_DANO_3_QUADROS.png", "arquivo_no_zip": "fase1/mae_dos_sussurros_fase1_dano_3f.png", "animacao": "dano", "quadros": 3, "laco": false, "resolucao_px": [2048, 682], "sha256": "68a84cacc6a6f2eca5bee99eb57f4b8b3ad397e3912793ce6732de3a0de7d060"}
+  ],
+  "arquivos_de_texto_originais": ["LEIA-ME_ORIGINAL.txt", "MANIFESTO_ORIGINAL.json"]
+}

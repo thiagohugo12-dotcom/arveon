@@ -1,0 +1,20 @@
+ARVÉON — ANDAR 3: PÂNTANO DAS VOZES
+MÃE DOS SUSSURROS (GUARDIÃ) — FASE 1 — CONJUNTO PARCIAL
+
+Status: PARCIAL. Quatro animações da Fase 1 aprovadas em 30/10/2026 (idle, movimento,
+ataque, dano). O conjunto do chefe NÃO está completo.
+Pendentes: transformação Fase 1 -> Fase 2 (6 quadros, Vozes do Fundo), animações da
+Fase 2 e morte. A imagem de colapso/morte enviada antes foi rejeitada como transformação.
+Não redesenhar, recolorir, reexportar nem alterar estas folhas.
+
+Arquivos (PNG 2048 x 682 RGBA, copiados byte a byte do pacote aprovado; só o nome mudou):
+- 23_MAE_F1_IDLE_4_QUADROS.png      (fase1/mae_dos_sussurros_fase1_idle_4f.png)      4 quadros, laço
+- 24_MAE_F1_MOVIMENTO_4_QUADROS.png (fase1/mae_dos_sussurros_fase1_movimento_4f.png) 4 quadros, laço
+- 25_MAE_F1_ATAQUE_6_QUADROS.png    (fase1/mae_dos_sussurros_fase1_ataque_6f.png)    6 quadros, golpe de raízes; contato de referência no quadro 4
+- 26_MAE_F1_DANO_3_QUADROS.png      (fase1/mae_dos_sussurros_fase1_dano_3f.png)      3 quadros, sem laço
+
+MANIFESTO.json: nomes novos e originais, quadros e SHA-256 conferidos.
+LEIA-ME_ORIGINAL.txt e MANIFESTO_ORIGINAL.json: textos do pacote enviado, sem alteração
+(as regras de integração estão no LEIA-ME_ORIGINAL.txt).
+
+Integração no jogo: ainda pendente. O jogo continua usando o sprite estático da Fase 1.

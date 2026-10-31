@@ -1,0 +1,19 @@
+ARVÉON — MÃE DOS SUSSURROS — FASE 1 (PACOTE PARCIAL)
+======================================================
+
+Conteúdo: QUATRO spritesheets VISUALMENTE APROVADAS: idle, movimento, ataque e dano.
+NÃO inclui a transformação Fase 1 -> Fase 2: a imagem recebida mostra um colapso/morte e foi REJEITADA para a transformação.
+NÃO inclui sprites da Fase 2. Não afirmar que o conjunto do boss está completo.
+
+Regras para Claude (Godot 4.5.1 / GDScript / Compatibility):
+- Manter o visual original da guardiã — muito larga, composta de madeira e raízes, rosto feminino ancestral integrado ao tronco, musgos, cipós e pedras; NÃO criar substituto humanoide.
+- PNGs arquivados são idênticos aos arquivos enviados; NÃO redesenhar, recolorir ou substituir.
+- Importar os quadros respeitando o posicionamento real de cada pose; NÃO presumir que a largura total/quantidade de frames produza bordas corretas para 3 e 6 quadros.
+- Inspecionar visualmente eventuais sobreposições nas bordas e preservar as extremidades do corpo/raízes ao enquadrar.
+- Preservar transparência e exibir com filtro nearest. Se houver arte sobreposta cuja separação exigiria repintura, sinalizar em vez de inventar novos pixels.
+- Idle/Movimento em loop; Ataque e Dano sem loop. O QUARTO quadro do ataque é referência visual do golpe, porém a sincronização exata deve seguir a lógica de contato real existente.
+- Preservar as mecânicas: alcance, dano, recargas, IA, escala, fases, save e o trabalho do Andar 3.
+- Checar os commits locais e o trabalho não commitado antes de integrar. Trabalhar apenas localmente, sem push, deploy, merge nem alteração de main/produção.
+- Executar testes direcionados e apresentar prévia animada no Godot para aprovação.
+
+A próxima arte a gerar é TRANSFORMAÇÃO EM VOZES DO FUNDO com 6 quadros: deve terminar com a Guardiã VIVA, ERETA, estável e ameaçadora, sem colapsar.
