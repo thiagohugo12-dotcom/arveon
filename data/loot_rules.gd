@@ -79,7 +79,7 @@ static func roll(kind: int, rng: RandomNumberGenerator, pity: Dictionary) -> Arr
 		if occurrence >= float(entry.chance): continue
 		var rolled := EquipmentEconomy.roll_entry(entry, occurrence, rng.randf())
 		if rolled.is_empty(): continue
-		result.append(_material(entry.item, apply_pity(rolled.rarity, pity, kind in [3, 4])))
+		result.append(_material(entry.item, apply_pity(rolled.rarity, pity, kind in [3, 4, 11])))
 	for entry: Dictionary in FloorCatalog.LOOT.drops.get(kind, []):
 		if rng.randf() < float(entry.chance): result.append(_named(entry.item))
 	if kind == 3 and rng.randf() < float(FloorCatalog.LOOT.fragment_elite_chance):
@@ -94,6 +94,8 @@ static func field_boss(floor_id: int, rng: RandomNumberGenerator, pity: Dictiona
 		var item: String = ["Couro", "Seda", "Essência"][rng.randi() % 3]
 		var chance := rng.randf()
 		var rarity := "incomum" if chance < 0.6 else "raro" if chance < 0.9 else "epico"
+		# Do Pântano em diante, 5% de cada material do Guardião é Lendário (Épico cai para 5%).
+		if floor_id >= 3 and chance >= 0.95: rarity = "lendario"
 		result.append(_material(item, apply_pity(rarity, pity, true)))
 	return result
 

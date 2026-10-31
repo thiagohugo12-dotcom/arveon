@@ -1,3 +1,12 @@
+## Materiais do Pântano e Vendedor — aprovado em 31/10/2026
+
+Thiago aprovou a Proposta A de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md`. Limo,
+Sapo e Vulto deixam Essência, Seda e Couro (40%, raridade até Raro); o Jacaré Ancião deixa
+Couro e Essência sempre, de Incomum a Lendário (4% cada), e conta como elite/chefe no pity.
+Do Pântano em diante, 5% dos materiais do Guardião do andar são Lendários. O Vendedor vende
+só Comum e Incomum (e o Selo); compra de volta qualquer raridade. Valores provisórios; saves
+sem mudança de formato. Material nomeado e troféu do Pântano esperam receitas e ícones próprios.
+
 ## Monstros do Andar 2 — integração local autorizada em 19/10/2026
 
 Após aprovar as animações, Thiago pediu a integração dos três monstros na

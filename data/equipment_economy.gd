@@ -10,7 +10,17 @@ const DROP_TABLE := {
 	1: [{"item":"Seda", "chance":0.35, "rarities":{"comum":0.88,"incomum":0.10,"raro":0.02}}],
 	2: [{"item":"Essência", "chance":0.35, "rarities":{"comum":0.88,"incomum":0.10,"raro":0.02}}],
 	3: [{"item":"Couro", "chance":0.55, "rarities":{"comum":0.65,"incomum":0.28,"raro":0.07}}],
-	4: [{"item":"Essência", "chance":0.75, "rarities":{"comum":0.45,"incomum":0.40,"raro":0.15}}]}
+	4: [{"item":"Essência", "chance":0.75, "rarities":{"comum":0.45,"incomum":0.40,"raro":0.15}}],
+	# Pântano (aprovado em 31/10/2026, valores provisórios): Limo, Sapo e Vulto repetem os
+	# materiais base com raridade um pouco melhor; o Jacaré Ancião (mini-chefe repetível) é a
+	# única fonte recorrente de Lendário. docs/decisions/REVISAO_JOGABILIDADE_20261031.md
+	8: [{"item":"Essência", "chance":0.40, "rarities":{"comum":0.70,"incomum":0.24,"raro":0.06}}],
+	9: [{"item":"Seda", "chance":0.40, "rarities":{"comum":0.70,"incomum":0.24,"raro":0.06}}],
+	10: [{"item":"Couro", "chance":0.40, "rarities":{"comum":0.70,"incomum":0.24,"raro":0.06}}],
+	11: [{"item":"Couro", "chance":1.0, "rarities":{"incomum":0.53,"raro":0.33,"epico":0.10,"lendario":0.04}},
+		{"item":"Essência", "chance":1.0, "rarities":{"incomum":0.53,"raro":0.33,"epico":0.10,"lendario":0.04}}]}
+# O Vendedor vende só materiais Comuns e Incomuns; Raro em diante vem de drops, chefes e pity.
+const VENDOR_RARITIES := ["comum", "incomum"]
 const SUCCESS := [1.0,1.0,1.0,1.0,1.0,0.90,0.86,0.82,0.78,0.75,0.70,0.65,0.60,0.55,0.50,0.45,0.40,0.35,0.30,0.25]
 const MILESTONES := [5,10,15,20]
 const FAILURE := {"safe_through":10,"high_loss":1,"highest_loss_chance_two":0.5}
@@ -48,6 +58,10 @@ static func roll_entry(entry: Dictionary, occurrence: float, quality: float) -> 
 		cumulative += float(entry.rarities[rarity])
 		if quality < cumulative: return {"item":entry.item,"rarity":rarity,"key":key(entry.item,rarity)}
 	return {}
+
+static func sold_by_vendor(value: String) -> bool:
+	var meta := split_key(value)
+	return MATERIALS.has(meta.item) and VENDOR_RARITIES.has(meta.rarity)
 
 static func valid_drop_table() -> bool:
 	for kind: int in DROP_TABLE:

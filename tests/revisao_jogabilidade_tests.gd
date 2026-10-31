@@ -72,7 +72,9 @@ func _run() -> void:
 	main.player.set_physics_process(false)
 	_clear_enemies()
 	await _frames(2)
-	_floor3_mission()
+	await _floor3_mission()
+	_pantano_loot()
+	await _vendor_ui()
 	await _floor3_bosses()
 	print("REVISAO_RESULT checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -142,13 +144,90 @@ func _field_boss_bar_floor1() -> void:
 
 func _floor3_mission() -> void:
 	main._refresh_mission()
-	_check(main.progress.ascension.current_floor == 3 and not main.mission.materials_available, "Pântano sem coletas nem drops marca a missão como substituída")
+	_check(main.progress.ascension.current_floor == 3 and main.mission.materials_available, "Pântano com drops próprios mantém a missão de coleta")
 	main.mission.mission_index = 1
 	main.mission.progress = 0
 	main.mission.record_defeat()
-	_check(main.mission.progress == 1, "no Pântano a missão de coleta avança com derrotas")
+	_check(main.mission.progress == 0, "com drops, derrota sozinha não conta como coleta")
+	# Drop real de um Vulto: avança a coleta pelo caminho normal de recompensa.
+	var gained := 0
+	for _attempt in range(40):
+		var vulto := _spawn(10, main.player.global_position + Vector2(90, 0))
+		vulto.health.damage(vulto.health.maximum)
+		await _frames(1)
+		gained = main.mission.progress
+		if gained > 0: break
+	_check(gained > 0, "materiais caídos no Pântano avançam a missão de coleta (%d)" % gained)
 	main._refresh_mission()
-	_check(main.hud.mission_label.text.contains("Derrote criaturas 1/5"), "HUD mostra a missão substituta (%s)" % main.hud.mission_label.text.replace("\n", " | "))
+	_check(main.hud.mission_label.text.contains("Colete materiais"), "HUD mostra a missão de coleta (%s)" % main.hud.mission_label.text.replace("\n", " | "))
+
+func _vendor_ui() -> void:
+	main.hud.show_station("Vendedor", main.progress)
+	main.hud.vendor_tab = 1
+	main.hud.refresh_station(main.progress)
+	await _frames(2)
+	var keys: Array = main.hud.vendor_buttons.keys()
+	var high := keys.filter(func(key: String) -> bool: return key.begins_with("Comprar:") and EquipmentEconomy.split_key(key.trim_prefix("Comprar:")).rarity not in ["comum", "incomum"])
+	_check(keys.has("Comprar:Couro") and keys.has("Comprar:Essência|incomum") and keys.has("Comprar:" + EquipmentEconomy.SEAL), "aba Comprar lista Comum, Incomum e Selo")
+	_check(high.is_empty(), "aba Comprar não lista Raro ou melhor (%s)" % str(high))
+	await _shot("vendedor-comprar")
+	main.hud.close_station()
+	await _frames(1)
+
+func _spawn(kind: int, at: Vector2) -> EnemyActor:
+	var actor: EnemyActor = main._make_enemy(kind)
+	actor.position = at
+	actor.target = main.player
+	main._register_enemy_defeat(actor)
+	main.add_child(actor)
+	actor.set_physics_process(false)
+	return actor
+
+func _pantano_loot() -> void:
+	# Tabela: comuns do Pântano dão materiais base; o Jacaré é pool alto e a fonte de Lendário.
+	for kind: int in [8, 9, 10, 11]:
+		_check(EquipmentEconomy.DROP_TABLE.has(kind), "tipo %d tem material no Pântano" % kind)
+	_check(EquipmentEconomy.valid_drop_table(), "pesos de raridade do Pântano somam 100%")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 31
+	var counts := {}
+	var legendary := 0
+	var caiman_ok := true
+	for _i in range(2000):
+		var pity := LootRules.new_pity()
+		var drops := LootRules.roll(11, rng, pity)
+		caiman_ok = caiman_ok and drops.size() == 2
+		for drop: Dictionary in drops:
+			counts[drop.rarity] = int(counts.get(drop.rarity, 0)) + 1
+			if drop.rarity == "lendario": legendary += 1
+	_check(caiman_ok and not counts.has("comum") and not counts.has("mitico"), "Jacaré sempre dá Couro e Essência, de Incomum a Lendário (%s)" % str(counts))
+	_check(legendary > 80 and legendary < 250, "Jacaré: ~4%% de Lendário por material (%d em 4000)" % legendary)
+	var epic_pity := {"raro": 0, "epico": 60}
+	var forced := LootRules.roll(11, rng, epic_pity)
+	_check(EquipmentEconomy.RARITY_ORDER.find(forced[0].rarity) >= 3, "Jacaré é pool alto: a garantia de Épico vale nele")
+	var common_legendary := 0
+	for _i in range(3000):
+		for drop: Dictionary in LootRules.roll(10, rng, LootRules.new_pity()):
+			if EquipmentEconomy.RARITY_ORDER.find(drop.rarity) >= 3: common_legendary += 1
+	_check(common_legendary == 0, "Vulto comum nunca dá Épico ou Lendário sem pity")
+	var boss_legendary := 0
+	var mata_legendary := 0
+	for _i in range(400):
+		for drop: Dictionary in LootRules.field_boss(3, rng, LootRules.new_pity()):
+			if drop.get("rarity", "") == "lendario": boss_legendary += 1
+		for drop: Dictionary in LootRules.field_boss(1, rng, LootRules.new_pity()):
+			if drop.get("rarity", "") == "lendario": mata_legendary += 1
+	_check(boss_legendary > 0 and mata_legendary == 0, "Mãe dos Sussurros pode dar Lendário; Guardiões dos Andares 1–2 não (%d)" % boss_legendary)
+	# Vendedor.
+	var shop := GameProgress.new()
+	shop.gold = 9999
+	_check(shop.buy("Couro") and shop.buy("Essência|incomum") and shop.buy(EquipmentEconomy.SEAL), "Vendedor vende Comum, Incomum e Selo")
+	var gold := shop.gold
+	_check(not shop.buy("Couro|raro") and not shop.buy("Seda|epico") and not shop.buy("Essência|lendario") and not shop.buy("Couro|mitico") and shop.gold == gold, "Vendedor recusa Raro ou melhor sem cobrar")
+	shop.add_item("Essência|lendario", 2)
+	_check(shop.sell("Essência|lendario") and shop.gold == gold + GameProgress.sell_price("Essência|lendario"), "materiais altos já guardados continuam vendáveis")
+	var saved := GameProgress.new()
+	_check(saved.load_text(shop.to_json()) and int(saved.bag.get("Essência|lendario", 0)) == 1, "save com material Lendário continua válido")
 
 func _floor3_bosses() -> void:
 	main.progress.floor_states["3"].guardian_defeated = false

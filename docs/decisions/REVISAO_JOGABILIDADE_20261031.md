@@ -123,7 +123,8 @@ capturas 360×800 opcionais com `QA_RENDER_DIR`).
 
 ## 4. Propostas (aguardam aprovação)
 
-**A — Materiais do Pântano e Vendedor.** (a) `DROP_TABLE` para os tipos 8–11 reutilizando
+**A — Materiais do Pântano e Vendedor.** APROVADA por Thiago em 31/10/2026; ver seção 5.
+(a) `DROP_TABLE` para os tipos 8–11 reutilizando
 Couro/Seda/Essência; Jacaré como "pool alto" do pity. (b) Material nomeado e troféu do Pântano.
 (c) Vendedor só com Comum e Incomum; Raro+ por drop, chefe e pity. (d) Uma fonte rara de
 Lendário (Guardião do andar, ~5%), para que armas altas continuem aprimoráveis. Saves: nenhuma
@@ -147,3 +148,34 @@ teste aprovado "boar contact respects damage and cooldown".
 
 **F — Desafios.** Elite própria do Vale e do Pântano na horda 3 da Torre; Jacaré com ~900 HP
 efetivo e drop garantido de material Raro.
+
+## 5. Proposta A implementada (31/10/2026)
+
+| Fonte | Ocorrência | Raridades |
+|---|---:|---|
+| Limo do Brejo → Essência | 40% | Comum 70% · Incomum 24% · Raro 6% |
+| Sapo Venenoso → Seda | 40% | Comum 70% · Incomum 24% · Raro 6% |
+| Vulto do Brejo → Couro | 40% | Comum 70% · Incomum 24% · Raro 6% |
+| Jacaré Ancião → Couro **e** Essência | 100% cada | Incomum 53% · Raro 33% · Épico 10% · Lendário 4% |
+| Mãe dos Sussurros (3–5 materiais) | — | Incomum 60% · Raro 30% · Épico 5% · Lendário 5% |
+
+- O Jacaré entra no "pool alto" do pity (garantia de Épico aos 60), como elites e chefes.
+- Guardiões dos Andares 1 e 2 continuam exatamente como antes.
+- Vendedor: compra só Comum e Incomum, mais o Selo de Proteção. A regra está no modelo
+  (`GameProgress.buy`) e na lista da HUD. Vender continua aceitando qualquer raridade, e o
+  material alto já guardado continua válido no save.
+- A missão "Colete materiais" volta a valer no Pântano, porque agora há drops; a substituição
+  por derrotas fica como proteção para andares sem fonte nenhuma.
+
+**Desvios em relação ao texto da proposta, com motivo:**
+1. A fonte recorrente de Lendário é o **Jacaré**, não só a Guardiã. A Mãe dos Sussurros só pode
+   ser vencida uma vez por personagem; sozinha, daria Lendário a cerca de 20% dos jogadores, uma
+   única vez. A Guardiã também ganhou os 5%, como a proposta pedia.
+2. **Material nomeado e troféu do Pântano ficaram de fora.** Sem receitas do Pântano, eles só
+   ocupariam espaço na mochila, e cada item nomeado precisa de ícone próprio (arte não improvisada).
+   Entram junto com as receitas e peças do Pântano.
+
+**Consequência a decidir:** materiais **Místicos** não têm mais fonte. Armas e peças param em
+Lendário até existir uma fonte (andares futuros ou armas de topo, como prevê a decisão de 26/10).
+Evoluir para Lendário exige 9 materiais Lendários (5 Essência + 4 Couro): cerca de 110 vitórias
+sobre o Jacaré (~0,08 por vitória). Valor provisório para medir no save de teste.

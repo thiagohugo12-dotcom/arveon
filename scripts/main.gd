@@ -1148,7 +1148,8 @@ func _guardian_altar_position() -> Vector2:
 	return FloorCatalog.guardian_altar(progress.ascension.current_floor)
 
 func _refresh_mission() -> void:
-	mission.materials_available = not Exploration.resources_for_floor(progress.ascension.current_floor).is_empty()
+	var floor_id := progress.ascension.current_floor
+	mission.materials_available = not Exploration.resources_for_floor(floor_id).is_empty() or FloorCatalog.enemy_spawn_kinds(floor_id).any(func(kind: int) -> bool: return EquipmentEconomy.DROP_TABLE.has(kind))
 	if progress.training_mode:
 		hud.set_mission("MODO TREINO · sem salvar\nTroque arma na Mochila · habilidades no Diário")
 		return

@@ -22,7 +22,9 @@ static func run(suite: SceneTree) -> void:
 	progress.add_item(EquipmentEconomy.SEAL,4)
 	suite.check(progress.transfer("Couro|raro",true) and int(progress.chest.get("Couro|raro",0)) == 1 and int(progress.bag.get("Couro",0)) == 99,"chest transfers the chosen material rarity")
 	suite.check(progress.transfer("Couro|raro",false) and not progress.chest.has("Couro|raro"),"chest returns the same rarity")
-	suite.check(progress.buy("Seda|epico") and progress.sell("Seda|epico"),"merchant trades selected rarity")
+	suite.check(progress.buy("Seda|incomum") and progress.sell("Seda|incomum") and progress.sell("Seda|epico"),"merchant sells Comum/Incomum and buys back any rarity")
+	var gold_before := progress.gold
+	suite.check(not progress.buy("Seda|raro") and not progress.buy("Essência|lendario") and not progress.buy("Couro|mitico") and progress.gold == gold_before,"merchant no longer sells Raro or better (31/10/2026)")
 	var first := progress.craft_weapon("espada","raro")
 	var second := progress.craft_weapon("espada","raro")
 	suite.check(first != "" and second != "" and first != second and progress.weapon_instances.size() == 2,"two identical recipes create separate weapon identities")

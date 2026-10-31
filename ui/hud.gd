@@ -2454,10 +2454,11 @@ func _vendor_shop(progress: GameProgress) -> void:
 			if (GameProgress.SELL_ITEMS.has(item) or EquipmentEconomy.valid_item(item) and item != EquipmentEconomy.SEAL) and int(progress.bag[item]) > 0: items.append(item)
 	else:
 		for item: String in GameProgress.TRADE_ITEMS:
-			for rarity: String in EquipmentEconomy.RARITY_ORDER: items.append(EquipmentEconomy.key(item,rarity))
+			for rarity: String in EquipmentEconomy.VENDOR_RARITIES: items.append(EquipmentEconomy.key(item,rarity))
 		items.append(EquipmentEconomy.SEAL)
 	for item: String in items: _vendor_item(item,progress)
 	if items.is_empty(): _add_description("Nenhum material para vender.")
+	if vendor_tab == 1: _add_description("Raro ou melhor só cai de criaturas e chefes.")
 	_add_description("O valor é por unidade.")
 
 func _vendor_item(item: String, progress: GameProgress) -> void:

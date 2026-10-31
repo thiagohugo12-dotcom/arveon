@@ -621,6 +621,7 @@ func buy(item: String) -> bool:
 	var meta := EquipmentEconomy.split_key(item)
 	if not TRADE_ITEMS.has(meta.item) and item != EquipmentEconomy.SEAL or not ITEMS.has(item) and not EquipmentEconomy.valid_item(item) or gold < buy_price(item):
 		return false
+	if item != EquipmentEconomy.SEAL and not EquipmentEconomy.sold_by_vendor(item): return false
 	gold -= buy_price(item)
 	add_item(item)
 	return true
