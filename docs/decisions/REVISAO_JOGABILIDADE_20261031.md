@@ -242,3 +242,29 @@ regra de escala sempre crescente (`boss_phase_tests`). Vida e dano dos monstros 
   passa a informar esse valor.
 - A escala planejada dos Andares 4–10 continua como estava e crescente. Quando esses andares
   forem criados, decidir se recebem reforço próprio, como o Pântano.
+
+## 7. Proposta D implementada (31/10/2026)
+
+Escolhas de Thiago: **armas mantêm o reset** ao evoluir; **peças ganham +10% por raridade**.
+O máximo de +3 das peças fica para uma etapa separada.
+
+**Armas.** Evoluir a raridade continua zerando +N e os bônus de marco. Para a forja direta em
+raridade alta não sair mais barata que evoluir, ela passa a exigir **Fragmento de Receita**:
+1 em Épico, 2 em Lendário e 3 em Místico. Comum, Incomum e Raro não mudam, e evoluir não pede
+Fragmento. O Fragmento já existe e só vem de drop: o Guardião da Torre dá 1 a cada vitória
+(repetível) e elites da Mata, 2%. Também libera receitas de conjunto, então a escolha entre os
+dois usos é do jogador. Na tela do Ferreiro aparece como quarto material; com quatro materiais
+os cartões ficam mais estreitos para caber em 360 px (antes passava 20 px da borda).
+
+**Peças de conjunto.** Cada nível de raridade acima de Comum soma 10% dos atributos base da peça,
+arredondados (Incomum +10% … Místico +50%). Isso vale para HP, dano, velocidade, Espírito,
+defesa, crítico, dano crítico e resistência. O aprimoramento (+1 a +3) soma por cima, sem escala.
+Exemplo: Armadura da Mata, 19 HP em Comum, 21 em Incomum, 27 em Lendário e 29 em Místico.
+
+- Saves antigos: peças sem raridade gravada usam a raridade fixa que já mostravam (Mata Raro
+  +20%, Vale Épico +30%), conforme a decisão de 26/10. Formato de save inalterado.
+- Armaduras e acessórios antigos (couro, trama, pedra, semente) e armas não usam essa escala.
+- A comparação de armas (`ArsenalRules.effective`) passou a copiar a raridade das peças, e a
+  Mochila e o Ferreiro mostram os atributos já com a raridade.
+- `equipment_rules_tests` agora grava as peças de teste como Comuns, o caso de peça nova que ele
+  mede. `equipment_ui_capture` recebe 2 Fragmentos para forjar a arma Lendária de exemplo.

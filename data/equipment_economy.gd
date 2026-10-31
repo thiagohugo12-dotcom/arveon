@@ -22,6 +22,8 @@ const DROP_TABLE := {
 		{"item":"Essência", "chance":1.0, "rarities":{"incomum":0.52,"raro":0.33,"epico":0.10,"lendario":0.04,"mitico":0.01}}]}
 # O Vendedor vende só materiais Comuns e Incomuns; Raro em diante vem de drops, chefes e pity.
 const VENDOR_RARITIES := ["comum", "incomum"]
+const FRAGMENT := "Fragmento de Receita"
+const CRAFT_FRAGMENTS := {"epico": 1, "lendario": 2, "mitico": 3}
 const SUCCESS := [1.0,1.0,1.0,1.0,1.0,0.90,0.86,0.82,0.78,0.75,0.70,0.65,0.60,0.55,0.50,0.45,0.40,0.35,0.30,0.25]
 const MILESTONES := [5,10,15,20]
 const FAILURE := {"safe_through":10,"high_loss":1,"highest_loss_chance_two":0.5}
@@ -78,7 +80,11 @@ static func valid_drop_table() -> bool:
 static func craft_recipe(category: String, rarity: String) -> Dictionary:
 	if not ArsenalRules.CATEGORIES.has(category) or not RARITY_ORDER.has(rarity): return {}
 	var tier := RARITY_ORDER.find(rarity)
-	return {"gold":20 + 25*tier, "materials":{"Madeira":3, key("Couro" if category in ["espada","machado","lanca"] else "Seda",rarity):2+tier, key("Essência",rarity):1+tier}}
+	var materials := {"Madeira":3, key("Couro" if category in ["espada","machado","lanca"] else "Seda",rarity):2+tier, key("Essência",rarity):1+tier}
+	# Forjar direto em Épico ou acima exige Fragmentos de Receita (só caem de elites e do Guardião
+	# da Torre); evoluir a raridade de uma arma não exige. Aprovado em 31/10/2026, provisório.
+	if CRAFT_FRAGMENTS.has(rarity): materials[FRAGMENT] = int(CRAFT_FRAGMENTS[rarity])
+	return {"gold":20 + 25*tier, "materials":materials}
 
 # Receita adicional do Vale; as receitas existentes continuam disponíveis.
 static func vale_iron_recipe(rarity: String) -> Dictionary:

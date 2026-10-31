@@ -134,7 +134,7 @@ func _attributes(id: String) -> String:
 	var values := ArsenalRules.effective(progress,id)
 	if RPGRules.EQUIPMENT[id].slot == "Arma":
 		return "Dano %d · %.2fs · %dpx" % [values.damage,values.interval,values.reach]
-	var bonus := RPGRules.bonuses(id,int(progress.equipment[id]))
+	var bonus := RPGRules.bonuses(id,int(progress.equipment[id]),progress.equipment_rarity(id))
 	return "HP %+d · Defesa %+d · Espírito %+d" % [bonus.hp,bonus.armor,bonus.spirit]
 
 func _rarity_for_category(id: String) -> Dictionary:

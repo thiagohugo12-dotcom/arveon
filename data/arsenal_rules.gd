@@ -36,6 +36,7 @@ static func effective(progress: GameProgress, id: String) -> Dictionary:
 	var candidate := GameProgress.new()
 	candidate.attributes = progress.attributes.duplicate()
 	candidate.equipment = progress.equipment.duplicate()
+	candidate.equipment_rarities = progress.equipment_rarities.duplicate()
 	candidate.weapon_instances = progress.weapon_instances.duplicate(true)
 	candidate.equipped_weapon_uid = progress.equipped_weapon_uid if progress.weapon(progress.equipped_weapon_uid).get("category","") == id else ""
 	if candidate.equipped_weapon_uid == "":

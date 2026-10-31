@@ -326,7 +326,8 @@ static func materials(requirements: Array) -> Control:
 	grid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for need: Dictionary in requirements:
 		var plate := DefeatView.card("slot",4)
-		plate.custom_minimum_size.x = UiScale.px(88)
+		# Quatro materiais (forja direta em Épico+ pede Fragmento) cabem em 360 px com cartões menores.
+		plate.custom_minimum_size.x = UiScale.px(88 if requirements.size() <= 3 else 66)
 		if requirements.size() >= 3: plate.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var column := VBoxContainer.new()
 		column.add_theme_constant_override("separation",0)

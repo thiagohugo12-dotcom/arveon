@@ -37,6 +37,7 @@ func _run() -> void:
 		for rarity: String in EquipmentEconomy.RARITY_ORDER:
 			p.add_item(EquipmentEconomy.key(material,rarity),99)
 	p.add_item(EquipmentEconomy.SEAL,3)
+	p.add_item(EquipmentEconomy.FRAGMENT,2) # Forja direta em Lendário exige 2 Fragmentos (31/10/2026).
 	var rare := p.craft_weapon("lanca","raro")
 	p.equip_weapon_instance(rare)
 	var legendary := p.craft_weapon("machado","lendario")

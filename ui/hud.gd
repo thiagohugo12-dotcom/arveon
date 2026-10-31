@@ -1882,11 +1882,11 @@ func _add_equipment(id: String, progress: GameProgress, destination: VBoxContain
 	button.custom_minimum_size.y = 44
 	if in_bag:
 		var description := Label.new()
-		description.text = RPGRules.bonus_text(id, upgrade)
+		description.text = RPGRules.bonus_text(id, upgrade, progress.equipment_rarity(id))
 		if current != id:
 			description.text += "\nAtual: " + (RPGRules.EQUIPMENT[current].name if current != "" else "nenhum")
 			if current != "":
-				description.text += "\n" + RPGRules.bonus_text(current, int(progress.equipment[current]))
+				description.text += "\n" + RPGRules.bonus_text(current, int(progress.equipment[current]), progress.equipment_rarity(current))
 		description.add_theme_font_size_override("font_size", 12)
 		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		box.add_child(description)

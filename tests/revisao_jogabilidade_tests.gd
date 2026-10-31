@@ -51,6 +51,7 @@ func _run() -> void:
 	_mission_unit()
 	_high_rarity_enhancement()
 	_floor_reward_curve()
+	_evolution_rules()
 	OS.set_environment("ARVEON_SAVE_PATH", "user://qa_revisao_jogabilidade_%d.json" % Time.get_ticks_usec())
 	preload("res://tests/etapa2_fixtures.gd").seed_existing()
 	root.size = Vector2i(360, 800)
@@ -77,6 +78,7 @@ func _run() -> void:
 	await _floor3_mission()
 	_pantano_loot()
 	await _vendor_ui()
+	await _smith_fragment_ui()
 	await _floor3_bosses()
 	print("REVISAO_RESULT checks=%d failures=%d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -123,6 +125,45 @@ func _floor_reward_curve() -> void:
 	_check(pantano > vale, "Pântano rende mais XP por HP que o Vale (%.3f > %.3f)" % [pantano, vale])
 	print("REVISAO info: XP/HP Mata %.3f · Vale %.3f · Pântano %.3f" % [mata, vale, pantano])
 
+func _evolution_rules() -> void:
+	# Armas: reset preservado; forja direta em Épico+ pede Fragmentos, evoluir não.
+	for rarity: String in ["comum", "incomum", "raro"]:
+		_check(not EquipmentEconomy.craft_recipe("espada", rarity).materials.has(EquipmentEconomy.FRAGMENT), "forjar %s não pede Fragmento" % rarity)
+	_check(EquipmentEconomy.craft_recipe("arco", "epico").materials.get(EquipmentEconomy.FRAGMENT) == 1 and EquipmentEconomy.craft_recipe("arco", "lendario").materials.get(EquipmentEconomy.FRAGMENT) == 2 and EquipmentEconomy.craft_recipe("arco", "mitico").materials.get(EquipmentEconomy.FRAGMENT) == 3, "forjar Épico/Lendário/Místico pede 1/2/3 Fragmentos")
+	for rarity: String in EquipmentEconomy.RARITY_ORDER:
+		_check(not EquipmentEconomy.rarity_recipe(rarity).get("materials", {}).has(EquipmentEconomy.FRAGMENT), "evoluir a partir de %s não pede Fragmento" % rarity)
+	var smith := GameProgress.new()
+	smith.gold = 99999
+	smith.add_item("Madeira", 9)
+	smith.add_item("Couro|epico", 9)
+	smith.add_item("Essência|epico", 9)
+	_check(not smith.can_craft_weapon("espada", "epico"), "sem Fragmento a forja direta em Épico fica bloqueada")
+	smith.add_item(EquipmentEconomy.FRAGMENT, 1)
+	var uid := smith.craft_weapon("espada", "epico")
+	_check(uid != "" and smith.fragments() == 0, "com 1 Fragmento a espada Épica é forjada")
+	smith.add_item("Essência|epico", 20)
+	for _i in range(6): smith.enhance_weapon(uid, false, 0.0)
+	smith.choose_weapon_bonus(uid, 5, "corte")
+	smith.add_item("Essência|lendario", 5)
+	smith.add_item("Couro|lendario", 4)
+	_check(smith.evolve_weapon(uid) and smith.weapon(uid).rarity == "lendario" and smith.weapon(uid).level == 0 and smith.weapon(uid).choices.is_empty(), "evoluir a arma continua zerando +N e os marcos")
+	# Peças: +10% dos atributos base por raridade, sem mexer no aprimoramento.
+	_check(RPGRules.bonuses("colete_mata", 0, "comum").hp == 19 and RPGRules.bonuses("colete_mata", 0, "incomum").hp == 21 and RPGRules.bonuses("colete_mata", 0, "mitico").hp == 29, "Armadura da Mata: HP 19 → 21 (Incomum) → 29 (Místico)")
+	_check(RPGRules.bonuses("colete_mata", 3, "mitico").hp == 29 + 12, "aprimoramento soma por cima, sem escalar (+3 = +12 HP)")
+	_check(is_equal_approx(RPGRules.bonuses("anel_mata", 0, "epico").crit, 0.016 * 1.3), "crítico do Anel também escala (+30% no Épico)")
+	_check(RPGRules.bonuses("couro", 0, "mitico").hp == RPGRules.bonuses("couro", 0).hp and RPGRules.bonuses("espada", 4, "mitico").damage == 4, "armaduras antigas e armas não usam a escala das peças")
+	var wearer := GameProgress.new()
+	wearer.equipment["colete_mata"] = 0
+	wearer.equipment_rarities["colete_mata"] = "comum"
+	wearer.equipped.Armadura = "colete_mata"
+	var base_hp := int(wearer.combat_stats().hp)
+	wearer.equipment_rarities["colete_mata"] = "lendario"
+	_check(int(wearer.combat_stats().hp) == base_hp + 8, "Armadura da Mata Lendária soma +8 HP no combate (19 → 27)")
+	var legacy := GameProgress.new()
+	legacy.equipment["elmo_vale"] = 0
+	legacy.equipped.Capacete = "elmo_vale"
+	_check(int(legacy.combat_stats().hp) == 100 + 27, "peça de save antigo usa a raridade que já tinha (Épico: 21 → 27 HP)")
+
 func _high_rarity_enhancement() -> void:
 	var totals := {}
 	for rarity: String in ["epico", "lendario", "mitico"]:
@@ -143,7 +184,9 @@ func _high_rarity_enhancement() -> void:
 	smith.add_item("Madeira", 9)
 	smith.add_item("Couro|mitico", 7)
 	smith.add_item("Essência|mitico", 6)
+	smith.add_item(EquipmentEconomy.FRAGMENT, 3)
 	var uid := smith.craft_weapon("espada", "mitico")
+	_check(uid != "" and not smith.bag.has(EquipmentEconomy.FRAGMENT), "forja direta em Místico gasta 3 Fragmentos")
 	smith.add_item("Essência|epico", 2)
 	_check(uid != "" and smith.can_enhance_weapon(uid), "arma Mística pode ser aprimorada com Essência Épica")
 	var result := smith.enhance_weapon(uid, false, 0.0)
@@ -232,6 +275,31 @@ func _vendor_ui() -> void:
 	_check(keys.has("Comprar:Couro") and keys.has("Comprar:Essência|incomum") and keys.has("Comprar:" + EquipmentEconomy.SEAL), "aba Comprar lista Comum, Incomum e Selo")
 	_check(high.is_empty(), "aba Comprar não lista Raro ou melhor (%s)" % str(high))
 	await _shot("vendedor-comprar")
+	main.hud.close_station()
+	await _frames(1)
+
+func _smith_fragment_ui() -> void:
+	main.hud.show_station("Ferreiro", main.progress)
+	main.hud.smith_tab = 0
+	main.hud.smith_craft_category = "espada"
+	main.hud.smith_craft_rarity = "epico"
+	main.hud.refresh_station(main.progress)
+	await _frames(2)
+	var texts: Array[String] = []
+	var stack: Array[Node] = [main.hud.station_panel]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is Label: texts.append((node as Label).text)
+		stack.append_array(node.get_children())
+	_check(texts.any(func(text: String) -> bool: return text.contains("Fragmento")), "Ferreiro mostra o Fragmento na forja direta em Épico")
+	await _shot("ferreiro-forjar-epico")
+	var epic_right: float = main.hud.station_panel.get_global_rect().end.x
+	main.hud.smith_craft_rarity = "raro"
+	main.hud.refresh_station(main.progress)
+	await _frames(2)
+	var rare_right: float = main.hud.station_panel.get_global_rect().end.x
+	_check(epic_right <= 360.0 and rare_right <= 360.0, "Ferreiro cabe em 360 px com 3 ou 4 materiais (Raro %.0f · Épico %.0f)" % [rare_right, epic_right])
+	await _shot("ferreiro-forjar-raro")
 	main.hud.close_station()
 	await _frames(1)
 

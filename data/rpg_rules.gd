@@ -68,10 +68,19 @@ static func cost_to_level(level: int) -> int:
 static func xp_floor(level: int) -> int:
 	return (level - 1) * level * 25
 
-static func bonuses(id: String, upgrade: int) -> Dictionary:
+# Peças de conjunto: cada nível de raridade acima de Comum soma 10% dos atributos base
+# (Místico +50%); o aprimoramento não é afetado. Aprovado em 31/10/2026, provisório.
+const PIECE_RARITY_STEP := 0.10
+
+static func rarity_scale(id: String, rarity: String) -> float:
+	if rarity.is_empty() or not EQUIPMENT.has(id) or not EQUIPMENT[id].has("set_floor"): return 1.0
+	return 1.0 + PIECE_RARITY_STEP * maxi(0, EquipmentEconomy.RARITY_ORDER.find(rarity))
+
+static func bonuses(id: String, upgrade: int, rarity: String = "") -> Dictionary:
 	var item: Dictionary = EQUIPMENT[id]
-	var result := {"damage": int(item.damage), "hp": int(item.hp), "speed": int(item.speed), "spirit": int(item.spirit), "armor": int(item.armor),
-		"crit": float(item.get("crit",0.0)), "crit_damage": float(item.get("crit_damage",0.0)), "resist": float(item.get("resist",0.0))}
+	var scale := rarity_scale(id, rarity)
+	var result := {"damage": roundi(int(item.damage) * scale), "hp": roundi(int(item.hp) * scale), "speed": roundi(int(item.speed) * scale), "spirit": roundi(int(item.spirit) * scale), "armor": roundi(int(item.armor) * scale),
+		"crit": float(item.get("crit",0.0)) * scale, "crit_damage": float(item.get("crit_damage",0.0)) * scale, "resist": float(item.get("resist",0.0)) * scale}
 	match str(item.slot):
 		"Arma": result.damage += upgrade
 		"Armadura": result.hp += upgrade * 4
@@ -82,8 +91,8 @@ static func bonuses(id: String, upgrade: int) -> Dictionary:
 		_: result.spirit += upgrade
 	return result
 
-static func bonus_text(id: String, upgrade: int) -> String:
-	var b := bonuses(id, upgrade)
+static func bonus_text(id: String, upgrade: int, rarity: String = "") -> String:
+	var b := bonuses(id, upgrade, rarity)
 	var text := "Dano %+d · HP %+d\nVel %+d · Espírito %+d · Defesa %d" % [b.damage, b.hp, b.speed, b.spirit, b.armor]
 	if b.crit > 0.0 or b.crit_damage > 0.0 or b.resist > 0.0:
 		text += "\nCrítico %+.1f%% · Dano crít. %+.0f%% · Resist. %+.1f%%" % [b.crit * 100.0, b.crit_damage * 100.0, b.resist * 100.0]

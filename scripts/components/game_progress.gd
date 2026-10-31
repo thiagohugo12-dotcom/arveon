@@ -468,7 +468,7 @@ func combat_stats() -> Dictionary:
 			continue
 		var level_value := int(equipment[id])
 		if slot == "Arma" and weapon_instances.has(equipped_weapon_uid): level_value = int(weapon(equipped_weapon_uid).level)
-		var bonus := RPGRules.bonuses(id, level_value)
+		var bonus := RPGRules.bonuses(id, level_value, equipment_rarity(id))
 		if slot == "Arma" and weapon_instances.has(equipped_weapon_uid):
 			var data := weapon(equipped_weapon_uid)
 			var tier := EquipmentEconomy.RARITY_ORDER.find(data.rarity)

@@ -38,6 +38,8 @@ func _run() -> void:
 	var p := fresh()
 	for pair: Array in [["Capacete","elmo_mata"],["Armadura","colete_mata"],["Luvas","luvas_mata"],["Botas","botas_mata"],["Anel","anel_mata"],["Acessório","colar_mata"],["Amuleto","amuleto_mata"]]:
 		p.equipment[pair[1]] = 0
+		# Peças novas nascem Comuns; desde 31/10/2026 cada raridade acima soma 10% dos atributos base.
+		p.equipment_rarities[pair[1]] = "comum"
 		check(p.equip(pair[1]) and p.equipped[pair[0]] == pair[1], "%s equips into its slot" % pair[1])
 	var stats := p.combat_stats()
 	check(stats.hp == plain.hp + 16 + 19 + 13, "Capacete, Armadura and Colar add their Vida (%d)" % stats.hp)

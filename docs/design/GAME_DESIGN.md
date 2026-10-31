@@ -1,3 +1,12 @@
+## Evolução de armas e raridade das peças — aprovado em 31/10/2026
+
+Thiago escolheu a Proposta D de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md` com duas
+opções: armas continuam zerando +N e os marcos ao evoluir, e a forja direta em Épico,
+Lendário ou Místico passa a exigir 1, 2 ou 3 Fragmentos de Receita (evoluir não exige). Nas
+peças de conjunto, cada raridade acima de Comum soma 10% dos atributos base (Místico +50%).
+Isso substitui o trecho da decisão de 26/10 que dizia que a raridade não altera atributos.
+O aprimoramento das peças continua até +3. Valores provisórios; saves sem mudança.
+
 ## Recompensas do Vale e missões por andar — aprovado em 31/10/2026
 
 Thiago aprovou a Proposta B de `docs/decisions/REVISAO_JOGABILIDADE_20261031.md`. O Andar 2
