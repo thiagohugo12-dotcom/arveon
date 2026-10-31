@@ -15,4 +15,4 @@ MANIFESTO.json: nomes novos e originais, quadros e SHA-256 conferidos.
 LEIA-ME_ORIGINAL.txt e MANIFESTO_ORIGINAL.json: textos do pacote enviado, sem alteração
 (as regras de recorte e sincronização da mordida estão no LEIA-ME_ORIGINAL.txt).
 
-Integração no jogo: ainda pendente. O jogo continua usando o sprite estático do Jacaré.
+Integração no jogo: feita (tools/build_andar3_jacare.gd gera assets/art/andar3/monsters/jacare_*.png).

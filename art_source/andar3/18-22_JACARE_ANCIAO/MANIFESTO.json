@@ -6,7 +6,7 @@
   "status": "conjunto_completo",
   "aprovado_em": "2026-10-30",
   "animacoes_aprovadas": ["idle", "movimento", "ataque", "dano", "morte"],
-  "integracao_no_jogo": "pendente (o jogo ainda usa o sprite estático assets/art/andar3/monsters/jacare_anciao.png)",
+  "integracao_no_jogo": "integrado (tools/build_andar3_jacare.gd -> assets/art/andar3/monsters/jacare_*.png); o estático jacare_anciao.png fica só como régua de tamanho",
   "origem": "arveon_jacare_anciao_animacoes_1.zip; PNGs copiados byte a byte, só o nome do arquivo mudou",
   "spritesheets": [
     {"arquivo": "18_JACARE_IDLE_4_QUADROS.png", "arquivo_no_zip": "jacare_idle.png", "nome_original": "84818.png", "animacao": "idle", "quadros": 4, "laco": true, "resolucao_px": [2048, 682], "sha256": "0e79e57478939268345b99f5ac7624f15083a3e9ea88f84f8c495200e12de422"},
