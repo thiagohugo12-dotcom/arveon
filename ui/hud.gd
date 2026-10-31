@@ -2611,18 +2611,27 @@ func fade_transition(opaque: bool) -> void:
 	if not opaque:
 		transition_cover.hide()
 
-func set_boss(boss: TowerGuardian) -> void:
+# Guardião da Torre, ou um chefe de campo engajado (title = nome dele). Chefes sem fases
+# (Jacaré Ancião) mostram só nome e HP.
+func set_boss(boss: EnemyActor, title: String = "") -> void:
 	var active := is_instance_valid(boss)
 	var changed := boss_name.visible != active
-	boss_name.visible = active
-	boss_bar.visible = active
-	mission_label.visible = not active
-	mission_prefix.visible = not active
-	mission_hint_label.visible = not active
-	mission_toggle.visible = not active
-	if changed: _layout()
+	# Chamado a cada quadro no campo: só troca a visibilidade quando o estado muda. O
+	# mission_toggle segue oculto como em _layout.
+	if changed:
+		boss_name.visible = active
+		boss_bar.visible = active
+		mission_label.visible = not active
+		mission_prefix.visible = not active
+		mission_hint_label.visible = not active
+		mission_toggle.visible = false
+		(mission_back as MissionBanner).show_compass = not active
+		_layout()
 	if active:
-		boss_name.text = "%s · Fase %d\nHP %d/%d" % [FloorConfig.tower_guardian_name(tower_trial.floor_id if tower_trial != null else 1), boss.phases.phase, boss.health.current, boss.health.maximum]
+		var heading := title if not title.is_empty() else FloorConfig.tower_guardian_name(tower_trial.floor_id if tower_trial != null else 1)
+		var phases: Variant = boss.get("phases")
+		if phases is BossPhases: heading += " · Fase %d" % (phases as BossPhases).phase
+		boss_name.text = "%s\nHP %d/%d" % [heading, boss.health.current, boss.health.maximum]
 		boss_bar.max_value = boss.health.maximum
 		boss_bar.value = boss.health.current
 

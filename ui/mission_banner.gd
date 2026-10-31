@@ -2,6 +2,12 @@ class_name MissionBanner
 extends Control
 
 ## Small code-native quest plaque. It stays crisp at the game's nearest-neighbor scale.
+# The boss bar reuses the plaque; its full-width text would sit under the compass.
+var show_compass := true:
+	set(value):
+		show_compass = value
+		queue_redraw()
+
 func _draw() -> void:
 	if size.x < 8.0 or size.y < 8.0:
 		return
@@ -20,6 +26,7 @@ func _draw() -> void:
 		draw_line(corner+Vector2(2*sx,5*sy),corner+Vector2(2*sx,12*sy),Color("#f0cf78"),2.0)
 		draw_rect(Rect2(corner+Vector2(5*sx,5*sy)-Vector2(2,2),Vector2(4,4)),Color("#b77736"),true)
 	# A small compass star gives the card a clear quest identity.
+	if not show_compass: return
 	var center := Vector2(21,size.y*0.5)
 	draw_circle(center,9,Color("#382719"))
 	draw_circle(center,8,Color("#c68e35"))

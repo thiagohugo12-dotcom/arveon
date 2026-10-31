@@ -198,6 +198,7 @@ func _process(delta: float) -> void:
 		hud.set_rpg_status(progress, player)
 	if not player.health.is_alive():
 		return
+	_regenerate_in_camp(delta)
 	if progress.training_mode:
 		hud.minimap.update_player(player.global_position)
 		if FloorCatalog.feature(progress.ascension.current_floor,"mining"):
@@ -209,6 +210,7 @@ func _process(delta: float) -> void:
 	if trial.active():
 		_process_trial(delta)
 		return
+	_update_field_boss_bar()
 	exploration_refresh -= delta
 	if exploration_refresh <= 0.0:
 		exploration_refresh = 1.0
@@ -246,6 +248,34 @@ func _process(delta: float) -> void:
 		spawn_remaining = SPAWN_INTERVAL
 		if get_tree().get_nodes_in_group("damageable_enemies").size() < MAX_ENEMIES:
 			_spawn_enemy()
+
+# Área segura: inimigos e projéteis não alcançam o explorador ali, então ele recupera a vida
+# descansando no acampamento. Fora dele não há cura; a morte deixa de ser o único jeito de
+# voltar à vida cheia. Valor provisório (docs/decisions/REVISAO_JOGABILIDADE_20261031.md).
+const CAMP_REGEN_PER_SECOND := 0.12 # fração do HP máximo por segundo
+var camp_regen_carry := 0.0
+
+func _regenerate_in_camp(delta: float) -> void:
+	if trial.active() or transitioning or input_driver.blocked or not SafeCamp.in_clearance(player.global_position) or player.health.current >= player.health.maximum:
+		camp_regen_carry = 0.0
+		return
+	camp_regen_carry += player.health.maximum * CAMP_REGEN_PER_SECOND * delta
+	var amount := floori(camp_regen_carry)
+	if amount > 0:
+		camp_regen_carry -= amount
+		player.health.heal(amount)
+
+# Chefe de campo engajado (Guardião, Colosso, Mãe dos Sussurros, Jacaré Ancião): a barra da HUD
+# mostra nome, fase e HP, que ficavam sob o painel da missão quando o chefe estava no alto da tela.
+const FIELD_BOSS_BAR_RANGE := 380.0
+func _update_field_boss_bar() -> void:
+	var boss: EnemyActor = null
+	for candidate in [guardian, mini_boss]:
+		if not is_instance_valid(candidate) or candidate.get_parent() != self or not (candidate as EnemyActor).health.is_alive(): continue
+		if SafeCamp.in_clearance(player.global_position) or candidate.global_position.distance_to(player.global_position) > FIELD_BOSS_BAR_RANGE: continue
+		boss = candidate as EnemyActor
+		break
+	hud.set_boss(boss, boss.display_name() if boss != null else "")
 
 func _make_enemy(kind: int) -> EnemyActor:
 	var scene: PackedScene = FLOOR3_CAIMAN_SCENE if kind == 11 else FLOOR3_ENEMY_SCENE if kind >= 8 else FLOOR2_ENEMY_SCENE if kind >= 5 else ENEMY_SCENE
@@ -1118,6 +1148,7 @@ func _guardian_altar_position() -> Vector2:
 	return FloorCatalog.guardian_altar(progress.ascension.current_floor)
 
 func _refresh_mission() -> void:
+	mission.materials_available = not Exploration.resources_for_floor(progress.ascension.current_floor).is_empty()
 	if progress.training_mode:
 		hud.set_mission("MODO TREINO · sem salvar\nTroque arma na Mochila · habilidades no Diário")
 		return

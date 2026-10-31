@@ -14,12 +14,18 @@ var mission_index: int = 0
 var progress: int = 0
 var completed_count: int = 0
 var enabled := true
+# Floor without any material source (today the Pântano): the collection contract is replaced
+# by defeats, same target and reward, so the always-active mission never stalls.
+var materials_available := true
 
 func summary() -> String:
-	return "Missão comum: %s %d/%d" % [NAMES[mission_index], progress, TARGETS[mission_index]]
+	return "Missão comum: %s %d/%d" % [NAMES[0 if substituted() else mission_index], progress, TARGETS[mission_index]]
+
+func substituted() -> bool:
+	return mission_index == 1 and not materials_available
 
 func record_defeat() -> void:
-	if enabled and mission_index == 0:
+	if enabled and (mission_index == 0 or substituted()):
 		_advance(1)
 
 func record_material(amount: int = 1) -> void:
