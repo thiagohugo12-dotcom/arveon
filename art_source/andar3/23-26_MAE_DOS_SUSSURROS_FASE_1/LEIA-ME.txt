@@ -17,4 +17,5 @@ MANIFESTO.json: nomes novos e originais, quadros e SHA-256 conferidos.
 LEIA-ME_ORIGINAL.txt e MANIFESTO_ORIGINAL.json: textos do pacote enviado, sem alteração
 (as regras de integração estão no LEIA-ME_ORIGINAL.txt).
 
-Integração no jogo: ainda pendente. O jogo continua usando o sprite estático da Fase 1.
+Integração no jogo: Fase 1 integrada (tools/build_andar3_mae.gd gera assets/art/andar3/monsters/
+mae_f1_*.png). A Fase 2 continua com a arte estática oficial até a transformação ser aprovada.

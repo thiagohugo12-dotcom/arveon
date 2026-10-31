@@ -9,7 +9,7 @@
   "animacoes_aprovadas": ["idle", "movimento", "ataque", "dano"],
   "pendentes": ["transformação Fase 1 -> Fase 2 (6 quadros, Vozes do Fundo)", "animações da Fase 2", "morte"],
   "observacao_rejeitada": "A quinta imagem enviada (colapso/morte) foi rejeitada para a transformação e não está no pacote.",
-  "integracao_no_jogo": "pendente (o jogo ainda usa o sprite estático assets/art/andar3/monsters/mae_dos_sussurros_fase1.png)",
+  "integracao_no_jogo": "fase 1 integrada (tools/build_andar3_mae.gd -> assets/art/andar3/monsters/mae_f1_*.png); a fase 2 continua com a arte estática mae_dos_sussurros_fase2.png",
   "origem": "ARVEON_Mae_dos_Sussurros_Fase1_4_animacoes_aprovadas (1).zip; PNGs copiados byte a byte, só o nome do arquivo mudou",
   "spritesheets": [
     {"arquivo": "23_MAE_F1_IDLE_4_QUADROS.png", "arquivo_no_zip": "fase1/mae_dos_sussurros_fase1_idle_4f.png", "animacao": "idle", "quadros": 4, "laco": true, "resolucao_px": [2048, 682], "sha256": "830d7d6f6d8dd7fa4fc89efa6db2d2a74af5df729112d10205780bb6b5b25e76"},

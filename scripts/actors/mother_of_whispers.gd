@@ -8,18 +8,28 @@ extends RootGuardian
 #                           (poças avisadas sob o jogador) e Onda de lodo ao redor.
 # Fase 2 · Vozes do Fundo:  arte da fase 2, Raízes emergentes em fileira até o jogador,
 #                           rajada mais larga, mais manchas e onda maior, com menos pausa.
+# Fase 1 animada (4 folhas aprovadas): o golpe de raízes segue o relógio do ataque, com os
+# quadros 1–3 durante o aviso e o contato (quadro 4) no instante em que o golpe resolve.
 enum Move { BURST, PUDDLES, WAVE, ROOTS }
 const PHASE_ONE := [Move.BURST, Move.PUDDLES, Move.WAVE]
 const PHASE_TWO := [Move.ROOTS, Move.BURST, Move.PUDDLES, Move.ROOTS, Move.WAVE]
 const MOVE_WINDUP := {Move.BURST: 0.8, Move.PUDDLES: 0.6, Move.WAVE: 1.0, Move.ROOTS: 0.5}
 const WAVE_RADIUS := [150.0, 175.0]
 const LEASH := 380.0
+# Início de cada quadro do ataque (s). No aviso o relógio anda proporcional ao preparo e chega
+# ao quadro 4 quando o golpe resolve; depois anda em tempo real até o fim do quadro 6.
+const ATTACK_FRAME_STARTS := [0.0, 0.1, 0.2, 0.3, 0.42, 0.54]
+const ATTACK_CONTACT_FRAME := 3
+const ATTACK_LENGTH := 0.66
 
 var arena := Rect2()
 var move := Move.BURST
 var move_index := 0
 var move_windup := 0.0
 var move_recover := 1.6
+# Relógio do ataque (-1 = sem ataque) e duração do aviso atual; só anda com a IA.
+var attack_time := -1.0
+var move_windup_total := 0.0
 
 func display_name() -> String:
 	return "Mãe dos Sussurros"
@@ -39,11 +49,15 @@ func _physics_process(delta: float) -> void:
 		_cancel_move()
 		_return_home()
 		return
+	if attack_time >= float(ATTACK_FRAME_STARTS[ATTACK_CONTACT_FRAME]):
+		attack_time += delta
+		if attack_time >= ATTACK_LENGTH: attack_time = -1.0
 	var offset := target.global_position - global_position
 	view.set_facing(offset)
 	velocity = Vector2.ZERO
 	if move_windup > 0.0:
 		move_windup = maxf(0.0, move_windup - delta)
+		attack_time = float(ATTACK_FRAME_STARTS[ATTACK_CONTACT_FRAME]) * (1.0 - move_windup / move_windup_total)
 		if move_windup == 0.0:
 			_resolve_move(offset)
 			move_recover = (1.25 if second_phase() else 1.7)
@@ -58,6 +72,8 @@ func _physics_process(delta: float) -> void:
 		move = cycle[move_index % cycle.size()]
 		move_index += 1
 		move_windup = float(MOVE_WINDUP[move]) * (0.85 if second_phase() else 1.0)
+		move_windup_total = move_windup
+		attack_time = 0.0
 		aim = offset.normalized()
 		aim_point = target.global_position
 		view.set_warning(true)
@@ -73,12 +89,14 @@ func _physics_process(delta: float) -> void:
 func _cancel_move() -> void:
 	move_windup = 0.0
 	move_recover = 1.4
+	attack_time = -1.0
 	view.set_warning(false)
 	view.set("telegraph", "")
 	view.set_moving(false)
 
 func _resolve_move(offset: Vector2) -> void:
 	if not is_targetable() or not target.health.is_alive() or SafeCamp.in_clearance(target.global_position):
+		attack_time = -1.0
 		return
 	view.play_attack()
 	match move:
