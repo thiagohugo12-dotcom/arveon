@@ -362,7 +362,7 @@ func _on_boss_summon(kinds: Array, limit: int, boss: EnemyActor) -> void:
 		return
 	var alive := 0
 	for node in get_tree().get_nodes_in_group("damageable_enemies"):
-		if node.get_meta("boss_minion_of",null) == boss: alive += 1
+		if node.has_meta("boss_minion_of") and node.get_meta("boss_minion_of") == boss: alive += 1
 	var spawned := 0
 	for kind in kinds:
 		if alive + spawned >= limit: break
@@ -385,7 +385,7 @@ func _on_boss_summon(kinds: Array, limit: int, boss: EnemyActor) -> void:
 
 func _clear_boss_minions(_kind: int, boss: EnemyActor) -> void:
 	for node in get_tree().get_nodes_in_group("damageable_enemies"):
-		if node.get_meta("boss_minion_of",null) == boss and node is EnemyActor and (node as EnemyActor).health.is_alive():
+		if node.has_meta("boss_minion_of") and node.get_meta("boss_minion_of") == boss and node is EnemyActor and (node as EnemyActor).health.is_alive():
 			(node as EnemyActor).queue_free()
 
 func _spawn_enemy() -> void:
