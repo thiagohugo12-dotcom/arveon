@@ -1,0 +1,80 @@
+{
+  "projeto": "ARVÉON: Ascensão Ancestral",
+  "personagem": "Mãe dos Sussurros",
+  "status": "Fase 1 visualmente aprovada; transformação aprovada; Fase 2 aprovada como conceito mas requer spritesheets limpas para implementação",
+  "fase1": {
+    "idle": 4,
+    "movimento": 4,
+    "ataque": 6,
+    "dano": 3
+  },
+  "transformacao": {
+    "quadros": 6,
+    "fonte": "transformacao/transformacao_fase1_para_fase2_6f_ORIGINAL.png"
+  },
+  "fase2": {
+    "idle": 4,
+    "movimento": 4,
+    "ataque": 6,
+    "dano": 3,
+    "morte": 6
+  },
+  "problemas_atuais": [
+    "A imagem de Fase 2 é uma prancha única com cinco grupos, não cinco PNGs independentes.",
+    "Legendas nos cantos superiores de cada grupo interceptam a área dos sprites.",
+    "Linhas divisórias brancas e artefatos cromáticos tocam os pixels de algumas poses.",
+    "Quadros individuais não necessariamente respeitam células uniformes ou margens de segurança."
+  ],
+  "recortes_preliminares": {
+    "mae_fase2_idle_4f_PRELIMINAR.png": {
+      "rect": [
+        0,
+        0,
+        911,
+        239
+      ],
+      "frames": 4
+    },
+    "mae_fase2_movimento_4f_PRELIMINAR.png": {
+      "rect": [
+        922,
+        0,
+        2048,
+        239
+      ],
+      "frames": 4
+    },
+    "mae_fase2_ataque_6f_PRELIMINAR.png": {
+      "rect": [
+        0,
+        246,
+        2048,
+        479
+      ],
+      "frames": 6
+    },
+    "mae_fase2_dano_3f_PRELIMINAR.png": {
+      "rect": [
+        0,
+        486,
+        648,
+        682
+      ],
+      "frames": 3
+    },
+    "mae_fase2_morte_6f_PRELIMINAR.png": {
+      "rect": [
+        657,
+        486,
+        2048,
+        682
+      ],
+      "frames": 6
+    }
+  },
+  "restricoes": [
+    "Não sobrescrever arte original aprovada.",
+    "Não usar recortes preliminares como assets finais sem revisão e validação.",
+    "Não alterar main, produção, GitHub remoto ou Vercel sem autorização."
+  ]
+}

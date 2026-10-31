@@ -1,0 +1,23 @@
+ARVÉON — ANDAR 3: PÂNTANO DAS VOZES
+MÃE DOS SUSSURROS — TRANSFORMAÇÃO E FASE 2 (VOZES DO FUNDO)
+
+Status: APROVADO em 31/10/2026. Junto com a Fase 1 (pasta 23-26), o conjunto da Guardiã
+fica completo: Fase 1 (idle, movimento, ataque, dano), transformação e Fase 2 (idle,
+movimento, ataque, dano, morte).
+Não redesenhar, recolorir, reexportar nem alterar estas folhas.
+
+Arquivos:
+- 27_MAE_TRANSFORMACAO_6_QUADROS.png  6 quadros, sem laço (PNG 2048x682, byte a byte do pacote)
+- 28_MAE_F2_IDLE_4_QUADROS.webp       4 quadros, laço
+- 29_MAE_F2_MOVIMENTO_5_QUADROS.webp  5 quadros, laço
+- 30_MAE_F2_ATAQUE_6_QUADROS.webp     6 quadros, sem laço
+- 31_MAE_F2_DANO_3_QUADROS.webp       3 quadros, sem laço
+- 32_MAE_F2_MORTE_6_QUADROS.webp      6 quadros, sem laço
+As folhas da Fase 2 são as imagens recebidas pelo chat (WebP 2000x667), guardadas sem
+alteração; os PNGs originais do gerador não vieram.
+
+REFERENCIA_PRANCHA_F2_COM_LEGENDAS.png: prancha da Fase 2 aprovada como conceito. NÃO usar
+para recorte (as legendas cobrem o topo dos primeiros quadros e há poses grudadas).
+LEIA-ME_ORIGINAL.md e MANIFESTO_ORIGINAL.json: textos do pacote de revisão, sem alteração.
+
+Integração no jogo: pendente.
