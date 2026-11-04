@@ -3,7 +3,8 @@ extends RefCounted
 
 const ITEMS := ["Couro", "Seda", "Essência", "Broto Ancestral", "Ervas", "Cogumelos", "Madeira", "Pedras", "Minério de Ferro",
 	"Presa de Javali", "Teia Reforçada", "Espinho Seco", "Pepita Dourada", "Placa de Tatu", "Ferrão da Chapada",
-	"Coração da Mata", "Núcleo de Arenito", "Fragmento de Receita"]
+	"Coração da Mata", "Núcleo de Arenito", "Fragmento de Receita", "Fibra Encharcada", "Limo Espesso",
+	"Vesícula Tóxica", "Dente do Jacaré Ancião", "Essência dos Sussurros", "Coração do Brejo"]
 const TRADE_ITEMS := ["Couro", "Seda", "Essência"]
 const SELL_ITEMS := ["Couro", "Seda", "Essência", "Ervas", "Cogumelos", "Madeira", "Pedras"]
 const BUY_PRICE := 5
@@ -190,10 +191,10 @@ func improve_skill(name: String, at_camp: bool = false) -> bool:
 	skills[name] = int(skills[name]) + 1
 	return true
 
-func _create_weapon(category: String, rarity: String) -> String:
+func _create_weapon(category: String, rarity: String, model: String = "") -> String:
 	var uid := "w%d" % next_weapon_uid
 	next_weapon_uid += 1
-	weapon_instances[uid] = {"model":category,"category":category,"rarity":rarity,"level":0,"choices":{}}
+	weapon_instances[uid] = {"model":category if model.is_empty() else model,"category":category,"rarity":rarity,"level":0,"choices":{}}
 	return uid
 
 func weapon(uid: String) -> Dictionary:
@@ -261,7 +262,7 @@ func craft_set(floor_id: int, category: String) -> String:
 		equipment[category] = 0
 		equipment_rarities[category] = "comum"
 		return category
-	var uid := _create_weapon(category,recipe.rarity)
+	var uid := _create_weapon(category,recipe.rarity,"lamina_brejo" if floor_id == 3 and category == "espada" else "")
 	if not equipment.has(category): equipment[category] = 0
 	return uid
 
@@ -471,6 +472,7 @@ func combat_stats() -> Dictionary:
 		var bonus := RPGRules.bonuses(id, level_value, equipment_rarity(id))
 		if slot == "Arma" and weapon_instances.has(equipped_weapon_uid):
 			var data := weapon(equipped_weapon_uid)
+			bonus.damage += ArsenalRules.model_damage(str(data.model))
 			var tier := EquipmentEconomy.RARITY_ORDER.find(data.rarity)
 			bonus.damage += tier * 2
 			bonus.spirit += tier
@@ -1018,7 +1020,7 @@ func load_text(text: String) -> bool:
 		if not _bounded_integer(parsed.gems,0,100000000): return false
 		new_gems = int(parsed.gems)
 	if parsed.has("recipes"):
-		if not parsed.recipes is Array or parsed.recipes.size() > 20: return false
+		if not parsed.recipes is Array or parsed.recipes.size() > LootRules.max_recipe_count(): return false
 		for id: Variant in parsed.recipes:
 			if not LootRules.valid_recipe_id(id) or new_recipes.has(id): return false
 			new_recipes.append(id)
@@ -1034,7 +1036,7 @@ func load_text(text: String) -> bool:
 		for uid: String in new_instances:
 			var entry: Variant = new_instances[uid]
 			if not uid.begins_with("w") or not uid.substr(1).is_valid_int() or int(uid.substr(1)) >= new_next_uid: return false
-			if not entry is Dictionary or entry.size() != 5 or not ArsenalRules.CATEGORIES.has(entry.get("category")) or entry.get("model") != entry.get("category") or not EquipmentEconomy.RARITY_ORDER.has(entry.get("rarity")) or not _bounded_integer(entry.get("level"),0,20) or not entry.get("choices") is Dictionary: return false
+			if not entry is Dictionary or entry.size() != 5 or not ArsenalRules.CATEGORIES.has(entry.get("category")) or not ArsenalRules.valid_model(str(entry.get("model","")),str(entry.get("category",""))) or not EquipmentEconomy.RARITY_ORDER.has(entry.get("rarity")) or not _bounded_integer(entry.get("level"),0,20) or not entry.get("choices") is Dictionary: return false
 			entry.level = int(entry.level)
 			if not new_rpg.equipment.has(entry.category): return false
 			for milestone: String in entry.choices:

@@ -27,15 +27,19 @@ func _run() -> void:
 	# Tabelas coerentes.
 	var items_ok := true
 	for item: String in LootRules.named_items(): items_ok = items_ok and GameProgress.ITEMS.has(item)
-	check(items_ok and LootRules.named_items().size() == 9, "every named item is a valid bag item (6 materials, 2 trophies, 1 fragment)")
+	check(items_ok and LootRules.named_items().size() == 15, "every named item is a valid bag item (11 materials, 3 trophies, 1 fragment)")
 	var recipes_ok := true
 	for floor_id: int in FloorCatalog.LOOT.sets:
-		for category: String in ArsenalRules.CATEGORIES:
+		for category: String in FloorCatalog.LOOT.sets[floor_id].named:
 			var recipe := LootRules.set_recipe(floor_id,category)
 			recipes_ok = recipes_ok and not recipe.is_empty() and recipe.materials.size() == 3 and LootRules.valid_recipe_id(LootRules.recipe_id(floor_id,category))
-	check(recipes_ok and LootRules.set_recipe(1,"espada").rarity == "comum" and LootRules.set_recipe(2,"espada").rarity == "comum" and LootRules.set_recipe(3,"espada").is_empty(), "every floor-set recipe is complete; both floor crafts start Common")
+	check(recipes_ok and LootRules.set_recipe(1,"espada").rarity == "comum" and LootRules.set_recipe(2,"espada").rarity == "comum" and LootRules.set_recipe(3,"espada").rarity == "comum" and LootRules.set_recipe(3,"machado").is_empty(), "every registered floor-set recipe is complete and starts Common")
 	var spada := LootRules.set_recipe(1,"espada")
 	check(spada.gold == 120 and spada.materials["Presa de Javali"] == 6 and spada.materials["Couro|incomum"] == 3 and spada.materials["Coração da Mata"] == 1, "Espada da Mata costs 6 Presa de Javali, 3 Couro Incomum, 1 Coração da Mata and 120 gold")
+	var brejo_piece := LootRules.piece_recipe(3,"elmo_brejo")
+	var brejo_sword := LootRules.set_recipe(3,"espada")
+	check(brejo_piece.gold == 270 and brejo_piece.materials["Limo Espesso"] == 4 and brejo_piece.materials["Couro|raro"] == 2 and brejo_sword.gold == 360 and brejo_sword.materials["Vesícula Tóxica"] == 6 and brejo_sword.materials["Coração do Brejo"] == 1, "Pântano recipes use the approved costs and named ingredients")
+	check(LootRules.piece_recipe(3,"amuleto_brejo").materials["Essência dos Sussurros"] == 1 and LootRules.weapon_title(3,"espada") == "Lâmina do Brejo", "the rare boss essence has a usable recipe and the sword has its Pântano name")
 	# Taxas de drop nomeado.
 	var pity := LootRules.new_pity()
 	var generator := rng(7)
@@ -66,6 +70,16 @@ func _run() -> void:
 			for drop: Dictionary in LootRules.roll(kind,source,LootRules.new_pity()): if drop.get("named",false) and drop.item == by_kind[kind]: seen = true
 		kinds_ok = kinds_ok and seen
 	check(kinds_ok, "each creature drops its own named material")
+	var swamp_drop_ok := true
+	for kind: int in {8:"Fibra Encharcada",9:"Vesícula Tóxica",10:"Limo Espesso",11:"Dente do Jacaré Ancião"}:
+		var found := 0
+		for _i in range(200):
+			for drop: Dictionary in LootRules.roll(kind,rng(kind * 1000 + _i),LootRules.new_pity()):
+				if drop.get("named",false) and drop.item == {8:"Fibra Encharcada",9:"Vesícula Tóxica",10:"Limo Espesso",11:"Dente do Jacaré Ancião"}[kind]: found += 1
+		swamp_drop_ok = swamp_drop_ok and found >= 35 and found <= 65
+	check(swamp_drop_ok, "Pântano creatures and Jacaré drop their own materials at about 25%")
+	var swamp_boss := LootRules.field_boss(3,rng(33),LootRules.new_pity())
+	check(swamp_boss.any(func(drop: Dictionary): return drop.item == "Coração do Brejo"), "Mãe dos Sussurros guarantees the Pântano trophy")
 	# Proteção contra azar.
 	var counters := LootRules.new_pity()
 	var forced_at := -1
@@ -112,6 +126,31 @@ func _run() -> void:
 	p.add_item("Fragmento de Receita")
 	check(p.can_use_fragment(2,"espada") and p.use_fragment(2,"espada") and p.recipe_unlocked(2,"espada") and not p.recipe_unlocked(2,"arco") and p.fragments() == 0, "one Fragmento unlocks exactly one recipe and is consumed")
 	check(not p.can_use_fragment(1,"espada"), "a recipe that is already open does not waste a Fragmento")
+	var swamp := GameProgress.new()
+	swamp.introduction = {"status":"legacy","met_smith":false,"weapon":""}
+	swamp.gold = 1000
+	swamp.add_item("Fragmento de Receita",2)
+	swamp.add_item("Limo Espesso",4)
+	swamp.add_item("Vesícula Tóxica",6)
+	swamp.add_item("Couro|raro",5)
+	swamp.add_item("Coração do Brejo")
+	check(swamp.use_fragment(3,"elmo_brejo") and swamp.use_fragment(3,"espada") and swamp.can_craft_set(3,"elmo_brejo"), "Pântano recipes unlock independently with existing Fragments")
+	check(swamp.craft_set(3,"elmo_brejo") == "elmo_brejo" and swamp.equipment_rarity("elmo_brejo") == "comum" and swamp.equip("elmo_brejo"), "Pântano helmet is crafted Common and can be equipped")
+	var swamp_uid := swamp.craft_set(3,"espada")
+	check(swamp_uid != "" and swamp.weapon(swamp_uid).rarity == "comum" and swamp.weapon(swamp_uid).model == "lamina_brejo" and swamp.gold == 370 and swamp.bag.get("Couro|raro",0) == 0, "Pântano sword pays materials and creates its own Common model")
+	var attack_before := int(swamp.combat_stats().damage)
+	check(swamp.equip_weapon_instance(swamp_uid) and int(swamp.combat_stats().damage) == attack_before + 3, "Lâmina do Brejo adds only the approved three Attack to the sword category")
+	var swamp_loaded := GameProgress.new()
+	check(swamp_loaded.load_text(swamp.to_json()) and swamp_loaded.equipped.Capacete == "elmo_brejo" and swamp_loaded.equipment_rarity("elmo_brejo") == "comum" and swamp_loaded.weapon(swamp_uid).model == "lamina_brejo", "Pântano equipment, recipe unlocks and weapon model survive a v13 save")
+	var all_recipes := GameProgress.new()
+	for floor_id: int in FloorCatalog.LOOT.sets:
+		for category: String in FloorCatalog.LOOT.sets[floor_id].named:
+			all_recipes.recipes.append(LootRules.recipe_id(floor_id,category))
+		for id: String in RPGRules.EQUIPMENT:
+			if RPGRules.EQUIPMENT[id].get("set_floor", 0) == floor_id:
+				all_recipes.recipes.append(LootRules.recipe_id(floor_id,id))
+	var all_loaded := GameProgress.new()
+	check(all_recipes.recipes.size() == LootRules.max_recipe_count() and all_loaded.load_text(all_recipes.to_json()) and all_loaded.recipes.size() == all_recipes.recipes.size(), "all 32 recipe unlocks remain valid in the existing v13 save format")
 	# Save: campos opcionais.
 	p.pity = {"raro": 7, "epico": 12}
 	var restored := GameProgress.new()

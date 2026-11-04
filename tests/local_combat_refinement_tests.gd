@@ -95,7 +95,7 @@ func run() -> void:
 		# Original hit area must still reject out-of-range / out-of-line targets.
 		ready_cast(id)
 		player.last_direction = Vector2.RIGHT
-		enemy.position = player.position+Vector2(190,0)
+		enemy.position = player.position+Vector2(maxf(190.0,float(AbilityRules.effect(id).reach)+40.0),0)
 		await physics_frame
 		player.use_skill(1)
 		player.class_combat.tick(SwordTechniqueTiming.contact(id))

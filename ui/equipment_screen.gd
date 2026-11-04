@@ -150,7 +150,7 @@ func _slot(title: String, x: int, y: int) -> void:
 	if not id.is_empty():
 		if title == "Arma" and progress.weapon_instances.has(progress.equipped_weapon_uid):
 			var weapon := progress.weapon(progress.equipped_weapon_uid)
-			visual_id = str(weapon.category)
+			visual_id = str(weapon.model)
 			rarity = str(weapon.rarity)
 			upgrade = int(weapon.level)
 		else:
@@ -181,7 +181,7 @@ func _slot(title: String, x: int, y: int) -> void:
 		_label("+%d" % upgrade, Rect2(x + 43, y + 41, 31, 20), 15, Color.WHITE, HORIZONTAL_ALIGNMENT_RIGHT, true)
 	var caption_size := 17 if title.length() <= 6 else 15 if title.length() <= 9 else 13
 	_label(title, Rect2(x + 2, y + 59, 80, 18), caption_size, Color("#fff0d1"), HORIZONTAL_ALIGNMENT_CENTER, true)
-	var item_name := str(RPGRules.EQUIPMENT[id].name) if RPGRules.EQUIPMENT.has(id) else "Vazio"
+	var item_name := ArsenalRules.model_name(visual_id,id) if title == "Arma" and progress.weapon_instances.has(progress.equipped_weapon_uid) else str(RPGRules.EQUIPMENT[id].name) if RPGRules.EQUIPMENT.has(id) else "Vazio"
 	var button := _button(Rect2(x + 6, y + 4, 72, 76), title + ": " + item_name, func(): slot_requested.emit(id))
 	button.name = "EquipmentSlot_" + title
 

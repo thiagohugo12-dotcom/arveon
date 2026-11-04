@@ -39,7 +39,8 @@ Místico, aprovada no mesmo dia), e conta como elite/chefe no pity. Armas Lendá
 são aprimoradas com Essência Épica (×1,5 e ×2 da quantidade normal; mesmo ouro).
 Do Pântano em diante, 5% dos materiais do Guardião do andar são Lendários. O Vendedor vende
 só Comum e Incomum (e o Selo); compra de volta qualquer raridade. Valores provisórios; saves
-sem mudança de formato. Material nomeado e troféu do Pântano esperam receitas e ícones próprios.
+sem mudança de formato. Materiais nomeados, troféu e receitas do Pântano foram integrados
+em 01/11/2026; as artes próprias ainda aguardam aprovação (ver `docs/decisions/ANDAR3_FECHAMENTO_EQUIPAMENTOS_PROPOSTA_20261101.md`).
 
 ## Monstros do Andar 2 — integração local autorizada em 19/10/2026
 

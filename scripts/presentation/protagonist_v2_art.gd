@@ -27,13 +27,13 @@ const ATTACK_ROWS := [-1, -1, 0, 0]
 ## exatamente no contato do dano (SwordTechniqueTiming.contact("danca_laminas") = 0,215 s).
 const KAMUSARI_FRAMES := [0.05, 0.06, 0.05, 0.055, 0.08, 0.07, 0.06, 0.06]
 const KAMUSARI_CONTACT_FRAME := 4
-## Corte Crescente e Ruptura Ancestral causam o dano no instante do uso (as regras não têm
-## preparação), dentro da duração visual de SwordTechniqueEffect.EXTRA_DURATIONS. O
-## Crescente já corta no quadro 1; a Ruptura começa no impacto, e a carga e o salto (quadros
-## 1–2 da prancha) ficam na folha, sem uso, enquanto o dano for imediato.
+## Corte Crescente causa o dano no instante do uso (as regras não têm preparação) e já corta
+## no quadro 1, dentro da duração visual de SwordTechniqueEffect.EXTRA_DURATIONS.
 const CRESCENTE_FRAMES := [0.05, 0.06, 0.07, 0.06, 0.06]
-const RUPTURA_IMPACT_FRAME := 2
-const RUPTURA_FRAMES := [0.12, 0.11, 0.11]
+## Ruptura Ancestral no relógio da técnica (SwordTechniqueTiming, 0,44 s): carga e salto em
+## 0,10 s, e o impacto com a erupção (quadro 3) entra exatamente no contato do dano.
+const RUPTURA_FRAMES := [0.05, 0.05, 0.12, 0.11, 0.11]
+const RUPTURA_CONTACT_FRAME := 2
 ## Contra-ataque da Guarda (reação visual ao bloqueio, sem dano próprio): 6 quadros nos
 ## 0,22 s em que o efeito mostra o contra-ataque.
 const COUNTER_FRAMES := [0.02, 0.04, 0.05, 0.045, 0.035, 0.03]

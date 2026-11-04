@@ -56,19 +56,25 @@ const GOLD_RANGE := Vector2i(2, 5)
 
 # Marco 5 · materiais com nome, troféus, proteção contra azar e conjuntos de arma por andar.
 const LOOT := {
-	"named": {"Presa de Javali": 1, "Teia Reforçada": 1, "Espinho Seco": 1, "Pepita Dourada": 2, "Placa de Tatu": 2, "Ferrão da Chapada": 2},
+	"named": {"Presa de Javali": 1, "Teia Reforçada": 1, "Espinho Seco": 1, "Pepita Dourada": 2, "Placa de Tatu": 2, "Ferrão da Chapada": 2,
+		"Fibra Encharcada": 3, "Limo Espesso": 3, "Vesícula Tóxica": 3, "Dente do Jacaré Ancião": 3, "Essência dos Sussurros": 3},
 	"drops": {
 		0: [{"item": "Presa de Javali", "chance": 0.25}], 3: [{"item": "Presa de Javali", "chance": 0.60}],
 		1: [{"item": "Teia Reforçada", "chance": 0.25}], 2: [{"item": "Espinho Seco", "chance": 0.25}],
 		5: [{"item": "Pepita Dourada", "chance": 0.25}], 6: [{"item": "Placa de Tatu", "chance": 0.25}],
-		7: [{"item": "Ferrão da Chapada", "chance": 0.25}]},
-	"trophy": {1: "Coração da Mata", 2: "Núcleo de Arenito"},
+		7: [{"item": "Ferrão da Chapada", "chance": 0.25}],
+		8: [{"item": "Fibra Encharcada", "chance": 0.25}],
+		9: [{"item": "Vesícula Tóxica", "chance": 0.25}],
+		10: [{"item": "Limo Espesso", "chance": 0.25}],
+		11: [{"item": "Dente do Jacaré Ancião", "chance": 0.25}]},
+	"trophy": {1: "Coração da Mata", 2: "Núcleo de Arenito", 3: "Coração do Brejo"},
 	"fragment": "Fragmento de Receita",
 	"fragment_elite_chance": 0.02,
 	"pity": {"raro": 25, "epico": 60},
 	"sets": {
-		1: {"rarity": "raro", "gold": 120, "base_rarity": "incomum", "piece_gold": 90, "pieces": {"Capacete": "Presa de Javali", "Armadura": "Teia Reforçada", "Luvas": "Espinho Seco", "Botas": "Presa de Javali", "Anel": "Espinho Seco", "Acessório": "Teia Reforçada", "Amuleto": "Espinho Seco"}, "named": {"espada": "Presa de Javali", "machado": "Presa de Javali", "lanca": "Espinho Seco", "arco": "Teia Reforçada", "cajado": "Espinho Seco"}},
-		2: {"rarity": "epico", "gold": 240, "base_rarity": "raro", "piece_gold": 180, "pieces": {"Capacete": "Placa de Tatu", "Armadura": "Placa de Tatu", "Luvas": "Pepita Dourada", "Botas": "Ferrão da Chapada", "Anel": "Pepita Dourada", "Acessório": "Ferrão da Chapada", "Amuleto": "Pepita Dourada"}, "named": {"espada": "Pepita Dourada", "machado": "Placa de Tatu", "lanca": "Ferrão da Chapada", "arco": "Ferrão da Chapada", "cajado": "Pepita Dourada"}}}}
+		1: {"rarity": "comum", "gold": 120, "base_rarity": "incomum", "piece_gold": 90, "pieces": {"Capacete": "Presa de Javali", "Armadura": "Teia Reforçada", "Luvas": "Espinho Seco", "Botas": "Presa de Javali", "Anel": "Espinho Seco", "Acessório": "Teia Reforçada", "Amuleto": "Espinho Seco"}, "named": {"espada": "Presa de Javali", "machado": "Presa de Javali", "lanca": "Espinho Seco", "arco": "Teia Reforçada", "cajado": "Espinho Seco"}},
+		2: {"rarity": "comum", "gold": 240, "base_rarity": "raro", "piece_gold": 180, "pieces": {"Capacete": "Placa de Tatu", "Armadura": "Placa de Tatu", "Luvas": "Pepita Dourada", "Botas": "Ferrão da Chapada", "Anel": "Pepita Dourada", "Acessório": "Ferrão da Chapada", "Amuleto": "Pepita Dourada"}, "named": {"espada": "Pepita Dourada", "machado": "Placa de Tatu", "lanca": "Ferrão da Chapada", "arco": "Ferrão da Chapada", "cajado": "Pepita Dourada"}},
+		3: {"rarity": "comum", "gold": 360, "base_rarity": "raro", "piece_gold": 270, "pieces": {"Capacete": "Limo Espesso", "Armadura": "Fibra Encharcada", "Luvas": "Vesícula Tóxica", "Botas": "Dente do Jacaré Ancião", "Anel": "Limo Espesso", "Acessório": "Fibra Encharcada", "Amuleto": "Essência dos Sussurros"}, "named": {"espada": "Vesícula Tóxica"}}}}
 
 const FLOORS := {
 	1: {

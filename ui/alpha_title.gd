@@ -48,7 +48,7 @@ func _ready() -> void:
 	var subtitle := DiaryTheme.label("Ascensão Ancestral", 18)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stack.add_child(subtitle)
-	var version := DiaryTheme.label("ALPHA 0.2 · DOIS ANDARES", 12)
+	var version := DiaryTheme.label("TRÊS ANDARES", 12)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stack.add_child(version)
 	stack.add_child(HSeparator.new())

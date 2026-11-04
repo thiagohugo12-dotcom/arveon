@@ -30,15 +30,23 @@ static func is_piece(key: String) -> bool:
 static func recipe_id(floor_id: int, key: String) -> String:
 	return "piece:%d:%s" % [floor_id, key] if is_piece(key) else "set:%d:%s" % [floor_id, key]
 
+static func max_recipe_count() -> int:
+	var total := 0
+	for floor_id: int in FloorCatalog.LOOT.sets:
+		var data: Dictionary = FloorCatalog.LOOT.sets[floor_id]
+		total += data.named.size() + data.pieces.size()
+	return total
+
 static func valid_recipe_id(value: Variant) -> bool:
 	if not value is String: return false
 	var parts: PackedStringArray = (value as String).split(":")
 	if parts.size() != 3 or not parts[1].is_valid_int() or not FloorCatalog.LOOT.sets.has(int(parts[1])): return false
-	if parts[0] == "set": return ArsenalRules.CATEGORIES.has(parts[2])
+	if parts[0] == "set": return not set_recipe(int(parts[1]), parts[2]).is_empty()
 	return parts[0] == "piece" and is_piece(parts[2]) and int(RPGRules.EQUIPMENT[parts[2]].set_floor) == int(parts[1])
 
 static func weapon_title(floor_id: int, category: String) -> String:
 	if is_piece(category): return str(RPGRules.EQUIPMENT[category].name)
+	if floor_id == 3 and category == "espada": return "Lâmina do Brejo"
 	var biome := "Mata" if floor_id == 1 else "Vale" if floor_id == 2 else "Andar %d" % floor_id
 	return "%s da %s" % [ArsenalRules.category_name(category), biome] if floor_id == 1 else "%s do %s" % [ArsenalRules.category_name(category), biome]
 
@@ -47,6 +55,7 @@ static func set_recipe(floor_id: int, category: String) -> Dictionary:
 	if is_piece(category): return piece_recipe(floor_id,category)
 	if not FloorCatalog.LOOT.sets.has(floor_id) or not ArsenalRules.CATEGORIES.has(category): return {}
 	var data: Dictionary = FloorCatalog.LOOT.sets[floor_id]
+	if not data.named.has(category): return {}
 	var base := "Couro" if category in ["espada", "machado", "lanca"] else "Seda"
 	var materials := {}
 	materials[data.named[category]] = 6
@@ -90,6 +99,7 @@ static func roll(kind: int, rng: RandomNumberGenerator, pity: Dictionary) -> Arr
 static func field_boss(floor_id: int, rng: RandomNumberGenerator, pity: Dictionary) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
 	if FloorCatalog.LOOT.trophy.has(floor_id): result.append(_named(FloorCatalog.LOOT.trophy[floor_id]))
+	if floor_id == 3 and rng.randf() < 0.25: result.append(_named("Essência dos Sussurros"))
 	for _i in range(rng.randi_range(3, 5)):
 		var item: String = ["Couro", "Seda", "Essência"][rng.randi() % 3]
 		var chance := rng.randf()
@@ -115,6 +125,6 @@ static func piece_recipe(floor_id: int, item_id: String) -> Dictionary:
 	var data: Dictionary = FloorCatalog.LOOT.sets[floor_id]
 	var base := "Couro" if str(item.slot) in ["Capacete", "Armadura", "Luvas", "Botas"] else "Seda"
 	var materials := {}
-	materials[data.pieces[item.slot]] = 4
+	materials[data.pieces[item.slot]] = 1 if floor_id == 3 and item.slot in ["Amuleto", "Botas"] else 4
 	materials[EquipmentEconomy.key(base, data.base_rarity)] = 2
 	return {"gold": int(data.piece_gold), "materials": materials, "rarity": "comum", "piece": item_id}

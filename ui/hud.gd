@@ -2118,7 +2118,8 @@ func _smith_sets(progress: GameProgress) -> void:
 	if LootRules.is_piece(smith_set_category) and int(RPGRules.EQUIPMENT[smith_set_category].set_floor) != smith_set_floor: smith_set_category = "espada"
 	var choices: Array = []
 	for id: String in ArsenalRules.CATEGORIES:
-		choices.append({"id":id,"title":LootRules.weapon_title(smith_set_floor,id),"tag":false})
+		if not LootRules.set_recipe(smith_set_floor,id).is_empty():
+			choices.append({"id":id,"title":LootRules.weapon_title(smith_set_floor,id),"tag":false})
 	for id: String in RPGRules.EQUIPMENT:
 		if int(RPGRules.EQUIPMENT[id].get("set_floor",0)) == smith_set_floor:
 			choices.append({"id":id,"title":str(RPGRules.EQUIPMENT[id].name),"tag":progress.equipment.has(id)})

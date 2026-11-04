@@ -244,14 +244,22 @@ func run() -> void:
 		effect._process(counter_time - effect.counter_elapsed + 0.001)
 		check(effect.counter_elapsed < 0.0 and view.v2_technique_pose(effect._frame()) == ["espada_guarda", 3],"after the counter the guard is held again")
 		view.clear_sword_technique()
-	# Corte Crescente and Ruptura Ancestral damage on use (no timed contact): the body art
-	# starts on the cut / the impact and fills the existing visual duration.
+	# Corte Crescente damages on use (no timed contact): the body art starts on the cut and
+	# fills the existing visual duration.
+	check(not SwordTechniqueTiming.FRAMES.has("corte_crescente"),"Corte Crescente damage stays immediate")
+	var crescente_time := 0.0
+	for value: float in ProtagonistV2Art.CRESCENTE_FRAMES: crescente_time += value
+	check(is_equal_approx(crescente_time, SwordTechniqueEffect.EXTRA_DURATIONS.corte_crescente),"Corte Crescente keeps its 0.30 s")
+	# Ruptura Ancestral (approved): charge and leap first, the impact lands on the damage contact.
+	var ruptura_before := 0.0
+	for i in range(ProtagonistV2Art.RUPTURA_CONTACT_FRAME): ruptura_before += ProtagonistV2Art.RUPTURA_FRAMES[i]
+	var ruptura_time := 0.0
+	for value: float in ProtagonistV2Art.RUPTURA_FRAMES: ruptura_time += value
+	check(SwordTechniqueTiming.FRAMES.has("ruptura_ancestral") and not SwordTechniqueEffect.EXTRA_DURATIONS.has("ruptura_ancestral"),"Ruptura damage runs on the timed contact")
+	check(is_equal_approx(ruptura_before, SwordTechniqueTiming.contact("ruptura_ancestral")) and is_equal_approx(ruptura_before, 0.10),"Ruptura impact frame starts exactly at the 0.10 s contact")
+	check(is_equal_approx(ruptura_time, SwordTechniqueTiming.duration("ruptura_ancestral")) and is_equal_approx(ruptura_time - ruptura_before, 0.34),"Ruptura keeps 0.34 s from the impact")
+	check(ProtagonistV2Art.timed_frame(ProtagonistV2Art.RUPTURA_FRAMES, SwordTechniqueTiming.contact("ruptura_ancestral")) == ProtagonistV2Art.RUPTURA_CONTACT_FRAME,"contact tick shows the impact")
 	for id: String in ["corte_crescente", "ruptura_ancestral"]:
-		check(not SwordTechniqueTiming.FRAMES.has(id),"%s damage stays immediate" % id)
-		var durations: Array = ProtagonistV2Art.CRESCENTE_FRAMES if id == "corte_crescente" else ProtagonistV2Art.RUPTURA_FRAMES
-		var total_time := 0.0
-		for value: float in durations: total_time += value
-		check(is_equal_approx(total_time, SwordTechniqueEffect.EXTRA_DURATIONS[id]),"%s keeps its %.2f s" % [id, SwordTechniqueEffect.EXTRA_DURATIONS[id]])
 		var sheet := "espada_crescente" if id == "corte_crescente" else "espada_ruptura"
 		var strip := "crescente" if id == "corte_crescente" else "ruptura"
 		for row in [3, 2, 0]:
@@ -270,7 +278,7 @@ func run() -> void:
 					effect.queue_redraw()
 					await capture(view, "%s_%d" % [strip, row])
 				t += 0.005
-			if row >= 2: check(seen == ([0, 1, 2, 3, 4] if id == "corte_crescente" else [2, 3, 4]),"%s frames in order %d: %s" % [id, row, seen])
+			if row >= 2: check(seen == [0, 1, 2, 3, 4],"%s frames in order %d: %s" % [id, row, seen])
 			view.clear_sword_technique()
 			check(effect.remaining == 0.0,"%s clears without leftovers" % id)
 	# Damage flash and death keep the existing feedback, without stuck poses.
@@ -290,7 +298,7 @@ func run() -> void:
 func _write_preview() -> void:
 	var html := "<!doctype html><meta charset=utf-8><title>Protagonista 2.0</title><style>body{background:#16201b;color:#e7f4d7;font:14px sans-serif;margin:16px}img{image-rendering:pixelated;background:#000;margin:2px}h2{font-size:15px;margin:18px 0 4px}</style>"
 	html += "<h1>Protagonista 2.0 no jogo (captura real, escala de celular 3x)</h1>"
-	var timing := {"idle": 180, "corrida": 110, "basico": 90, "estocada": 70, "guarda": 400, "contra": 37, "crescente": 60, "ruptura": 113, "kamusari": 60}
+	var timing := {"idle": 180, "corrida": 110, "basico": 90, "estocada": 70, "guarda": 400, "contra": 37, "crescente": 60, "ruptura": 88, "kamusari": 60}
 	var names := {"idle_0":"Idle Frente","idle_1":"Idle Costas","idle_2":"Idle Esquerda","idle_3":"Idle Direita","corrida_0":"Corrida Frente","corrida_1":"Corrida Costas","corrida_2":"Corrida Esquerda","corrida_3":"Corrida Direita","basico_3":"Ataque Básico Direita","basico_2":"Ataque Básico Esquerda (espelhado)","estocada_3":"Estocada Direita","estocada_2":"Estocada Esquerda (espelhada)","guarda_3":"Guarda Reativa Direita","guarda_2":"Guarda Reativa Esquerda (espelhada)","contra_3":"Contra-ataque da Guarda Direita","contra_2":"Contra-ataque da Guarda Esquerda (espelhado)","crescente_3":"Corte Crescente Direita","crescente_2":"Corte Crescente Esquerda (espelhado)","ruptura_3":"Ruptura Ancestral Direita","ruptura_2":"Ruptura Ancestral Esquerda (espelhada)","kamusari_3":"Kamusari Direita","kamusari_2":"Kamusari Esquerda (espelhado)"}
 	for strip: String in names:
 		if not strips.has(strip): continue

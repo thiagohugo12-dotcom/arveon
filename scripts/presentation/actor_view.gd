@@ -298,12 +298,7 @@ func _draw_explorer(tint: Color) -> void:
 	# Presentation overrides replace only the body; shared feedback stays intact.
 	var column := anim_frame + 2 if walking or settle_left > 0.0 else 0
 	if village_scale:
-		# Protagonista 2.0: a corrida substitui a caminhada em qualquer velocidade e no
-		# Dash (mesmo avanço por distância de antes); parado, repouso na última direção.
-		if walking:
-			ProtagonistV2Art.draw(self,"corrida",_explorer_direction(),v2_run_frame(),tint)
-		else:
-			ProtagonistV2Art.draw(self,"idle",_explorer_direction(),v2_idle_frame(),tint)
+		VillageActorArt.person(self,_explorer_direction(),anim_frame if walking else 0,Vector2.ZERO,tint)
 	else:
 		draw_texture_rect_region(EXPLORER_ATLAS,Rect2(-24,-32,48,48),Rect2(column*48,_explorer_direction()*48,48,48),tint)
 

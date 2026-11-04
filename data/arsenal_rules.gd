@@ -18,6 +18,18 @@ const CATEGORIES := {
 	"arco": {"name": "Arco", "reach": 250.0, "interval": 0.8, "projectile": "flecha", "speed": 440.0, "basic_power": 1.0},
 	"cajado": {"name": "Cajado", "reach": 220.0, "interval": 0.95, "projectile": "orbe", "speed": 260.0, "basic_power": 1.0}}
 
+# Modelos específicos preservam a categoria, habilidades e formato v13 da instância.
+const WEAPON_MODELS := {"lamina_brejo": {"name": "Lâmina do Brejo", "category": "espada", "damage": 3}}
+
+static func valid_model(model: String, category: String) -> bool:
+	return model == category or WEAPON_MODELS.has(model) and str(WEAPON_MODELS[model].category) == category
+
+static func model_name(model: String, category: String) -> String:
+	return str(WEAPON_MODELS[model].name) if WEAPON_MODELS.has(model) else str(RPGRules.EQUIPMENT[category].name)
+
+static func model_damage(model: String) -> int:
+	return int(WEAPON_MODELS[model].damage) if WEAPON_MODELS.has(model) else 0
+
 static func basic_power(category: String) -> float:
 	return float(CATEGORIES.get(category, {}).get("basic_power", 1.0))
 static func metadata(id: String) -> Dictionary:

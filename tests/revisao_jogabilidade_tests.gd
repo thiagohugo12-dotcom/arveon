@@ -402,10 +402,13 @@ func _pantano_loot() -> void:
 	for _i in range(2000):
 		var pity := LootRules.new_pity()
 		var drops := LootRules.roll(11, rng, pity)
-		caiman_ok = caiman_ok and drops.size() == 2
+		var generic_count := 0
 		for drop: Dictionary in drops:
+			if drop.get("named", false): continue
+			generic_count += 1
 			counts[drop.rarity] = int(counts.get(drop.rarity, 0)) + 1
 			if drop.rarity == "lendario": legendary += 1
+		caiman_ok = caiman_ok and generic_count == 2
 	_check(caiman_ok and not counts.has("comum"), "Jacaré sempre dá Couro e Essência, de Incomum a Místico (%s)" % str(counts))
 	_check(legendary > 80 and legendary < 250, "Jacaré: ~4%% de Lendário por material (%d em 4000)" % legendary)
 	var mythic := int(counts.get("mitico", 0))

@@ -97,15 +97,18 @@ func _rebuild() -> void:
 
 func _slot(slot: String, x: int, y: int) -> void:
 	var item_id := str(progress.equipped.get(slot, ""))
+	var visual_id := item_id
 	var rarity := progress.equipment_rarity(item_id) if not item_id.is_empty() else ""
 	if slot == "Arma" and progress.weapon_instances.has(progress.equipped_weapon_uid):
-		rarity = str(progress.weapon(progress.equipped_weapon_uid).rarity)
+		var weapon := progress.weapon(progress.equipped_weapon_uid)
+		visual_id = str(weapon.model)
+		rarity = str(weapon.rarity)
 	var border := MenuKit.rarity_color(rarity) if not rarity.is_empty() else Color("#8b7559")
 	var icon_frame := Rect2(x + 4, y, 47, 43)
 	var frame := _panel(icon_frame, Color("#19221c"), border, 3)
 	frame.name = "RarityFrame_" + slot
 	if not item_id.is_empty():
-		var path := EquipmentPage.sprite_path_for_item(item_id)
+		var path := EquipmentPage.sprite_path_for_item(visual_id)
 		if not path.is_empty():
 			var sprite := _image(load(path) as Texture2D, Rect2(x + 9, y + 4, 37, 35), Color.WHITE, null, true)
 			sprite.name = "OfficialItemSprite_" + slot
@@ -205,6 +208,8 @@ func _bag() -> void:
 		_decorate_tile(tile, color, id == selected_id)
 		var path := str(entry.path)
 		if not path.is_empty(): _image(load(path) as Texture2D, Rect2(9, 8, 44, 44), Color.WHITE, tile, true)
+		elif _art_pending(entry):
+			_label("Arte\npendente", Rect2(8, 13, 46, 35), 10, CREAM, false, HORIZONTAL_ALIGNMENT_CENTER, tile)
 		else:
 			var icon := PixelItemIcon.new(str(entry.icon))
 			icon.framed = false
@@ -239,7 +244,8 @@ func _entries() -> Array[Dictionary]:
 	for uid: String in progress.weapon_instances:
 		var weapon := progress.weapon(uid)
 		var category := str(weapon.category)
-		result.append({"id":uid,"kind":"equipment","name":str(RPGRules.EQUIPMENT[category].name),"path":EquipmentPage.sprite_path_for_item(category),"icon":category,"color":MenuKit.rarity_color(str(weapon.rarity)),"rarity":str(weapon.rarity),"quantity":1,"category":category})
+		var model := str(weapon.model)
+		result.append({"id":uid,"kind":"equipment","name":ArsenalRules.model_name(model,category),"path":EquipmentPage.sprite_path_for_item(model),"icon":model,"color":MenuKit.rarity_color(str(weapon.rarity)),"rarity":str(weapon.rarity),"quantity":1,"category":category})
 	for id: String in progress.equipment:
 		if ArsenalRules.CATEGORIES.has(id) and not progress.weapon_instances.is_empty(): continue
 		if not RPGRules.EQUIPMENT.has(id): continue
@@ -263,6 +269,13 @@ func _matches(entry: Dictionary) -> bool:
 		"Outros": return entry.kind == "other"
 	return true
 
+func _art_pending(entry: Dictionary) -> bool:
+	var icon := str(entry.icon)
+	if icon == "lamina_brejo": return EquipmentPage.sprite_path_for_item(icon).is_empty()
+	if RPGRules.EQUIPMENT.has(icon) and RPGRules.EQUIPMENT[icon].get("set_floor", 0) == 3:
+		return EquipmentPage.sprite_path_for_item(icon).is_empty()
+	return FloorCatalog.LOOT.named.get(icon, 0) == 3 or icon == "Coração do Brejo"
+
 func _details() -> void:
 	_panel(Rect2(10, 668, 340, 122), Color("#f5dfae"), Color("#9d6632"), 3)
 	if selected_id.is_empty():
@@ -277,6 +290,8 @@ func _details() -> void:
 	var path := str(item.path)
 	_panel(Rect2(19, 681, 75, 75), Color("#242a27"), item.color, 3)
 	if not path.is_empty(): _image(load(path) as Texture2D, Rect2(27, 689, 59, 59), Color.WHITE, null, true)
+	elif _art_pending(item):
+		_label("Arte pendente", Rect2(21, 706, 72, 30), 10, DARK, false, HORIZONTAL_ALIGNMENT_CENTER)
 	else:
 		var icon := PixelItemIcon.new(str(item.icon))
 		icon.framed = false
@@ -288,7 +303,8 @@ func _details() -> void:
 	if item.kind == "equipment":
 		var id := str(item.category)
 		var upgrade := int(progress.weapon(selected_id).level) if progress.weapon_instances.has(selected_id) else int(progress.equipment.get(id, 0))
-		_label(_bonus_summary(id, upgrade), Rect2(102, 720, 238, 16), 13, DARK, true)
+		var model_bonus := ArsenalRules.model_damage(str(progress.weapon(selected_id).get("model", ""))) if progress.weapon_instances.has(selected_id) else 0
+		_label("Ataque +%d" % model_bonus if model_bonus > 0 else _bonus_summary(id, upgrade), Rect2(102, 720, 238, 16), 13, DARK, true)
 		_label(_comparison(id, selected_id), Rect2(102, 736, 238, 16), 13, DARK, true)
 		var worn: bool = selected_id == progress.equipped_weapon_uid if progress.weapon_instances.has(selected_id) else str(progress.equipped.get(str(RPGRules.EQUIPMENT[id].slot), "")) == id
 		_button("PrimaryAction", Rect2(185, 761, 156, 23), "Desequipar" if worn else "Equipar", GREEN, func(): action_requested.emit("unequip" if worn else "equip", str(RPGRules.EQUIPMENT[id].slot) if worn else selected_id))

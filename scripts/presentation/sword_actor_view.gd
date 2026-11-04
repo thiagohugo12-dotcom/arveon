@@ -85,10 +85,6 @@ func _draw_explorer(tint: Color) -> void:
 	if not village_scale or phase() < 0:
 		super._draw_explorer(tint)
 		return
-	if pose_override < 0 and ProtagonistV2Art.has_attack_art(sword_row):
-		# Whole-body frames: the attack wins over the run cycle while it lasts.
-		ProtagonistV2Art.draw_attack(self,"espada_basico",sword_row,v2_sword_frame(),tint)
-		return
 	var walk_frame := anim_frame if walking or settle_left > 0 else 0
 	if walking and running:
 		ExplorerRunPose.legs(self,_explorer_direction(),run_distance/ExplorerRunPose.STRIDE,tint)

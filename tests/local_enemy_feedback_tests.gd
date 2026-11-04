@@ -56,7 +56,7 @@ static func run(suite: SceneTree) -> void:
 	cactus.target=player
 	cactus.chasing=true
 	var launches: Array=[0]
-	cactus.projectile_requested.connect(func(_o: Vector2,_d: Vector2,_damage: int): launches[0]+=1)
+	cactus.projectile_requested.connect(func(_o: Vector2,_d: Vector2,_damage: int,_source_name: String): launches[0]+=1)
 	cactus._cactus_behavior(Vector2(140,0),140,0)
 	cactus._cactus_behavior(Vector2(140,0),140,0.339)
 	suite.check(launches[0] == 0,"cactus holds shot throughout preparation")

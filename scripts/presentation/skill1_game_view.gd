@@ -198,7 +198,7 @@ func play_sword_technique(id: String, aim: Vector2, guard_time: float = 0.0) -> 
 	sword_pose_duration = sword_technique.duration
 	sword_pose_time = sword_pose_duration
 	# The Protagonista 2.0 thrust and Kamusari already draw their trail and near-body light.
-	sword_technique.body_trail = id in ["estocada_precisa","danca_laminas"] and ProtagonistV2Art.has_attack_art(sword_pose_row)
+	sword_technique.body_trail = false
 	sword_technique.z_index = clampi(roundi(actor.global_position.y) + 99, -4096, 4096)
 	skill_left = 0.0
 	queue_redraw()
@@ -251,8 +251,8 @@ func _process(delta: float) -> void:
 ## Estocada Precisa in its six frames (contact = frame 3, SwordTechniqueTiming), Kamusari
 ## in eight on the same clock (contact = frame 4, ProtagonistV2Art), the four Guarda
 ## Reativa frames and its six-frame counter, Corte Crescente (five) and Ruptura Ancestral
-## (from the impact, as its damage is immediate). The vertical directions keep their
-## current art until their sheets arrive.
+## (five on the same clock: charge and leap, then the impact = frame 3 on the contact).
+## The vertical directions keep their current art until their sheets arrive.
 const V2_GUARD_RAISE := 0.10 # Second arc pose after the 0.12 s activation, then the held guard.
 ## [sheet, pose] for the current technique frame, or [] when the current art stays.
 func v2_technique_pose(frame: int) -> Array:
@@ -265,7 +265,7 @@ func v2_technique_pose(frame: int) -> Array:
 		"corte_crescente":
 			return ["espada_crescente", ProtagonistV2Art.timed_frame(ProtagonistV2Art.CRESCENTE_FRAMES, sword_technique.elapsed)]
 		"ruptura_ancestral":
-			return ["espada_ruptura", ProtagonistV2Art.RUPTURA_IMPACT_FRAME + ProtagonistV2Art.timed_frame(ProtagonistV2Art.RUPTURA_FRAMES, sword_technique.elapsed)]
+			return ["espada_ruptura", ProtagonistV2Art.timed_frame(ProtagonistV2Art.RUPTURA_FRAMES, sword_technique.elapsed)]
 		"guarda_reativa":
 			# The real three-second protection keeps the normal body while moving, and so
 			# does a counter taken on the move (no sliding feet).
@@ -278,11 +278,7 @@ func v2_technique_pose(frame: int) -> Array:
 	return []
 
 func _draw_v2_technique(frame: int, tint: Color) -> bool:
-	var pose := v2_technique_pose(frame)
-	if pose.is_empty(): return false
-	if pose[0] == "corrida": ProtagonistV2Art.draw(self,"corrida",_explorer_direction(),pose[1],tint)
-	else: ProtagonistV2Art.draw_attack(self,pose[0],sword_pose_row,pose[1],tint)
-	return true
+	return false
 
 func _draw_explorer(tint: Color) -> void:
 	if skill_category == "lanca" and village_scale and is_instance_valid(spear_technique) and spear_technique.active:

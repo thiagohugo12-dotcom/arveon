@@ -53,7 +53,14 @@ const EQUIPMENT := {
 	"botas_vale": {"name": "Botas do Vale", "slot": "Botas", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 0, "speed": 8, "spirit": 0, "armor": 2, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
 	"anel_vale": {"name": "Anel do Vale", "slot": "Anel", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.021, "crit_damage": 0.06, "resist": 0.0, "gold": 0, "materials": {}},
 	"colar_vale": {"name": "Colar do Vale", "slot": "Acessório", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 17, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.011, "gold": 0, "materials": {}},
-	"amuleto_vale": {"name": "Amuleto do Vale", "slot": "Amuleto", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 0, "speed": 0, "spirit": 2, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.011, "gold": 0, "materials": {}}
+	"amuleto_vale": {"name": "Amuleto do Vale", "slot": "Amuleto", "rarity": "epico", "set_floor": 2, "damage": 0, "hp": 0, "speed": 0, "spirit": 2, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.011, "gold": 0, "materials": {}},
+	"elmo_brejo": {"name": "Elmo do Brejo", "slot": "Capacete", "rarity": "comum", "set_floor": 3, "damage": 0, "hp": 27, "speed": 0, "spirit": 0, "armor": 3, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"manto_raizes_mortas": {"name": "Manto das Raízes Mortas", "slot": "Armadura", "rarity": "comum", "set_floor": 3, "damage": 0, "hp": 31, "speed": 0, "spirit": 0, "armor": 3, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"luvas_brejo": {"name": "Luvas do Brejo", "slot": "Luvas", "rarity": "comum", "set_floor": 3, "damage": 5, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.014, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"botas_brejo": {"name": "Botas do Brejo", "slot": "Botas", "rarity": "comum", "set_floor": 3, "damage": 0, "hp": 0, "speed": 10, "spirit": 0, "armor": 3, "crit": 0.0, "crit_damage": 0.0, "resist": 0.0, "gold": 0, "materials": {}},
+	"anel_brejo": {"name": "Anel do Brejo", "slot": "Anel", "rarity": "comum", "set_floor": 3, "damage": 0, "hp": 0, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.025, "crit_damage": 0.07, "resist": 0.0, "gold": 0, "materials": {}},
+	"colar_brejo": {"name": "Colar do Brejo", "slot": "Acessório", "rarity": "comum", "set_floor": 3, "damage": 0, "hp": 21, "speed": 0, "spirit": 0, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.014, "gold": 0, "materials": {}},
+	"amuleto_brejo": {"name": "Amuleto do Brejo", "slot": "Amuleto", "rarity": "comum", "set_floor": 3, "damage": 0, "hp": 0, "speed": 0, "spirit": 3, "armor": 0, "crit": 0.0, "crit_damage": 0.0, "resist": 0.014, "gold": 0, "materials": {}}
 }
 
 static func level_for_xp(total: int) -> int:

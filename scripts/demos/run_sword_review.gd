@@ -161,6 +161,8 @@ func advance(delta: float) -> void:
 	for runner in runners:
 		runner.set_moving(fmod(elapsed,3.0)<2.4)
 		runner.run_distance=fmod(runner.run_distance+player.stats.move_speed*delta,ExplorerRunPose.STRIDE)
+		if runner.walking:
+			runner.v2_run_distance=fmod(runner.v2_run_distance+player.stats.move_speed*delta,ProtagonistV2Art.RUN_PIXELS_PER_FRAME*6.0)
 		runner.queue_redraw()
 	if not started and elapsed >= 0.65:
 		started=true

@@ -29,7 +29,7 @@ var elapsed := 0.0
 var externally_clocked := false
 var real_reach := 150.0
 var body_trail := false # The body art already draws its own trail and near-body light.
-const EXTRA_DURATIONS := {"corte_crescente":0.30,"ruptura_ancestral":0.34}
+const EXTRA_DURATIONS := {"corte_crescente":0.30}
 
 func _draw_passing_cut(alpha: float) -> void:
 	var contact := SwordTechniqueTiming.contact("danca_laminas")
@@ -127,7 +127,7 @@ func cast(id: String, at: Vector2, aim: Vector2, guard_time: float = 0.0) -> voi
 	direction = aim.normalized() if not aim.is_zero_approx() else Vector2.RIGHT
 	global_position = at
 	self.guard_time = maxf(0.1, guard_time)
-	duration = self.guard_time + GUARDA_FRAMES[5] if id == "guarda_reativa" else (frame_duration_total(KAMUSARI_FRAMES) if id == "danca_laminas" else frame_duration_total(ESTOCADA_FRAMES))
+	duration = self.guard_time + GUARDA_FRAMES[5] if id == "guarda_reativa" else (SwordTechniqueTiming.duration(id) if SwordTechniqueTiming.FRAMES.has(id) else frame_duration_total(ESTOCADA_FRAMES))
 	if EXTRA_DURATIONS.has(id): duration=EXTRA_DURATIONS[id]
 	remaining = duration
 	elapsed = 0.0
@@ -279,7 +279,10 @@ func _draw() -> void:
 			draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-4,angle,2.3,12*(1-p)+1),Color(0.15,0.75,0.72,alpha))
 			draw_colored_polygon(ribbon(Vector2.ZERO,real_reach-5,angle,2.0,4*(1-p)+0.5),Color(0.85,1,0.92,alpha))
 		"ruptura_ancestral":
-			var p := clampf(elapsed/duration,0,1)
+			# The reach trails erupt with the damage contact, after the charge and leap.
+			var contact := SwordTechniqueTiming.contact("ruptura_ancestral")
+			if elapsed < contact: return
+			var p := clampf((elapsed-contact)/(duration-contact),0,1)
 			var alpha := pow(1-p,1.2)
 			var origin := Vector2(0,-18)
 			for side: float in [-1.0,0.0,1.0]:

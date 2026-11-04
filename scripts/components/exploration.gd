@@ -29,6 +29,16 @@ const ANDAR2_RESOURCE_SPOTS := [
 	{"id": "vale_wood_south", "item": "Madeira", "position": Vector2(905, 1080)},
 	{"id": "vale_herb_east", "item": "Ervas", "position": Vector2(1550, 865)}
 ]
+const ANDAR3_RESOURCE_SPOTS := [
+	{"id": "pantano_entrada_ervas", "item": "Ervas", "position": Vector2(524, 1324)},
+	{"id": "pantano_entrada_madeira", "item": "Madeira", "position": Vector2(710, 1322)},
+	{"id": "pantano_lodacal_cogumelos", "item": "Cogumelos", "position": Vector2(954, 720)},
+	{"id": "pantano_lodacal_ervas", "item": "Ervas", "position": Vector2(1494, 1140)},
+	{"id": "pantano_bosque_madeira", "item": "Madeira", "position": Vector2(690, 336)},
+	{"id": "pantano_bosque_cogumelos", "item": "Cogumelos", "position": Vector2(619, 551)},
+	{"id": "pantano_coracao_ervas", "item": "Ervas", "position": Vector2(1854, 480)},
+	{"id": "pantano_coracao_cogumelos", "item": "Cogumelos", "position": Vector2(1974, 810)}
+]
 const RESOURCE_SPOTS := [
 	{"id": "herb_west", "item": "Ervas", "position": Vector2(155, 220)},
 	{"id": "mushroom_southwest", "item": "Cogumelos", "position": Vector2(230, 700)},
@@ -57,6 +67,11 @@ const ANDAR2_HIDDEN_CHESTS := [
 	{"id": "vale_fields_cache", "position": Vector2(890, 1040), "gold": 10, "item": "Madeira"},
 	{"id": "vale_danger_cache", "position": Vector2(1490, 910), "gold": 12, "item": "Essência"}
 ]
+const ANDAR3_HIDDEN_CHESTS := [
+	{"id": "pantano_bosque_cache", "position": Vector2(464, 550), "gold": 12, "item": "Seda"},
+	{"id": "pantano_lodacal_cache", "position": Vector2(1044, 1080), "gold": 14, "item": "Couro"},
+	{"id": "pantano_coracao_cache", "position": Vector2(1884, 660), "gold": 16, "item": "Essência"}
+]
 const HIDDEN_CHESTS := [
 	{"id": "west_roots", "position": Vector2(95, 145), "gold": 6, "item": "Couro"},
 	{"id": "east_grove", "position": Vector2(905, 90), "gold": 8, "item": "Seda"},
@@ -66,16 +81,16 @@ const HIDDEN_CHESTS := [
 ]
 
 static func resources_for_floor(floor_id: int) -> Array:
-	return RESOURCE_SPOTS if floor_id == 1 else ANDAR2_RESOURCE_SPOTS if floor_id == 2 else [] if floor_id == 3 else BASE_RESOURCE_SPOTS
+	return RESOURCE_SPOTS if floor_id == 1 else ANDAR2_RESOURCE_SPOTS if floor_id == 2 else ANDAR3_RESOURCE_SPOTS if floor_id == 3 else BASE_RESOURCE_SPOTS
 
 static func chests_for_floor(floor_id: int) -> Array:
-	return HIDDEN_CHESTS if floor_id == 1 else ANDAR2_HIDDEN_CHESTS if floor_id == 2 else [] if floor_id == 3 else BASE_HIDDEN_CHESTS
+	return HIDDEN_CHESTS if floor_id == 1 else ANDAR2_HIDDEN_CHESTS if floor_id == 2 else ANDAR3_HIDDEN_CHESTS if floor_id == 3 else BASE_HIDDEN_CHESTS
 
 static func known_resources() -> Array:
-	return RESOURCE_SPOTS + ANDAR2_RESOURCE_SPOTS
+	return RESOURCE_SPOTS + ANDAR2_RESOURCE_SPOTS + ANDAR3_RESOURCE_SPOTS
 
 static func known_chests() -> Array:
-	return HIDDEN_CHESTS + ANDAR2_HIDDEN_CHESTS
+	return HIDDEN_CHESTS + ANDAR2_HIDDEN_CHESTS + ANDAR3_HIDDEN_CHESTS
 
 static func discoveries_for_floor(floor_id: int) -> Array:
 	return Floor3Layout.REGION_MARKERS if floor_id == 3 else resources_for_floor(floor_id)

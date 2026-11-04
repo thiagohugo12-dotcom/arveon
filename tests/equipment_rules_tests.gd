@@ -31,7 +31,18 @@ func _run() -> void:
 		var item: Dictionary = RPGRules.EQUIPMENT[id]
 		slots_ok = slots_ok and RPGRules.SLOTS.has(item.slot)
 		if item.has("set_floor"): pieces += 1
-	check(pieces == 14 and slots_ok, "14 floor-set pieces (7 per floor) and every item sits in a valid slot")
+	check(pieces == 21 and slots_ok, "21 floor-set pieces (7 per floor) and every item sits in a valid slot")
+	var brejo := {"elmo_brejo": ["Capacete",27,3,0,0.0,0.0,0.0], "manto_raizes_mortas": ["Armadura",31,3,0,0.0,0.0,0.0],
+		"luvas_brejo": ["Luvas",0,0,5,0.014,0.0,0.0], "botas_brejo": ["Botas",0,3,0,0.0,0.0,0.0],
+		"anel_brejo": ["Anel",0,0,0,0.025,0.07,0.0], "colar_brejo": ["Acessório",21,0,0,0.0,0.0,0.014],
+		"amuleto_brejo": ["Amuleto",0,0,0,0.0,0.0,0.014]}
+	var brejo_ok := true
+	for id: String in brejo:
+		var item: Dictionary = RPGRules.EQUIPMENT[id]
+		var expected: Array = brejo[id]
+		brejo_ok = brejo_ok and item.slot == expected[0] and item.hp == expected[1] and item.armor == expected[2] and item.damage == expected[3] and item.crit == expected[4] and item.crit_damage == expected[5] and item.resist == expected[6] and item.set_floor == 3 and item.rarity == "comum"
+	brejo_ok = brejo_ok and RPGRules.EQUIPMENT.botas_brejo.speed == 10 and RPGRules.EQUIPMENT.amuleto_brejo.spirit == 3
+	check(brejo_ok, "all seven approved Pântano base values and slots are registered without changing the earlier sets")
 	check(ArsenalRules.metadata("elmo_mata").rarity == "raro" and ArsenalRules.metadata("elmo_vale").rarity == "epico" and ArsenalRules.metadata("couro").rarity == "comum", "set pieces carry their own rarity; older items keep theirs")
 	var base := fresh()
 	var plain := base.combat_stats()

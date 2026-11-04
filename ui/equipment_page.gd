@@ -27,7 +27,16 @@ const ITEM_SPRITES := {
 	"colar_mata": "equipment/necklaces/necklace_01.png",
 	"colar_vale": "equipment/necklaces/necklace_03.png",
 	"amuleto_mata": "equipment/necklaces/necklace_05.png",
-	"amuleto_vale": "equipment/necklaces/necklace_04.png"
+	"amuleto_vale": "equipment/necklaces/necklace_04.png",
+	# Kit 2: approved Pântano mapping; rarity belongs to the slot frame.
+	"elmo_brejo": "equipment/helmets/helmet_02.png",
+	"manto_raizes_mortas": "equipment/chest_armor/chest_02.png",
+	"luvas_brejo": "equipment/gloves/gloves_02.png",
+	"botas_brejo": "equipment/boots/boots_02.png",
+	"anel_brejo": "equipment/rings/ring_05.png",
+	"colar_brejo": "equipment/necklaces/necklace_04.png",
+	"amuleto_brejo": "equipment/necklaces/necklace_01.png",
+	"lamina_brejo": "equipment/weapons/sword_02.png"
 }
 const SLOT_TITLES := {}
 
@@ -125,7 +134,7 @@ static func _slot(slot: String, progress: GameProgress, on_slot: Callable) -> Co
 		var level := int(progress.equipment.get(id, 0))
 		if slot == "Arma" and progress.weapon_instances.has(progress.equipped_weapon_uid):
 			var weapon := progress.weapon(progress.equipped_weapon_uid)
-			visual_id = str(weapon.category)
+			visual_id = str(weapon.model)
 			rarity = str(weapon.rarity)
 			level = int(weapon.level)
 		if level > 0:
